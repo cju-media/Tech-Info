@@ -61,27 +61,35 @@
     .sheet-button:hover {
         background-color: #0056b3;
     }
+    .table-responsive {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 </style>
 
 <div class="events-container">
     <h1>Upcoming Events</h1>
     <div id="upcoming-events-loading">Loading upcoming events...</div>
     <div id="upcoming-events-error" class="upcoming-events-error"></div>
-    <table id="upcoming-events-table" class="upcoming-events-table" style="display:none;">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Name of Event</th>
-                <th>Spaces Used</th>
-                <th>AV Tech Call Times</th>
-                <th>Tech Assignment</th>
-                <th>Schedule</th>
-                <th>Tech</th>
-            </tr>
-        </thead>
-        <tbody id="upcoming-events-body">
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table id="upcoming-events-table" class="upcoming-events-table" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name of Event</th>
+                    <th>Spaces Used</th>
+                    <th>AV Tech Call Times</th>
+                    <th>Tech Assignment</th>
+                    <th>Schedule</th>
+                    <th>Tech</th>
+                </tr>
+            </thead>
+            <tbody id="upcoming-events-body">
+            </tbody>
+        </table>
+    </div>
 
     <div class="button-container">
         <a href="https://docs.google.com/spreadsheets/d/1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A/edit?gid=251348517#gid=251348517" target="_blank" class="sheet-button">Open Google Sheet</a>
