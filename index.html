@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upcoming Events</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+        }
+        #loading {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+            white-space: pre-wrap; /* Preserve newlines */
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upcoming Events</h1>
+    <div id="loading">Loading upcoming events...</div>
+    <div id="error" class="error"></div>
+    <table id="eventsTable" style="display:none;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Name of Event</th>
+                <th>Spaces Used</th>
+                <th>AV Tech Call Times</th>
+                <th>Tech Assignment</th>
+                <th>Schedule</th>
+                <th>Tech</th>
+            </tr>
+        </thead>
+        <tbody id="eventsBody">
+        </tbody>
+    </table>
+
+    <script>
+        const sheetId = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A';
+        const gid = '251348517';
+        // Using JSONP: default tqx is ok, or we can explicity set it.
+        // We will define the callback google.visualization.Query.setResponse
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}`;
+
+        // Define the JSONP callback
+        window.google = window.google || {};
+        window.google.visualization = window.google.visualization || {};
+        window.google.visualization.Query = window.google.visualization.Query || {};
+
+        window.google.visualization.Query.setResponse = function(json) {
+            try {
+                if (!json.table || !json.table.rows) {
+                     throw new Error('No data found in spreadsheet');
+                }
+
+                const rows = json.table.rows;
+                const events = [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                rows.forEach(row => {
+                    const dateCell = row.c[0];
+                    if (!dateCell || !dateCell.v) return;
+
+                    let dateStr = dateCell.v;
+                    // Try to extract date pattern MM/DD/YYYY
+                    const match = dateStr.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+                    if (match) {
+                        const dateObj = new Date(match[0]);
+                        if (!isNaN(dateObj.getTime())) {
+                             // Check if upcoming (>= today)
+                             if (dateObj >= today) {
+                                 events.push({
+                                     dateObj: dateObj,
+                                     dateStr: dateStr,
+                                     name: row.c[1]?.v || '',
+                                     spaces: row.c[2]?.v || '',
+                                     times: row.c[3]?.v || '',
+                                     assignment: row.c[7]?.v || '',
+                                     schedule: row.c[8]?.v || '',
+                                     tech: row.c[9]?.v || ''
+                                 });
+                             }
+                        }
+                    }
+                });
+
+                // Sort ascending by date
+                events.sort((a, b) => a.dateObj - b.dateObj);
+
+                // Take top 3
+                const top3 = events.slice(0, 3);
+
+                const tbody = document.getElementById('eventsBody');
+
+                if (top3.length === 0) {
+                     const tr = document.createElement('tr');
+                     const td = document.createElement('td');
+                     td.colSpan = 7;
+                     td.textContent = "No upcoming events found.";
+                     td.style.textAlign = 'center';
+                     tr.appendChild(td);
+                     tbody.appendChild(tr);
+                } else {
+                    top3.forEach(event => {
+                        const tr = document.createElement('tr');
+                        [
+                            event.dateStr,
+                            event.name,
+                            event.spaces,
+                            event.times,
+                            event.assignment,
+                            event.schedule,
+                            event.tech
+                        ].forEach(text => {
+                            const td = document.createElement('td');
+                            td.textContent = text;
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('eventsTable').style.display = 'table';
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').textContent = 'Error processing data: ' + err.message;
+            }
+        };
+
+        // Inject script to fetch data via JSONP
+        const script = document.createElement('script');
+        script.src = url;
+        script.onerror = function() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').textContent = 'Failed to load Google Sheet data. Please check your connection or CORS settings (though JSONP should work).';
+        };
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>
