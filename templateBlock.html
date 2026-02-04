@@ -1,0 +1,38 @@
+<div id="github-loader-target">Syncing latest version from GitHub...</div>
+
+<script>
+  (function() {
+    // 1. Point directly to the GitHub API for your index.html
+    const owner = 'cju-media';
+    const repo = 'Tech-Info';
+    const path = 'index.html';
+    
+    // The 'Accept' header tells GitHub to send the raw file content instead of JSON metadata
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+    fetch(url, {
+      headers: { 'Accept': 'application/vnd.github.v3.raw' }
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('GitHub API delay');
+        return response.text();
+      })
+      .then(data => {
+        const container = document.getElementById('github-loader-target');
+        container.innerHTML = data;
+        
+        // 2. Execute scripts inside the fetched HTML
+        const scripts = container.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+          const newScript = document.createElement("script");
+          Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+          newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+          oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+      })
+      .catch(err => {
+        console.error('Fetch Error:', err);
+        document.getElementById('github-loader-target').innerHTML = 'Updating... (Refresh in 5 seconds)';
+      });
+  })();
+</script>
