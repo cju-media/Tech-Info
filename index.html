@@ -13,46 +13,64 @@
         h1 {
             text-align: center;
         }
-        #loading {
+        #upcoming-events-loading {
             text-align: center;
             font-size: 1.2em;
             margin-top: 20px;
         }
-        table {
+        .upcoming-events-table {
             border-collapse: collapse;
             width: 100%;
             margin-top: 20px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
-        th, td {
+        .upcoming-events-table th, .upcoming-events-table td {
             border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
             vertical-align: top;
             white-space: pre-wrap; /* Preserve newlines */
         }
-        th {
+        .upcoming-events-table th {
             background-color: #007bff;
             color: white;
             font-weight: bold;
         }
-        tr:nth-child(even) {
+        .upcoming-events-table tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        tr:hover {
+        .upcoming-events-table tr:hover {
             background-color: #f1f1f1;
         }
-        .error {
+        .upcoming-events-error {
             color: red;
             text-align: center;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        .sheet-button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+        .sheet-button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
     <h1>Upcoming Events</h1>
-    <div id="loading">Loading upcoming events...</div>
-    <div id="error" class="error"></div>
-    <table id="eventsTable" style="display:none;">
+    <div id="upcoming-events-loading">Loading upcoming events...</div>
+    <div id="upcoming-events-error" class="upcoming-events-error"></div>
+    <table id="upcoming-events-table" class="upcoming-events-table" style="display:none;">
         <thead>
             <tr>
                 <th>Date</th>
@@ -64,23 +82,23 @@
                 <th>Tech</th>
             </tr>
         </thead>
-        <tbody id="eventsBody">
+        <tbody id="upcoming-events-body">
         </tbody>
     </table>
+
+    <div class="button-container">
+        <a href="https://docs.google.com/spreadsheets/d/1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A/edit?gid=251348517#gid=251348517" target="_blank" class="sheet-button">Open Google Sheet</a>
+    </div>
 
     <script>
         const sheetId = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A';
         const gid = '251348517';
-        // Using JSONP: default tqx is ok, or we can explicity set it.
-        // We will define the callback google.visualization.Query.setResponse
-        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}`;
+        // Using JSONP with a custom callback handler to avoid global namespace pollution
+        const callbackName = 'handleUpcomingEventsResponse_' + Math.floor(Math.random() * 10000);
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&tqx=responseHandler:${callbackName}`;
 
-        // Define the JSONP callback
-        window.google = window.google || {};
-        window.google.visualization = window.google.visualization || {};
-        window.google.visualization.Query = window.google.visualization.Query || {};
-
-        window.google.visualization.Query.setResponse = function(json) {
+        // Define the JSONP callback attached to window
+        window[callbackName] = function(json) {
             try {
                 if (!json.table || !json.table.rows) {
                      throw new Error('No data found in spreadsheet');
@@ -95,17 +113,29 @@
                     const dateCell = row.c[0];
                     if (!dateCell || !dateCell.v) return;
 
-                    let dateStr = dateCell.v;
-                    // Try to extract date pattern MM/DD/YYYY
-                    const match = dateStr.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
-                    if (match) {
-                        const dateObj = new Date(match[0]);
-                        if (!isNaN(dateObj.getTime())) {
-                             // Check if upcoming (>= today)
-                             if (dateObj >= today) {
-                                 events.push({
-                                     dateObj: dateObj,
-                                     dateStr: dateStr,
+                    // Handle potential different types for dateCell.v
+                    // If it's already a JS Date object (unlikely for this sheet but possible in gviz)
+                    // If it's a string, we parse it.
+
+                    let dateObj = null;
+                    let dateStr = String(dateCell.v); // Force to string for display/regex
+
+                    if (dateCell.v instanceof Date) {
+                        dateObj = dateCell.v;
+                    } else {
+                        // Try to extract date pattern MM/DD/YYYY from string like "SU 4/5/2026"
+                        const match = dateStr.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+                        if (match) {
+                            dateObj = new Date(match[0]);
+                        }
+                    }
+
+                    if (dateObj && !isNaN(dateObj.getTime())) {
+                         // Check if upcoming (>= today)
+                         if (dateObj >= today) {
+                             events.push({
+                                 dateObj: dateObj,
+                                 dateStr: dateStr,
                                      name: row.c[1]?.v || '',
                                      spaces: row.c[2]?.v || '',
                                      times: row.c[3]?.v || '',
@@ -115,13 +145,12 @@
                                  });
                              }
                         }
-                    }
                 });
 
                 // Sort ascending by date
                 events.sort((a, b) => a.dateObj - b.dateObj);
 
-                const tbody = document.getElementById('eventsBody');
+                const tbody = document.getElementById('upcoming-events-body');
 
                 if (events.length === 0) {
                      const tr = document.createElement('tr');
@@ -151,12 +180,12 @@
                     });
                 }
 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('eventsTable').style.display = 'table';
+                document.getElementById('upcoming-events-loading').style.display = 'none';
+                document.getElementById('upcoming-events-table').style.display = 'table';
             } catch (err) {
                 console.error(err);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').textContent = 'Error processing data: ' + err.message;
+                document.getElementById('upcoming-events-loading').style.display = 'none';
+                document.getElementById('upcoming-events-error').textContent = 'Error processing data: ' + err.message;
             }
         };
 
@@ -164,8 +193,8 @@
         const script = document.createElement('script');
         script.src = url;
         script.onerror = function() {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('error').textContent = 'Failed to load Google Sheet data. Please check your connection or CORS settings (though JSONP should work).';
+            document.getElementById('upcoming-events-loading').style.display = 'none';
+            document.getElementById('upcoming-events-error').textContent = 'Failed to load Google Sheet data. Please check your connection or CORS settings (though JSONP should work).';
         };
         document.body.appendChild(script);
     </script>
