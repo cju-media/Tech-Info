@@ -121,12 +121,9 @@
                 // Sort ascending by date
                 events.sort((a, b) => a.dateObj - b.dateObj);
 
-                // Take top 3
-                const top3 = events.slice(0, 3);
-
                 const tbody = document.getElementById('eventsBody');
 
-                if (top3.length === 0) {
+                if (events.length === 0) {
                      const tr = document.createElement('tr');
                      const td = document.createElement('td');
                      td.colSpan = 7;
@@ -135,7 +132,7 @@
                      tr.appendChild(td);
                      tbody.appendChild(tr);
                 } else {
-                    top3.forEach(event => {
+                    events.forEach(event => {
                         const tr = document.createElement('tr');
                         [
                             event.dateStr,
