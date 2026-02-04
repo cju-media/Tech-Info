@@ -35,6 +35,10 @@
     .upcoming-events-table tr:hover {
         background-color: #f1f1f1;
     }
+    /* Make rows clickable */
+    .upcoming-events-table tbody tr {
+        cursor: pointer;
+    }
     .upcoming-events-error {
         color: red;
         text-align: center;
@@ -104,7 +108,7 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                rows.forEach(row => {
+                rows.forEach((row, index) => {
                     const dateCell = row.c[0];
                     if (!dateCell || !dateCell.v) return;
 
@@ -128,6 +132,10 @@
                     if (dateObj && !isNaN(dateObj.getTime())) {
                          // Check if upcoming (>= today)
                          if (dateObj >= today) {
+                             // Assuming 1 header row, so data starts at row 2.
+                             // index 0 -> row 2. index i -> row i + 2.
+                             const sheetRow = index + 2;
+
                              events.push({
                                  dateObj: dateObj,
                                  dateStr: dateStr,
@@ -136,7 +144,8 @@
                                      times: row.c[3]?.v || '',
                                      assignment: row.c[7]?.v || '',
                                      schedule: row.c[8]?.v || '',
-                                     tech: row.c[9]?.v || ''
+                                     tech: row.c[9]?.v || '',
+                                     sheetRow: sheetRow
                                  });
                              }
                         }
@@ -157,11 +166,19 @@
                      td.colSpan = 7;
                      td.textContent = "No upcoming events found.";
                      td.style.textAlign = 'center';
+                     td.style.cursor = 'default';
                      tr.appendChild(td);
                      tbody.appendChild(tr);
                 } else {
                     events.forEach(event => {
                         const tr = document.createElement('tr');
+
+                        // Add click handler to open the sheet at the specific row
+                        tr.addEventListener('click', () => {
+                            const rowUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?gid=${gid}&range=${event.sheetRow}:${event.sheetRow}`;
+                            window.open(rowUrl, '_blank');
+                        });
+
                         [
                             event.dateStr,
                             event.name,
