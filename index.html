@@ -1,9 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upcoming Events</title>
+
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -41,6 +36,10 @@
         }
         .upcoming-events-table tr:hover {
             background-color: #f1f1f1;
+        }
+        /* Make rows clickable */
+        .upcoming-events-table tbody tr {
+            cursor: pointer;
         }
         .upcoming-events-error {
             color: red;
@@ -109,14 +108,14 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                rows.forEach(row => {
+                rows.forEach((row, index) => {
                     const dateCell = row.c[0];
                     if (!dateCell || !dateCell.v) return;
-
+                    
                     // Handle potential different types for dateCell.v
                     // If it's already a JS Date object (unlikely for this sheet but possible in gviz)
                     // If it's a string, we parse it.
-
+                    
                     let dateObj = null;
                     let dateStr = String(dateCell.v); // Force to string for display/regex
 
@@ -133,15 +132,20 @@
                     if (dateObj && !isNaN(dateObj.getTime())) {
                          // Check if upcoming (>= today)
                          if (dateObj >= today) {
+                             // Assuming 1 header row, so data starts at row 2. 
+                             // index 0 -> row 2. index i -> row i + 2.
+                             const sheetRow = index + 2;
+                             
                              events.push({
                                  dateObj: dateObj,
                                  dateStr: dateStr,
-                                     name: row.c[1]?.v || '',
-                                     spaces: row.c[2]?.v || '',
-                                     times: row.c[3]?.v || '',
-                                     assignment: row.c[7]?.v || '',
-                                     schedule: row.c[8]?.v || '',
-                                     tech: row.c[9]?.v || ''
+                                 name: row.c[1]?.v || '',
+                                 spaces: row.c[2]?.v || '',
+                                 times: row.c[3]?.v || '',
+                                 assignment: row.c[7]?.v || '',
+                                 schedule: row.c[8]?.v || '',
+                                 tech: row.c[9]?.v || '',
+                                 sheetRow: sheetRow
                                  });
                              }
                         }
@@ -151,25 +155,33 @@
                 events.sort((a, b) => a.dateObj - b.dateObj);
 
                 const tbody = document.getElementById('upcoming-events-body');
-
+                
                 if (events.length === 0) {
                      const tr = document.createElement('tr');
                      const td = document.createElement('td');
                      td.colSpan = 7;
                      td.textContent = "No upcoming events found.";
                      td.style.textAlign = 'center';
+                     td.style.cursor = 'default'; // Disable pointer for empty message
                      tr.appendChild(td);
                      tbody.appendChild(tr);
                 } else {
                     events.forEach(event => {
                         const tr = document.createElement('tr');
+                        
+                        // Add click handler to open the sheet at the specific row
+                        tr.addEventListener('click', () => {
+                            const rowUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?gid=${gid}&range=${event.sheetRow}:${event.sheetRow}`;
+                            window.open(rowUrl, '_blank');
+                        });
+
                         [
-                            event.dateStr,
-                            event.name,
-                            event.spaces,
-                            event.times,
-                            event.assignment,
-                            event.schedule,
+                            event.dateStr, 
+                            event.name, 
+                            event.spaces, 
+                            event.times, 
+                            event.assignment, 
+                            event.schedule, 
                             event.tech
                         ].forEach(text => {
                             const td = document.createElement('td');
@@ -199,4 +211,3 @@
         document.body.appendChild(script);
     </script>
 </body>
-</html>
