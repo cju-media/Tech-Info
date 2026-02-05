@@ -1,76 +1,78 @@
-<style>
-    .events-container {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        color: #333;
-    }
-    .events-container h1 {
-        text-align: center;
-    }
-    #upcoming-events-loading {
-        text-align: center;
-        font-size: 1.2em;
-        margin-top: 20px;
-    }
-    .upcoming-events-table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 20px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    }
-    .upcoming-events-table th, .upcoming-events-table td {
-        border: 1px solid #ddd;
-        padding: 12px;
-        text-align: left;
-        vertical-align: top;
-        white-space: pre-wrap; /* Preserve newlines */
-        min-width: 125px;
-    }
-    .upcoming-events-table th {
-        background-color: #007bff;
-        color: white;
-        font-weight: bold;
-    }
-    .upcoming-events-table tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-    .upcoming-events-table tr:hover {
-        background-color: #f1f1f1;
-    }
-    /* Make rows clickable */
-    .upcoming-events-table tbody tr {
-        cursor: pointer;
-    }
-    .upcoming-events-error {
-        color: red;
-        text-align: center;
-    }
-    .button-container {
-        text-align: center;
-        margin-top: 30px;
-        margin-bottom: 20px;
-    }
-    .sheet-button {
-        background-color: #007bff;
-        color: white;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 5px;
-        font-weight: bold;
-        display: inline-block;
-        transition: background-color 0.3s;
-    }
-    .sheet-button:hover {
-        background-color: #0056b3;
-    }
-    .table-responsive {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-</style>
-
-<div class="events-container">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+        }
+        #upcoming-events-loading {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        .upcoming-events-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .upcoming-events-table th, .upcoming-events-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+            white-space: pre-wrap; /* Preserve newlines */
+            min-width: 125px;
+        }
+        .upcoming-events-table th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .upcoming-events-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .upcoming-events-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        /* Make rows clickable */
+        .upcoming-events-table tbody tr {
+            cursor: pointer;
+        }
+        .upcoming-events-error {
+            color: red;
+            text-align: center;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        .upcoming-events-sheet-button {
+            background-color: #007bff;
+            color: white !important;
+            padding: 12px 24px;
+            text-decoration: none !important;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+        .upcoming-events-sheet-button:hover {
+            background-color: #0056b3;
+        }
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
     <h1>Upcoming Events</h1>
     <div id="upcoming-events-loading">Loading upcoming events...</div>
     <div id="upcoming-events-error" class="upcoming-events-error"></div>
@@ -93,12 +95,10 @@
     </div>
 
     <div class="button-container">
-        <a href="https://docs.google.com/spreadsheets/d/1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A/edit?gid=251348517#gid=251348517" target="_blank" class="sheet-button">Open Google Sheet</a>
+        <a href="https://docs.google.com/spreadsheets/d/1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A/edit?gid=251348517#gid=251348517" target="_blank" class="upcoming-events-sheet-button">Open Google Sheet</a>
     </div>
-</div>
 
-<script>
-    (function() {
+    <script>
         const sheetId = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A';
         const gid = '251348517';
         // Using JSONP with a custom callback handler to avoid global namespace pollution
@@ -144,17 +144,17 @@
                          if (dateObj >= today) {
                              // With headers=0, rows[index] corresponds to Sheet Row index + 1.
                              const sheetRow = index + 1;
-
+                             
                              events.push({
                                  dateObj: dateObj,
                                  dateStr: dateStr,
-                                     name: row.c[1]?.v || '',
-                                     spaces: row.c[2]?.v || '',
-                                     times: row.c[3]?.v || '',
-                                     assignment: row.c[7]?.v || '',
-                                     schedule: row.c[8]?.v || '',
-                                     tech: row.c[9]?.v || '',
-                                     sheetRow: sheetRow
+                                 name: row.c[1]?.v || '',
+                                 spaces: row.c[2]?.v || '',
+                                 times: row.c[3]?.v || '',
+                                 assignment: row.c[7]?.v || '',
+                                 schedule: row.c[8]?.v || '',
+                                 tech: row.c[9]?.v || '',
+                                 sheetRow: sheetRow
                                  });
                              }
                         }
@@ -164,10 +164,6 @@
                 events.sort((a, b) => a.dateObj - b.dateObj);
 
                 const tbody = document.getElementById('upcoming-events-body');
-                if (!tbody) return; // Guard clause in case DOM isn't ready or ID mismatch
-
-                // Clear existing content (safety)
-                tbody.innerHTML = '';
                 
                 if (events.length === 0) {
                      const tr = document.createElement('tr');
@@ -175,7 +171,7 @@
                      td.colSpan = 7;
                      td.textContent = "No upcoming events found.";
                      td.style.textAlign = 'center';
-                     td.style.cursor = 'default';
+                     td.style.cursor = 'default'; // Disable pointer for empty message
                      tr.appendChild(td);
                      tbody.appendChild(tr);
                 } else {
@@ -205,19 +201,12 @@
                     });
                 }
 
-                const loading = document.getElementById('upcoming-events-loading');
-                if(loading) loading.style.display = 'none';
-                
-                const table = document.getElementById('upcoming-events-table');
-                if(table) table.style.display = 'table';
-
+                document.getElementById('upcoming-events-loading').style.display = 'none';
+                document.getElementById('upcoming-events-table').style.display = 'table';
             } catch (err) {
                 console.error(err);
-                const loading = document.getElementById('upcoming-events-loading');
-                if(loading) loading.style.display = 'none';
-                
-                const errorDiv = document.getElementById('upcoming-events-error');
-                if(errorDiv) errorDiv.textContent = 'Error processing data: ' + err.message;
+                document.getElementById('upcoming-events-loading').style.display = 'none';
+                document.getElementById('upcoming-events-error').textContent = 'Error processing data: ' + err.message;
             }
         };
 
@@ -225,12 +214,9 @@
         const script = document.createElement('script');
         script.src = url;
         script.onerror = function() {
-            const loading = document.getElementById('upcoming-events-loading');
-            if(loading) loading.style.display = 'none';
-            
-            const errorDiv = document.getElementById('upcoming-events-error');
-            if(errorDiv) errorDiv.textContent = 'Failed to load Google Sheet data.';
+            document.getElementById('upcoming-events-loading').style.display = 'none';
+            document.getElementById('upcoming-events-error').textContent = 'Failed to load Google Sheet data. Please check your connection or CORS settings (though JSONP should work).';
         };
         document.body.appendChild(script);
-    })();
-</script>
+    </script>
+</body>
