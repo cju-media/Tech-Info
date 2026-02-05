@@ -27,6 +27,9 @@
         background-color: #007bff;
         color: white;
         font-weight: bold;
+        position: sticky;
+        top: 0;
+        z-index: 2;
     }
     .upcoming-events-table tr:nth-child(even) {
         background-color: #f9f9f9;
@@ -64,6 +67,8 @@
         display: block;
         width: 100%;
         overflow-x: auto;
+        overflow-y: auto;
+        max-height: 80vh;
         -webkit-overflow-scrolling: touch;
         margin-top: 20px;
         background-color: white;
