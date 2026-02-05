@@ -34,6 +34,9 @@
             background-color: #007bff;
             color: white;
             font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
         .upcoming-events-table tr:nth-child(even) {
             background-color: #f9f9f9;
@@ -41,6 +44,27 @@
         .upcoming-events-table tr:hover {
             background-color: #f1f1f1;
         }
+
+        /* Sticky First Column */
+        .upcoming-events-table th:first-child,
+        .upcoming-events-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+        .upcoming-events-table th:first-child {
+            z-index: 3;
+        }
+        .upcoming-events-table td:first-child {
+            background-color: white;
+        }
+        .upcoming-events-table tr:nth-child(even) td:first-child {
+            background-color: #f9f9f9;
+        }
+        .upcoming-events-table tr:hover td:first-child {
+            background-color: #f1f1f1;
+        }
+
         /* Make rows clickable */
         .upcoming-events-table tbody tr {
             cursor: pointer;
@@ -71,6 +95,8 @@
             display: block;
             width: 100%;
             overflow-x: auto;
+            overflow-y: auto;
+            max-height: 80vh;
             -webkit-overflow-scrolling: touch;
             margin-top: 20px;
             background-color: white;
