@@ -44,6 +44,27 @@
         .upcoming-events-table tr:hover {
             background-color: #f1f1f1;
         }
+
+        /* Sticky First Column */
+        .upcoming-events-table th:first-child,
+        .upcoming-events-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+        .upcoming-events-table th:first-child {
+            z-index: 3;
+        }
+        .upcoming-events-table td:first-child {
+            background-color: white;
+        }
+        .upcoming-events-table tr:nth-child(even) td:first-child {
+            background-color: #f9f9f9;
+        }
+        .upcoming-events-table tr:hover td:first-child {
+            background-color: #f1f1f1;
+        }
+
         /* Make rows clickable */
         .upcoming-events-table tbody tr {
             cursor: pointer;
