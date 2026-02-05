@@ -107,7 +107,8 @@
         const gid = '251348517';
         // Using JSONP with a custom callback handler to avoid global namespace pollution
         const callbackName = 'handleUpcomingEventsResponse_' + Math.floor(Math.random() * 10000);
-        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&tqx=responseHandler:${callbackName}`;
+        // Force headers=0 so we get all rows including headers, allowing us to map row index directly to sheet row.
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&headers=0&tqx=responseHandler:${callbackName}`;
 
         // Define the JSONP callback attached to window
         window[callbackName] = function(json) {
@@ -145,9 +146,8 @@
                     if (dateObj && !isNaN(dateObj.getTime())) {
                          // Check if upcoming (>= today)
                          if (dateObj >= today) {
-                             // Assuming 1 header row, so data starts at row 2.
-                             // index 0 -> row 2. index i -> row i + 2.
-                             const sheetRow = index + 2;
+                             // With headers=0, rows[index] corresponds to Sheet Row index + 1.
+                             const sheetRow = index + 1;
 
                              events.push({
                                  dateObj: dateObj,
