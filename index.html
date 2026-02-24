@@ -208,8 +208,43 @@
                         }
                 });
 
-                // Sort ascending by date
-                events.sort((a, b) => a.dateObj - b.dateObj);
+                // Helper to parse time string into minutes from midnight
+                function parseTime(timeStr) {
+                    if (!timeStr) return 9999;
+
+                    const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?/i);
+                    if (!match) return 9999;
+
+                    let hour = parseInt(match[1], 10);
+                    let minute = match[2] ? parseInt(match[2], 10) : 0;
+                    const modifier = match[3] ? match[3].toLowerCase() : null;
+
+                    if (modifier) {
+                        if ((modifier === 'pm' || modifier === 'p') && hour < 12) {
+                            hour += 12;
+                        }
+                        if ((modifier === 'am' || modifier === 'a') && hour === 12) {
+                            hour = 0;
+                        }
+                    } else {
+                        // Heuristic for missing modifier
+                        if (hour >= 7 && hour <= 11) {
+                            // Assume AM
+                        } else if (hour === 12 || (hour >= 1 && hour <= 6)) {
+                            // Assume PM
+                            if (hour < 12) hour += 12;
+                        }
+                    }
+
+                    return hour * 60 + minute;
+                }
+
+                // Sort ascending by date, then by time
+                events.sort((a, b) => {
+                    const dateDiff = a.dateObj - b.dateObj;
+                    if (dateDiff !== 0) return dateDiff;
+                    return parseTime(a.times) - parseTime(b.times);
+                });
 
                 const tbody = document.getElementById('upcoming-events-body');
                 
