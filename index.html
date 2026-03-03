@@ -113,9 +113,92 @@
             background-color: rgba(0, 0, 0, 0.4);
         }
 
+        /* View Tabs */
+        .view-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .view-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid #007bff;
+            background-color: white;
+            color: #007bff;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .view-tab:hover {
+            background-color: #f0f8ff;
+        }
+        .view-tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        /* Card View Styles */
+        .upcoming-events-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .event-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            background-color: #f9f9f9;
+        }
+        .event-card-row {
+            display: flex;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .event-card-row:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .event-card-label {
+            font-weight: bold;
+            width: 100px;
+            flex-shrink: 0;
+            color: #555;
+        }
+        .event-card-value {
+            flex-grow: 1;
+            white-space: pre-wrap;
+        }
+
         @media screen and (max-width: 768px) {
             .upcoming-events-table {
                 zoom: 0.5;
+            }
+            .event-card-row {
+                flex-direction: column;
+            }
+            .event-card-label {
+                width: auto;
+                margin-bottom: 4px;
+                color: #007bff;
+            }
+            .view-tabs {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .view-tab {
+                text-align: center;
             }
         }
     </style>
@@ -124,7 +207,13 @@
     <h1>Tech Info</h1>
     <div id="upcoming-events-loading">Loading upcoming events...</div>
     <div id="upcoming-events-error" class="upcoming-events-error"></div>
-    <div class="table-responsive">
+
+    <div id="view-tabs-container" class="view-tabs" style="display:none;">
+        <button class="view-tab active" onclick="switchView('grid')">Grid View</button>
+        <button class="view-tab" onclick="switchView('card')">Card View</button>
+    </div>
+
+    <div id="view-grid-container" class="table-responsive">
         <table id="upcoming-events-table" class="upcoming-events-table" style="display:none;">
             <thead>
                 <tr>
@@ -142,6 +231,11 @@
         </table>
     </div>
 
+    <div id="view-card-container" style="display:none;">
+        <div id="upcoming-events-cards" class="upcoming-events-cards">
+        </div>
+    </div>
+
     <div class="button-container">
         <a href="https://docs.google.com/spreadsheets/d/1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A/edit?gid=251348517#gid=251348517" target="_blank" class="upcoming-events-sheet-button">Open Google Sheet</a>
     </div>
@@ -153,6 +247,24 @@
         const callbackName = 'handleUpcomingEventsResponse_' + Math.floor(Math.random() * 10000);
         // Force headers=0 so we get all rows including headers, allowing us to map row index directly to sheet row.
         const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&headers=0&tqx=responseHandler:${callbackName}`;
+
+        window.switchView = function(view) {
+            const gridContainer = document.getElementById('view-grid-container');
+            const cardContainer = document.getElementById('view-card-container');
+            const tabs = document.querySelectorAll('.view-tab');
+
+            if (view === 'grid') {
+                gridContainer.style.display = 'block';
+                cardContainer.style.display = 'none';
+                tabs[0].classList.add('active');
+                tabs[1].classList.remove('active');
+            } else if (view === 'card') {
+                gridContainer.style.display = 'none';
+                cardContainer.style.display = 'block';
+                tabs[0].classList.remove('active');
+                tabs[1].classList.add('active');
+            }
+        };
 
         // Define the JSONP callback attached to window
         window[callbackName] = function(json) {
@@ -247,6 +359,7 @@
                 });
 
                 const tbody = document.getElementById('upcoming-events-body');
+                const cardsContainer = document.getElementById('upcoming-events-cards');
                 
                 if (events.length === 0) {
                      const tr = document.createElement('tr');
@@ -257,35 +370,65 @@
                      td.style.cursor = 'default'; // Disable pointer for empty message
                      tr.appendChild(td);
                      tbody.appendChild(tr);
+
+                     cardsContainer.innerHTML = '<div style="text-align: center; padding: 20px;">No upcoming events found.</div>';
                 } else {
                     events.forEach(event => {
                         const tr = document.createElement('tr');
+                        const card = document.createElement('div');
+                        card.className = 'event-card';
                         
                         // Add click handler to open the sheet at the specific row
-                        tr.addEventListener('click', () => {
+                        const clickHandler = () => {
                             const rowUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?gid=${gid}&range=${event.sheetRow}:${event.sheetRow}`;
                             window.open(rowUrl, '_blank');
+                        };
+                        tr.addEventListener('click', clickHandler);
+                        card.addEventListener('click', clickHandler);
+
+                        const rowData = [
+                            { label: 'Date', value: event.dateStr },
+                            { label: 'Assignment', value: event.assignment },
+                            { label: 'Call Time', value: event.times },
+                            { label: 'Event', value: event.name },
+                            { label: 'Venue', value: event.spaces },
+                            { label: 'Schedule', value: event.schedule },
+                            { label: 'Tech', value: event.tech }
+                        ];
+
+                        rowData.forEach(item => {
+                            const td = document.createElement('td');
+                            td.textContent = item.value;
+                            tr.appendChild(td);
+
+                            const cardRow = document.createElement('div');
+                            cardRow.className = 'event-card-row';
+
+                            const labelDiv = document.createElement('div');
+                            labelDiv.className = 'event-card-label';
+                            labelDiv.textContent = item.label;
+
+                            const valueDiv = document.createElement('div');
+                            valueDiv.className = 'event-card-value';
+                            valueDiv.textContent = item.value;
+
+                            cardRow.appendChild(labelDiv);
+                            cardRow.appendChild(valueDiv);
+                            card.appendChild(cardRow);
                         });
 
-                        [
-                            event.dateStr, 
-                            event.assignment,
-                            event.times,
-                            event.name,
-                            event.spaces,
-                            event.schedule, 
-                            event.tech
-                        ].forEach(text => {
-                            const td = document.createElement('td');
-                            td.textContent = text;
-                            tr.appendChild(td);
-                        });
                         tbody.appendChild(tr);
+                        cardsContainer.appendChild(card);
                     });
                 }
 
                 document.getElementById('upcoming-events-loading').style.display = 'none';
                 document.getElementById('upcoming-events-table').style.display = 'table';
+                document.getElementById('view-tabs-container').style.display = 'flex';
+
+                // Initialize default view based on screen size or preference, here defaulting to grid
+                switchView('grid');
+
             } catch (err) {
                 console.error(err);
                 document.getElementById('upcoming-events-loading').style.display = 'none';
