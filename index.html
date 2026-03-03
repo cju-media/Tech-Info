@@ -437,8 +437,8 @@
             modalOverlay.classList.remove('active');
             document.body.style.overflow = '';
 
-            // Remove hash from URL
-            history.pushState(null, null, ' ');
+            // Remove hash from URL cleanly
+            history.pushState(null, null, window.location.pathname + window.location.search);
         };
 
         // Close modal when clicking outside
@@ -488,11 +488,16 @@
                              // With headers=0, rows[index] corresponds to Sheet Row index + 1.
                              const sheetRow = index + 1;
                              
+                             const eventName = row.c[1]?.v || 'unnamed-event';
+                             const sanitizedName = eventName.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                             const sanitizedDate = dateStr.replace(/\//g, '-');
+                             const elementId = `${sanitizedDate}-${sanitizedName}`;
+
                              events.push({
-                                 id: `event-${sheetRow}`,
+                                 id: elementId,
                                  dateObj: dateObj,
                                  dateStr: dateStr,
-                                 name: row.c[1]?.v || '',
+                                 name: eventName,
                                  spaces: row.c[2]?.v || '',
                                  times: row.c[3]?.v || '',
                                  assignment: row.c[7]?.v || '',
@@ -633,8 +638,8 @@
 
                 // Check for hash in URL to auto-open modal
                 if (window.location.hash) {
-                    const hashId = window.location.hash.substring(1);
-                    if (hashId.startsWith('event-')) {
+                    const hashId = decodeURIComponent(window.location.hash.substring(1));
+                    if (hashId) {
                         openModal(hashId);
                     }
                 }
