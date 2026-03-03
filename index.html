@@ -235,7 +235,8 @@
             width: 90%;
             max-width: 600px;
             max-height: 90vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             position: relative;
             transform: translateY(-20px);
             transition: transform 0.3s ease;
@@ -258,10 +259,14 @@
         }
         #event-modal-body {
             margin-top: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 10px; /* Space for scrollbar */
         }
         .event-modal-button-container {
             margin-top: 25px;
             text-align: center;
+            flex-shrink: 0;
         }
         .event-modal-sheet-button {
             background-color: #28a745;
@@ -349,7 +354,7 @@
     <div id="event-modal-overlay">
         <div class="event-modal-content">
             <span class="event-modal-close" onclick="closeModal()">&times;</span>
-            <h2>Event Details</h2>
+            <h2 style="margin-top: 0; flex-shrink: 0;">Event Details</h2>
             <div id="event-modal-body"></div>
             <div class="event-modal-button-container">
                 <a id="event-modal-sheet-link" href="#" target="_blank" class="event-modal-sheet-button">Open in Google Sheet</a>
