@@ -113,12 +113,41 @@
             background-color: rgba(0, 0, 0, 0.4);
         }
 
-        /* View Tabs */
+        /* Controls & Filter */
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
         .view-tabs {
             display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
             gap: 10px;
+        }
+        .filter-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .filter-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .assignment-filter {
+            padding: 8px 12px;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+            background-color: white;
+            color: #333;
+            font-size: 1em;
+            cursor: pointer;
+            outline: none;
+            transition: box-shadow 0.3s ease;
+        }
+        .assignment-filter:focus {
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
         }
         .view-tab {
             padding: 10px 20px;
@@ -235,7 +264,8 @@
             width: 90%;
             max-width: 600px;
             max-height: 90vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             position: relative;
             transform: translateY(-20px);
             transition: transform 0.3s ease;
@@ -258,10 +288,14 @@
         }
         #event-modal-body {
             margin-top: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 10px; /* Space for scrollbar */
         }
         .event-modal-button-container {
             margin-top: 25px;
             text-align: center;
+            flex-shrink: 0;
         }
         .event-modal-sheet-button {
             background-color: #28a745;
@@ -302,12 +336,15 @@
                 margin-bottom: 4px;
                 color: #007bff;
             }
-            .view-tabs {
+            .controls-container {
                 flex-direction: column;
                 align-items: stretch;
             }
-            .view-tab {
-                text-align: center;
+            .view-tabs {
+                justify-content: center;
+            }
+            .filter-container {
+                justify-content: center;
             }
         }
     </style>
@@ -317,9 +354,23 @@
     <div id="upcoming-events-loading">Loading upcoming events...</div>
     <div id="upcoming-events-error" class="upcoming-events-error"></div>
 
-    <div id="view-tabs-container" class="view-tabs" style="display:none;">
-        <button class="view-tab active" onclick="switchView('grid')">Grid View</button>
-        <button class="view-tab" onclick="switchView('card')">Card View</button>
+    <div id="controls-container" class="controls-container" style="display:none;">
+        <div id="view-tabs-container" class="view-tabs">
+            <button class="view-tab active" onclick="switchView('grid')">Grid View</button>
+            <button class="view-tab" onclick="switchView('card')">Card View</button>
+        </div>
+        <div id="filter-container" class="filter-container">
+            <label for="assignment-filter" class="filter-label">Filter by Name:</label>
+            <select id="assignment-filter" class="assignment-filter" onchange="applyFilter()">
+                <option value="All">All</option>
+                <option value="Marc">Marc</option>
+                <option value="Kaspar">Kaspar</option>
+                <option value="Aria">Aria</option>
+                <option value="Jaffe">Jaffe</option>
+                <option value="Danny">Danny</option>
+                <option value="Saad">Saad</option>
+            </select>
+        </div>
     </div>
 
     <div id="view-grid-container" class="table-responsive">
@@ -349,7 +400,7 @@
     <div id="event-modal-overlay">
         <div class="event-modal-content">
             <span class="event-modal-close" onclick="closeModal()">&times;</span>
-            <h2>Event Details</h2>
+            <h2 style="margin-top: 0; flex-shrink: 0;">Event Details</h2>
             <div id="event-modal-body"></div>
             <div class="event-modal-button-container">
                 <a id="event-modal-sheet-link" href="#" target="_blank" class="event-modal-sheet-button">Open in Google Sheet</a>
@@ -384,6 +435,15 @@
         };
 
         let currentEvents = [];
+
+        window.applyFilter = function() {
+            const filterValue = document.getElementById('assignment-filter').value.toLowerCase();
+            const tbody = document.getElementById('upcoming-events-body');
+            const cardsContainer = document.getElementById('upcoming-events-cards');
+
+            // Re-render based on filter
+            renderEvents(currentEvents, filterValue);
+        };
 
         window.openModal = function(eventId) {
             const event = currentEvents.find(e => e.id === eventId);
@@ -448,6 +508,16 @@
                 closeModal();
             }
         };
+
+        // Close modal when pressing Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modalOverlay = document.getElementById('event-modal-overlay');
+                if (modalOverlay.classList.contains('active')) {
+                    closeModal();
+                }
+            }
+        });
 
         // Define the JSONP callback attached to window
         window[callbackName] = function(json) {
@@ -549,89 +619,104 @@
                     return parseTime(a.times) - parseTime(b.times);
                 });
 
-                const tbody = document.getElementById('upcoming-events-body');
-                const cardsContainer = document.getElementById('upcoming-events-cards');
-                
-                if (events.length === 0) {
-                     const tr = document.createElement('tr');
-                     const td = document.createElement('td');
-                     td.colSpan = 7;
-                     td.textContent = "No upcoming events found.";
-                     td.style.textAlign = 'center';
-                     td.style.cursor = 'default'; // Disable pointer for empty message
-                     tr.appendChild(td);
-                     tbody.appendChild(tr);
+                window.renderEvents = function(eventsData, filter = 'all') {
+                    const tbody = document.getElementById('upcoming-events-body');
+                    const cardsContainer = document.getElementById('upcoming-events-cards');
 
-                     cardsContainer.innerHTML = '<div style="text-align: center; padding: 20px;">No upcoming events found.</div>';
-                } else {
-                    events.forEach(event => {
-                        const tr = document.createElement('tr');
-                        const card = document.createElement('div');
-                        card.className = 'event-card';
-                        card.id = event.id;
-                        
-                        // Add click handler to open the modal
-                        const clickHandler = () => {
-                            openModal(event.id);
-                        };
-                        tr.addEventListener('click', clickHandler);
-                        card.addEventListener('click', clickHandler);
+                    tbody.innerHTML = '';
+                    cardsContainer.innerHTML = '';
 
-                        const rowData = [
-                            { label: 'Date', value: event.dateStr },
-                            { label: 'Assignment', value: event.assignment },
-                            { label: 'Call Time', value: event.times },
-                            { label: 'Event', value: event.name },
-                            { label: 'Venue', value: event.spaces },
-                            { label: 'Schedule', value: event.schedule },
-                            { label: 'Tech', value: event.tech }
-                        ];
+                    let filteredEvents = eventsData;
+                    if (filter !== 'all') {
+                        filteredEvents = eventsData.filter(event =>
+                            event.assignment && event.assignment.toLowerCase().includes(filter)
+                        );
+                    }
 
-                        const cardLeft = document.createElement('div');
-                        cardLeft.className = 'event-card-left';
-                        const cardRight = document.createElement('div');
-                        cardRight.className = 'event-card-right';
+                    if (filteredEvents.length === 0) {
+                         const tr = document.createElement('tr');
+                         const td = document.createElement('td');
+                         td.colSpan = 7;
+                         td.textContent = filter === 'all' ? "No upcoming events found." : "No upcoming events match the filter.";
+                         td.style.textAlign = 'center';
+                         td.style.cursor = 'default'; // Disable pointer for empty message
+                         tr.appendChild(td);
+                         tbody.appendChild(tr);
 
-                        rowData.forEach(item => {
-                            const td = document.createElement('td');
-                            td.textContent = item.value;
-                            tr.appendChild(td);
+                         cardsContainer.innerHTML = `<div style="text-align: center; padding: 20px;">${filter === 'all' ? "No upcoming events found." : "No upcoming events match the filter."}</div>`;
+                    } else {
+                        filteredEvents.forEach(event => {
+                            const tr = document.createElement('tr');
+                            const card = document.createElement('div');
+                            card.className = 'event-card';
+                            card.id = event.id;
 
-                            const cardRow = document.createElement('div');
-                            cardRow.className = 'event-card-row';
+                            // Add click handler to open the modal
+                            const clickHandler = () => {
+                                openModal(event.id);
+                            };
+                            tr.addEventListener('click', clickHandler);
+                            card.addEventListener('click', clickHandler);
 
-                            const labelDiv = document.createElement('div');
-                            labelDiv.className = 'event-card-label';
-                            labelDiv.textContent = item.label;
+                            const rowData = [
+                                { label: 'Date', value: event.dateStr },
+                                { label: 'Assignment', value: event.assignment },
+                                { label: 'Call Time', value: event.times },
+                                { label: 'Event', value: event.name },
+                                { label: 'Venue', value: event.spaces },
+                                { label: 'Schedule', value: event.schedule },
+                                { label: 'Tech', value: event.tech }
+                            ];
 
-                            const valueDiv = document.createElement('div');
-                            valueDiv.className = 'event-card-value';
-                            valueDiv.textContent = item.value;
+                            const cardLeft = document.createElement('div');
+                            cardLeft.className = 'event-card-left';
+                            const cardRight = document.createElement('div');
+                            cardRight.className = 'event-card-right';
 
-                            cardRow.appendChild(labelDiv);
-                            cardRow.appendChild(valueDiv);
+                            rowData.forEach(item => {
+                                const td = document.createElement('td');
+                                td.textContent = item.value;
+                                tr.appendChild(td);
 
-                            if (item.label === 'Schedule' || item.label === 'Tech') {
-                                if (item.label === 'Tech') {
-                                    cardRow.classList.add('event-card-tech');
+                                const cardRow = document.createElement('div');
+                                cardRow.className = 'event-card-row';
+
+                                const labelDiv = document.createElement('div');
+                                labelDiv.className = 'event-card-label';
+                                labelDiv.textContent = item.label;
+
+                                const valueDiv = document.createElement('div');
+                                valueDiv.className = 'event-card-value';
+                                valueDiv.textContent = item.value;
+
+                                cardRow.appendChild(labelDiv);
+                                cardRow.appendChild(valueDiv);
+
+                                if (item.label === 'Schedule' || item.label === 'Tech') {
+                                    if (item.label === 'Tech') {
+                                        cardRow.classList.add('event-card-tech');
+                                    }
+                                    cardRight.appendChild(cardRow);
+                                } else {
+                                    cardLeft.appendChild(cardRow);
                                 }
-                                cardRight.appendChild(cardRow);
-                            } else {
-                                cardLeft.appendChild(cardRow);
-                            }
+                            });
+
+                            card.appendChild(cardLeft);
+                            card.appendChild(cardRight);
+
+                            tbody.appendChild(tr);
+                            cardsContainer.appendChild(card);
                         });
+                    }
+                };
 
-                        card.appendChild(cardLeft);
-                        card.appendChild(cardRight);
-
-                        tbody.appendChild(tr);
-                        cardsContainer.appendChild(card);
-                    });
-                }
+                // Initial render with all events
+                renderEvents(events);
 
                 document.getElementById('upcoming-events-loading').style.display = 'none';
                 document.getElementById('upcoming-events-table').style.display = 'table';
-                document.getElementById('view-tabs-container').style.display = 'flex';
+                document.getElementById('controls-container').style.display = 'flex';
 
                 // Initialize default view based on screen size or preference, here defaulting to grid
                 switchView('grid');
