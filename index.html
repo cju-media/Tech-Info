@@ -197,9 +197,9 @@
         }
         .event-card-right .event-card-row {
             border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
             flex-direction: column;
+            background-color: transparent !important; /* Right side has flex spacing, background doesn't look good */
+            padding: 0;
         }
         .event-card-right .event-card-tech {
             margin-top: auto;
@@ -214,14 +214,14 @@
         .event-card-row {
             display: flex;
             gap: 15px;
-            margin-bottom: 8px;
+            padding: 8px 10px;
             border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
+        }
+        .event-card-row:nth-child(even) {
+            background-color: #f9f9f9;
         }
         .event-card-row:last-child {
-            margin-bottom: 0;
             border-bottom: none;
-            padding-bottom: 0;
         }
         .event-card-label {
             font-weight: bold;
