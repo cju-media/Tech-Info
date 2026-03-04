@@ -1,4 +1,6 @@
 
+    <!-- html2pdf library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body  {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -392,6 +394,10 @@
         </div>
     </div>
 
+    <div class="button-container">
+        <button onclick="generatePDF()" class="upcoming-events-sheet-button" style="background-color: #dc3545;">Generate PDF</button>
+    </div>
+
     <!-- Modal Overlay -->
     <div id="event-modal-overlay">
         <div id="event-modal-content" class="event-modal-content">
@@ -516,6 +522,106 @@
 
             modalOverlay.classList.add('active');
             // document.body.style.overflow = 'hidden'; // Don't prevent scrolling so users can still see rest of widget
+        };
+
+        window.generatePDF = function() {
+            // Get current view and filter states
+            const isGridActive = document.getElementById('view-grid-container').style.display !== 'none';
+            const filterValue = document.getElementById('assignment-filter').value;
+            const viewName = isGridActive ? "Grid" : "Card";
+            const filterText = filterValue === "All" ? "All Assignments" : filterValue;
+            const titleText = `Tech Info Schedule - ${viewName} View (${filterText})`;
+
+            // Create a temporary container for the PDF content to avoid altering the live DOM styles
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '20px';
+            pdfContainer.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+            pdfContainer.style.color = '#333';
+            pdfContainer.style.backgroundColor = 'white';
+
+            const title = document.createElement('h1');
+            title.textContent = titleText;
+            title.style.textAlign = 'center';
+            title.style.marginBottom = '20px';
+            pdfContainer.appendChild(title);
+
+            let contentToClone;
+            if (isGridActive) {
+                // Clone the table
+                contentToClone = document.getElementById('upcoming-events-table').cloneNode(true);
+                contentToClone.style.display = 'table';
+                contentToClone.style.width = '100%';
+                contentToClone.style.borderCollapse = 'collapse';
+
+                // Force all cells in the cloned table to render full text and borders
+                const cells = contentToClone.querySelectorAll('th, td');
+                cells.forEach(cell => {
+                    cell.style.border = '1px solid #ddd';
+                    cell.style.padding = '8px';
+                    cell.style.textAlign = 'left';
+                    cell.style.whiteSpace = 'pre-wrap';
+                    cell.style.wordBreak = 'break-word';
+                });
+
+                // Keep the header background
+                const headers = contentToClone.querySelectorAll('th');
+                headers.forEach(th => {
+                    th.style.backgroundColor = '#007bff';
+                    th.style.color = 'white';
+                });
+            } else {
+                // Clone the cards container
+                contentToClone = document.getElementById('upcoming-events-cards').cloneNode(true);
+                contentToClone.style.display = 'flex';
+                contentToClone.style.flexDirection = 'column';
+                contentToClone.style.gap = '15px';
+
+                // Force layout for cards
+                const cards = contentToClone.querySelectorAll('.event-card');
+                cards.forEach(card => {
+                    card.style.border = '1px solid #ddd';
+                    card.style.borderRadius = '8px';
+                    card.style.padding = '15px';
+                    card.style.pageBreakInside = 'avoid'; // Prevent cards from splitting across pages
+                    card.style.display = 'flex';
+                    card.style.gap = '20px';
+                });
+
+                // Need to inline essential flex styles that might not carry over in clone if they rely on external CSS
+                const leftPanels = contentToClone.querySelectorAll('.event-card-left');
+                leftPanels.forEach(panel => { panel.style.flex = '2'; panel.style.display = 'flex'; panel.style.flexDirection = 'column'; });
+
+                const rightPanels = contentToClone.querySelectorAll('.event-card-right');
+                rightPanels.forEach(panel => { panel.style.flex = '1'; panel.style.display = 'flex'; panel.style.flexDirection = 'column'; panel.style.borderLeft = '1px solid #eee'; panel.style.paddingLeft = '20px'; });
+
+                const rows = contentToClone.querySelectorAll('.event-card-row');
+                rows.forEach(row => { row.style.display = 'flex'; row.style.gap = '15px'; row.style.padding = '8px 10px'; row.style.borderBottom = '1px solid #eee'; });
+
+                const labels = contentToClone.querySelectorAll('.event-card-label');
+                labels.forEach(label => { label.style.fontWeight = 'bold'; label.style.width = '110px'; label.style.flexShrink = '0'; });
+
+                const values = contentToClone.querySelectorAll('.event-card-value');
+                values.forEach(value => { value.style.flexGrow = '1'; value.style.whiteSpace = 'pre-wrap'; });
+            }
+
+            pdfContainer.appendChild(contentToClone);
+
+            // Configure html2pdf
+            const opt = {
+                margin:       10, // mm
+                filename:     `Schedule_${viewName}_${filterValue}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Generate PDF as a blob URL and open in a new tab
+            html2pdf().set(opt).from(pdfContainer).outputPdf('bloburl').then((pdfUrl) => {
+                window.open(pdfUrl, '_blank');
+            }).catch(err => {
+                console.error("PDF generation error:", err);
+                alert("An error occurred while generating the PDF.");
+            });
         };
 
         window.closeModal = function() {
