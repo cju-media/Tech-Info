@@ -430,6 +430,7 @@
         };
 
         let currentEvents = [];
+        let allEvents = [];
 
         window.applyFilter = function() {
             const filterValue = document.getElementById('assignment-filter').value.toLowerCase();
@@ -441,7 +442,7 @@
         };
 
         window.openModal = function(eventId) {
-            const event = currentEvents.find(e => e.id === eventId);
+            const event = allEvents.find(e => e.id === eventId);
             if (!event) return;
 
             const modalOverlay = document.getElementById('event-modal-overlay');
@@ -555,6 +556,7 @@
 
                 const rows = json.table.rows;
                 const events = [];
+                const parsedAllEvents = [];
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
@@ -580,32 +582,37 @@
                     }
 
                     if (dateObj && !isNaN(dateObj.getTime())) {
+                         // With headers=0, rows[index] corresponds to Sheet Row index + 1.
+                         const sheetRow = index + 1;
+
+                         const eventName = row.c[1]?.v || 'unnamed-event';
+                         const sanitizedName = eventName.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                         const sanitizedDate = dateStr.replace(/\//g, '-');
+                         const elementId = `${sanitizedDate}-${sanitizedName}`;
+
+                         const eventData = {
+                             id: elementId,
+                             dateObj: dateObj,
+                             dateStr: dateStr,
+                             name: eventName,
+                             spaces: row.c[2]?.v || '',
+                             times: row.c[3]?.v || '',
+                             assignment: row.c[7]?.v || '',
+                             schedule: row.c[8]?.v || '',
+                             tech: row.c[9]?.v || '',
+                             sheetRow: sheetRow
+                         };
+
+                         parsedAllEvents.push(eventData);
+
                          // Check if upcoming (>= today)
                          if (dateObj >= today) {
-                             // With headers=0, rows[index] corresponds to Sheet Row index + 1.
-                             const sheetRow = index + 1;
-                             
-                             const eventName = row.c[1]?.v || 'unnamed-event';
-                             const sanitizedName = eventName.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                             const sanitizedDate = dateStr.replace(/\//g, '-');
-                             const elementId = `${sanitizedDate}-${sanitizedName}`;
-
-                             events.push({
-                                 id: elementId,
-                                 dateObj: dateObj,
-                                 dateStr: dateStr,
-                                 name: eventName,
-                                 spaces: row.c[2]?.v || '',
-                                 times: row.c[3]?.v || '',
-                                 assignment: row.c[7]?.v || '',
-                                 schedule: row.c[8]?.v || '',
-                                 tech: row.c[9]?.v || '',
-                                 sheetRow: sheetRow
-                                 });
-                             }
-                        }
+                             events.push(eventData);
+                         }
+                    }
                 });
 
+                allEvents = parsedAllEvents;
                 currentEvents = events;
 
                 // Helper to parse time string into minutes from midnight
