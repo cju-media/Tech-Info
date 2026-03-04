@@ -529,13 +529,16 @@
             history.pushState(null, null, window.location.pathname + window.location.search);
         };
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
+        // Close modal when clicking anywhere outside the modal content
+        document.addEventListener('click', function(event) {
             const modalOverlay = document.getElementById('event-modal-overlay');
-            if (event.target == modalOverlay) {
+            const modalContent = document.getElementById('event-modal-content');
+
+            // If the modal is open, and the click target is NOT inside the modal content
+            if (modalOverlay.classList.contains('active') && !modalContent.contains(event.target)) {
                 closeModal();
             }
-        };
+        });
 
         // Close modal when pressing Escape key
         document.addEventListener('keydown', function(event) {
@@ -680,7 +683,8 @@
                             card.id = event.id;
 
                             // Add click handler to open the modal
-                            const clickHandler = () => {
+                            const clickHandler = (e) => {
+                                e.stopPropagation(); // Prevent the document click listener from immediately closing it
                                 openModal(event.id);
                             };
                             tr.addEventListener('click', clickHandler);
