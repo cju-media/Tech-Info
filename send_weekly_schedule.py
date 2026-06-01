@@ -202,6 +202,34 @@ def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
         print(f"Failed to send email to {to_email}: {e}")
         sys.exit(1)
 
+def send_notification_email(start_date, is_dry_run=False):
+    creds = get_smtp_credentials()
+    to_email = "cjohnston@fccla.org"
+
+    subject = f"System Notification: Tech Schedules Sent ({start_date.strftime('%b %d')})"
+    body = f"Hello,\n\nThis is an automated notification. The weekly schedule workflow has successfully completed. Individual schedule PDFs for the next two weeks starting {start_date.strftime('%B %d, %Y')} have been generated and sent to the team members.\n\nBest,\nAutomated System"
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = creds['email'] or "dry-run@example.com"
+    msg['To'] = to_email
+    msg.set_content(body)
+
+    if is_dry_run or not creds['email'] or not creds['password']:
+        print(f"DRY RUN: Would send notification email to {to_email}")
+        print(f"Subject: {subject}")
+        return
+
+    try:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
+            server.starttls()
+            server.login(creds['email'], creds['password'])
+            server.send_message(msg)
+        print(f"Successfully sent notification email to {to_email}")
+    except Exception as e:
+        print(f"Failed to send notification email to {to_email}: {e}")
+        sys.exit(1)
+
 def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
     creds = get_smtp_credentials()
     to_email = "cameron@cju.media"
@@ -272,3 +300,6 @@ if __name__ == "__main__":
     if is_admin_mode:
         print("Running in Admin Mode: Sending batched email.")
         send_admin_email(today, generated_pdfs, is_dry_run)
+    else:
+        print("Sending admin notification email.")
+        send_notification_email(today, is_dry_run)
