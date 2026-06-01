@@ -68,7 +68,7 @@ def fetch_events_from_sheet():
     return events
 
 def get_weekly_events_by_member(events, start_date):
-    end_date = start_date + timedelta(days=6) # 7 days inclusive
+    end_date = start_date + timedelta(days=13) # 14 days inclusive
 
     weekly_events = [e for e in events if start_date <= e['date_obj'] <= end_date]
     weekly_events.sort(key=lambda x: x['date_obj'])
@@ -126,7 +126,7 @@ def generate_pdf(member, events, start_date, output_filename):
     </head>
     <body>
         <h1>Upcoming Tech Schedule</h1>
-        <h2>{member} | Week of {start_date.strftime('%B %d, %Y')}</h2>
+        <h2>{member} | Two Weeks starting {start_date.strftime('%B %d, %Y')}</h2>
     """
 
     if not events:
@@ -172,8 +172,8 @@ def get_smtp_credentials():
 
 def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
     creds = get_smtp_credentials()
-    subject = f"Your Tech Schedule - Week of {start_date.strftime('%b %d')}"
-    body = f"Hi {member},\n\nPlease find your upcoming schedule for the week of {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nTech Team"
+    subject = f"Your Tech Schedule - Next Two Weeks ({start_date.strftime('%b %d')})"
+    body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nTech Team"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -205,8 +205,8 @@ def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
     to_email = "cameron@cju.media"
     cc_email = "cjohnston@fccla.org"
 
-    subject = f"All Team Tech Schedules - Week of {start_date.strftime('%b %d')}"
-    body = f"Hi Cameron,\n\nPlease find the generated team schedules for the week of {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nAutomated System"
+    subject = f"All Team Tech Schedules - Next Two Weeks ({start_date.strftime('%b %d')})"
+    body = f"Hi Cameron,\n\nPlease find the generated team schedules for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nAutomated System"
 
     msg = EmailMessage()
     msg['Subject'] = subject
