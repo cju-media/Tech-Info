@@ -1,4 +1,5 @@
 import urllib.request
+import sys
 import json
 import re
 import pandas as pd
@@ -199,6 +200,7 @@ def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
         print(f"Successfully sent email to {to_email}")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
+        sys.exit(1)
 
 def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
     creds = get_smtp_credentials()
@@ -232,10 +234,11 @@ def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
         with smtplib.SMTP(creds['server'], creds['port']) as server:
             server.starttls()
             server.login(creds['email'], creds['password'])
-            server.send_message(msg)
+            server.send_message(msg, to_addrs=[to_email, cc_email])
         print(f"Successfully sent admin email to {to_email} (CC: {cc_email})")
     except Exception as e:
         print(f"Failed to send admin email to {to_email}: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
