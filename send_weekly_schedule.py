@@ -131,7 +131,7 @@ def generate_pdf(member, events, start_date, output_filename):
     """
 
     if not events:
-        html_content += "<div class='no-events'>You have no scheduled events this week.</div>"
+        html_content += "<div class='no-events'>You have no events in the next two weeks</div>"
     else:
         for e in events:
             website_url = f"{website_base_url}#{e['element_id']}"
