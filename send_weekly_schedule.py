@@ -174,7 +174,7 @@ def get_smtp_credentials():
 def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
     creds = get_smtp_credentials()
     subject = f"Your Tech Schedule - Next Two Weeks ({start_date.strftime('%b %d')})"
-    body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nTech Team"
+    body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nCamBot"
 
     msg = EmailMessage()
     msg['Subject'] = subject
