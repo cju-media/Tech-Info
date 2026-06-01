@@ -84,8 +84,7 @@ def get_weekly_events_by_member(events, start_date):
     return events_by_member
 
 def generate_pdf(member, events, start_date, output_filename):
-    # Determine the website URL. In a real environment, this might be an env var.
-    website_base_url = "https://fccla.org/tech-info" # Fallback/Example, ideally this is configurable
+    website_base_url = "https://fccla.org/tech-info"
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
     gid = '251348517'
 
@@ -163,18 +162,22 @@ def generate_pdf(member, events, start_date, output_filename):
     html_content += "</body></html>"
     HTML(string=html_content).write_pdf(output_filename)
 
-def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
-    smtp_email = os.environ.get('SMTP_EMAIL')
-    smtp_password = os.environ.get('SMTP_PASSWORD')
-    smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-    smtp_port = int(os.environ.get('SMTP_PORT', 587))
+def get_smtp_credentials():
+    return {
+        'email': os.environ.get('SMTP_EMAIL'),
+        'password': os.environ.get('SMTP_PASSWORD'),
+        'server': os.environ.get('SMTP_SERVER', 'smtp.gmail.com'),
+        'port': int(os.environ.get('SMTP_PORT', 587))
+    }
 
+def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
+    creds = get_smtp_credentials()
     subject = f"Your Tech Schedule - Week of {start_date.strftime('%b %d')}"
     body = f"Hi {member},\n\nPlease find your upcoming schedule for the week of {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nTech Team"
 
     msg = EmailMessage()
     msg['Subject'] = subject
-    msg['From'] = smtp_email or "dry-run@example.com"
+    msg['From'] = creds['email'] or "dry-run@example.com"
     msg['To'] = to_email
     msg.set_content(body)
 
@@ -182,23 +185,62 @@ def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
         pdf_data = f.read()
     msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename=f"{member}_schedule.pdf")
 
-    if is_dry_run or not smtp_email or not smtp_password:
+    if is_dry_run or not creds['email'] or not creds['password']:
         print(f"DRY RUN: Would send email to {to_email}")
         print(f"Subject: {subject}")
         print(f"Attachment: {pdf_filename}")
         return
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
             server.starttls()
-            server.login(smtp_email, smtp_password)
+            server.login(creds['email'], creds['password'])
             server.send_message(msg)
         print(f"Successfully sent email to {to_email}")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
 
+def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
+    creds = get_smtp_credentials()
+    to_email = "cameron@cju.media"
+    cc_email = "cjohnston@fccla.org"
+
+    subject = f"All Team Tech Schedules - Week of {start_date.strftime('%b %d')}"
+    body = f"Hi Cameron,\n\nPlease find the generated team schedules for the week of {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nAutomated System"
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = creds['email'] or "dry-run@example.com"
+    msg['To'] = to_email
+    msg['Cc'] = cc_email
+    msg.set_content(body)
+
+    for filename in pdf_filenames:
+        with open(filename, 'rb') as f:
+            pdf_data = f.read()
+        basename = os.path.basename(filename)
+        msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename=basename)
+
+    if is_dry_run or not creds['email'] or not creds['password']:
+        print(f"DRY RUN: Would send ADMIN email to {to_email}")
+        print(f"CC: {cc_email}")
+        print(f"Subject: {subject}")
+        print(f"Attachments: {', '.join(pdf_filenames)}")
+        return
+
+    try:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
+            server.starttls()
+            server.login(creds['email'], creds['password'])
+            server.send_message(msg)
+        print(f"Successfully sent admin email to {to_email} (CC: {cc_email})")
+    except Exception as e:
+        print(f"Failed to send admin email to {to_email}: {e}")
+
+
 if __name__ == "__main__":
     is_dry_run = os.environ.get('DRY_RUN', '1') == '1'
+    is_admin_mode = os.environ.get('ADMIN_MODE', '0') == '1'
 
     print("Fetching events...")
     events = fetch_events_from_sheet()
@@ -211,10 +253,19 @@ if __name__ == "__main__":
 
     os.makedirs('pdfs', exist_ok=True)
 
+    generated_pdfs = []
+
     for member, member_events in events_by_member.items():
-        if member in team_emails:
+        if member in team_emails or is_admin_mode:
             filename = f"pdfs/{member}_schedule.pdf"
             generate_pdf(member, member_events, today, filename)
-            send_email(team_emails[member], member, today, filename, is_dry_run)
+            generated_pdfs.append(filename)
+
+            if not is_admin_mode:
+                send_email(team_emails[member], member, today, filename, is_dry_run)
         else:
             print(f"No email configured for {member}, skipping.")
+
+    if is_admin_mode:
+        print("Running in Admin Mode: Sending batched email.")
+        send_admin_email(today, generated_pdfs, is_dry_run)
