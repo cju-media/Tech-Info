@@ -1,10 +1,10 @@
-name: Send Admin Schedules (Manual)
+name: Send Test Update Notification
 
 on:
   workflow_dispatch: # Allow manual triggering only
 
 jobs:
-  send-admin-emails:
+  send-test-emails:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,12 +26,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas weasyprint
 
-      - name: Run schedule script in Admin Mode
+      - name: Run schedule script in Test Mode
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
-          RUN_MODE: 'admin'
+          RUN_MODE: 'test'
         run: python send_weekly_schedule.py

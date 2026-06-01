@@ -1,11 +1,18 @@
-name: Send Admin Schedules (Manual)
+name: Check Schedule Updates
 
 on:
-  workflow_dispatch: # Allow manual triggering only
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
-  send-admin-emails:
+  check-updates:
     runs-on: ubuntu-latest
+
+    # Add permissions needed to push the updated state.json back to the repo
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -26,12 +33,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas weasyprint
 
-      - name: Run schedule script in Admin Mode
+      - name: Run schedule script in Update Mode
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
-          RUN_MODE: 'admin'
+          RUN_MODE: 'update'
         run: python send_weekly_schedule.py
+
+      - name: Commit and push state changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add state.json
+          # Only commit and push if state.json has changed
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update schedule state" && git push)

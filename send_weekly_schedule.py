@@ -68,15 +68,18 @@ def fetch_events_from_sheet():
 
     return events
 
-def get_weekly_events_by_member(events, start_date):
-    end_date = start_date + timedelta(days=13) # 14 days inclusive
+def get_events_by_member(events, start_date, days_ahead=None):
+    if days_ahead is not None:
+        end_date = start_date + timedelta(days=days_ahead - 1)
+        valid_events = [e for e in events if start_date <= e['date_obj'] <= end_date]
+    else:
+        valid_events = [e for e in events if start_date <= e['date_obj']]
 
-    weekly_events = [e for e in events if start_date <= e['date_obj'] <= end_date]
-    weekly_events.sort(key=lambda x: x['date_obj'])
+    valid_events.sort(key=lambda x: x['date_obj'])
 
     events_by_member = {member: [] for member in TEAM_MEMBERS}
 
-    for e in weekly_events:
+    for e in valid_events:
         assignment = str(e['Assignment']).lower()
         for member in TEAM_MEMBERS:
             if member.lower() in assignment:
@@ -84,10 +87,19 @@ def get_weekly_events_by_member(events, start_date):
 
     return events_by_member
 
-def generate_pdf(member, events, start_date, output_filename):
+def generate_pdf(member, events, start_date, output_filename, run_mode, new_event_ids=None):
     website_base_url = "https://fccla.org/tech-info"
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
     gid = '251348517'
+
+    if run_mode == 'update':
+        subtitle = "All Upcoming Events"
+        empty_msg = "You have no upcoming events."
+    else:
+        subtitle = f"Two Weeks starting {start_date.strftime('%B %d, %Y')}"
+        empty_msg = "You have no events in the next two weeks"
+
+    new_event_ids = new_event_ids or set()
 
     html_content = f"""
     <html>
@@ -97,49 +109,37 @@ def generate_pdf(member, events, start_date, output_filename):
             h1 {{ color: #007bff; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }}
             h2 {{ color: #555; text-align: center; font-weight: normal; margin-top: -10px; margin-bottom: 30px; }}
             .event {{ margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; padding: 20px; page-break-inside: avoid; }}
-            .date {{ font-size: 1.2em; font-weight: bold; color: #007bff; margin-bottom: 10px; }}
+            .date {{ font-size: 1.2em; font-weight: bold; color: #007bff; margin-bottom: 10px; display: inline-block; }}
+            .new-badge {{ background-color: #ffc107; color: #000; font-size: 0.8em; padding: 3px 8px; border-radius: 4px; font-weight: bold; margin-left: 10px; vertical-align: middle; }}
             .title {{ font-size: 1.4em; font-weight: bold; margin-bottom: 15px; }}
             table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
             th, td {{ padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: top; }}
             th {{ width: 120px; color: #666; font-weight: bold; }}
             .no-events {{ text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; font-style: italic; }}
 
-            /* Button Styles */
             .button-container {{ margin-top: 20px; display: flex; gap: 15px; }}
-            .btn {{
-                display: inline-block;
-                padding: 10px 15px;
-                border-radius: 5px;
-                text-decoration: none;
-                font-weight: bold;
-                font-size: 0.9em;
-                text-align: center;
-            }}
-            .btn-primary {{
-                background-color: #007bff;
-                color: white;
-            }}
-            .btn-success {{
-                background-color: #28a745;
-                color: white;
-            }}
+            .btn {{ display: inline-block; padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 0.9em; text-align: center; }}
+            .btn-primary {{ background-color: #007bff; color: white; }}
+            .btn-success {{ background-color: #28a745; color: white; }}
         </style>
     </head>
     <body>
         <h1>Upcoming Tech Schedule</h1>
-        <h2>{member} | Two Weeks starting {start_date.strftime('%B %d, %Y')}</h2>
+        <h2>{member} | {subtitle}</h2>
     """
 
     if not events:
-        html_content += "<div class='no-events'>You have no scheduled events this week.</div>"
+        html_content += f"<div class='no-events'>{empty_msg}</div>"
     else:
         for e in events:
             website_url = f"{website_base_url}#{e['element_id']}"
             sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit?gid={gid}&range={e['sheet_row']}:{e['sheet_row']}"
 
+            badge_html = "<span class='new-badge'>*NEW*</span>" if e['element_id'] in new_event_ids else ""
+
             html_content += f"""
             <div class='event'>
-                <div class='date'>{e['Date']}</div>
+                <div><div class='date'>{e['Date']}</div>{badge_html}</div>
                 <div class='title'>{e['Event']}</div>
                 <table>
                     <tr><th>Call Time</th><td>{e['Call Time']}</td></tr>
@@ -171,7 +171,7 @@ def get_smtp_credentials():
         'port': int(os.environ.get('SMTP_PORT', 587))
     }
 
-def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
+def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=False):
     creds = get_smtp_credentials()
     subject = f"Your Tech Schedule - Next Two Weeks ({start_date.strftime('%b %d')})"
     body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nCamBot"
@@ -189,7 +189,6 @@ def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
     if is_dry_run or not creds['email'] or not creds['password']:
         print(f"DRY RUN: Would send email to {to_email}")
         print(f"Subject: {subject}")
-        print(f"Attachment: {pdf_filename}")
         return
 
     try:
@@ -200,6 +199,34 @@ def send_email(to_email, member, start_date, pdf_filename, is_dry_run=False):
         print(f"Successfully sent email to {to_email}")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
+        sys.exit(1)
+
+def send_notification_email(start_date, is_dry_run=False):
+    creds = get_smtp_credentials()
+    to_email = "cjohnston@fccla.org"
+
+    subject = f"System Notification: Tech Schedules Sent ({start_date.strftime('%b %d')})"
+    body = f"Hello,\n\nThis is an automated notification. The weekly schedule workflow has successfully completed. Individual schedule PDFs for the next two weeks starting {start_date.strftime('%B %d, %Y')} have been generated and sent to the team members.\n\nBest,\nAutomated System"
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = creds['email'] or "dry-run@example.com"
+    msg['To'] = to_email
+    msg.set_content(body)
+
+    if is_dry_run or not creds['email'] or not creds['password']:
+        print(f"DRY RUN: Would send notification email to {to_email}")
+        print(f"Subject: {subject}")
+        return
+
+    try:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
+            server.starttls()
+            server.login(creds['email'], creds['password'])
+            server.send_message(msg)
+        print(f"Successfully sent notification email to {to_email}")
+    except Exception as e:
+        print(f"Failed to send notification email to {to_email}: {e}")
         sys.exit(1)
 
 def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
@@ -227,7 +254,6 @@ def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
         print(f"DRY RUN: Would send ADMIN email to {to_email}")
         print(f"CC: {cc_email}")
         print(f"Subject: {subject}")
-        print(f"Attachments: {', '.join(pdf_filenames)}")
         return
 
     try:
@@ -240,10 +266,53 @@ def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
         print(f"Failed to send admin email to {to_email}: {e}")
         sys.exit(1)
 
+def send_test_email(start_date, pdf_filenames, is_dry_run=False):
+    creds = get_smtp_credentials()
+    to_email = "cjohnston@fccla.org"
+
+    subject = f"TEST: All Upcoming Events Marked as NEW ({start_date.strftime('%b %d')})"
+    body = f"Hi,\n\nThis is a manual test run. Attached are PDFs for each team member showing ALL upcoming events, with every event marked as *NEW*.\n\nBest,\nAutomated System"
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = creds['email'] or "dry-run@example.com"
+    msg['To'] = to_email
+    msg.set_content(body)
+
+    for filename in pdf_filenames:
+        with open(filename, 'rb') as f:
+            pdf_data = f.read()
+        basename = os.path.basename(filename)
+        msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename=basename)
+
+    if is_dry_run or not creds['email'] or not creds['password']:
+        print(f"DRY RUN: Would send TEST email to {to_email}")
+        print(f"Subject: {subject}")
+        return
+
+    try:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
+            server.starttls()
+            server.login(creds['email'], creds['password'])
+            server.send_message(msg)
+        print(f"Successfully sent test email to {to_email}")
+    except Exception as e:
+        print(f"Failed to send test email to {to_email}: {e}")
+        sys.exit(1)
+
+def get_assignment_state():
+    if os.path.exists('state.json'):
+        with open('state.json', 'r') as f:
+            return json.load(f)
+    return {member: [] for member in TEAM_MEMBERS}
+
+def save_assignment_state(state):
+    with open('state.json', 'w') as f:
+        json.dump(state, f, indent=4)
 
 if __name__ == "__main__":
     is_dry_run = os.environ.get('DRY_RUN', '1') == '1'
-    is_admin_mode = os.environ.get('ADMIN_MODE', '0') == '1'
+    run_mode = os.environ.get('RUN_MODE', 'weekly') # 'weekly', 'admin', 'update', 'test'
 
     print("Fetching events...")
     events = fetch_events_from_sheet()
@@ -252,23 +321,77 @@ if __name__ == "__main__":
         team_emails = json.load(f)
 
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    events_by_member = get_weekly_events_by_member(events, today)
+
+    # Update state logic
+    current_state = get_assignment_state()
+    all_upcoming_events = get_events_by_member(events, today, days_ahead=None)
+
+    new_state = {member: [e['element_id'] for e in all_upcoming_events[member]] for member in TEAM_MEMBERS}
+    state_changed = False
+    members_with_new_assignments = {}
+
+    for member in TEAM_MEMBERS:
+        old_ids = set(current_state.get(member, []))
+        new_ids = set(new_state[member])
+        added_ids = new_ids - old_ids
+
+        if added_ids:
+            members_with_new_assignments[member] = added_ids
+            state_changed = True
+
+    # Always save the latest state
+    save_assignment_state(new_state)
 
     os.makedirs('pdfs', exist_ok=True)
-
     generated_pdfs = []
 
-    for member, member_events in events_by_member.items():
-        if member in team_emails or is_admin_mode:
-            filename = f"pdfs/{member}_schedule.pdf"
-            generate_pdf(member, member_events, today, filename)
-            generated_pdfs.append(filename)
+    if run_mode == 'update':
+        if not state_changed:
+            print("No new assignments detected. Exiting.")
+            sys.exit(0)
 
-            if not is_admin_mode:
-                send_email(team_emails[member], member, today, filename, is_dry_run)
-        else:
-            print(f"No email configured for {member}, skipping.")
+        print("New assignments detected. Sending updates to affected members.")
+        for member, added_ids in members_with_new_assignments.items():
+            if member in team_emails:
+                filename = f"pdfs/{member}_schedule.pdf"
+                # For update mode, we show ALL upcoming events (days_ahead=None)
+                generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=added_ids)
+                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
+            else:
+                print(f"No email configured for {member}, skipping.")
 
-    if is_admin_mode:
+    elif run_mode == 'admin':
         print("Running in Admin Mode: Sending batched email.")
+        # Admin gets a 2-week view
+        two_week_events = get_events_by_member(events, today, days_ahead=14)
+        for member in TEAM_MEMBERS:
+            filename = f"pdfs/{member}_schedule.pdf"
+            generate_pdf(member, two_week_events[member], today, filename, run_mode)
+            generated_pdfs.append(filename)
         send_admin_email(today, generated_pdfs, is_dry_run)
+
+    elif run_mode == 'test':
+        print("Running in Test Mode: Simulating 'update' mode for all members and sending batched to cjohnston@fccla.org")
+        for member in TEAM_MEMBERS:
+            filename = f"pdfs/{member}_schedule.pdf"
+            # For test mode, we want ALL events marked as new
+            all_ids_for_member = {e['element_id'] for e in all_upcoming_events[member]}
+            # we use 'update' string for the inner function so it formats the title as "All Upcoming Events"
+            generate_pdf(member, all_upcoming_events[member], today, filename, 'update', new_event_ids=all_ids_for_member)
+            generated_pdfs.append(filename)
+        send_test_email(today, generated_pdfs, is_dry_run)
+
+    else: # weekly mode
+        print("Running in Weekly Mode.")
+        # Weekly gets a 2-week view
+        two_week_events = get_events_by_member(events, today, days_ahead=14)
+        for member in TEAM_MEMBERS:
+            if member in team_emails:
+                filename = f"pdfs/{member}_schedule.pdf"
+                generate_pdf(member, two_week_events[member], today, filename, run_mode)
+                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
+            else:
+                print(f"No email configured for {member}, skipping.")
+
+        print("Sending admin notification email.")
+        send_notification_email(today, is_dry_run)

@@ -2,8 +2,8 @@ name: Send Weekly Schedule Emails
 
 on:
   schedule:
-    # Run every Monday at 8:00 AM UTC (approx midnight/1am PST depending on daylight savings)
-    - cron: '0 8 * * 1'
+    # Run every Friday at 6:00 AM PST (approx 14:00 UTC depending on daylight savings)
+    - cron: '0 14 * * 5'
   workflow_dispatch: # Allow manual triggering
 
 jobs:
@@ -36,4 +36,5 @@ jobs:
           SMTP_SERVER: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
+          RUN_MODE: 'weekly'
         run: python send_weekly_schedule.py
