@@ -85,7 +85,7 @@ def get_weekly_events_by_member(events, start_date):
 
 def generate_pdf(member, events, start_date, output_filename):
     # Determine the website URL. In a real environment, this might be an env var.
-    website_base_url = "https://cju-media.github.io/Tech-Info/" # Fallback/Example, ideally this is configurable
+    website_base_url = "https://fccla.org/" # Fallback/Example, ideally this is configurable
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
     gid = '251348517'
 
