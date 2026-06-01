@@ -27,7 +27,7 @@ def fetch_events_from_sheet():
 
     events = []
 
-    for row in rows:
+    for index, row in enumerate(rows):
         cells = [cell['v'] if cell else None for cell in row['c']]
         cells += [None] * (10 - len(cells))
 
@@ -45,16 +45,24 @@ def fetch_events_from_sheet():
                     pass
 
         if date_obj:
+            event_name = str(cells[1] or '')
+            sanitized_name = re.sub(r'[^a-z0-9]+', '-', event_name.lower()).strip('-')
+            sanitized_date = str(date_str).replace('/', '-')
+            element_id = f"{sanitized_date}-{sanitized_name}"
+            sheet_row = index + 1
+
             events.append({
                 'date_obj': date_obj,
                 'Date': date_str,
-                'Event': str(cells[1] or ''),
+                'Event': event_name,
                 'Venue': str(cells[2] or ''),
                 'Call Time': str(cells[3] or ''),
                 'Type': str(cells[4] or ''),
                 'Assignment': str(cells[7] or ''),
                 'Schedule': str(cells[8] or ''),
-                'Tech': str(cells[9] or '')
+                'Tech': str(cells[9] or ''),
+                'element_id': element_id,
+                'sheet_row': sheet_row
             })
 
     return events
@@ -76,6 +84,11 @@ def get_weekly_events_by_member(events, start_date):
     return events_by_member
 
 def generate_pdf(member, events, start_date, output_filename):
+    # Determine the website URL. In a real environment, this might be an env var.
+    website_base_url = "https://cju-media.github.io/Tech-Info/" # Fallback/Example, ideally this is configurable
+    sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
+    gid = '251348517'
+
     html_content = f"""
     <html>
     <head>
@@ -87,9 +100,29 @@ def generate_pdf(member, events, start_date, output_filename):
             .date {{ font-size: 1.2em; font-weight: bold; color: #007bff; margin-bottom: 10px; }}
             .title {{ font-size: 1.4em; font-weight: bold; margin-bottom: 15px; }}
             table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
-            th, td {{ padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; }}
+            th, td {{ padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: top; }}
             th {{ width: 120px; color: #666; font-weight: bold; }}
             .no-events {{ text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; font-style: italic; }}
+
+            /* Button Styles */
+            .button-container {{ margin-top: 20px; display: flex; gap: 15px; }}
+            .btn {{
+                display: inline-block;
+                padding: 10px 15px;
+                border-radius: 5px;
+                text-decoration: none;
+                font-weight: bold;
+                font-size: 0.9em;
+                text-align: center;
+            }}
+            .btn-primary {{
+                background-color: #007bff;
+                color: white;
+            }}
+            .btn-success {{
+                background-color: #28a745;
+                color: white;
+            }}
         </style>
     </head>
     <body>
@@ -101,6 +134,9 @@ def generate_pdf(member, events, start_date, output_filename):
         html_content += "<div class='no-events'>You have no scheduled events this week.</div>"
     else:
         for e in events:
+            website_url = f"{website_base_url}#{e['element_id']}"
+            sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit?gid={gid}&range={e['sheet_row']}:{e['sheet_row']}"
+
             html_content += f"""
             <div class='event'>
                 <div class='date'>{e['Date']}</div>
@@ -115,8 +151,12 @@ def generate_pdf(member, events, start_date, output_filename):
             if e['Tech']:
                 html_content += f"<tr><th>Tech</th><td>{e['Tech'].replace(chr(10), '<br>')}</td></tr>"
 
-            html_content += """
+            html_content += f"""
                 </table>
+                <div class="button-container">
+                    <a href="{website_url}" class="btn btn-primary">View on Website</a>
+                    <a href="{sheet_url}" class="btn btn-success">Open in Google Sheet</a>
+                </div>
             </div>
             """
 
