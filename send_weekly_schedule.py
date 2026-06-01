@@ -271,6 +271,40 @@ def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
         print(f"Failed to send admin email to {to_email}: {e}")
         sys.exit(1)
 
+def send_test_email(start_date, pdf_filenames, is_dry_run=False):
+    creds = get_smtp_credentials()
+    to_email = "cjohnston@fccla.org"
+
+    subject = f"TEST: All Upcoming Events Marked as NEW ({start_date.strftime('%b %d')})"
+    body = f"Hi,\n\nThis is a manual test run. Attached are PDFs for each team member showing ALL upcoming events, with every event marked as *NEW*.\n\nBest,\nAutomated System"
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = creds['email'] or "dry-run@example.com"
+    msg['To'] = to_email
+    msg.set_content(body)
+
+    for filename in pdf_filenames:
+        with open(filename, 'rb') as f:
+            pdf_data = f.read()
+        basename = os.path.basename(filename)
+        msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename=basename)
+
+    if is_dry_run or not creds['email'] or not creds['password']:
+        print(f"DRY RUN: Would send TEST email to {to_email}")
+        print(f"Subject: {subject}")
+        return
+
+    try:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
+            server.starttls()
+            server.login(creds['email'], creds['password'])
+            server.send_message(msg)
+        print(f"Successfully sent test email to {to_email}")
+    except Exception as e:
+        print(f"Failed to send test email to {to_email}: {e}")
+        sys.exit(1)
+
 def get_assignment_state():
     if os.path.exists('state.json'):
         with open('state.json', 'r') as f:
@@ -283,7 +317,7 @@ def save_assignment_state(state):
 
 if __name__ == "__main__":
     is_dry_run = os.environ.get('DRY_RUN', '1') == '1'
-    run_mode = os.environ.get('RUN_MODE', 'weekly') # 'weekly', 'admin', 'update'
+    run_mode = os.environ.get('RUN_MODE', 'weekly') # 'weekly', 'admin', 'update', 'test'
 
     print("Fetching events...")
     events = fetch_events_from_sheet()
@@ -340,6 +374,17 @@ if __name__ == "__main__":
             generate_pdf(member, two_week_events[member], today, filename, run_mode)
             generated_pdfs.append(filename)
         send_admin_email(today, generated_pdfs, is_dry_run)
+
+    elif run_mode == 'test':
+        print("Running in Test Mode: Simulating 'update' mode for all members and sending batched to cjohnston@fccla.org")
+        for member in TEAM_MEMBERS:
+            filename = f"pdfs/{member}_schedule.pdf"
+            # For test mode, we want ALL events marked as new
+            all_ids_for_member = {e['element_id'] for e in all_upcoming_events[member]}
+            # we use 'update' string for the inner function so it formats the title as "All Upcoming Events"
+            generate_pdf(member, all_upcoming_events[member], today, filename, 'update', new_event_ids=all_ids_for_member)
+            generated_pdfs.append(filename)
+        send_test_email(today, generated_pdfs, is_dry_run)
 
     else: # weekly mode
         print("Running in Weekly Mode.")
