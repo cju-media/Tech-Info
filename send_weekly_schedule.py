@@ -424,7 +424,9 @@ if __name__ == "__main__":
         new_avail_state = {}
         changes = []
 
-        for e in events:
+        upcoming_events = [e for e in events if e['date_obj'] >= today]
+
+        for e in upcoming_events:
             if not e['element_id']:
                 continue
 
