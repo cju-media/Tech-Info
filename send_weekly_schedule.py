@@ -173,13 +173,20 @@ def get_smtp_credentials():
 
 def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=False):
     creds = get_smtp_credentials()
-    subject = f"Your Tech Schedule - Next Two Weeks ({start_date.strftime('%b %d')})"
-    body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nCamBot"
+    cc_email = "cjohnston@fccla.org"
+
+    if run_mode == 'update':
+        subject = "New Schedule Assignment Notification"
+        body = f"Hi {member},\n\nYou have been assigned to new upcoming events. Please find your complete upcoming schedule attached (new assignments are marked with *NEW*).\n\nBest,\nTech Team"
+    else:
+        subject = f"Your Tech Schedule - Next Two Weeks ({start_date.strftime('%b %d')})"
+        body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nTech Team"
 
     msg = EmailMessage()
     msg['Subject'] = subject
     msg['From'] = creds['email'] or "dry-run@example.com"
     msg['To'] = to_email
+    msg['Cc'] = cc_email
     msg.set_content(body)
 
     with open(pdf_filename, 'rb') as f:
@@ -187,7 +194,7 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
     msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename=f"{member}_schedule.pdf")
 
     if is_dry_run or not creds['email'] or not creds['password']:
-        print(f"DRY RUN: Would send email to {to_email}")
+        print(f"DRY RUN: Would send email to {to_email} (CC: {cc_email})")
         print(f"Subject: {subject}")
         return
 
@@ -195,8 +202,8 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
         with smtplib.SMTP(creds['server'], creds['port']) as server:
             server.starttls()
             server.login(creds['email'], creds['password'])
-            server.send_message(msg)
-        print(f"Successfully sent email to {to_email}")
+            server.send_message(msg, to_addrs=[to_email, cc_email])
+        print(f"Successfully sent email to {to_email} (CC: {cc_email})")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
         sys.exit(1)
