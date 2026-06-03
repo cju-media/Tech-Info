@@ -59,6 +59,7 @@ def fetch_events_from_sheet():
                 'Venue': str(cells[2] or ''),
                 'Call Time': str(cells[3] or ''),
                 'Type': str(cells[4] or ''),
+                'Availability': str(cells[6] or ''),
                 'Assignment': str(cells[7] or ''),
                 'Schedule': str(cells[8] or ''),
                 'Tech': str(cells[9] or ''),
@@ -273,6 +274,46 @@ def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
         print(f"Failed to send admin email to {to_email}: {e}")
         sys.exit(1)
 
+def send_availability_email(changes, is_dry_run=False):
+    creds = get_smtp_credentials()
+    to_email = "cjohnston@fccla.org"
+    sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
+    gid = '251348517'
+
+    subject = "New Tech Availability Added"
+
+    body = "Hi,\n\nThe following team members have added their availability:\n\n"
+
+    for change in changes:
+        sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit?gid={gid}&range=G{change['sheet_row']}"
+        added_names = ", ".join(change['added_names'])
+        body += f"• {added_names} added to '{change['event_name']}' on {change['date']} ({change['call_time']})\n"
+        body += f"  Link: {sheet_url}\n\n"
+
+    body += "Best,\nAutomated System"
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = creds['email'] or "dry-run@example.com"
+    msg['To'] = to_email
+    msg.set_content(body)
+
+    if is_dry_run or not creds['email'] or not creds['password']:
+        print(f"DRY RUN: Would send availability email to {to_email}")
+        print(f"Subject: {subject}")
+        print(f"Body:\n{body}")
+        return
+
+    try:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
+            server.starttls()
+            server.login(creds['email'], creds['password'])
+            server.send_message(msg)
+        print(f"Successfully sent availability email to {to_email}")
+    except Exception as e:
+        print(f"Failed to send availability email to {to_email}: {e}")
+        sys.exit(1)
+
 def send_test_email(start_date, pdf_filenames, is_dry_run=False):
     creds = get_smtp_credentials()
     to_email = "cjohnston@fccla.org"
@@ -317,9 +358,19 @@ def save_assignment_state(state):
     with open('state.json', 'w') as f:
         json.dump(state, f, indent=4)
 
+def get_avail_state():
+    if os.path.exists('avail_state.json'):
+        with open('avail_state.json', 'r') as f:
+            return json.load(f)
+    return {}
+
+def save_avail_state(state):
+    with open('avail_state.json', 'w') as f:
+        json.dump(state, f, indent=4)
+
 if __name__ == "__main__":
     is_dry_run = os.environ.get('DRY_RUN', '1') == '1'
-    run_mode = os.environ.get('RUN_MODE', 'weekly') # 'weekly', 'admin', 'update', 'test'
+    run_mode = os.environ.get('RUN_MODE', 'weekly') # 'weekly', 'admin', 'update', 'test', 'avail_check'
 
     print("Fetching events...")
     events = fetch_events_from_sheet()
@@ -366,6 +417,44 @@ if __name__ == "__main__":
                 send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
             else:
                 print(f"No email configured for {member}, skipping.")
+
+    elif run_mode == 'avail_check':
+        print("Running in Availability Check Mode.")
+        current_avail_state = get_avail_state()
+        new_avail_state = {}
+        changes = []
+
+        for e in events:
+            if not e['element_id']:
+                continue
+
+            # Parse names string into a set of normalized names
+            avail_str = e['Availability']
+            if avail_str:
+                names = set([n.strip() for n in re.split(r'[,&]', avail_str) if n.strip()])
+            else:
+                names = set()
+
+            new_avail_state[e['element_id']] = list(names)
+
+            old_names = set(current_avail_state.get(e['element_id'], []))
+            added_names = names - old_names
+            if added_names:
+                changes.append({
+                    'event_name': e['Event'],
+                    'date': e['Date'],
+                    'call_time': e['Call Time'],
+                    'sheet_row': e['sheet_row'],
+                    'added_names': list(added_names)
+                })
+
+        save_avail_state(new_avail_state)
+
+        if changes:
+            print(f"Found {len(changes)} new availability additions.")
+            send_availability_email(changes, is_dry_run)
+        else:
+            print("No new availability found.")
 
     elif run_mode == 'admin':
         print("Running in Admin Mode: Sending batched email.")
