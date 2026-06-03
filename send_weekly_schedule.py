@@ -9,7 +9,7 @@ from weasyprint import HTML
 import smtplib
 from email.message import EmailMessage
 
-TEAM_MEMBERS = ["Aria", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
+TEAM_MEMBERS = ["Aria", "Cameron", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
 
 def fetch_events_from_sheet():
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
