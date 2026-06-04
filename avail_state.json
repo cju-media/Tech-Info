@@ -1,27 +1,27 @@
 {
     "SU 7-05-2026-worship-service": [
-        "Danny",
         "Marc",
-        "Jaffe"
+        "Jaffe",
+        "Danny"
     ],
     "SU 6-28-2026-adrienne-bawa-sound-bath": [
-        "Danny",
-        "Saad"
+        "Saad",
+        "Danny"
     ],
     "SU 6-28-2026-worship-service": [
-        "Danny",
         "Marc",
-        "Jaffe"
+        "Jaffe",
+        "Danny"
     ],
     "SU 6-21-2026-worship-service": [
-        "Saad",
-        "Danny",
         "Marc",
-        "Jaffe"
+        "Jaffe",
+        "Saad",
+        "Danny"
     ],
     "TU 6-16-2026-wedding-ceremony": [
-        "Kaspar",
-        "Marc"
+        "Marc",
+        "Kaspar"
     ],
     "SU 6-14-2026-book-soup": [
         "Marc",
@@ -31,8 +31,8 @@
         "Saad"
     ],
     "SU 6-14-2026-worship-service": [
-        "Aria",
-        "Saad"
+        "Saad",
+        "Aria"
     ],
     "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion": [
         "Marc"
@@ -42,8 +42,8 @@
         "Kaspar"
     ],
     "MO 6-08-2026-pilgrim-high-school-commencement": [
-        "Kaspar",
-        "Marc"
+        "Marc",
+        "Kaspar"
     ],
     "SU 6-07-2026-commonwealth-choir-summer-review": [
         "Saad"
@@ -59,8 +59,5 @@
     "FR 6-05-2026-rk-middle-school-graduation": [
         "Saad"
     ],
-    "TH 6-04-2026-rk-middle-school-graduation": [],
-    "WE 6-03-2026-rk-elementary-graduation": [
-        "Marc"
-    ]
+    "TH 6-04-2026-rk-middle-school-graduation": []
 }
