@@ -2,8 +2,8 @@ name: Check Schedule Updates
 
 on:
   schedule:
-    # Run every 15 minutes
-    - cron: '*/15 * * * *'
+    # Run daily at 5:00 PM PDT (Midnight / 0:00 UTC next day)
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
