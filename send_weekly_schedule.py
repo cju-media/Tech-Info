@@ -380,27 +380,27 @@ if __name__ == "__main__":
 
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # Update state logic
-    current_state = get_assignment_state()
-    all_upcoming_events = get_events_by_member(events, today, days_ahead=None)
-
-    new_state = {member: [e['element_id'] for e in all_upcoming_events[member]] for member in TEAM_MEMBERS}
-    state_changed = False
-    members_with_new_assignments = {}
-
-    for member in TEAM_MEMBERS:
-        old_ids = set(current_state.get(member, []))
-        new_ids = set(new_state[member])
-        added_ids = new_ids - old_ids
-
-        if added_ids:
-            members_with_new_assignments[member] = added_ids
-            state_changed = True
-
-    # Always save the latest state
-    save_assignment_state(new_state)
-
     os.makedirs('pdfs', exist_ok=True)
+
+    if run_mode != 'avail_check':
+        # Update state logic (skip on avail_check to prevent unstaged git state issues)
+        current_state = get_assignment_state()
+        all_upcoming_events = get_events_by_member(events, today, days_ahead=None)
+
+        new_state = {member: [e['element_id'] for e in all_upcoming_events[member]] for member in TEAM_MEMBERS}
+        state_changed = False
+        members_with_new_assignments = {}
+
+        for member in TEAM_MEMBERS:
+            old_ids = set(current_state.get(member, []))
+            new_ids = set(new_state[member])
+            added_ids = new_ids - old_ids
+
+            if added_ids:
+                members_with_new_assignments[member] = added_ids
+                state_changed = True
+
+        save_assignment_state(new_state)
     generated_pdfs = []
 
     if run_mode == 'update':
