@@ -3,18 +3,19 @@
         "SU 6-14-2026-worship-service"
     ],
     "Cameron": [
-        "TH 6-04-2026-rk-middle-school-graduation",
         "SA 6-06-2026-wedding-ceremony",
         "SU 6-07-2026-worship-service",
         "MO 6-08-2026-pilgrim-high-school-commencement",
-        "TH 6-11-2026-pilgrim-spring-sing",
-        "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion"
+        "TH 6-11-2026-pilgrim-spring-sing"
     ],
     "Danny": [
         "SU 6-21-2026-worship-service",
         "SU 6-28-2026-worship-service"
     ],
     "Jaffe": [
+        "TH 6-11-2026-pilgrim-spring-sing",
+        "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion",
+        "SU 6-14-2026-annual-meeting",
         "SU 6-21-2026-worship-service",
         "SU 6-28-2026-worship-service",
         "SU 7-05-2026-worship-service"
@@ -25,7 +26,6 @@
         "TU 6-16-2026-wedding-ceremony"
     ],
     "Marc": [
-        "WE 6-03-2026-rk-elementary-graduation",
         "FR 6-05-2026-larchmont-school-concert",
         "MO 6-08-2026-pilgrim-high-school-commencement",
         "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion",
@@ -37,6 +37,7 @@
         "FR 6-05-2026-rk-middle-school-graduation",
         "SU 6-07-2026-commonwealth-choir-summer-review",
         "SU 6-07-2026-worship-service",
+        "SU 6-14-2026-annual-meeting",
         "SU 6-14-2026-worship-service",
         "SU 6-28-2026-adrienne-bawa-sound-bath"
     ]
