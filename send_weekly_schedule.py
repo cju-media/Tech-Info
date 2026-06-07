@@ -172,13 +172,31 @@ def get_smtp_credentials():
         'port': int(os.environ.get('SMTP_PORT', 587))
     }
 
-def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=False):
+def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=False, canceled_events=None, new_assignments=None):
     creds = get_smtp_credentials()
     cc_email = "cjohnston@fccla.org"
 
     if run_mode == 'update':
-        subject = "New Schedule Assignment Notification"
-        body = f"Hi {member},\n\nYou have been assigned to new upcoming events. Please find your complete upcoming schedule attached (new assignments are marked with *NEW*).\n\nBest,\nTech Team"
+        has_new = bool(new_assignments)
+        has_canceled = bool(canceled_events)
+
+        if has_new and has_canceled:
+            subject = "Schedule Update: New Assignments & Cancellations"
+            body = f"Hi {member},\n\nThere have been updates to your schedule. You have new assignments (marked with *NEW* in the attached PDF) and some of your previously assigned events have been canceled.\n\n"
+        elif has_new:
+            subject = "New Schedule Assignment Notification"
+            body = f"Hi {member},\n\nYou have been assigned to new upcoming events. Please find your complete upcoming schedule attached (new assignments are marked with *NEW*).\n\n"
+        elif has_canceled:
+            subject = "Schedule Update: Event Cancellation"
+            body = f"Hi {member},\n\nPlease note that one or more of your assigned events have been canceled. Your updated schedule is attached.\n\n"
+
+        if has_canceled:
+            body += "Canceled Events:\n"
+            for ce in canceled_events:
+                body += f"- {ce['name']} on {ce['date']}\n"
+            body += "\n"
+
+        body += "Best,\nTech Team"
     else:
         subject = f"Your Tech Schedule - Next Two Weeks ({start_date.strftime('%b %d')})"
         body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nTech Team"
@@ -196,7 +214,7 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
 
     if is_dry_run or not creds['email'] or not creds['password']:
         print(f"DRY RUN: Would send email to {to_email} (CC: {cc_email})")
-        print(f"Subject: {subject}")
+        print(f"Subject: {subject}\nBody:\n{body}")
         return
 
     try:
@@ -224,7 +242,7 @@ def send_notification_email(start_date, is_dry_run=False):
 
     if is_dry_run or not creds['email'] or not creds['password']:
         print(f"DRY RUN: Would send notification email to {to_email}")
-        print(f"Subject: {subject}")
+        print(f"Subject: {subject}\nBody:\n{body}")
         return
 
     try:
@@ -261,7 +279,7 @@ def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
     if is_dry_run or not creds['email'] or not creds['password']:
         print(f"DRY RUN: Would send ADMIN email to {to_email}")
         print(f"CC: {cc_email}")
-        print(f"Subject: {subject}")
+        print(f"Subject: {subject}\nBody:\n{body}")
         return
 
     try:
@@ -300,7 +318,7 @@ def send_availability_email(changes, is_dry_run=False):
 
     if is_dry_run or not creds['email'] or not creds['password']:
         print(f"DRY RUN: Would send availability email to {to_email}")
-        print(f"Subject: {subject}")
+        print(f"Subject: {subject}\nBody:\n{body}")
         print(f"Body:\n{body}")
         return
 
@@ -335,7 +353,7 @@ def send_test_email(start_date, pdf_filenames, is_dry_run=False):
 
     if is_dry_run or not creds['email'] or not creds['password']:
         print(f"DRY RUN: Would send TEST email to {to_email}")
-        print(f"Subject: {subject}")
+        print(f"Subject: {subject}\nBody:\n{body}")
         return
 
     try:
@@ -351,8 +369,12 @@ def send_test_email(start_date, pdf_filenames, is_dry_run=False):
 def get_assignment_state():
     if os.path.exists('state.json'):
         with open('state.json', 'r') as f:
-            return json.load(f)
-    return {member: [] for member in TEAM_MEMBERS}
+            data = json.load(f)
+            # Migration check: if it's the old format (just mapping members to lists), wrap it.
+            if "event_details" not in data and "assignments" not in data:
+                return {"assignments": data, "event_details": {}}
+            return data
+    return {"assignments": {member: [] for member in TEAM_MEMBERS}, "event_details": {}}
 
 def save_assignment_state(state):
     with open('state.json', 'w') as f:
@@ -385,19 +407,35 @@ if __name__ == "__main__":
     if run_mode != 'avail_check':
         # Update state logic (skip on avail_check to prevent unstaged git state issues)
         current_state = get_assignment_state()
+        current_assignments = current_state.get("assignments", {})
+        current_details = current_state.get("event_details", {})
+
         all_upcoming_events = get_events_by_member(events, today, days_ahead=None)
 
-        new_state = {member: [e['element_id'] for e in all_upcoming_events[member]] for member in TEAM_MEMBERS}
+        new_assignments = {member: [e['element_id'] for e in all_upcoming_events[member]] for member in TEAM_MEMBERS}
+        new_details = {e['element_id']: {'date': e['date_obj'].strftime("%Y-%m-%d"), 'name': e['Event']} for e in events if e['date_obj'] and e['date_obj'] >= today}
+
+        new_state = {"assignments": new_assignments, "event_details": new_details}
         state_changed = False
-        members_with_new_assignments = {}
+        members_with_updates = {}
 
         for member in TEAM_MEMBERS:
-            old_ids = set(current_state.get(member, []))
-            new_ids = set(new_state[member])
+            old_ids = set(current_assignments.get(member, []))
+            new_ids = set(new_assignments[member])
             added_ids = new_ids - old_ids
+            removed_ids_raw = old_ids - new_ids
 
-            if added_ids:
-                members_with_new_assignments[member] = added_ids
+            # Filter out removals that are just naturally passing events (date < today)
+            canceled_events = []
+            for rid in removed_ids_raw:
+                if rid in current_details:
+                    event_date_str = current_details[rid]['date']
+                    event_date = datetime.strptime(event_date_str, "%Y-%m-%d")
+                    if event_date >= today:
+                        canceled_events.append(current_details[rid])
+
+            if added_ids or canceled_events:
+                members_with_updates[member] = {'added': added_ids, 'canceled': canceled_events}
                 state_changed = True
 
         save_assignment_state(new_state)
@@ -405,16 +443,16 @@ if __name__ == "__main__":
 
     if run_mode == 'update':
         if not state_changed:
-            print("No new assignments detected. Exiting.")
+            print("No schedule updates detected. Exiting.")
             sys.exit(0)
 
-        print("New assignments detected. Sending updates to affected members.")
-        for member, added_ids in members_with_new_assignments.items():
+        print("Schedule updates detected. Sending updates to affected members.")
+        for member, updates in members_with_updates.items():
             if member in team_emails:
                 filename = f"pdfs/{member}_schedule.pdf"
                 # For update mode, we show ALL upcoming events (days_ahead=None)
-                generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=added_ids)
-                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
+                generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=updates['added'])
+                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'])
             else:
                 print(f"No email configured for {member}, skipping.")
 
