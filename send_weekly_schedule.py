@@ -261,6 +261,52 @@ def send_notification_email(start_date, is_dry_run=False):
         print(f"Failed to send notification email to {to_email}: {e}")
         sys.exit(1)
 
+def send_broadcast_email(team_emails, global_new_events, pdf_filename, is_dry_run=False):
+    creds = get_smtp_credentials()
+    cc_email = "cjohnston@fccla.org"
+    sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
+    gid = '251348517'
+    sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit?gid={gid}"
+
+    # Extract all valid recipient emails into a list
+    to_emails = [email for email in team_emails.values()]
+
+    subject = "ALERT: New Events Added to the Schedule"
+
+    body = "Hi Team,\n\nNew events have been added to the master calendar. Please review the attached PDF for a list of all upcoming events (the newly added events are marked with *NEW*).\n\n"
+    body += "New Events:\n"
+    for ne in global_new_events:
+        body += f"- {ne['name']} on {ne['date']}\n"
+
+    body += f"\nYou can view the full live schedule in the Google Sheet here: {sheet_url}\n\nBest,\nTech Team"
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = creds['email'] or "dry-run@example.com"
+    msg['To'] = ", ".join(to_emails)
+    msg['Cc'] = cc_email
+    msg.set_content(body)
+
+    with open(pdf_filename, 'rb') as f:
+        pdf_data = f.read()
+    msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename="Master_Upcoming_Schedule.pdf")
+
+    if is_dry_run or not creds['email'] or not creds['password']:
+        print(f"DRY RUN: Would send broadcast email to {msg['To']} (CC: {cc_email})")
+        print(f"Subject: {subject}")
+        print(f"Attachment: {pdf_filename}")
+        return
+
+    try:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
+            server.starttls()
+            server.login(creds['email'], creds['password'])
+            server.send_message(msg, to_addrs=to_emails + [cc_email])
+        print(f"Successfully sent broadcast email to {len(to_emails)} members (CC: {cc_email})")
+    except Exception as e:
+        print(f"Failed to send broadcast email: {e}")
+        sys.exit(1)
+
 def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
     creds = get_smtp_credentials()
     to_email = "cameron@cju.media"
@@ -425,6 +471,12 @@ if __name__ == "__main__":
         state_changed = False
         members_with_updates = {}
 
+        new_event_ids_globally = set(new_details.keys()) - set(current_details.keys())
+        global_new_events = []
+        if new_event_ids_globally:
+            global_new_events = [new_details[eid] for eid in new_event_ids_globally]
+            state_changed = True
+
         for member in TEAM_MEMBERS:
             old_ids = set(current_assignments.get(member, []))
             new_ids = set(new_assignments[member])
@@ -452,15 +504,26 @@ if __name__ == "__main__":
             print("No schedule updates detected. Exiting.")
             sys.exit(0)
 
-        print("Schedule updates detected. Sending updates to affected members.")
-        for member, updates in members_with_updates.items():
-            if member in team_emails:
-                filename = f"pdfs/{member}_schedule.pdf"
-                # For update mode, we show ALL upcoming events (days_ahead=None)
-                generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=updates['added'])
-                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'])
-            else:
-                print(f"No email configured for {member}, skipping.")
+        if new_event_ids_globally:
+            print("Globally new events detected. Sending broadcast to team.")
+            master_filename = "pdfs/master_schedule.pdf"
+            # Generate a master PDF showing all events for the team
+            all_upcoming = [e for e in events if e['date_obj'] >= today]
+            all_upcoming.sort(key=lambda x: x['date_obj'])
+            # We can leverage generate_pdf and just pass "All Team" as the member name
+            generate_pdf("All Team", all_upcoming, today, master_filename, run_mode, new_event_ids=new_event_ids_globally)
+            send_broadcast_email(team_emails, global_new_events, master_filename, is_dry_run)
+
+        if members_with_updates:
+            print("Schedule assignment updates detected. Sending specific updates to affected members.")
+            for member, updates in members_with_updates.items():
+                if member in team_emails:
+                    filename = f"pdfs/{member}_schedule.pdf"
+                    # For update mode, we show ALL upcoming events (days_ahead=None)
+                    generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=updates['added'])
+                    send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'])
+                else:
+                    print(f"No email configured for {member}, skipping.")
 
     elif run_mode == 'avail_check':
         print("Running in Availability Check Mode.")
