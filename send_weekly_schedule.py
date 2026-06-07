@@ -96,6 +96,9 @@ def generate_pdf(member, events, start_date, output_filename, run_mode, new_even
     if run_mode == 'update':
         subtitle = "All Upcoming Events"
         empty_msg = "You have no upcoming events."
+    elif run_mode == 'daily_reminder':
+        subtitle = f"Today's Events ({start_date.strftime('%B %d, %Y')})"
+        empty_msg = "You have no events today."
     else:
         subtitle = f"Two Weeks starting {start_date.strftime('%B %d, %Y')}"
         empty_msg = "You have no events in the next two weeks"
@@ -197,6 +200,9 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
             body += "\n"
 
         body += "Best,\nTech Team"
+    elif run_mode == 'daily_reminder':
+        subject = f"Reminder: Your Tech Schedule for Today ({start_date.strftime('%b %d')})"
+        body = f"Hi {member},\n\nThis is a reminder for your assigned event(s) happening today. Please find the details attached.\n\nBest,\nTech Team"
     else:
         subject = f"Your Tech Schedule - Next Two Weeks ({start_date.strftime('%b %d')})"
         body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nTech Team"
@@ -392,7 +398,7 @@ def save_avail_state(state):
 
 if __name__ == "__main__":
     is_dry_run = os.environ.get('DRY_RUN', '1') == '1'
-    run_mode = os.environ.get('RUN_MODE', 'weekly') # 'weekly', 'admin', 'update', 'test', 'avail_check'
+    run_mode = os.environ.get('RUN_MODE', 'weekly') # 'weekly', 'admin', 'update', 'test', 'avail_check', 'daily_reminder'
 
     print("Fetching events...")
     events = fetch_events_from_sheet()
@@ -516,6 +522,24 @@ if __name__ == "__main__":
             generate_pdf(member, all_upcoming_events[member], today, filename, 'update', new_event_ids=all_ids_for_member)
             generated_pdfs.append(filename)
         send_test_email(today, generated_pdfs, is_dry_run)
+
+    elif run_mode == 'daily_reminder':
+        print("Running in Daily Reminder Mode.")
+        # Filter strictly for today's events (1 day ahead = today only)
+        todays_events = get_events_by_member(events, today, days_ahead=1)
+
+        sent_any = False
+        for member in TEAM_MEMBERS:
+            if member in team_emails and todays_events[member]:
+                filename = f"pdfs/{member}_schedule.pdf"
+                generate_pdf(member, todays_events[member], today, filename, run_mode)
+                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
+                sent_any = True
+            elif member not in team_emails and todays_events[member]:
+                print(f"No email configured for {member}, skipping today's reminder.")
+
+        if not sent_any:
+            print("No events scheduled for today. Exiting.")
 
     else: # weekly mode
         print("Running in Weekly Mode.")
