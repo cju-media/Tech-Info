@@ -2,8 +2,8 @@ name: Send Weekly Schedule Emails
 
 on:
   schedule:
-    # Run every Friday at 6:00 AM PST (approx 14:00 UTC depending on daylight savings)
-    - cron: '0 14 * * 5'
+    # Run 3 hours earlier to account for GitHub Actions delay queue
+    - cron: '0 11 * * 5'
   workflow_dispatch: # Allow manual triggering
 
 jobs:
