@@ -2,8 +2,8 @@ name: Check Schedule Updates
 
 on:
   schedule:
-    # Run daily at 5:00 PM PDT (Midnight / 0:00 UTC next day)
-    - cron: '0 0 * * *'
+    # Run 3 hours earlier to account for GitHub Actions delay queue
+    - cron: '0 21 * * *'
   workflow_dispatch:
 
 jobs:

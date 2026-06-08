@@ -2,8 +2,8 @@ name: Send Daily Schedule Reminders
 
 on:
   schedule:
-    # Run daily at 6:00 AM PDT (13:00 UTC)
-    - cron: '0 13 * * *'
+    # Run 3 hours earlier to account for GitHub Actions delay queue
+    - cron: '0 10 * * *'
   workflow_dispatch:
 
 jobs:
