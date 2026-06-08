@@ -175,23 +175,31 @@ def get_smtp_credentials():
         'port': int(os.environ.get('SMTP_PORT', 587))
     }
 
-def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=False, canceled_events=None, new_assignments=None):
+def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=False, canceled_events=None, new_assignments=None, time_changed_events=None):
     creds = get_smtp_credentials()
     cc_email = "cjohnston@fccla.org"
 
     if run_mode == 'update':
         has_new = bool(new_assignments)
         has_canceled = bool(canceled_events)
+        has_time_change = bool(time_changed_events)
 
-        if has_new and has_canceled:
-            subject = "Schedule Update: New Assignments & Cancellations"
-            body = f"Hi {member},\n\nThere have been updates to your schedule. You have new assignments (marked with *NEW* in the attached PDF) and some of your previously assigned events have been canceled.\n\n"
-        elif has_new:
-            subject = "New Schedule Assignment Notification"
-            body = f"Hi {member},\n\nYou have been assigned to new upcoming events. Please find your complete upcoming schedule attached (new assignments are marked with *NEW*).\n\n"
-        elif has_canceled:
-            subject = "Schedule Update: Event Cancellation"
-            body = f"Hi {member},\n\nPlease note that one or more of your assigned events have been canceled. Your updated schedule is attached.\n\n"
+        updates_list = []
+        if has_new: updates_list.append("New Assignments")
+        if has_canceled: updates_list.append("Cancellations")
+        if has_time_change: updates_list.append("Time Changes")
+
+        subject_parts = " & ".join(updates_list)
+        subject = f"Schedule Update: {subject_parts}"
+
+        body = f"Hi {member},\n\nThere have been updates to your schedule. Your fully updated schedule is attached. (Modified or newly added events are marked with *NEW* in the PDF).\n\n"
+
+        if has_time_change:
+            body += "Time Changes:\n"
+            for te in time_changed_events:
+                body += f"- {te['name']} on {te['date']}\n"
+                body += f"  New Time: {te['new_time']} (was: {te['old_time']})\n"
+            body += "\n"
 
         if has_canceled:
             body += "Canceled Events:\n"
@@ -465,7 +473,7 @@ if __name__ == "__main__":
         all_upcoming_events = get_events_by_member(events, today, days_ahead=None)
 
         new_assignments = {member: [e['element_id'] for e in all_upcoming_events[member]] for member in TEAM_MEMBERS}
-        new_details = {e['element_id']: {'date': e['date_obj'].strftime("%Y-%m-%d"), 'name': e['Event']} for e in events if e['date_obj'] and e['date_obj'] >= today}
+        new_details = {e['element_id']: {'date': e['date_obj'].strftime("%Y-%m-%d"), 'name': e['Event'], 'call_time': e['Call Time']} for e in events if e['date_obj'] and e['date_obj'] >= today}
 
         new_state = {"assignments": new_assignments, "event_details": new_details}
         state_changed = False
@@ -482,6 +490,7 @@ if __name__ == "__main__":
             new_ids = set(new_assignments[member])
             added_ids = new_ids - old_ids
             removed_ids_raw = old_ids - new_ids
+            retained_ids = old_ids.intersection(new_ids)
 
             # Filter out removals that are just naturally passing events (date < today)
             canceled_events = []
@@ -492,8 +501,29 @@ if __name__ == "__main__":
                     if event_date >= today:
                         canceled_events.append(current_details[rid])
 
-            if added_ids or canceled_events:
-                members_with_updates[member] = {'added': added_ids, 'canceled': canceled_events}
+            # Check for time changes on retained events
+            time_changed_events = []
+            time_changed_ids = set()
+            for eid in retained_ids:
+                if eid in current_details and eid in new_details:
+                    old_time = current_details[eid].get('call_time', '')
+                    new_time = new_details[eid].get('call_time', '')
+                    if old_time != new_time:
+                        time_changed_ids.add(eid)
+                        time_changed_events.append({
+                            'name': new_details[eid]['name'],
+                            'date': new_details[eid]['date'],
+                            'old_time': old_time,
+                            'new_time': new_time
+                        })
+
+            if added_ids or canceled_events or time_changed_events:
+                members_with_updates[member] = {
+                    'added': added_ids,
+                    'canceled': canceled_events,
+                    'time_changed_ids': time_changed_ids,
+                    'time_changed': time_changed_events
+                }
                 state_changed = True
 
         save_assignment_state(new_state)
@@ -520,8 +550,9 @@ if __name__ == "__main__":
                 if member in team_emails:
                     filename = f"pdfs/{member}_schedule.pdf"
                     # For update mode, we show ALL upcoming events (days_ahead=None)
-                    generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=updates['added'])
-                    send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'])
+                    all_highlight_ids = updates['added'].union(updates['time_changed_ids'])
+                    generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=all_highlight_ids)
+                    send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'], time_changed_events=updates['time_changed'])
                 else:
                     print(f"No email configured for {member}, skipping.")
 

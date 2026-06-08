@@ -39,51 +39,63 @@
     "event_details": {
         "SU 7-05-2026-worship-service": {
             "date": "2026-07-05",
-            "name": "Worship Service"
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
         },
         "SU 6-28-2026-adrienne-bawa-sound-bath": {
             "date": "2026-06-28",
-            "name": "Adrienne Bawa Sound Bath"
+            "name": "Adrienne Bawa Sound Bath",
+            "call_time": "4:30pm-8:30pm"
         },
         "SU 6-28-2026-worship-service": {
             "date": "2026-06-28",
-            "name": "Worship Service"
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
         },
         "SU 6-21-2026-worship-service": {
             "date": "2026-06-21",
-            "name": "Worship Service"
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
         },
         "TU 6-16-2026-wedding-ceremony": {
             "date": "2026-06-16",
-            "name": "Wedding Ceremony"
+            "name": "Wedding Ceremony",
+            "call_time": "3:00pm-7:00pm"
         },
         "SU 6-14-2026-book-soup": {
             "date": "2026-06-14",
-            "name": "Book Soup"
+            "name": "Book Soup",
+            "call_time": "2:00pm-6:00pm"
         },
         "SU 6-14-2026-annual-meeting": {
             "date": "2026-06-14",
-            "name": "Annual Meeting"
+            "name": "Annual Meeting",
+            "call_time": "12:30-3:00pm"
         },
         "SU 6-14-2026-worship-service": {
             "date": "2026-06-14",
-            "name": "Worship Service"
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
         },
         "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion": {
             "date": "2026-06-12",
-            "name": "Pilgrim Elementary and Middle School Promotion"
+            "name": "Pilgrim Elementary and Middle School Promotion",
+            "call_time": "9:00am-4:00pm"
         },
         "TH 6-11-2026-pilgrim-spring-sing": {
             "date": "2026-06-11",
-            "name": "Pilgrim Spring Sing"
+            "name": "Pilgrim Spring Sing",
+            "call_time": "7:00am-11:00am"
         },
         "WE 6-10-2026-larchmont-graduation": {
             "date": "2026-06-10",
-            "name": "Larchmont Graduation"
+            "name": "Larchmont Graduation",
+            "call_time": "3:00pm-8:00pm"
         },
         "MO 6-08-2026-pilgrim-high-school-commencement": {
             "date": "2026-06-08",
-            "name": "Pilgrim High School Commencement"
+            "name": "Pilgrim High School Commencement",
+            "call_time": "4:30pm-8:30pm"
         }
     }
 }
