@@ -4,7 +4,6 @@
             "SU 6-14-2026-worship-service"
         ],
         "Cameron": [
-            "MO 6-08-2026-pilgrim-high-school-commencement",
             "TH 6-11-2026-pilgrim-spring-sing"
         ],
         "Danny": [
@@ -20,12 +19,10 @@
             "SU 7-05-2026-worship-service"
         ],
         "Kaspar": [
-            "MO 6-08-2026-pilgrim-high-school-commencement",
             "WE 6-10-2026-larchmont-graduation",
             "TU 6-16-2026-wedding-ceremony"
         ],
         "Marc": [
-            "MO 6-08-2026-pilgrim-high-school-commencement",
             "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion",
             "SU 6-14-2026-book-soup",
             "SU 7-05-2026-worship-service"
@@ -91,11 +88,6 @@
             "date": "2026-06-10",
             "name": "Larchmont Graduation",
             "call_time": "3:00pm-8:00pm"
-        },
-        "MO 6-08-2026-pilgrim-high-school-commencement": {
-            "date": "2026-06-08",
-            "name": "Pilgrim High School Commencement",
-            "call_time": "4:30pm-8:30pm"
         }
     }
 }
