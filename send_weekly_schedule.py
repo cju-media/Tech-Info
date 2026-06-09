@@ -207,13 +207,13 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
                 body += f"- {ce['name']} on {ce['date']}\n"
             body += "\n"
 
-        body += "Best,\nTech Team"
+        body += "Best,\nCam-Bot"
     elif run_mode == 'daily_reminder':
         subject = f"Reminder: Your Tech Schedule for Today ({start_date.strftime('%b %d')})"
-        body = f"Hi {member},\n\nThis is a reminder for your assigned event(s) happening today. Please find the details attached.\n\nBest,\nTech Team"
+        body = f"Hi {member},\n\nThis is a reminder for your assigned event(s) happening today. Please find the details attached.\n\nBest,\nCam-Bot"
     else:
         subject = f"Your Tech Schedule - Next Two Weeks ({start_date.strftime('%b %d')})"
-        body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nTech Team"
+        body = f"Hi {member},\n\nPlease find your upcoming schedule for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nCam-Bot"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -246,7 +246,7 @@ def send_notification_email(start_date, is_dry_run=False):
     to_email = "cjohnston@fccla.org"
 
     subject = f"System Notification: Tech Schedules Sent ({start_date.strftime('%b %d')})"
-    body = f"Hello,\n\nThis is an automated notification. The weekly schedule workflow has successfully completed. Individual schedule PDFs for the next two weeks starting {start_date.strftime('%B %d, %Y')} have been generated and sent to the team members.\n\nBest,\nAutomated System"
+    body = f"Hello,\n\nThis is an automated notification. The weekly schedule workflow has successfully completed. Individual schedule PDFs for the next two weeks starting {start_date.strftime('%B %d, %Y')} have been generated and sent to the team members.\n\nBest,\nCam-Bot"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -286,7 +286,7 @@ def send_broadcast_email(team_emails, global_new_events, pdf_filename, is_dry_ru
     for ne in global_new_events:
         body += f"- {ne['name']} on {ne['date']}\n"
 
-    body += f"\nYou can view the full live schedule in the Google Sheet here: {sheet_url}\n\nBest,\nTech Team"
+    body += f"\nYou can view the full live schedule in the Google Sheet here: {sheet_url}\n\nBest,\nCam-Bot"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -321,7 +321,7 @@ def send_admin_email(start_date, pdf_filenames, is_dry_run=False):
     cc_email = "cjohnston@fccla.org"
 
     subject = f"All Team Tech Schedules - Next Two Weeks ({start_date.strftime('%b %d')})"
-    body = f"Hi Cameron,\n\nPlease find the generated team schedules for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nAutomated System"
+    body = f"Hi Cameron,\n\nPlease find the generated team schedules for the next two weeks starting {start_date.strftime('%B %d, %Y')} attached.\n\nBest,\nCam-Bot"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -368,7 +368,7 @@ def send_availability_email(changes, is_dry_run=False):
         body += f"• {added_names} added to '{change['event_name']}' on {change['date']} ({change['call_time']})\n"
         body += f"  Link: {sheet_url}\n\n"
 
-    body += "Best,\nAutomated System"
+    body += "Best,\nCam-Bot"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -397,7 +397,7 @@ def send_test_email(start_date, pdf_filenames, is_dry_run=False):
     to_email = "cjohnston@fccla.org"
 
     subject = f"TEST: All Upcoming Events Marked as NEW ({start_date.strftime('%b %d')})"
-    body = f"Hi,\n\nThis is a manual test run. Attached are PDFs for each team member showing ALL upcoming events, with every event marked as *NEW*.\n\nBest,\nAutomated System"
+    body = f"Hi,\n\nThis is a manual test run. Attached are PDFs for each team member showing ALL upcoming events, with every event marked as *NEW*.\n\nBest,\nCam-Bot"
 
     msg = EmailMessage()
     msg['Subject'] = subject
