@@ -3,15 +3,12 @@
         "Aria": [
             "SU 6-14-2026-worship-service"
         ],
-        "Cameron": [
-            "TH 6-11-2026-pilgrim-spring-sing"
-        ],
+        "Cameron": [],
         "Danny": [
             "SU 6-21-2026-worship-service",
             "SU 6-28-2026-worship-service"
         ],
         "Jaffe": [
-            "TH 6-11-2026-pilgrim-spring-sing",
             "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion",
             "SU 6-14-2026-annual-meeting",
             "SU 6-21-2026-worship-service",
@@ -77,11 +74,6 @@
             "date": "2026-06-12",
             "name": "Pilgrim Elementary and Middle School Promotion",
             "call_time": "7:45am-4:00pm"
-        },
-        "TH 6-11-2026-pilgrim-spring-sing": {
-            "date": "2026-06-11",
-            "name": "Pilgrim Spring Sing",
-            "call_time": "7:00am-11:00am"
         }
     }
 }
