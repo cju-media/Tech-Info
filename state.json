@@ -9,7 +9,6 @@
             "SU 6-28-2026-worship-service"
         ],
         "Jaffe": [
-            "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion",
             "SU 6-14-2026-annual-meeting",
             "SU 6-21-2026-worship-service",
             "SU 6-28-2026-worship-service",
@@ -19,7 +18,6 @@
             "TU 6-16-2026-wedding-ceremony"
         ],
         "Marc": [
-            "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion",
             "SU 6-14-2026-book-soup",
             "SU 7-05-2026-worship-service"
         ],
@@ -69,11 +67,6 @@
             "date": "2026-06-14",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "FR 6-12-2026-pilgrim-elementary-and-middle-school-promotion": {
-            "date": "2026-06-12",
-            "name": "Pilgrim Elementary and Middle School Promotion",
-            "call_time": "7:45am-4:00pm"
         }
     }
 }
