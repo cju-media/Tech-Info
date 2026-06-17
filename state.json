@@ -11,9 +11,7 @@
             "SU 6-28-2026-worship-service",
             "SU 7-05-2026-worship-service"
         ],
-        "Kaspar": [
-            "TU 6-16-2026-wedding-ceremony"
-        ],
+        "Kaspar": [],
         "Marc": [
             "SU 7-05-2026-worship-service"
         ],
@@ -41,11 +39,6 @@
             "date": "2026-06-21",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "TU 6-16-2026-wedding-ceremony": {
-            "date": "2026-06-16",
-            "name": "Wedding Ceremony",
-            "call_time": "3:00pm-7:00pm"
         }
     }
 }
