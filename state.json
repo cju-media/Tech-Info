@@ -20,6 +20,56 @@
         ]
     },
     "event_details": {
+        "FR 7-31-2026-neo-fest-concert-2": {
+            "date": "2026-07-31",
+            "name": "NEO FEST Concert 2",
+            "call_time": "12:30pm-9:00pm"
+        },
+        "SU 7-26-2026-worship-service": {
+            "date": "2026-07-26",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "SA 7-25-2026-neo-fest-concert-1": {
+            "date": "2026-07-25",
+            "name": "NEO FEST Concert 1",
+            "call_time": "3:00pm-10:00pm"
+        },
+        "FR 7-24-2026-wedding-ceremony": {
+            "date": "2026-07-24",
+            "name": "Wedding Ceremony",
+            "call_time": "3:00pm-7:00pm"
+        },
+        "SU 7-19-2026-worship-service": {
+            "date": "2026-07-19",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "SA 7-18-2026-cmala-saturday-shift-2": {
+            "date": "2026-07-18",
+            "name": "CMALA Saturday Shift 2",
+            "call_time": "2:30pm-10:30pm"
+        },
+        "SA 7-18-2026-cmala-saturady-shift-1": {
+            "date": "2026-07-18",
+            "name": "CMALA Saturady Shift 1",
+            "call_time": "10:00am-5:00pm"
+        },
+        "FR 7-17-2026-cmala-friday-shift-2": {
+            "date": "2026-07-17",
+            "name": "CMALA Friday Shift 2",
+            "call_time": "2:30pm-10:30pm"
+        },
+        "FR 7-17-2026-cmala-friday-shift-1": {
+            "date": "2026-07-17",
+            "name": "CMALA Friday Shift 1",
+            "call_time": "10:00am-5:00pm"
+        },
+        "SU 7-12-2026-worship-service": {
+            "date": "2026-07-12",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
         "SU 7-05-2026-worship-service": {
             "date": "2026-07-05",
             "name": "Worship Service",
