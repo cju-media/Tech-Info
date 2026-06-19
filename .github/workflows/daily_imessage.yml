@@ -8,6 +8,8 @@ on:
 jobs:
   send-daily-imessages:
     runs-on: [self-hosted, macOS]
+    env:
+      RUNNER_TOOL_CACHE: /tmp/runner_tool_cache
 
     steps:
       - name: Checkout repository
