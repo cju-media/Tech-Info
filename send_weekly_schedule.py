@@ -692,11 +692,36 @@ if __name__ == "__main__":
 
     elif run_mode == 'imessage_test':
         print("Running in iMessage Test Mode.")
-        if "Cameron" in team_phones:
-            msg_body = "This is a test message from Cam-Bot!\nIf you received this, the self-hosted macOS runner is working perfectly."
-            send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
-        else:
+        if "Cameron" not in team_phones:
             print("Cameron's phone not configured. Cannot send test message.")
+        else:
+            # Look ahead to find the next day with any events to generate a sample digest
+            upcoming_events = get_events_by_member(events, today, days_ahead=30)
+
+            # Find the earliest date among all upcoming events
+            earliest_date = None
+            for member in TEAM_MEMBERS:
+                for ev in upcoming_events[member]:
+                    if earliest_date is None or ev['date_obj'] < earliest_date:
+                        earliest_date = ev['date_obj']
+
+            if not earliest_date:
+                msg_body = "This is a test message from Cam-Bot!\n\nThere are no upcoming events in the next 30 days to generate a sample digest."
+                send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
+            else:
+                # Filter events strictly for that earliest date
+                target_date_events = get_events_by_member(events, earliest_date, days_ahead=1)
+
+                summary_lines = []
+                for member in TEAM_MEMBERS:
+                    if member in team_phones and target_date_events[member]:
+                        summary_lines.append(f"{member}:")
+                        for ev in target_date_events[member]:
+                            summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
+
+                formatted_date = earliest_date.strftime('%B %d')
+                msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
+                send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
 
     elif run_mode == 'imessage_reminder':
         print("Running in iMessage Reminder Mode.")
