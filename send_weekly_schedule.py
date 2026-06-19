@@ -1,4 +1,5 @@
 import urllib.request
+import urllib.parse
 import sys
 import json
 import re
@@ -695,7 +696,8 @@ if __name__ == "__main__":
                     if member in team_phones and target_date_events[member]:
                         summary_lines.append(f"{member}:")
                         for ev in target_date_events[member]:
-                            link = f"https://fccla.org/tech-info#{ev['element_id']}"
+                            encoded_id = urllib.parse.quote(ev['element_id'])
+                            link = f"https://www.fccla.org/tech-info#{encoded_id}"
                             summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}\n  {link}")
 
                 formatted_date = earliest_date.strftime('%B %d')
@@ -715,7 +717,8 @@ if __name__ == "__main__":
                 msg_body = f"Hi {member},\n\nJust a quick reminder you have an event today:\n"
                 summary_lines.append(f"{member}:")
                 for ev in member_events:
-                    link = f"https://fccla.org/tech-info#{ev['element_id']}"
+                    encoded_id = urllib.parse.quote(ev['element_id'])
+                    link = f"https://www.fccla.org/tech-info#{encoded_id}"
                     msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n  {link}\n"
                     summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}\n  {link}")
                 msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
