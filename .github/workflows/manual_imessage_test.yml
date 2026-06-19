@@ -8,6 +8,9 @@ jobs:
     runs-on: [self-hosted, macOS]
 
     steps:
+      - name: Clean runner workspace
+        run: rm -rf $GITHUB_WORKSPACE/.git || true
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
