@@ -8,8 +8,35 @@ import os
 from weasyprint import HTML
 import smtplib
 from email.message import EmailMessage
+import subprocess
 
 TEAM_MEMBERS = ["Aria", "Cameron", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
+
+def send_imessage(to_email, message, is_dry_run=False):
+    """
+    Sends an iMessage using AppleScript (via osascript).
+    """
+    if is_dry_run:
+        print(f"[DRY RUN] Would send iMessage to {to_email}:\n{message}\n")
+        return
+
+    print(f"Sending iMessage to {to_email}...")
+    # Properly escape quotes and backslashes for AppleScript string
+    escaped_message = message.replace('\\', '\\\\').replace('"', '\\"')
+
+    applescript = f'''
+    tell application "Messages"
+        set targetService to 1st service whose service type = iMessage
+        set targetBuddy to buddy "{to_email}" of targetService
+        send "{escaped_message}" to targetBuddy
+    end tell
+    '''
+
+    try:
+        subprocess.run(['osascript', '-e', applescript], check=True, capture_output=True, text=True)
+        print(f"Successfully sent iMessage to {to_email}.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to send iMessage to {to_email}. Error: {e.stderr}")
 
 def fetch_events_from_sheet():
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
@@ -631,6 +658,28 @@ if __name__ == "__main__":
                 sent_any = True
             elif member not in team_emails and todays_events[member]:
                 print(f"No email configured for {member}, skipping today's reminder.")
+
+        if not sent_any:
+            print("No events scheduled for today. Exiting.")
+
+    elif run_mode == 'imessage_reminder':
+        print("Running in iMessage Reminder Mode.")
+        # Filter strictly for today's events
+        todays_events = get_events_by_member(events, today, days_ahead=1)
+
+        sent_any = False
+        for member in TEAM_MEMBERS:
+            if member in team_emails and todays_events[member]:
+                member_events = todays_events[member]
+                msg_body = f"Hi {member},\n\nJust a quick reminder you have an event today:\n"
+                for ev in member_events:
+                    msg_body += f"- {ev['name']} @ {ev['call_time']}\n"
+                msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
+
+                send_imessage(team_emails[member], msg_body, is_dry_run)
+                sent_any = True
+            elif member not in team_emails and todays_events[member]:
+                print(f"No email configured for {member}, skipping today's iMessage.")
 
         if not sent_any:
             print("No events scheduled for today. Exiting.")
