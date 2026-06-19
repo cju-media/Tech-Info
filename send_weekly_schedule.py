@@ -674,12 +674,15 @@ if __name__ == "__main__":
         todays_events = get_events_by_member(events, today, days_ahead=1)
 
         sent_any = False
+        summary_lines = []
         for member in TEAM_MEMBERS:
             if member in team_phones and todays_events[member]:
                 member_events = todays_events[member]
                 msg_body = f"Hi {member},\n\nJust a quick reminder you have an event today:\n"
+                summary_lines.append(f"{member}:")
                 for ev in member_events:
                     msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
+                    summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
                 msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
 
                 send_imessage(team_phones[member], msg_body, is_dry_run)
@@ -689,6 +692,12 @@ if __name__ == "__main__":
 
         if not sent_any:
             print("No events scheduled for today. Exiting.")
+        else:
+            summary_msg = "Daily Summary:\nThe following team members are working today:\n" + "\n".join(summary_lines)
+            if "Cameron" in team_phones:
+                send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
+            else:
+                print("Cameron's phone not configured. Skipping summary message.")
 
     else: # weekly mode
         print("Running in Weekly Mode.")
