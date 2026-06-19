@@ -6,6 +6,8 @@ on:
 jobs:
   test-imessage:
     runs-on: [self-hosted, macOS]
+    env:
+      RUNNER_TOOL_CACHE: /tmp/runner_tool_cache
 
     steps:
       - name: Checkout repository
