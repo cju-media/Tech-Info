@@ -717,7 +717,8 @@ if __name__ == "__main__":
                     if member in team_phones and target_date_events[member]:
                         summary_lines.append(f"{member}:")
                         for ev in target_date_events[member]:
-                            summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
+                            link = f"https://fccla.org/tech-info#{ev['element_id']}"
+                            summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}\n  {link}")
 
                 formatted_date = earliest_date.strftime('%B %d')
                 msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
@@ -736,8 +737,9 @@ if __name__ == "__main__":
                 msg_body = f"Hi {member},\n\nJust a quick reminder you have an event today:\n"
                 summary_lines.append(f"{member}:")
                 for ev in member_events:
-                    msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
-                    summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
+                    link = f"https://fccla.org/tech-info#{ev['element_id']}"
+                    msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n  {link}\n"
+                    summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}\n  {link}")
                 msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
 
                 send_imessage(team_phones[member], msg_body, is_dry_run)
