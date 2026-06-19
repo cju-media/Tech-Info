@@ -690,6 +690,14 @@ if __name__ == "__main__":
             print("Sending admin notification email.")
             send_notification_email(today, reasons_text, is_dry_run)
 
+    elif run_mode == 'imessage_test':
+        print("Running in iMessage Test Mode.")
+        if "Cameron" in team_phones:
+            msg_body = "This is a test message from Cam-Bot!\nIf you received this, the self-hosted macOS runner is working perfectly."
+            send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
+        else:
+            print("Cameron's phone not configured. Cannot send test message.")
+
     elif run_mode == 'imessage_reminder':
         print("Running in iMessage Reminder Mode.")
         # Filter strictly for today's events
