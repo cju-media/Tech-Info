@@ -8,8 +8,35 @@ import os
 from weasyprint import HTML
 import smtplib
 from email.message import EmailMessage
+import subprocess
 
 TEAM_MEMBERS = ["Aria", "Cameron", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
+
+def send_imessage(to_email, message, is_dry_run=False):
+    """
+    Sends an iMessage using AppleScript (via osascript).
+    """
+    if is_dry_run:
+        print(f"[DRY RUN] Would send iMessage to {to_email}:\n{message}\n")
+        return
+
+    print(f"Sending iMessage to {to_email}...")
+    # Properly escape quotes and backslashes for AppleScript string
+    escaped_message = message.replace('\\', '\\\\').replace('"', '\\"')
+
+    applescript = f'''
+    tell application "Messages"
+        set targetService to 1st service whose service type = iMessage
+        set targetBuddy to buddy "{to_email}" of targetService
+        send "{escaped_message}" to targetBuddy
+    end tell
+    '''
+
+    try:
+        subprocess.run(['osascript', '-e', applescript], check=True, capture_output=True, text=True)
+        print(f"Successfully sent iMessage to {to_email}.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to send iMessage to {to_email}. Error: {e.stderr}")
 
 def fetch_events_from_sheet():
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
@@ -460,6 +487,12 @@ if __name__ == "__main__":
     with open('team_emails.json', 'r') as f:
         team_emails = json.load(f)
 
+    try:
+        with open('team_phones.json', 'r') as f:
+            team_phones = json.load(f)
+    except FileNotFoundError:
+        team_phones = {}
+
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     os.makedirs('pdfs', exist_ok=True)
@@ -634,6 +667,37 @@ if __name__ == "__main__":
 
         if not sent_any:
             print("No events scheduled for today. Exiting.")
+
+    elif run_mode == 'imessage_reminder':
+        print("Running in iMessage Reminder Mode.")
+        # Filter strictly for today's events
+        todays_events = get_events_by_member(events, today, days_ahead=1)
+
+        sent_any = False
+        summary_lines = []
+        for member in TEAM_MEMBERS:
+            if member in team_phones and todays_events[member]:
+                member_events = todays_events[member]
+                msg_body = f"Hi {member},\n\nJust a quick reminder you have an event today:\n"
+                summary_lines.append(f"{member}:")
+                for ev in member_events:
+                    msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
+                    summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
+                msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
+
+                send_imessage(team_phones[member], msg_body, is_dry_run)
+                sent_any = True
+            elif member not in team_phones and todays_events[member]:
+                print(f"No phone configured for {member}, skipping today's iMessage.")
+
+        if not sent_any:
+            print("No events scheduled for today. Exiting.")
+        else:
+            summary_msg = "Daily Summary:\nThe following team members are working today:\n" + "\n".join(summary_lines)
+            if "Cameron" in team_phones:
+                send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
+            else:
+                print("Cameron's phone not configured. Skipping summary message.")
 
     else: # weekly mode
         print("Running in Weekly Mode.")
