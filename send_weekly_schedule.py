@@ -487,6 +487,12 @@ if __name__ == "__main__":
     with open('team_emails.json', 'r') as f:
         team_emails = json.load(f)
 
+    try:
+        with open('team_phones.json', 'r') as f:
+            team_phones = json.load(f)
+    except FileNotFoundError:
+        team_phones = {}
+
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     os.makedirs('pdfs', exist_ok=True)
@@ -669,17 +675,17 @@ if __name__ == "__main__":
 
         sent_any = False
         for member in TEAM_MEMBERS:
-            if member in team_emails and todays_events[member]:
+            if member in team_phones and todays_events[member]:
                 member_events = todays_events[member]
                 msg_body = f"Hi {member},\n\nJust a quick reminder you have an event today:\n"
                 for ev in member_events:
-                    msg_body += f"- {ev['name']} @ {ev['call_time']}\n"
+                    msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
                 msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
 
-                send_imessage(team_emails[member], msg_body, is_dry_run)
+                send_imessage(team_phones[member], msg_body, is_dry_run)
                 sent_any = True
-            elif member not in team_emails and todays_events[member]:
-                print(f"No email configured for {member}, skipping today's iMessage.")
+            elif member not in team_phones and todays_events[member]:
+                print(f"No phone configured for {member}, skipping today's iMessage.")
 
         if not sent_any:
             print("No events scheduled for today. Exiting.")
