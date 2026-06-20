@@ -13,6 +13,24 @@ import subprocess
 
 TEAM_MEMBERS = ["Aria", "Cameron", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
 
+def send_link_via_shortcut(phone_number, is_dry_run=False):
+    """
+    Triggers a macOS Shortcut to send the website link natively, bypassing the osascript plaintext bug.
+    """
+    if is_dry_run:
+        print(f"[DRY RUN] Would trigger 'SendTechLink' Shortcut for {phone_number}\n")
+        return
+
+    print(f"Triggering 'SendTechLink' Shortcut for {phone_number}...")
+    try:
+        # Pass the phone number to the shortcut via standard input
+        process = subprocess.Popen(['echo', phone_number], stdout=subprocess.PIPE)
+        subprocess.run(['shortcuts', 'run', 'SendTechLink'], stdin=process.stdout, check=True, capture_output=True, text=True)
+        process.wait()
+        print(f"Successfully triggered Shortcut for {phone_number}.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to trigger Shortcut for {phone_number}. Error: {e.stderr}")
+
 def send_imessage(to_email, message, is_dry_run=False):
     """
     Sends an iMessage using AppleScript (via osascript).
@@ -728,7 +746,7 @@ if __name__ == "__main__":
                 formatted_date = earliest_date.strftime('%B %d')
                 msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
                 send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
-                send_imessage(team_phones["Cameron"], "https://www.fccla.org/tech-info", is_dry_run)
+                send_link_via_shortcut(team_phones["Cameron"], is_dry_run)
 
     elif run_mode == 'imessage_reminder':
         print("Running in iMessage Reminder Mode.")
@@ -768,7 +786,7 @@ if __name__ == "__main__":
                 msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
 
                 send_imessage(team_phones[member], msg_body, is_dry_run)
-                send_imessage(team_phones[member], "https://www.fccla.org/tech-info", is_dry_run)
+                send_link_via_shortcut(team_phones[member], is_dry_run)
                 sent_any = True
             elif member not in team_phones and target_events.get(member):
                 print(f"No phone configured for {member}, skipping {date_word}'s iMessage.")
@@ -779,7 +797,7 @@ if __name__ == "__main__":
             summary_msg = f"Summary ({date_word.capitalize()}):\nThe following team members are working:\n" + "\n".join(summary_lines)
             if "Cameron" in team_phones:
                 send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
-                send_imessage(team_phones["Cameron"], "https://www.fccla.org/tech-info", is_dry_run)
+                send_link_via_shortcut(team_phones["Cameron"], is_dry_run)
             else:
                 print("Cameron's phone not configured. Skipping summary message.")
 
