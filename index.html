@@ -326,6 +326,15 @@
         }
 
         @media screen and (max-width: 768px) {
+            .event-modal-button-container {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            .event-modal-ow-button {
+                margin-right: 0;
+            }
             .upcoming-events-table {
                 zoom: 0.5;
             }
@@ -416,7 +425,7 @@
             <h2 style="margin-top: 0; flex-shrink: 0;">Event Details</h2>
             <div id="event-modal-body"></div>
             <div class="event-modal-button-container">
-                <a id="event-modal-ow-link" href="https://thecathedralfccla.github.io/" target="_blank" class="event-modal-ow-button" style="display: none;">Open OW</a>
+                <a id="event-modal-ow-link" href="https://thecathedralfccla.github.io/OW/" target="_blank" class="event-modal-ow-button" style="display: none;">Open OW</a>
                 <a id="event-modal-sheet-link" href="#" target="_blank" class="event-modal-sheet-button">Open in Google Sheet</a>
             </div>
         </div>
