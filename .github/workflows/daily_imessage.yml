@@ -2,7 +2,8 @@ name: Send Daily iMessage Reminders
 
 on:
   schedule:
-    - cron: '0 10 * * *'
+    - cron: '0 3 * * *'  # 8 PM PDT (previous night) for early morning shifts (<= 7am)
+    - cron: '0 14 * * *' # 7 AM PDT for regular shifts (> 7am)
   workflow_dispatch:
 
 jobs:

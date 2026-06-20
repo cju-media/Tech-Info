@@ -39,6 +39,33 @@ def send_imessage(to_email, message, is_dry_run=False):
     except subprocess.CalledProcessError as e:
         print(f"Failed to send iMessage to {to_email}. Error: {e.stderr}")
 
+def parse_time(time_str):
+    if not time_str or time_str == 'None':
+        return 9999
+
+    match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?', time_str, re.IGNORECASE)
+    if not match:
+        return 9999
+
+    hour = int(match.group(1))
+    minute = int(match.group(2)) if match.group(2) else 0
+    modifier = match.group(3).lower() if match.group(3) else None
+
+    if modifier:
+        if modifier in ['pm', 'p'] and hour < 12:
+            hour += 12
+        if modifier in ['am', 'a'] and hour == 12:
+            hour = 0
+    else:
+        if 7 <= hour <= 11:
+            pass # assume AM
+        elif 1 <= hour <= 6:
+            hour += 12 # assume PM
+        elif hour == 12:
+            pass # assume PM
+
+    return hour * 60 + minute
+
 def fetch_events_from_sheet():
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
     gid = '251348517'
@@ -705,15 +732,35 @@ if __name__ == "__main__":
 
     elif run_mode == 'imessage_reminder':
         print("Running in iMessage Reminder Mode.")
-        # Filter strictly for today's events
-        todays_events = get_events_by_member(events, today, days_ahead=1)
+
+        current_hour = datetime.now().hour
+        is_night_cron = current_hour >= 18  # Assuming run around 8pm local (>= 18 for safety margin)
+
+        if is_night_cron:
+            print("Night Cron Detected. Checking for tomorrow's early shifts (<= 7:00 AM)...")
+            target_date = today + timedelta(days=1)
+            target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
+
+            # Filter for early shifts only (<= 7 AM = <= 420 minutes)
+            target_events = {member: [e for e in evs if parse_time(e['Call Time']) <= 420]
+                             for member, evs in target_events_raw.items()}
+            date_word = "tomorrow"
+        else:
+            print("Morning Cron Detected. Checking for today's regular shifts (> 7:00 AM)...")
+            target_date = today
+            target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
+
+            # Filter for regular shifts only (> 7 AM = > 420 minutes)
+            target_events = {member: [e for e in evs if parse_time(e['Call Time']) > 420]
+                             for member, evs in target_events_raw.items()}
+            date_word = "today"
 
         sent_any = False
         summary_lines = []
         for member in TEAM_MEMBERS:
-            if member in team_phones and todays_events[member]:
-                member_events = todays_events[member]
-                msg_body = f"Hi {member},\n\nJust a quick reminder you have an event today:\n"
+            if member in team_phones and target_events.get(member):
+                member_events = target_events[member]
+                msg_body = f"Hi {member},\n\nJust a quick reminder you have an event {date_word}:\n"
                 summary_lines.append(f"{member}:")
                 for ev in member_events:
                     msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
@@ -723,13 +770,13 @@ if __name__ == "__main__":
                 send_imessage(team_phones[member], msg_body, is_dry_run)
                 send_imessage(team_phones[member], "https://www.fccla.org/tech-info", is_dry_run)
                 sent_any = True
-            elif member not in team_phones and todays_events[member]:
-                print(f"No phone configured for {member}, skipping today's iMessage.")
+            elif member not in team_phones and target_events.get(member):
+                print(f"No phone configured for {member}, skipping {date_word}'s iMessage.")
 
         if not sent_any:
-            print("No events scheduled for today. Exiting.")
+            print(f"No targeted events scheduled for {date_word}. Exiting.")
         else:
-            summary_msg = "Daily Summary:\nThe following team members are working today:\n" + "\n".join(summary_lines)
+            summary_msg = f"Summary ({date_word.capitalize()}):\nThe following team members are working:\n" + "\n".join(summary_lines)
             if "Cameron" in team_phones:
                 send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
                 send_imessage(team_phones["Cameron"], "https://www.fccla.org/tech-info", is_dry_run)
