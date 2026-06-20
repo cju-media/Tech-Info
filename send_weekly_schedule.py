@@ -700,8 +700,8 @@ if __name__ == "__main__":
 
                 formatted_date = earliest_date.strftime('%B %d')
                 msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
-                msg_body += "\n\nhttps://www.fccla.org/tech-info"
                 send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
+                send_imessage(team_phones["Cameron"], "https://www.fccla.org/tech-info", is_dry_run)
 
     elif run_mode == 'imessage_reminder':
         print("Running in iMessage Reminder Mode.")
@@ -718,9 +718,10 @@ if __name__ == "__main__":
                 for ev in member_events:
                     msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
                     summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
-                msg_body += "\nHave a great shift!\nBest,\nCam-Bot\n\nhttps://www.fccla.org/tech-info"
+                msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
 
                 send_imessage(team_phones[member], msg_body, is_dry_run)
+                send_imessage(team_phones[member], "https://www.fccla.org/tech-info", is_dry_run)
                 sent_any = True
             elif member not in team_phones and todays_events[member]:
                 print(f"No phone configured for {member}, skipping today's iMessage.")
@@ -729,9 +730,9 @@ if __name__ == "__main__":
             print("No events scheduled for today. Exiting.")
         else:
             summary_msg = "Daily Summary:\nThe following team members are working today:\n" + "\n".join(summary_lines)
-            summary_msg += "\n\nhttps://www.fccla.org/tech-info"
             if "Cameron" in team_phones:
                 send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
+                send_imessage(team_phones["Cameron"], "https://www.fccla.org/tech-info", is_dry_run)
             else:
                 print("Cameron's phone not configured. Skipping summary message.")
 
