@@ -310,31 +310,7 @@
             background-color: #218838;
         }
 
-        .event-modal-ow-button {
-            background-color: #007bff;
-            color: white !important;
-            padding: 10px 20px;
-            text-decoration: none !important;
-            border-radius: 5px;
-            font-weight: bold;
-            display: inline-block;
-            transition: background-color 0.3s;
-            margin-right: 10px;
-        }
-        .event-modal-ow-button:hover {
-            background-color: #0056b3;
-        }
-
         @media screen and (max-width: 768px) {
-            .event-modal-button-container {
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-                align-items: center;
-            }
-            .event-modal-ow-button {
-                margin-right: 0;
-            }
             .upcoming-events-table {
                 zoom: 0.5;
             }
@@ -425,7 +401,6 @@
             <h2 style="margin-top: 0; flex-shrink: 0;">Event Details</h2>
             <div id="event-modal-body"></div>
             <div class="event-modal-button-container">
-                <a id="event-modal-ow-link" href="https://thecathedralfccla.github.io/OW/" target="_blank" class="event-modal-ow-button" style="display: none;">Open OW</a>
                 <a id="event-modal-sheet-link" href="#" target="_blank" class="event-modal-sheet-button">Open in Google Sheet</a>
             </div>
         </div>
@@ -477,15 +452,8 @@
             const modalOverlay = document.getElementById('event-modal-overlay');
             const modalBody = document.getElementById('event-modal-body');
             const modalLink = document.getElementById('event-modal-sheet-link');
-            const owLink = document.getElementById('event-modal-ow-link');
 
             modalBody.innerHTML = ''; // Clear previous content
-
-            if (event.name && event.name.toLowerCase().includes('worship service')) {
-                owLink.style.display = 'inline-block';
-            } else {
-                owLink.style.display = 'none';
-            }
 
             const rowData = [
                 { label: 'Date', value: event.dateStr },
@@ -623,7 +591,7 @@
 
                          const eventName = row.c[1]?.v || 'unnamed-event';
                          const sanitizedName = eventName.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                         const sanitizedDate = dateStr.replace(/\//g, '-');
+                         const sanitizedDate = dateStr.replace(/[\/\s]+/g, '-').toLowerCase();
                          const elementId = `${sanitizedDate}-${sanitizedName}`;
 
                          const eventData = {
