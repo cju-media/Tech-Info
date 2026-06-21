@@ -3,94 +3,94 @@
         "Aria": [],
         "Cameron": [],
         "Danny": [
-            "SU 6-21-2026-worship-service",
-            "SU 6-28-2026-worship-service"
+            "su-6-21-2026-worship-service",
+            "su-6-28-2026-worship-service"
         ],
         "Jaffe": [
-            "SU 6-21-2026-worship-service",
-            "SU 6-28-2026-worship-service",
-            "SU 7-05-2026-worship-service"
+            "su-6-21-2026-worship-service",
+            "su-6-28-2026-worship-service",
+            "su-7-05-2026-worship-service"
         ],
         "Kaspar": [],
         "Marc": [
-            "SU 7-05-2026-worship-service"
+            "su-7-05-2026-worship-service"
         ],
         "Saad": [
-            "SU 6-28-2026-adrienne-bawa-sound-bath"
+            "su-6-28-2026-adrienne-bawa-sound-bath"
         ]
     },
     "event_details": {
-        "SU 8-2-2026-worship-service": {
+        "su-8-2-2026-worship-service": {
             "date": "2026-08-02",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         },
-        "FR 7-31-2026-neo-fest-concert-2": {
+        "fr-7-31-2026-neo-fest-concert-2": {
             "date": "2026-07-31",
             "name": "NEO FEST Concert 2",
             "call_time": "12:30pm-9:00pm"
         },
-        "SU 7-26-2026-worship-service": {
+        "su-7-26-2026-worship-service": {
             "date": "2026-07-26",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         },
-        "SA 7-25-2026-neo-fest-concert-1": {
+        "sa-7-25-2026-neo-fest-concert-1": {
             "date": "2026-07-25",
             "name": "NEO FEST Concert 1",
             "call_time": "3:00pm-10:00pm"
         },
-        "FR 7-24-2026-wedding-ceremony": {
+        "fr-7-24-2026-wedding-ceremony": {
             "date": "2026-07-24",
             "name": "Wedding Ceremony",
             "call_time": "3:00pm-7:00pm"
         },
-        "SU 7-19-2026-worship-service": {
+        "su-7-19-2026-worship-service": {
             "date": "2026-07-19",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         },
-        "SA 7-18-2026-cmala-saturday-shift-2": {
+        "sa-7-18-2026-cmala-saturday-shift-2": {
             "date": "2026-07-18",
             "name": "CMALA Saturday Shift 2",
             "call_time": "2:30pm-10:30pm"
         },
-        "SA 7-18-2026-cmala-saturady-shift-1": {
+        "sa-7-18-2026-cmala-saturady-shift-1": {
             "date": "2026-07-18",
             "name": "CMALA Saturady Shift 1",
             "call_time": "10:00am-5:00pm"
         },
-        "FR 7-17-2026-cmala-friday-shift-2": {
+        "fr-7-17-2026-cmala-friday-shift-2": {
             "date": "2026-07-17",
             "name": "CMALA Friday Shift 2",
             "call_time": "2:30pm-10:30pm"
         },
-        "FR 7-17-2026-cmala-friday-shift-1": {
+        "fr-7-17-2026-cmala-friday-shift-1": {
             "date": "2026-07-17",
             "name": "CMALA Friday Shift 1",
             "call_time": "10:00am-5:00pm"
         },
-        "SU 7-12-2026-worship-service": {
+        "su-7-12-2026-worship-service": {
             "date": "2026-07-12",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         },
-        "SU 7-05-2026-worship-service": {
+        "su-7-05-2026-worship-service": {
             "date": "2026-07-05",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         },
-        "SU 6-28-2026-adrienne-bawa-sound-bath": {
+        "su-6-28-2026-adrienne-bawa-sound-bath": {
             "date": "2026-06-28",
             "name": "Adrienne Bawa Sound Bath",
             "call_time": "4:30pm-8:30pm"
         },
-        "SU 6-28-2026-worship-service": {
+        "su-6-28-2026-worship-service": {
             "date": "2026-06-28",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         },
-        "SU 6-21-2026-worship-service": {
+        "su-6-21-2026-worship-service": {
             "date": "2026-06-21",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"

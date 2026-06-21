@@ -9,19 +9,26 @@ on:
 jobs:
   send-daily-imessages:
     runs-on: [self-hosted, macOS]
+    env:
+      RUNNER_TOOL_CACHE: /tmp/runner_tool_cache
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
       - name: Install system dependencies for WeasyPrint
         run: |
-          brew install python@3.10 pango
+          brew install pango
 
       - name: Install dependencies
         run: |
-          python3.10 -m pip install --upgrade pip
-          python3.10 -m pip install pandas weasyprint
+          python -m pip install --upgrade pip
+          pip install pandas weasyprint
 
       - name: Run schedule script in iMessage Reminder Mode
         env:
