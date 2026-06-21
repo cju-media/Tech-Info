@@ -31,4 +31,5 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
           RUN_MODE: 'imessage_reminder'
-        run: python3.10 send_weekly_schedule.py
+          CRON_SCHEDULE: ${{ github.event.schedule }}
+        run: python send_weekly_schedule.py

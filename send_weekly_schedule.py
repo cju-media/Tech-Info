@@ -13,31 +13,27 @@ import subprocess
 
 TEAM_MEMBERS = ["Aria", "Cameron", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
 
-def send_imessage(to_email, message, is_dry_run=False):
+def send_imessage(to_phone, message, is_dry_run=False):
     """
-    Sends an iMessage using AppleScript (via osascript).
+    Sends an iMessage by passing JSON to a native macOS Shortcut, bypassing the osascript plaintext bug.
     """
     if is_dry_run:
-        print(f"[DRY RUN] Would send iMessage to {to_email}:\n{message}\n")
+        print(f"[DRY RUN] Would send iMessage via Shortcut to {to_phone}:\n{message}\n")
         return
 
-    print(f"Sending iMessage to {to_email}...")
-    # Properly escape quotes and backslashes for AppleScript string
-    escaped_message = message.replace('\\', '\\\\').replace('"', '\\"')
+    print(f"Sending iMessage via Shortcut to {to_phone}...")
 
-    applescript = f'''
-    tell application "Messages"
-        set targetService to 1st service whose service type = iMessage
-        set targetBuddy to buddy "{to_email}" of targetService
-        send "{escaped_message}" to targetBuddy
-    end tell
-    '''
+    payload = json.dumps({
+        "phone": to_phone,
+        "message": message
+    })
 
     try:
-        subprocess.run(['osascript', '-e', applescript], check=True, capture_output=True, text=True)
-        print(f"Successfully sent iMessage to {to_email}.")
+        # Pass the JSON string to the shortcut via standard input
+        subprocess.run(['shortcuts', 'run', 'SendTechMessage'], input=payload, check=True, capture_output=True, text=True)
+        print(f"Successfully triggered 'SendTechMessage' Shortcut for {to_phone}.")
     except subprocess.CalledProcessError as e:
-        print(f"Failed to send iMessage to {to_email}. Error: {e.stderr}")
+        print(f"Failed to trigger Shortcut for {to_phone}. Error: {e.stderr}")
 
 def parse_time(time_str):
     if not time_str or time_str == 'None':
@@ -749,14 +745,25 @@ if __name__ == "__main__":
 
                 formatted_date = earliest_date.strftime('%B %d')
                 msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
+                msg_body += "\n\nhttps://www.fccla.org/tech-info"
                 send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
-                send_imessage(team_phones["Cameron"], "https://www.fccla.org/tech-info", is_dry_run)
 
     elif run_mode == 'imessage_reminder':
         print("Running in iMessage Reminder Mode.")
 
-        current_hour = datetime.now().hour
-        is_night_cron = current_hour >= 18  # Assuming run around 8pm local (>= 18 for safety margin)
+        cron_schedule = os.environ.get('CRON_SCHEDULE', '')
+        # '0 3 * * *' is the 8 PM PDT night cron.
+        # '0 14 * * *' is the 7 AM PDT morning cron.
+
+        if cron_schedule == '0 3 * * *':
+            is_night_cron = True
+        elif cron_schedule == '0 14 * * *':
+            is_night_cron = False
+        else:
+            # Fallback to UTC time heuristic if run manually
+            current_utc_hour = datetime.utcnow().hour
+            # 8 PM PDT = 3 AM UTC. Let's say if it's between 2 AM and 10 AM UTC, it's night.
+            is_night_cron = (2 <= current_utc_hour <= 10)
 
         if is_night_cron:
             print("Night Cron Detected. Checking for tomorrow's early shifts (<= 7:00 AM)...")
@@ -787,10 +794,9 @@ if __name__ == "__main__":
                 for ev in member_events:
                     msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
                     summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
-                msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
+                msg_body += "\nHave a great shift!\nBest,\nCam-Bot\n\nhttps://www.fccla.org/tech-info"
 
                 send_imessage(team_phones[member], msg_body, is_dry_run)
-                send_imessage(team_phones[member], "https://www.fccla.org/tech-info", is_dry_run)
                 sent_any = True
             elif member not in team_phones and target_events.get(member):
                 print(f"No phone configured for {member}, skipping {date_word}'s iMessage.")
@@ -799,9 +805,9 @@ if __name__ == "__main__":
             print(f"No targeted events scheduled for {date_word}. Exiting.")
         else:
             summary_msg = f"Summary ({date_word.capitalize()}):\nThe following team members are working:\n" + "\n".join(summary_lines)
+            summary_msg += "\n\nhttps://www.fccla.org/tech-info"
             if "Cameron" in team_phones:
                 send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
-                send_imessage(team_phones["Cameron"], "https://www.fccla.org/tech-info", is_dry_run)
             else:
                 print("Cameron's phone not configured. Skipping summary message.")
 
