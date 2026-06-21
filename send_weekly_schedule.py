@@ -226,7 +226,7 @@ def get_smtp_credentials():
         'port': int(os.environ.get('SMTP_PORT', 587))
     }
 
-def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=False, canceled_events=None, new_assignments=None, time_changed_events=None):
+def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=False, canceled_events=None, new_assignments=None, time_changed_events=None, cc_admin=False):
     creds = get_smtp_credentials()
     cc_email = "cjohnston@fccla.org"
 
@@ -270,7 +270,8 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
     msg['Subject'] = subject
     msg['From'] = creds['email'] or "dry-run@example.com"
     msg['To'] = to_email
-    msg['Cc'] = cc_email
+    if cc_admin:
+        msg['Cc'] = cc_email
     msg.set_content(body)
 
     with open(pdf_filename, 'rb') as f:
@@ -278,7 +279,10 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
     msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename=f"{member}_schedule.pdf")
 
     if is_dry_run or not creds['email'] or not creds['password']:
-        print(f"DRY RUN: Would send email to {to_email} (CC: {cc_email})")
+        if cc_admin:
+            print(f"DRY RUN: Would send email to {to_email} (CC: {cc_email})")
+        else:
+            print(f"DRY RUN: Would send email to {to_email}")
         print(f"Subject: {subject}\nBody:\n{body}")
         return
 
@@ -286,18 +290,24 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
         with smtplib.SMTP(creds['server'], creds['port']) as server:
             server.starttls()
             server.login(creds['email'], creds['password'])
-            server.send_message(msg, to_addrs=[to_email, cc_email])
-        print(f"Successfully sent email to {to_email} (CC: {cc_email})")
+            if cc_admin:
+                server.send_message(msg, to_addrs=[to_email, cc_email])
+            else:
+                server.send_message(msg)
+        if cc_admin:
+            print(f"Successfully sent email to {to_email} (CC: {cc_email})")
+        else:
+            print(f"Successfully sent email to {to_email}")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
         sys.exit(1)
 
-def send_notification_email(start_date, is_dry_run=False):
+def send_notification_email(start_date, reasons_text, is_dry_run=False):
     creds = get_smtp_credentials()
     to_email = "cjohnston@fccla.org"
 
     subject = f"System Notification: Tech Schedules Sent ({start_date.strftime('%b %d')})"
-    body = f"Hello,\n\nThis is an automated notification. The weekly schedule workflow has successfully completed. Individual schedule PDFs for the next two weeks starting {start_date.strftime('%B %d, %Y')} have been generated and sent to the team members.\n\nBest,\nCam-Bot"
+    body = f"Hello,\n\nThe automated system has sent emails for the following reasons:\n\n{reasons_text}\n\nBest,\nCam-Bot"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -322,7 +332,6 @@ def send_notification_email(start_date, is_dry_run=False):
 
 def send_broadcast_email(team_emails, global_new_events, pdf_filename, is_dry_run=False):
     creds = get_smtp_credentials()
-    cc_email = "cjohnston@fccla.org"
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
     gid = '251348517'
     sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit?gid={gid}"
@@ -343,7 +352,6 @@ def send_broadcast_email(team_emails, global_new_events, pdf_filename, is_dry_ru
     msg['Subject'] = subject
     msg['From'] = creds['email'] or "dry-run@example.com"
     msg['To'] = ", ".join(to_emails)
-    msg['Cc'] = cc_email
     msg.set_content(body)
 
     with open(pdf_filename, 'rb') as f:
@@ -351,7 +359,7 @@ def send_broadcast_email(team_emails, global_new_events, pdf_filename, is_dry_ru
     msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename="Master_Upcoming_Schedule.pdf")
 
     if is_dry_run or not creds['email'] or not creds['password']:
-        print(f"DRY RUN: Would send broadcast email to {msg['To']} (CC: {cc_email})")
+        print(f"DRY RUN: Would send broadcast email to {msg['To']}")
         print(f"Subject: {subject}")
         print(f"Attachment: {pdf_filename}")
         return
@@ -360,8 +368,8 @@ def send_broadcast_email(team_emails, global_new_events, pdf_filename, is_dry_ru
         with smtplib.SMTP(creds['server'], creds['port']) as server:
             server.starttls()
             server.login(creds['email'], creds['password'])
-            server.send_message(msg, to_addrs=to_emails + [cc_email])
-        print(f"Successfully sent broadcast email to {len(to_emails)} members (CC: {cc_email})")
+            server.send_message(msg, to_addrs=to_emails)
+        print(f"Successfully sent broadcast email to {len(to_emails)} members")
     except Exception as e:
         print(f"Failed to send broadcast email: {e}")
         sys.exit(1)
@@ -591,6 +599,7 @@ if __name__ == "__main__":
             print("No schedule updates detected. Exiting.")
             sys.exit(0)
 
+        reasons_for_notification = []
         if new_event_ids_globally:
             print("Globally new events detected. Sending broadcast to team.")
             master_filename = "pdfs/master_schedule.pdf"
@@ -600,6 +609,7 @@ if __name__ == "__main__":
             # We can leverage generate_pdf and just pass "All Team" as the member name
             generate_pdf("All Team", all_upcoming, today, master_filename, run_mode, new_event_ids=new_event_ids_globally)
             send_broadcast_email(team_emails, global_new_events, master_filename, is_dry_run)
+            reasons_for_notification.append(f"- Sent global broadcast email to entire team for {len(global_new_events)} completely new event(s).")
 
         if members_with_updates:
             print("Schedule assignment updates detected. Sending specific updates to affected members.")
@@ -609,9 +619,15 @@ if __name__ == "__main__":
                     # For update mode, we show ALL upcoming events (days_ahead=None)
                     all_highlight_ids = updates['added'].union(updates['time_changed_ids'])
                     generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=all_highlight_ids)
-                    send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'], time_changed_events=updates['time_changed'])
+                    send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'], time_changed_events=updates['time_changed'], cc_admin=False)
+                    reasons_for_notification.append(f"- Sent specific update email to {member} (Additions: {len(updates['added'])}, Cancellations: {len(updates['canceled'])}, Time Changes: {len(updates['time_changed_ids'])}).")
                 else:
                     print(f"No email configured for {member}, skipping.")
+
+        if reasons_for_notification:
+            reasons_text = "\n".join(reasons_for_notification)
+            print("Sending admin notification email.")
+            send_notification_email(today, reasons_text, is_dry_run)
 
     elif run_mode == 'avail_check':
         print("Running in Availability Check Mode.")
@@ -679,18 +695,24 @@ if __name__ == "__main__":
         # Filter strictly for today's events (1 day ahead = today only)
         todays_events = get_events_by_member(events, today, days_ahead=1)
 
+        reasons_for_notification = []
         sent_any = False
         for member in TEAM_MEMBERS:
             if member in team_emails and todays_events[member]:
                 filename = f"pdfs/{member}_schedule.pdf"
                 generate_pdf(member, todays_events[member], today, filename, run_mode)
-                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
+                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, cc_admin=True)
                 sent_any = True
+                reasons_for_notification.append(f"- Sent daily schedule reminder to {member}.")
             elif member not in team_emails and todays_events[member]:
                 print(f"No email configured for {member}, skipping today's reminder.")
 
         if not sent_any:
             print("No events scheduled for today. Exiting.")
+        else:
+            reasons_text = "\n".join(reasons_for_notification)
+            print("Sending admin notification email.")
+            send_notification_email(today, reasons_text, is_dry_run)
 
     elif run_mode == 'imessage_test':
         print("Running in iMessage Test Mode.")
@@ -793,13 +815,17 @@ if __name__ == "__main__":
         print("Running in Weekly Mode.")
         # Weekly gets a 2-week view
         two_week_events = get_events_by_member(events, today, days_ahead=14)
+        reasons_for_notification = []
         for member in TEAM_MEMBERS:
             if member in team_emails:
                 filename = f"pdfs/{member}_schedule.pdf"
                 generate_pdf(member, two_week_events[member], today, filename, run_mode)
-                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
+                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, cc_admin=False)
+                reasons_for_notification.append(f"- Sent standard 2-week schedule to {member}.")
             else:
                 print(f"No email configured for {member}, skipping.")
 
-        print("Sending admin notification email.")
-        send_notification_email(today, is_dry_run)
+        if reasons_for_notification:
+            reasons_text = "\n".join(reasons_for_notification)
+            print("Sending admin notification email.")
+            send_notification_email(today, reasons_text, is_dry_run)
