@@ -14,25 +14,30 @@ TEAM_MEMBERS = ["Aria", "Cameron", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
 
 def send_imessage(to_phone, message, is_dry_run=False):
     """
-    Sends an iMessage by passing JSON to a native macOS Shortcut, bypassing the osascript plaintext bug.
+    Sends an iMessage natively using AppleScript (via osascript).
     """
     if is_dry_run:
-        print(f"[DRY RUN] Would send iMessage via Shortcut to {to_phone}:\n{message}\n")
+        print(f"[DRY RUN] Would send iMessage to {to_phone}:\n{message}\n")
         return
 
-    print(f"Sending iMessage via Shortcut to {to_phone}...")
+    print(f"Sending iMessage to {to_phone}...")
 
-    payload = json.dumps({
-        "phone": to_phone,
-        "message": message
-    })
+    # Properly escape quotes and backslashes for AppleScript string
+    escaped_message = message.replace('\\', '\\\\').replace('"', '\\"')
+
+    applescript = f'''
+    tell application "Messages"
+        set targetService to 1st service whose service type = iMessage
+        set targetBuddy to buddy "{to_phone}" of targetService
+        send "{escaped_message}" to targetBuddy
+    end tell
+    '''
 
     try:
-        # Pass the JSON string to the shortcut via standard input
-        subprocess.run(['shortcuts', 'run', 'SendTechMessage'], input=payload, check=True, capture_output=True, text=True)
-        print(f"Successfully triggered 'SendTechMessage' Shortcut for {to_phone}.")
+        subprocess.run(['osascript', '-e', applescript], check=True, capture_output=True, text=True)
+        print(f"Successfully sent iMessage to {to_phone}.")
     except subprocess.CalledProcessError as e:
-        print(f"Failed to trigger Shortcut for {to_phone}. Error: {e.stderr}")
+        print(f"Failed to send iMessage to {to_phone}. Error: {e.stderr}")
 
 def parse_time(time_str):
     if not time_str or time_str == 'None':
@@ -722,7 +727,6 @@ if __name__ == "__main__":
 
                 formatted_date = earliest_date.strftime('%B %d')
                 msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
-                msg_body += "\n\nhttps://www.fccla.org/tech-info"
                 send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
 
     elif run_mode == 'imessage_reminder':
@@ -771,7 +775,7 @@ if __name__ == "__main__":
                 for ev in member_events:
                     msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
                     summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
-                msg_body += "\nHave a great shift!\nBest,\nCam-Bot\n\nhttps://www.fccla.org/tech-info"
+                msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
 
                 send_imessage(team_phones[member], msg_body, is_dry_run)
                 sent_any = True
@@ -782,7 +786,6 @@ if __name__ == "__main__":
             print(f"No targeted events scheduled for {date_word}. Exiting.")
         else:
             summary_msg = f"Summary ({date_word.capitalize()}):\nThe following team members are working:\n" + "\n".join(summary_lines)
-            summary_msg += "\n\nhttps://www.fccla.org/tech-info"
             if "Cameron" in team_phones:
                 send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
             else:
