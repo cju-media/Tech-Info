@@ -3,11 +3,9 @@
         "Aria": [],
         "Cameron": [],
         "Danny": [
-            "su-6-21-2026-worship-service",
             "su-6-28-2026-worship-service"
         ],
         "Jaffe": [
-            "su-6-21-2026-worship-service",
             "su-6-28-2026-worship-service",
             "su-7-05-2026-worship-service"
         ],
@@ -87,11 +85,6 @@
         },
         "su-6-28-2026-worship-service": {
             "date": "2026-06-28",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
-        },
-        "su-6-21-2026-worship-service": {
-            "date": "2026-06-21",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         }
