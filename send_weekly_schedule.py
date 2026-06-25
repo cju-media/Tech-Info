@@ -36,6 +36,8 @@ def send_imessage(to_phone, message, is_dry_run=False):
     try:
         subprocess.run(['osascript', '-e', applescript], check=True, capture_output=True, text=True)
         print(f"Successfully sent iMessage to {to_phone}.")
+    except FileNotFoundError:
+        print(f"Failed to send iMessage to {to_phone}: 'osascript' command not found. Ensure this script is running on a macOS environment.")
     except subprocess.CalledProcessError as e:
         print(f"Failed to send iMessage to {to_phone}. Error: {e.stderr}")
 
@@ -616,6 +618,16 @@ if __name__ == "__main__":
                     send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'], time_changed_events=updates['time_changed'])
                 else:
                     print(f"No email configured for {member}, skipping.")
+
+                # Send cancellation texts
+                if updates.get('canceled') and member in team_phones:
+                    for ce in updates['canceled']:
+                        member_text = f"Hi {member},\n\nYour shift for \"{ce['name']}\" on {ce['date']} has been CANCELLED.\n\nBest,\nCam-Bot"
+                        send_imessage(team_phones[member], member_text, is_dry_run)
+
+                        if "Cameron" in team_phones:
+                            admin_text = f"Notification: {member} was just notified that their shift for \"{ce['name']}\" on {ce['date']} was cancelled."
+                            send_imessage(team_phones["Cameron"], admin_text, is_dry_run)
 
     elif run_mode == 'avail_check':
         print("Running in Availability Check Mode.")
