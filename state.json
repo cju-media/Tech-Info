@@ -13,9 +13,7 @@
         "Marc": [
             "su-7-05-2026-worship-service"
         ],
-        "Saad": [
-            "su-6-28-2026-adrienne-bawa-sound-bath"
-        ]
+        "Saad": []
     },
     "event_details": {
         "su-8-2-2026-worship-service": {
@@ -77,11 +75,6 @@
             "date": "2026-07-05",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "su-6-28-2026-adrienne-bawa-sound-bath": {
-            "date": "2026-06-28",
-            "name": "Adrienne Bawa Sound Bath",
-            "call_time": "4:30pm-8:30pm"
         },
         "su-6-28-2026-worship-service": {
             "date": "2026-06-28",
