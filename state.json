@@ -1,19 +1,38 @@
 {
     "assignments": {
         "Aria": [],
-        "Cameron": [],
+        "Cameron": [
+            "sa-7-25-2026-neo-fest-concert-1"
+        ],
         "Danny": [
-            "su-6-28-2026-worship-service"
+            "su-6-28-2026-worship-service",
+            "sa-7-18-2026-cmala-saturday-shift-2",
+            "su-7-26-2026-worship-service",
+            "su-8-2-2026-worship-service"
         ],
         "Jaffe": [
             "su-6-28-2026-worship-service",
-            "su-7-05-2026-worship-service"
+            "su-7-05-2026-worship-service",
+            "sa-7-25-2026-neo-fest-concert-1",
+            "su-7-26-2026-worship-service",
+            "fr-7-31-2026-neo-fest-concert-2",
+            "su-8-2-2026-worship-service"
         ],
-        "Kaspar": [],
+        "Kaspar": [
+            "fr-7-24-2026-wedding-ceremony"
+        ],
         "Marc": [
-            "su-7-05-2026-worship-service"
+            "su-7-05-2026-worship-service",
+            "su-7-12-2026-worship-service",
+            "sa-7-18-2026-cmala-saturady-shift-1",
+            "su-7-19-2026-worship-service"
         ],
-        "Saad": []
+        "Saad": [
+            "su-7-12-2026-worship-service",
+            "fr-7-17-2026-cmala-friday-shift",
+            "su-7-19-2026-worship-service",
+            "fr-7-31-2026-neo-fest-concert-2"
+        ]
     },
     "event_details": {
         "su-8-2-2026-worship-service": {
