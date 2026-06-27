@@ -1,8 +1,8 @@
 {
     "su-8-2-2026-worship-service": [
-        "Marc",
-        "Saad",
         "Danny",
+        "Saad",
+        "Marc",
         "Jaffe"
     ],
     "fr-7-31-2026-neo-fest-concert-2": [
@@ -17,18 +17,18 @@
         "Jaffe"
     ],
     "fr-7-24-2026-wedding-ceremony": [
-        "Marc",
         "Danny",
-        "Kaspar"
+        "Kaspar",
+        "Marc"
     ],
     "su-7-19-2026-worship-service": [
-        "Marc",
+        "Danny",
         "Saad",
-        "Danny"
+        "Marc"
     ],
     "sa-7-18-2026-cmala-saturday-shift-2": [
-        "Saad",
-        "Danny"
+        "Danny",
+        "Saad"
     ],
     "sa-7-18-2026-cmala-saturady-shift-1": [
         "Saad. Marc"
@@ -40,13 +40,13 @@
         "Saad. Marc"
     ],
     "su-7-05-2026-worship-service": [
-        "Marc",
         "Danny",
+        "Marc",
         "Jaffe"
     ],
     "su-6-28-2026-worship-service": [
-        "Marc",
         "Danny",
+        "Marc",
         "Jaffe"
     ]
 }
