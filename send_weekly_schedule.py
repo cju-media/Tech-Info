@@ -276,7 +276,11 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
     msg['Subject'] = subject
     msg['From'] = creds['email'] or "dry-run@example.com"
     msg['To'] = to_email
-    msg['Cc'] = cc_email
+
+    # Only CC the admin if it's a daily reminder. Otherwise, suppress individual CCs.
+    if run_mode == 'daily_reminder':
+        msg['Cc'] = cc_email
+
     msg.set_content(body)
 
     with open(pdf_filename, 'rb') as f:
@@ -284,7 +288,8 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
     msg.add_attachment(pdf_data, maintype='application', subtype='pdf', filename=f"{member}_schedule.pdf")
 
     if is_dry_run or not creds['email'] or not creds['password']:
-        print(f"DRY RUN: Would send email to {to_email} (CC: {cc_email})")
+        cc_log = f" (CC: {cc_email})" if run_mode == 'daily_reminder' else ""
+        print(f"DRY RUN: Would send email to {to_email}{cc_log}")
         print(f"Subject: {subject}\nBody:\n{body}")
         return
 
@@ -292,8 +297,10 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
         with smtplib.SMTP(creds['server'], creds['port']) as server:
             server.starttls()
             server.login(creds['email'], creds['password'])
-            server.send_message(msg, to_addrs=[to_email, cc_email])
-        print(f"Successfully sent email to {to_email} (CC: {cc_email})")
+            to_addrs = [to_email, cc_email] if run_mode == 'daily_reminder' else [to_email]
+            server.send_message(msg, to_addrs=to_addrs)
+            cc_log = f" (CC: {cc_email})" if run_mode == 'daily_reminder' else ""
+            print(f"Successfully sent email to {to_email}{cc_log}")
     except Exception as e:
         print(f"Failed to send email to {to_email}: {e}")
         sys.exit(1)
@@ -629,6 +636,9 @@ if __name__ == "__main__":
                             admin_text = f"Notification: {member} was just notified that their shift for \"{ce['name']}\" on {ce['date']} was cancelled."
                             send_imessage(team_phones["Cameron"], admin_text, is_dry_run)
 
+            print("Sending admin notification email for update mode.")
+            send_notification_email(today, is_dry_run)
+
     elif run_mode == 'avail_check':
         print("Running in Availability Check Mode.")
         current_avail_state = get_avail_state()
@@ -746,11 +756,11 @@ if __name__ == "__main__":
 
         cron_schedule = os.environ.get('CRON_SCHEDULE', '')
         # '0 3 * * *' is the 8 PM PDT night cron.
-        # '0 16 * * *' is the 9 AM PDT morning cron.
+        # '0 12 * * *' is the 5 AM PDT morning cron.
 
         if cron_schedule == '0 3 * * *':
             is_night_cron = True
-        elif cron_schedule == '0 16 * * *':
+        elif cron_schedule == '0 12 * * *':
             is_night_cron = False
         else:
             # Fallback to UTC time heuristic if run manually
