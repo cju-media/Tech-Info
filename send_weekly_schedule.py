@@ -746,11 +746,11 @@ if __name__ == "__main__":
 
         cron_schedule = os.environ.get('CRON_SCHEDULE', '')
         # '0 3 * * *' is the 8 PM PDT night cron.
-        # '0 16 * * *' is the 9 AM PDT morning cron.
+        # '0 12 * * *' is the 5 AM PDT morning cron.
 
         if cron_schedule == '0 3 * * *':
             is_night_cron = True
-        elif cron_schedule == '0 16 * * *':
+        elif cron_schedule == '0 12 * * *':
             is_night_cron = False
         else:
             # Fallback to UTC time heuristic if run manually
