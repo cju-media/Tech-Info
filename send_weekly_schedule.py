@@ -10,7 +10,7 @@ import smtplib
 from email.message import EmailMessage
 import subprocess
 
-TEAM_MEMBERS = ["Aria", "Cameron", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
+TEAM_MEMBERS = ["Cameron", "Danny", "Jaffe", "Kaspar", "Marc", "Saad"]
 
 def send_imessage(to_phone, message, is_dry_run=False):
     """
