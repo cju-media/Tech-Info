@@ -4,13 +4,11 @@
             "sa-7-25-2026-neo-fest-concert-1"
         ],
         "Danny": [
-            "su-6-28-2026-worship-service",
             "sa-7-18-2026-cmala-saturday-shift-2",
             "su-7-26-2026-worship-service",
             "su-8-2-2026-worship-service"
         ],
         "Jaffe": [
-            "su-6-28-2026-worship-service",
             "su-7-05-2026-worship-service",
             "sa-7-25-2026-neo-fest-concert-1",
             "su-7-26-2026-worship-service",
@@ -86,11 +84,6 @@
         },
         "su-7-05-2026-worship-service": {
             "date": "2026-07-05",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
-        },
-        "su-6-28-2026-worship-service": {
-            "date": "2026-06-28",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         }
