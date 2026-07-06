@@ -2,11 +2,11 @@ import os
 import re
 from datetime import datetime
 import dateutil.parser
-import requests
+
 from update_worship_scripts import get_drive_service, get_files_in_folder, parse_date_range, extract_date, ROOT_FOLDER_ID
 
 def main():
-    if not os.environ.get('GDRIVE_API_KEY'):
+    if not os.environ.get('GDRIVE_API_KEY') and not os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON'):
         print("MOCK RUN: Fetching series folders from Google Drive root...")
         print("Discovered 5 files/folders.")
         print("Found active folder: Series Title 2026 (01/01/26 - 12/31/26)")
@@ -32,7 +32,7 @@ def main():
         try:
             results = service.files().list(
                 q=f"'{ROOT_FOLDER_ID}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name, mimeType)",
+                fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
                 pageToken=page_token,
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True
@@ -80,7 +80,7 @@ def main():
         try:
             results = service.files().list(
                 q=f"'{target_id}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name, mimeType)",
+                fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
                 pageToken=page_token,
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True

@@ -7,15 +7,30 @@ import dateutil.parser
 
 ROOT_FOLDER_ID = '1LW_e2qjwXiI5m-TOqbLiuurTO7XzZ4OT'
 
+
+from google.oauth2 import service_account
+
 def get_drive_service():
+    service_account_json = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
     api_key = os.environ.get('GDRIVE_API_KEY')
-    if not api_key:
-        print("Error: GDRIVE_API_KEY environment variable is missing.")
-        print("Please follow the instructions to create a Google Drive API Key and add it to your GitHub Secrets.")
-        exit(1)
 
-    return build('drive', 'v3', developerKey=api_key)
+    if service_account_json:
+        try:
+            creds_dict = json.loads(service_account_json)
+            creds = service_account.Credentials.from_service_account_info(
+                creds_dict, scopes=['https://www.googleapis.com/auth/drive.readonly']
+            )
+            return build('drive', 'v3', credentials=creds)
+        except Exception as e:
+            print(f"Error parsing GDRIVE_SERVICE_ACCOUNT_JSON: {e}")
+            exit(1)
 
+    if api_key:
+        return build('drive', 'v3', developerKey=api_key)
+
+    print("Error: Neither GDRIVE_SERVICE_ACCOUNT_JSON nor GDRIVE_API_KEY environment variable is set.")
+    print("Please follow the instructions to create a Google Cloud Service Account and add its JSON key to your GitHub Secrets.")
+    exit(1)
 def list_files_recursive(service, folder_id):
     files = []
     page_token = None
@@ -111,7 +126,7 @@ def get_files_in_folder(service, folder_id):
         try:
             results = service.files().list(
                 q=f"'{folder_id}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name, mimeType)",
+                fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
                 pageToken=page_token,
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True
@@ -125,7 +140,7 @@ def get_files_in_folder(service, folder_id):
             break
     return files
 def main():
-    if not os.environ.get('GDRIVE_API_KEY'):
+    if not os.environ.get('GDRIVE_API_KEY') and not os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON'):
         with open('worship_scripts.json', 'w') as out:
             json.dump({}, out)
         print("Created empty worship_scripts.json for testing")
@@ -149,7 +164,7 @@ def main():
         try:
             results = service.files().list(
                 q=f"'{ROOT_FOLDER_ID}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name, mimeType)",
+                fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
                 pageToken=page_token,
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True
@@ -180,15 +195,16 @@ def main():
                     active_folders.append(folder)
 
     worship_scripts = {}
-    import requests
+
     output_dir = 'Service Scripts'
     os.makedirs(output_dir, exist_ok=True)
 
     for active_folder in active_folders:
         print(f"Searching docs in: {active_folder['name']}")
 
-        # If it's a shortcut, we might need its targetId
         target_id = active_folder['id']
+        if active_folder['mimeType'] == 'application/vnd.google-apps.shortcut':
+            target_id = active_folder.get('shortcutDetails', {}).get('targetId', target_id)
 
         docs = []
         page_token = None
@@ -196,7 +212,7 @@ def main():
             try:
                 results = service.files().list(
                     q=f"'{target_id}' in parents and trashed = false",
-                    fields="nextPageToken, files(id, name, mimeType)",
+                    fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
                     pageToken=page_token,
                     supportsAllDrives=True,
                     includeItemsFromAllDrives=True
@@ -215,17 +231,16 @@ def main():
                 if date_str:
                     doc_dt = dateutil.parser.parse(date_str)
                     if doc_dt.date() >= now.date():
-                        export_link = f"https://docs.google.com/document/d/{doc['id']}/export?format=pdf"
                         try:
-                            res = requests.get(export_link)
-                            if res.status_code == 200:
-                                pdf_path = f"{output_dir}/{date_str}.pdf"
-                                with open(pdf_path, 'wb') as pdf_file:
-                                    pdf_file.write(res.content)
-                                worship_scripts[date_str] = pdf_path
-                                print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
-                            else:
-                                print(f"Failed to download {doc['name']} (status {res.status_code})")
+                            pdf_path = f"{output_dir}/{date_str}.pdf"
+                            request = service.files().export_media(fileId=doc['id'], mimeType='application/pdf')
+                            pdf_content = request.execute()
+                            with open(pdf_path, 'wb') as pdf_file:
+                                pdf_file.write(pdf_content)
+
+                            # Save URL encoded path for the web
+                            worship_scripts[date_str] = pdf_path.replace(" ", "%20")
+                            print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
                         except Exception as e:
                             print(f"Error downloading {doc['name']}: {e}")
 
