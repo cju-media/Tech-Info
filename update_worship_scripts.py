@@ -190,7 +190,7 @@ def main():
         if 'folder' in folder['mimeType'] or 'shortcut' in folder['mimeType']:
             start_dt, end_dt = parse_date_range(folder['name'])
             if start_dt and end_dt:
-                if start_dt.date() <= now.date() <= end_dt.date():
+                if now.date() <= end_dt.date(): # Only filter out old series folders, allow future ones
                     print(f"Found active folder: {folder['name']}")
                     active_folders.append(folder)
 
