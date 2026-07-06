@@ -14,13 +14,13 @@ def main():
         print("Searching docs in this folder...")
         print("Discovered doc: Worship Service 10/10/26 (Parsed date: 2026-10-10)")
         print("\nSelected most recent doc: Worship Service 10/10/26")
-        print("Downloading as PDF to Service Scripts/2026-10-10.pdf ...")
+        print("Downloading as PDF to service-scripts/2026-10-10.pdf ...")
 
-        os.makedirs('Service Scripts', exist_ok=True)
-        with open('Service Scripts/2026-10-10.pdf', 'wb') as f:
+        os.makedirs('service-scripts', exist_ok=True)
+        with open('service-scripts/2026-10-10.pdf', 'wb') as f:
             f.write(b'MOCK PDF CONTENT')
 
-        print("SUCCESS: Saved Worship Service 10/10/26 as Service Scripts/2026-10-10.pdf")
+        print("SUCCESS: Saved Worship Service 10/10/26 as service-scripts/2026-10-10.pdf")
         return
 
     service = get_drive_service()
@@ -116,7 +116,7 @@ def main():
 
     print(f"\nSelected most recent doc: {most_recent_doc['name']}")
 
-    output_dir = 'Service Scripts'
+    output_dir = 'service-scripts'
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Downloading as PDF to {output_dir}/{date_str}.pdf ...")
