@@ -93,6 +93,10 @@ def main():
 
     worship_scripts = {}
 
+
+    import requests
+    os.makedirs('worship_scripts', exist_ok=True)
+
     for f in all_files:
         if f['mimeType'] == 'application/vnd.google-apps.document':
             date_str = extract_date(f['name'])
@@ -103,8 +107,21 @@ def main():
             if date_str:
                 # Export Google Doc as PDF link
                 export_link = f"https://docs.google.com/document/d/{f['id']}/export?format=pdf"
-                worship_scripts[date_str] = export_link
-                print(f"Found script for {date_str}: {f['name']}")
+
+                # Download the PDF
+                try:
+                    res = requests.get(export_link)
+                    if res.status_code == 200:
+                        pdf_path = f"worship_scripts/{date_str}.pdf"
+                        with open(pdf_path, 'wb') as pdf_file:
+                            pdf_file.write(res.content)
+                        worship_scripts[date_str] = pdf_path
+                        print(f"Downloaded script for {date_str}: {pdf_path}")
+                    else:
+                        print(f"Failed to download {f['name']} (status {res.status_code})")
+                except Exception as e:
+                    print(f"Error downloading {f['name']}: {e}")
+
 
     with open('worship_scripts.json', 'w') as out:
         json.dump(worship_scripts, out, indent=2)
