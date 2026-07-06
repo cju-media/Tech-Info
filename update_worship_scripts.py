@@ -94,16 +94,16 @@ def main():
     worship_scripts = {}
 
     for f in all_files:
-        if f['mimeType'] == 'application/pdf' or f['name'].lower().endswith('.pdf'):
+        if f['mimeType'] == 'application/vnd.google-apps.document':
             date_str = extract_date(f['name'])
             if not date_str:
                 parent_name = get_folder_name(f['parent_folder_id'])
                 date_str = extract_date(parent_name)
 
             if date_str:
-                # Direct download link for Drive API
-                direct_link = f"https://drive.google.com/uc?export=download&id={f['id']}"
-                worship_scripts[date_str] = direct_link
+                # Export Google Doc as PDF link
+                export_link = f"https://docs.google.com/document/d/{f['id']}/export?format=pdf"
+                worship_scripts[date_str] = export_link
                 print(f"Found script for {date_str}: {f['name']}")
 
     with open('worship_scripts.json', 'w') as out:
