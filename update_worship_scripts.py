@@ -26,8 +26,7 @@ def list_files_recursive(service, folder_id):
                 fields="nextPageToken, files(id, name, mimeType, parents)",
                 pageToken=page_token,
                 supportsAllDrives=True,
-                includeItemsFromAllDrives=True,
-                corpora='allDrives'
+                includeItemsFromAllDrives=True
             ).execute()
 
             items = results.get('files', [])
@@ -115,8 +114,7 @@ def get_files_in_folder(service, folder_id):
                 fields="nextPageToken, files(id, name, mimeType)",
                 pageToken=page_token,
                 supportsAllDrives=True,
-                includeItemsFromAllDrives=True,
-                corpora='allDrives'
+                includeItemsFromAllDrives=True
             ).execute()
             files.extend(results.get('files', []))
             page_token = results.get('nextPageToken')
@@ -154,8 +152,7 @@ def main():
                 fields="nextPageToken, files(id, name, mimeType)",
                 pageToken=page_token,
                 supportsAllDrives=True,
-                includeItemsFromAllDrives=True,
-                corpora='allDrives'
+                includeItemsFromAllDrives=True
             ).execute()
             folders.extend(results.get('files', []))
             page_token = results.get('nextPageToken')
@@ -196,8 +193,7 @@ def main():
                     fields="nextPageToken, files(id, name, mimeType)",
                     pageToken=page_token,
                     supportsAllDrives=True,
-                    includeItemsFromAllDrives=True,
-                corpora='allDrives'
+                    includeItemsFromAllDrives=True
                 ).execute()
                 docs.extend(results.get('files', []))
                 page_token = results.get('nextPageToken')
