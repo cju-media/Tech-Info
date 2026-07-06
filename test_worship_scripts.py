@@ -35,7 +35,8 @@ def main():
                 fields="nextPageToken, files(id, name, mimeType)",
                 pageToken=page_token,
                 supportsAllDrives=True,
-                includeItemsFromAllDrives=True
+                includeItemsFromAllDrives=True,
+                corpora='allDrives'
             ).execute()
             folders.extend(results.get('files', []))
             page_token = results.get('nextPageToken')
@@ -77,7 +78,8 @@ def main():
                 fields="nextPageToken, files(id, name, mimeType)",
                 pageToken=page_token,
                 supportsAllDrives=True,
-                includeItemsFromAllDrives=True
+                includeItemsFromAllDrives=True,
+                corpora='allDrives'
             ).execute()
             docs.extend(results.get('files', []))
             page_token = results.get('nextPageToken')

@@ -24,7 +24,10 @@ def list_files_recursive(service, folder_id):
             results = service.files().list(
                 q=f"'{folder_id}' in parents and trashed = false",
                 fields="nextPageToken, files(id, name, mimeType, parents)",
-                pageToken=page_token
+                pageToken=page_token,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                corpora='allDrives'
             ).execute()
 
             items = results.get('files', [])
@@ -42,7 +45,6 @@ def list_files_recursive(service, folder_id):
             print(f"Error accessing folder {folder_id}: {e}")
             break
     return files
-
 def extract_date(text):
     if not text:
         return None
@@ -111,7 +113,10 @@ def get_files_in_folder(service, folder_id):
             results = service.files().list(
                 q=f"'{folder_id}' in parents and trashed = false",
                 fields="nextPageToken, files(id, name, mimeType)",
-                pageToken=page_token
+                pageToken=page_token,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                corpora='allDrives'
             ).execute()
             files.extend(results.get('files', []))
             page_token = results.get('nextPageToken')
@@ -121,7 +126,6 @@ def get_files_in_folder(service, folder_id):
             print(f"Error accessing folder {folder_id}: {e}")
             break
     return files
-
 def main():
     if not os.environ.get('GDRIVE_API_KEY'):
         with open('worship_scripts.json', 'w') as out:
@@ -150,7 +154,8 @@ def main():
                 fields="nextPageToken, files(id, name, mimeType)",
                 pageToken=page_token,
                 supportsAllDrives=True,
-                includeItemsFromAllDrives=True
+                includeItemsFromAllDrives=True,
+                corpora='allDrives'
             ).execute()
             folders.extend(results.get('files', []))
             page_token = results.get('nextPageToken')
@@ -191,7 +196,8 @@ def main():
                     fields="nextPageToken, files(id, name, mimeType)",
                     pageToken=page_token,
                     supportsAllDrives=True,
-                    includeItemsFromAllDrives=True
+                    includeItemsFromAllDrives=True,
+                corpora='allDrives'
                 ).execute()
                 docs.extend(results.get('files', []))
                 page_token = results.get('nextPageToken')
