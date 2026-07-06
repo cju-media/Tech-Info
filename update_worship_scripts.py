@@ -253,7 +253,7 @@ def main():
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
                             if old_modified_time and old_modified_time == modified_time:
                                 # File hasn't changed, skip download but keep in new state
-                                worship_scripts_new[date_str] = worship_scripts[date_str]
+                                worship_scripts_new[date_str] = {'path': f"{output_dir}/{date_str}.pdf", 'modifiedTime': modified_time}
                                 print(f"Skipping {date_str} (No changes since last run)")
                                 should_download = False
 
@@ -275,7 +275,7 @@ def main():
                                 print(f"Error downloading {doc['name']}: {e}")
                                 # Keep old data if it fails
                                 if date_str in worship_scripts:
-                                    worship_scripts_new[date_str] = worship_scripts[date_str]
+                                    worship_scripts_new[date_str] = {'path': f"{output_dir}/{date_str}.pdf", 'modifiedTime': worship_scripts[date_str].get('modifiedTime')}
 
 
     with open('worship_scripts.json', 'w') as out:
