@@ -126,7 +126,7 @@ def get_files_in_folder(service, folder_id):
         try:
             results = service.files().list(
                 q=f"'{folder_id}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
+                fields="nextPageToken, files(id, name, mimeType, shortcutDetails, modifiedTime)",
                 pageToken=page_token,
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True
@@ -164,7 +164,7 @@ def main():
         try:
             results = service.files().list(
                 q=f"'{ROOT_FOLDER_ID}' in parents and trashed = false",
-                fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
+                fields="nextPageToken, files(id, name, mimeType, shortcutDetails, modifiedTime)",
                 pageToken=page_token,
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True
@@ -194,7 +194,20 @@ def main():
                     print(f"Found active folder: {folder['name']}")
                     active_folders.append(folder)
 
+
     worship_scripts = {}
+    if os.path.exists('worship_scripts.json'):
+        try:
+            with open('worship_scripts.json', 'r') as f:
+                worship_scripts = json.load(f)
+                # Handle old format which was just string paths
+                for k, v in worship_scripts.items():
+                    if isinstance(v, str):
+                        worship_scripts[k] = {'path': v, 'modifiedTime': None}
+        except:
+            pass
+    worship_scripts_new = {}
+
 
     output_dir = 'Service Scripts'
     os.makedirs(output_dir, exist_ok=True)
@@ -212,7 +225,7 @@ def main():
             try:
                 results = service.files().list(
                     q=f"'{target_id}' in parents and trashed = false",
-                    fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
+                    fields="nextPageToken, files(id, name, mimeType, shortcutDetails, modifiedTime)",
                     pageToken=page_token,
                     supportsAllDrives=True,
                     includeItemsFromAllDrives=True
@@ -231,22 +244,43 @@ def main():
                 if date_str:
                     doc_dt = dateutil.parser.parse(date_str)
                     if doc_dt.date() >= now.date():
-                        try:
-                            pdf_path = f"{output_dir}/{date_str}.pdf"
-                            request = service.files().export_media(fileId=doc['id'], mimeType='application/pdf')
-                            pdf_content = request.execute()
-                            with open(pdf_path, 'wb') as pdf_file:
-                                pdf_file.write(pdf_content)
 
-                            # Save URL encoded path for the web
-                            worship_scripts[date_str] = pdf_path.replace(" ", "%20")
-                            print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
-                        except Exception as e:
-                            print(f"Error downloading {doc['name']}: {e}")
+                        modified_time = doc.get('modifiedTime')
+
+                        # Check against previous state
+                        should_download = True
+                        if date_str in worship_scripts:
+                            old_modified_time = worship_scripts[date_str].get('modifiedTime')
+                            if old_modified_time and old_modified_time == modified_time:
+                                # File hasn't changed, skip download but keep in new state
+                                worship_scripts_new[date_str] = worship_scripts[date_str]
+                                print(f"Skipping {date_str} (No changes since last run)")
+                                should_download = False
+
+                        if should_download:
+                            try:
+                                pdf_path = f"{output_dir}/{date_str}.pdf"
+                                request = service.files().export_media(fileId=doc['id'], mimeType='application/pdf')
+                                pdf_content = request.execute()
+                                with open(pdf_path, 'wb') as pdf_file:
+                                    pdf_file.write(pdf_content)
+
+                                # Save URL encoded path for the web and modifiedTime
+                                worship_scripts_new[date_str] = {
+                                    'path': pdf_path.replace(" ", "%20"),
+                                    'modifiedTime': modified_time
+                                }
+                                print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
+                            except Exception as e:
+                                print(f"Error downloading {doc['name']}: {e}")
+                                # Keep old data if it fails
+                                if date_str in worship_scripts:
+                                    worship_scripts_new[date_str] = worship_scripts[date_str]
+
 
     with open('worship_scripts.json', 'w') as out:
-        json.dump(worship_scripts, out, indent=2)
-    print(f"Saved {len(worship_scripts)} scripts to worship_scripts.json")
+        json.dump(worship_scripts_new, out, indent=2)
+    print(f"Saved {len(worship_scripts_new)} scripts to worship_scripts.json")
 
 if __name__ == '__main__':
     main()
