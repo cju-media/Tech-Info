@@ -513,7 +513,7 @@
                 if (worshipScripts[dateKey]) {
                     const scriptBtn = document.createElement('a');
                     scriptBtn.id = 'event-modal-script-link';
-                    scriptBtn.href = worshipScripts[dateKey];
+                    scriptBtn.href = typeof worshipScripts[dateKey] === 'string' ? worshipScripts[dateKey] : worshipScripts[dateKey].path;
                     scriptBtn.target = '_blank';
                     scriptBtn.className = 'event-modal-sheet-button';
                     scriptBtn.style.backgroundColor = '#17a2b8'; // Distinct color
