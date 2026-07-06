@@ -10,10 +10,10 @@ def main():
         print("MOCK RUN: Fetching series folders from Google Drive root...")
         print("Discovered 5 files/folders.")
         print("Found active folder: Series Title 2026 (01/01/26 - 12/31/26)")
-        print("\\nSelected most recent folder: Series Title 2026 (01/01/26 - 12/31/26)")
+        print("\nSelected most recent folder: Series Title 2026 (01/01/26 - 12/31/26)")
         print("Searching docs in this folder...")
         print("Discovered doc: Worship Service 10/10/26 (Parsed date: 2026-10-10)")
-        print("\\nSelected most recent doc: Worship Service 10/10/26")
+        print("\nSelected most recent doc: Worship Service 10/10/26")
         print("Downloading as PDF to Service Scripts/2026-10-10.pdf ...")
 
         os.makedirs('Service Scripts', exist_ok=True)
@@ -25,13 +25,31 @@ def main():
 
     service = get_drive_service()
     print("Fetching series folders from Google Drive root...")
-    folders = get_files_in_folder(service, ROOT_FOLDER_ID)
+
+    folders = []
+    page_token = None
+    while True:
+        try:
+            results = service.files().list(
+                q=f"'{ROOT_FOLDER_ID}' in parents and trashed = false",
+                fields="nextPageToken, files(id, name, mimeType)",
+                pageToken=page_token,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
+            folders.extend(results.get('files', []))
+            page_token = results.get('nextPageToken')
+            if not page_token:
+                break
+        except Exception as e:
+            print(f"Error accessing folder {ROOT_FOLDER_ID}: {e}")
+            break
 
     print(f"Discovered {len(folders)} files/folders.")
 
     valid_folders = []
     for folder in folders:
-        if folder['mimeType'] == 'application/vnd.google-apps.folder':
+        if 'folder' in folder['mimeType'] or 'shortcut' in folder['mimeType']:
             start_dt, end_dt = parse_date_range(folder['name'])
             if start_dt and end_dt:
                 valid_folders.append((folder, start_dt, end_dt))
@@ -46,10 +64,28 @@ def main():
     valid_folders.sort(key=lambda x: x[2], reverse=True)
     most_recent_folder, start_dt, end_dt = valid_folders[0]
 
-    print(f"\\nSelected most recent folder: {most_recent_folder['name']}")
+    print(f"\nSelected most recent folder: {most_recent_folder['name']}")
     print(f"Searching docs in this folder...")
 
-    docs = get_files_in_folder(service, most_recent_folder['id'])
+    target_id = most_recent_folder['id']
+    docs = []
+    page_token = None
+    while True:
+        try:
+            results = service.files().list(
+                q=f"'{target_id}' in parents and trashed = false",
+                fields="nextPageToken, files(id, name, mimeType)",
+                pageToken=page_token,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
+            docs.extend(results.get('files', []))
+            page_token = results.get('nextPageToken')
+            if not page_token:
+                break
+        except Exception as e:
+            print(f"Error accessing folder {target_id}: {e}")
+            break
 
     valid_docs = []
     for doc in docs:
@@ -70,7 +106,7 @@ def main():
     valid_docs.sort(key=lambda x: x[1], reverse=True)
     most_recent_doc, doc_dt, date_str = valid_docs[0]
 
-    print(f"\\nSelected most recent doc: {most_recent_doc['name']}")
+    print(f"\nSelected most recent doc: {most_recent_doc['name']}")
 
     output_dir = 'Service Scripts'
     os.makedirs(output_dir, exist_ok=True)

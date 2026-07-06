@@ -86,8 +86,23 @@ def parse_date_range(text):
             return start_dt, end_dt
         except:
             pass
-    return None, None
 
+    # Try just looking for two dates in the string if the format is slightly different
+    dates = []
+    # Match basic date patterns
+    for date_match in re.finditer(r'\d{1,2}/\d{1,2}/\d{2,4}', text):
+        try:
+            dt = dateutil.parser.parse(date_match.group(0))
+            if dt.year == 1900 or dt.year < 2000:
+                dt = dt.replace(year=datetime.now().year)
+            dates.append(dt)
+        except:
+            pass
+
+    if len(dates) >= 2:
+        return min(dates), max(dates)
+
+    return None, None
 def get_files_in_folder(service, folder_id):
     files = []
     page_token = None
@@ -117,16 +132,42 @@ def main():
     service = get_drive_service()
 
     print("Fetching series folders from Google Drive root...")
-    folders = get_files_in_folder(service, ROOT_FOLDER_ID)
+
+    # We should search for any folder within the shared drive
+    # But since it's a specific folder we want to search in, let's stick to ROOT_FOLDER_ID.
+    # Wait, the user said: "Make sure it is looking in this folder: https://drive.google.com/drive/u/0/folders/1LW_e2qjwXiI5m-TOqbLiuurTO7XzZ4OT"
+    # That is exactly what ROOT_FOLDER_ID is set to.
+
+    # Maybe the folder has folders inside it that we aren't finding because they are shortcuts?
+    # Let's ensure we fetch shortcuts too. Or maybe we need `supportsAllDrives=True`.
+
+    folders = []
+    page_token = None
+    while True:
+        try:
+            results = service.files().list(
+                q=f"'{ROOT_FOLDER_ID}' in parents and trashed = false",
+                fields="nextPageToken, files(id, name, mimeType)",
+                pageToken=page_token,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
+            ).execute()
+            folders.extend(results.get('files', []))
+            page_token = results.get('nextPageToken')
+            if not page_token:
+                break
+        except Exception as e:
+            print(f"Error accessing folder {ROOT_FOLDER_ID}: {e}")
+            break
 
     now = datetime.now()
     active_folders = []
 
     for folder in folders:
-        if folder['mimeType'] == 'application/vnd.google-apps.folder':
+        if 'folder' in folder['mimeType'] or 'shortcut' in folder['mimeType']:
             start_dt, end_dt = parse_date_range(folder['name'])
             if start_dt and end_dt:
-                if start_dt <= now <= end_dt:
+                if start_dt.date() <= now.date() <= end_dt.date():
                     print(f"Found active folder: {folder['name']}")
                     active_folders.append(folder)
 
@@ -137,14 +178,35 @@ def main():
 
     for active_folder in active_folders:
         print(f"Searching docs in: {active_folder['name']}")
-        docs = get_files_in_folder(service, active_folder['id'])
+
+        # If it's a shortcut, we might need its targetId
+        target_id = active_folder['id']
+
+        docs = []
+        page_token = None
+        while True:
+            try:
+                results = service.files().list(
+                    q=f"'{target_id}' in parents and trashed = false",
+                    fields="nextPageToken, files(id, name, mimeType)",
+                    pageToken=page_token,
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True
+                ).execute()
+                docs.extend(results.get('files', []))
+                page_token = results.get('nextPageToken')
+                if not page_token:
+                    break
+            except Exception as e:
+                print(f"Error accessing folder {target_id}: {e}")
+                break
 
         for doc in docs:
             if doc['mimeType'] == 'application/vnd.google-apps.document':
                 date_str = extract_date(doc['name'])
                 if date_str:
                     doc_dt = dateutil.parser.parse(date_str)
-                    if doc_dt >= now:
+                    if doc_dt.date() >= now.date():
                         export_link = f"https://docs.google.com/document/d/{doc['id']}/export?format=pdf"
                         try:
                             res = requests.get(export_link)
