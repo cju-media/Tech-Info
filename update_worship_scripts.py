@@ -282,5 +282,17 @@ def main():
         json.dump(worship_scripts_new, out, indent=2)
     print(f"Saved {len(worship_scripts_new)} scripts to worship_scripts.json")
 
+    # Cleanup old scripts
+    for filename in os.listdir(output_dir):
+        if filename.endswith('.pdf'):
+            date_str = filename[:-4]
+            if date_str not in worship_scripts_new:
+                file_path = os.path.join(output_dir, filename)
+                try:
+                    os.remove(file_path)
+                    print(f"Deleted old script: {file_path}")
+                except Exception as e:
+                    print(f"Error deleting old script {file_path}: {e}")
+
 if __name__ == '__main__':
     main()
