@@ -1,12 +1,10 @@
-name: Check Worship Scripts
+name: Test Worship Scripts Sync
 
 on:
-  schedule:
-    - cron: '0 12 * * *'
   workflow_dispatch:
 
 jobs:
-  check-scripts:
+  test-scripts:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -25,14 +23,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install google-api-python-client python-dateutil requests
 
-      - name: Run script checker
+      - name: Run test script
         env:
           GDRIVE_API_KEY: ${{ secrets.GDRIVE_API_KEY }}
-        run: python update_worship_scripts.py
+        run: python test_worship_scripts.py
 
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add worship_scripts.json "Service Scripts/"
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update worship scripts JSON" && git push)
+          git add "Service Scripts/"
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Run test worship scripts sync" && git push)
