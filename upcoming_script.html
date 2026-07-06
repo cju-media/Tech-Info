@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upcoming Worship Script</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #525659;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading upcoming worship script...</div>
+
+    <script>
+        // Fetch the worship scripts JSON map
+        fetch('worship_scripts.json')
+            .then(response => response.json())
+            .then(data => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                let upcomingScriptPath = null;
+                let closestDateDiff = Infinity;
+
+                // Find the closest upcoming script
+                for (const dateKey in data) {
+                    // Try to parse the date key YYYY-MM-DD
+                    const parts = dateKey.split('-');
+                    if (parts.length === 3) {
+                        // dateKey is YYYY-MM-DD, create Date object local time
+                        const scriptDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+
+                        // Check if it's today or in the future
+                        const diffTime = scriptDate - today;
+                        if (diffTime >= 0 && diffTime < closestDateDiff) {
+                            closestDateDiff = diffTime;
+                            upcomingScriptPath = typeof data[dateKey] === 'string' ? data[dateKey] : data[dateKey].path;
+                        }
+                    }
+                }
+
+                const loadingElement = document.getElementById('loading');
+
+                if (upcomingScriptPath) {
+                    loadingElement.textContent = "Redirecting to script...";
+                    window.location.replace(upcomingScriptPath);
+                } else {
+                    loadingElement.textContent = "No upcoming worship scripts found.";
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching worship scripts:', error);
+                document.getElementById('loading').textContent = "Error loading worship scripts. Please try again later.";
+            });
+    </script>
+</body>
+</html>
