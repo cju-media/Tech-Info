@@ -209,7 +209,7 @@ def main():
     worship_scripts_new = {}
 
 
-    output_dir = 'Service Scripts'
+    output_dir = 'service-scripts'
     os.makedirs(output_dir, exist_ok=True)
 
     for active_folder in active_folders:
@@ -267,7 +267,7 @@ def main():
 
                                 # Save URL encoded path for the web and modifiedTime
                                 worship_scripts_new[date_str] = {
-                                    'path': pdf_path.replace(" ", "%20"),
+                                    'path': pdf_path,
                                     'modifiedTime': modified_time
                                 }
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")

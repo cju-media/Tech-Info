@@ -33,5 +33,5 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add "Service Scripts/"
+          git add service-scripts/
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Run test worship scripts sync" && git push)
