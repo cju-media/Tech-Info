@@ -68,9 +68,47 @@ def extract_date(text):
                 pass
     return None
 
+
+def parse_date_range(text):
+    # Try to find (Start Date - End Date)
+    match = re.search(r'\((.*?)-(.*?)\)', text)
+    if match:
+        try:
+            start_dt = dateutil.parser.parse(match.group(1).strip())
+            end_dt = dateutil.parser.parse(match.group(2).strip())
+
+            # Fallback for missing year logic
+            if start_dt.year == 1900 or start_dt.year < 2000:
+                start_dt = start_dt.replace(year=datetime.now().year)
+            if end_dt.year == 1900 or end_dt.year < 2000:
+                end_dt = end_dt.replace(year=datetime.now().year)
+
+            return start_dt, end_dt
+        except:
+            pass
+    return None, None
+
+def get_files_in_folder(service, folder_id):
+    files = []
+    page_token = None
+    while True:
+        try:
+            results = service.files().list(
+                q=f"'{folder_id}' in parents and trashed = false",
+                fields="nextPageToken, files(id, name, mimeType)",
+                pageToken=page_token
+            ).execute()
+            files.extend(results.get('files', []))
+            page_token = results.get('nextPageToken')
+            if not page_token:
+                break
+        except Exception as e:
+            print(f"Error accessing folder {folder_id}: {e}")
+            break
+    return files
+
 def main():
     if not os.environ.get('GDRIVE_API_KEY'):
-        # For local testing if key is absent, just create empty json so tests pass
         with open('worship_scripts.json', 'w') as out:
             json.dump({}, out)
         print("Created empty worship_scripts.json for testing")
@@ -78,50 +116,48 @@ def main():
 
     service = get_drive_service()
 
-    print("Fetching files from Google Drive...")
-    all_files = list_files_recursive(service, ROOT_FOLDER_ID)
+    print("Fetching series folders from Google Drive root...")
+    folders = get_files_in_folder(service, ROOT_FOLDER_ID)
 
-    folder_cache = {}
-    def get_folder_name(folder_id):
-        if folder_id not in folder_cache:
-            try:
-                f = service.files().get(fileId=folder_id, fields="name").execute()
-                folder_cache[folder_id] = f.get('name')
-            except:
-                folder_cache[folder_id] = ""
-        return folder_cache[folder_id]
+    now = datetime.now()
+    active_folders = []
+
+    for folder in folders:
+        if folder['mimeType'] == 'application/vnd.google-apps.folder':
+            start_dt, end_dt = parse_date_range(folder['name'])
+            if start_dt and end_dt:
+                if start_dt <= now <= end_dt:
+                    print(f"Found active folder: {folder['name']}")
+                    active_folders.append(folder)
 
     worship_scripts = {}
-
-
     import requests
-    os.makedirs('worship_scripts', exist_ok=True)
+    output_dir = 'Service Scripts'
+    os.makedirs(output_dir, exist_ok=True)
 
-    for f in all_files:
-        if f['mimeType'] == 'application/vnd.google-apps.document':
-            date_str = extract_date(f['name'])
-            if not date_str:
-                parent_name = get_folder_name(f['parent_folder_id'])
-                date_str = extract_date(parent_name)
+    for active_folder in active_folders:
+        print(f"Searching docs in: {active_folder['name']}")
+        docs = get_files_in_folder(service, active_folder['id'])
 
-            if date_str:
-                # Export Google Doc as PDF link
-                export_link = f"https://docs.google.com/document/d/{f['id']}/export?format=pdf"
-
-                # Download the PDF
-                try:
-                    res = requests.get(export_link)
-                    if res.status_code == 200:
-                        pdf_path = f"worship_scripts/{date_str}.pdf"
-                        with open(pdf_path, 'wb') as pdf_file:
-                            pdf_file.write(res.content)
-                        worship_scripts[date_str] = pdf_path
-                        print(f"Downloaded script for {date_str}: {pdf_path}")
-                    else:
-                        print(f"Failed to download {f['name']} (status {res.status_code})")
-                except Exception as e:
-                    print(f"Error downloading {f['name']}: {e}")
-
+        for doc in docs:
+            if doc['mimeType'] == 'application/vnd.google-apps.document':
+                date_str = extract_date(doc['name'])
+                if date_str:
+                    doc_dt = dateutil.parser.parse(date_str)
+                    if doc_dt >= now:
+                        export_link = f"https://docs.google.com/document/d/{doc['id']}/export?format=pdf"
+                        try:
+                            res = requests.get(export_link)
+                            if res.status_code == 200:
+                                pdf_path = f"{output_dir}/{date_str}.pdf"
+                                with open(pdf_path, 'wb') as pdf_file:
+                                    pdf_file.write(res.content)
+                                worship_scripts[date_str] = pdf_path
+                                print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
+                            else:
+                                print(f"Failed to download {doc['name']} (status {res.status_code})")
+                        except Exception as e:
+                            print(f"Error downloading {doc['name']}: {e}")
 
     with open('worship_scripts.json', 'w') as out:
         json.dump(worship_scripts, out, indent=2)
