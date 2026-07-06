@@ -437,7 +437,7 @@
         let allEvents = [];
 
         // Fetch worship scripts mapping
-        fetch('worship_scripts.json')
+        fetch('https://cju-media.github.io/Tech-Info/worship_scripts.json')
             .then(response => response.json())
             .then(data => {
                 worshipScripts = data;
@@ -513,7 +513,8 @@
                 if (worshipScripts[dateKey]) {
                     const scriptBtn = document.createElement('a');
                     scriptBtn.id = 'event-modal-script-link';
-                    scriptBtn.href = typeof worshipScripts[dateKey] === 'string' ? worshipScripts[dateKey] : worshipScripts[dateKey].path;
+                    const path = typeof worshipScripts[dateKey] === 'string' ? worshipScripts[dateKey] : worshipScripts[dateKey].path;
+                    scriptBtn.href = 'https://cju-media.github.io/Tech-Info/' + path;
                     scriptBtn.target = '_blank';
                     scriptBtn.className = 'event-modal-sheet-button';
                     scriptBtn.style.backgroundColor = '#17a2b8'; // Distinct color

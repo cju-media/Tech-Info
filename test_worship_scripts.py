@@ -74,6 +74,8 @@ def main():
     print(f"Searching docs in this folder...")
 
     target_id = most_recent_folder['id']
+    if most_recent_folder['mimeType'] == 'application/vnd.google-apps.shortcut':
+        target_id = most_recent_folder.get('shortcutDetails', {}).get('targetId', target_id)
     docs = []
     page_token = None
     while True:
@@ -117,18 +119,15 @@ def main():
     output_dir = 'Service Scripts'
     os.makedirs(output_dir, exist_ok=True)
 
-    export_link = f"https://docs.google.com/document/d/{most_recent_doc['id']}/export?format=pdf"
     print(f"Downloading as PDF to {output_dir}/{date_str}.pdf ...")
 
     try:
-        res = requests.get(export_link)
-        if res.status_code == 200:
-            pdf_path = f"{output_dir}/{date_str}.pdf"
-            with open(pdf_path, 'wb') as pdf_file:
-                pdf_file.write(res.content)
-            print(f"SUCCESS: Saved {most_recent_doc['name']} as {pdf_path}")
-        else:
-            print(f"Failed to download {most_recent_doc['name']} (status {res.status_code})")
+        pdf_path = f"{output_dir}/{date_str}.pdf"
+        request = service.files().export_media(fileId=most_recent_doc['id'], mimeType='application/pdf')
+        pdf_content = request.execute()
+        with open(pdf_path, 'wb') as pdf_file:
+            pdf_file.write(pdf_content)
+        print(f"SUCCESS: Saved {most_recent_doc['name']} as {pdf_path}")
     except Exception as e:
         print(f"Error downloading {most_recent_doc['name']}: {e}")
 
