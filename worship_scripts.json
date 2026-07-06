@@ -1,10 +1,34 @@
 {
-  "2026-07-12": "Service%20Scripts/2026-07-12.pdf",
-  "2026-08-30": "Service%20Scripts/2026-08-30.pdf",
-  "2026-07-19": "Service%20Scripts/2026-07-19.pdf",
-  "2026-08-02": "Service%20Scripts/2026-08-02.pdf",
-  "2026-07-26": "Service%20Scripts/2026-07-26.pdf",
-  "2026-08-23": "Service%20Scripts/2026-08-23.pdf",
-  "2026-08-16": "Service%20Scripts/2026-08-16.pdf",
-  "2026-08-09": "Service%20Scripts/2026-08-09.pdf"
+  "2026-07-12": {
+    "path": "Service%20Scripts/2026-07-12.pdf",
+    "modifiedTime": "2026-07-05T17:39:57.729Z"
+  },
+  "2026-08-30": {
+    "path": "Service%20Scripts/2026-08-30.pdf",
+    "modifiedTime": "2026-07-03T22:42:54.770Z"
+  },
+  "2026-07-19": {
+    "path": "Service%20Scripts/2026-07-19.pdf",
+    "modifiedTime": "2026-07-02T19:24:46.100Z"
+  },
+  "2026-08-02": {
+    "path": "Service%20Scripts/2026-08-02.pdf",
+    "modifiedTime": "2026-07-01T21:51:10.152Z"
+  },
+  "2026-07-26": {
+    "path": "Service%20Scripts/2026-07-26.pdf",
+    "modifiedTime": "2026-07-01T21:08:26.492Z"
+  },
+  "2026-08-23": {
+    "path": "Service%20Scripts/2026-08-23.pdf",
+    "modifiedTime": "2026-06-11T23:50:24.840Z"
+  },
+  "2026-08-16": {
+    "path": "Service%20Scripts/2026-08-16.pdf",
+    "modifiedTime": "2026-06-11T23:49:53.656Z"
+  },
+  "2026-08-09": {
+    "path": "Service%20Scripts/2026-08-09.pdf",
+    "modifiedTime": "2026-06-11T23:45:47.869Z"
+  }
 }
