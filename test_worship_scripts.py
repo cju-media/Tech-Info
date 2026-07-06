@@ -45,7 +45,13 @@ def main():
             print(f"Error accessing folder {ROOT_FOLDER_ID}: {e}")
             break
 
+
     print(f"Discovered {len(folders)} files/folders.")
+    print("--- RAW DISCOVERED FILES ---")
+    for folder in folders:
+        print(f"Name: {folder.get('name')}, MimeType: {folder.get('mimeType')}")
+    print("----------------------------")
+
 
     valid_folders = []
     for folder in folders:
