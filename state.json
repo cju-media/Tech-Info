@@ -9,7 +9,6 @@
             "su-8-2-2026-worship-service"
         ],
         "Jaffe": [
-            "su-7-05-2026-worship-service",
             "sa-7-25-2026-neo-fest-concert-1",
             "su-7-26-2026-worship-service",
             "fr-7-31-2026-neo-fest-concert-2",
@@ -19,7 +18,6 @@
             "fr-7-24-2026-wedding-ceremony"
         ],
         "Marc": [
-            "su-7-05-2026-worship-service",
             "su-7-12-2026-worship-service",
             "sa-7-18-2026-cmala-saturady-shift-1",
             "su-7-19-2026-worship-service"
@@ -79,11 +77,6 @@
         },
         "su-7-12-2026-worship-service": {
             "date": "2026-07-12",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
-        },
-        "su-7-05-2026-worship-service": {
-            "date": "2026-07-05",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         }
