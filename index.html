@@ -434,6 +434,7 @@
 
         let currentEvents = [];
         let worshipScripts = {};
+        let owScripts = {};
         let allEvents = [];
 
         // Fetch worship scripts mapping
@@ -443,6 +444,14 @@
                 worshipScripts = data;
             })
             .catch(error => console.error('Error fetching worship scripts:', error));
+
+        // Fetch Order of Worship (OW) scripts
+        fetch(`https://raw.githubusercontent.com/TheCathedralFCCLA/OW/refs/heads/main/OWs/index.json?t=${new Date().getTime()}`)
+            .then(response => response.json())
+            .then(data => {
+                owScripts = data;
+            })
+            .catch(error => console.error('Error fetching OW scripts:', error));
 
 
         window.applyFilter = function() {
@@ -503,6 +512,11 @@
             const existingBr = document.getElementById('event-modal-script-br');
             if (existingBr) existingBr.remove();
 
+            const existingOwBtn = document.getElementById('event-modal-ow-link');
+            if (existingOwBtn) existingOwBtn.remove();
+            const existingOwBr = document.getElementById('event-modal-ow-br');
+            if (existingOwBr) existingOwBr.remove();
+
             if (event.name && event.name.toLowerCase().includes('worship service')) {
                 // Try to format event.dateObj as YYYY-MM-DD to match JSON keys
                 const year = event.dateObj.getFullYear();
@@ -526,6 +540,29 @@
                     const br = document.createElement('br');
                     br.id = 'event-modal-script-br';
                     buttonContainer.insertBefore(br, modalLink);
+                }
+
+                // Format event.dateObj as M-D-YY to match OW JSON keys
+                const owMonth = String(event.dateObj.getMonth() + 1);
+                const owDay = String(event.dateObj.getDate());
+                const owYear = String(event.dateObj.getFullYear()).slice(-2);
+                const owDateKey = `${owMonth}-${owDay}-${owYear}`;
+
+                if (owScripts[owDateKey]) {
+                    const owBtn = document.createElement('a');
+                    owBtn.id = 'event-modal-ow-link';
+                    owBtn.href = owScripts[owDateKey].url;
+                    owBtn.target = '_blank';
+                    owBtn.className = 'event-modal-sheet-button';
+                    owBtn.style.backgroundColor = '#fd7e14'; // Orange color
+                    owBtn.style.marginBottom = '10px';
+                    owBtn.textContent = 'Open OW';
+
+                    buttonContainer.insertBefore(owBtn, modalLink);
+                    // Add a line break for spacing
+                    const owBr = document.createElement('br');
+                    owBr.id = 'event-modal-ow-br';
+                    buttonContainer.insertBefore(owBr, modalLink);
                 }
             }
 
