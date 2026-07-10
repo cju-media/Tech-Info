@@ -3,7 +3,7 @@ import os
 import json
 import smtplib
 from email.message import EmailMessage
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 import urllib.request
 import math
@@ -21,6 +21,33 @@ def haversine(lat1, lon1, lat2, lon2):
         math.sin(dlon/2) * math.sin(dlon/2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
     return R * c
+
+def parse_time(time_str):
+    if not time_str or time_str == 'None':
+        return None, None
+
+    # E.g. "8:45am-12:30pm"
+    match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?\s*(?:-|to)?\s*(\d{1,2})?(?::(\d{2}))?\s*(am|pm|a|p)?', time_str, re.IGNORECASE)
+    if not match:
+        return None, None
+
+    h1, m1, p1, h2, m2, p2 = match.groups()
+
+    start_hour = int(h1) if h1 else 0
+    start_min = int(m1) if m1 else 0
+    if p1 and p1.lower().startswith('p') and start_hour != 12:
+        start_hour += 12
+    elif p1 and p1.lower().startswith('a') and start_hour == 12:
+        start_hour = 0
+
+    end_hour = int(h2) if h2 else start_hour
+    end_min = int(m2) if m2 else 0
+    if p2 and p2.lower().startswith('p') and end_hour != 12:
+        end_hour += 12
+    elif p2 and p2.lower().startswith('a') and end_hour == 12:
+        end_hour = 0
+
+    return (start_hour, start_min), (end_hour, end_min)
 
 def fetch_events_from_sheet():
     sheet_id = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
@@ -52,6 +79,7 @@ def fetch_events_from_sheet():
 def get_upcoming_fccla_events(events):
     upcoming = []
     current_date = datetime.now()
+    two_weeks = current_date + timedelta(days=14)
 
     for row in events:
         if not row[0] or not isinstance(row[0], str):
@@ -63,26 +91,38 @@ def get_upcoming_fccla_events(events):
             date_part = match.group(0)
             try:
                 dt = datetime.strptime(date_part, '%m/%d/%Y')
-                if dt >= current_date:
-                    upcoming.append({
-                        "date": date_part,
-                        "name": row[1] if row[1] else "Unknown Event",
-                        "spaces": row[2] if row[2] else "",
-                        "times": row[3] if row[3] else "",
-                    })
             except ValueError:
                 try:
                     dt = datetime.strptime(date_part, '%m/%d/%y')
-                    if dt >= current_date:
-                        upcoming.append({
-                            "date": date_part,
-                            "name": row[1] if row[1] else "Unknown Event",
-                            "spaces": row[2] if row[2] else "",
-                            "times": row[3] if row[3] else "",
-                        })
                 except ValueError:
-                    pass
+                    continue
 
+            # Next two weeks window
+            if current_date <= dt <= two_weeks:
+                # Parse start/end times
+                call_times = str(row[3]) if row[3] else ""
+                start_t, end_t = parse_time(call_times)
+
+                start_dt = dt
+                end_dt = dt
+
+                if start_t:
+                    start_dt = dt.replace(hour=start_t[0], minute=start_t[1])
+                if end_t:
+                    end_dt = dt.replace(hour=end_t[0], minute=end_t[1])
+
+                # If we couldn't parse time, assume all day event starting at 12AM to 11:59PM
+                if not start_t:
+                    end_dt = dt.replace(hour=23, minute=59)
+
+                upcoming.append({
+                    "date": date_part,
+                    "name": row[1] if row[1] else "Unknown Event",
+                    "spaces": row[2] if row[2] else "",
+                    "times": call_times,
+                    "start_dt": start_dt,
+                    "end_dt": end_dt
+                })
     return upcoming
 
 def get_public_events():
@@ -110,7 +150,6 @@ def get_public_events():
                 date_str = str(e.get('event_start_date', ''))
                 end_str = str(e.get('event_end_date', ''))
 
-                # location and address
                 addr_start = str(e.get('address_start', ''))
                 addr_name = str(e.get('addr_name', ''))
                 loc_val = e.get('location')
@@ -123,7 +162,6 @@ def get_public_events():
 
                 is_near = False
 
-                # Check by distance if lat/lon is available (within 1 mile radius for broader street closures)
                 if lat_str and lon_str and lat_str != 'None' and lon_str != 'None':
                     try:
                         dist = haversine(LAT_540, LON_540, float(lat_str), float(lon_str))
@@ -132,7 +170,6 @@ def get_public_events():
                     except ValueError:
                         pass
 
-                # Fallback to keyword matching nearby major streets/parks
                 if not is_near:
                     if any(keyword in loc_lower for keyword in target_keywords):
                         is_near = True
@@ -142,23 +179,19 @@ def get_public_events():
                     name = str(name_val) if name_val else 'LA City Special Event'
                     name_lower = name.lower()
 
-                    # Exclude unrelated wide-net catches
                     if 'usc' in loc_lower or 'usc' in name_lower:
                         continue
 
-                    # We specifically want street fairs, carnivals, block parties, large closures
                     desc_val = e.get('work_desc')
                     desc_lower = str(desc_val).lower() if desc_val else ''
 
                     is_target_event = any(kw in name_lower or kw in desc_lower for kw in ['carnival', 'festival', 'fair', 'street', 'block party', 'closure', 'market', 'parade', 'park'])
 
                     if not is_target_event:
-                         # Also include anything clearly big at Lafayette or MacArthur park
                          if 'lafayette' in loc_lower or 'macarthur' in loc_lower:
                              is_target_event = True
 
                     if is_target_event:
-                        # Check dates: is it future relative to today, OR currently ongoing
                         evt_date = None
                         end_date = None
                         if date_str:
@@ -179,17 +212,26 @@ def get_public_events():
                             is_future = True
 
                         if is_future:
+                            # Add full start and end dates to compare overlaps
+                            if not evt_date and end_date:
+                                evt_date = end_date
+                            if evt_date and not end_date:
+                                end_date = evt_date
+                            # The API doesn't always provide times, assume all day (midnight to midnight)
+                            public_start = evt_date.replace(hour=0, minute=0)
+                            public_end = end_date.replace(hour=23, minute=59)
+
                             public_events.append({
                                 "name": name,
                                 "date": date_str.split('T')[0] if 'T' in date_str else date_str,
                                 "location": loc.replace('\n', ', '),
                                 "type": "Street Closure / Festival (LA City Permit)",
-                                "source": "https://data.lacity.org/resource/8spw-3fhx"
+                                "source": "https://data.lacity.org/resource/8spw-3fhx",
+                                "start_dt": public_start,
+                                "end_dt": public_end
                             })
 
             except Exception as loop_error:
-                # Catch any individual event parsing error so the rest of the list succeeds
-                # print(f"Error parsing event: {loop_error}")
                 continue
 
     except Exception as e:
@@ -198,35 +240,74 @@ def get_public_events():
     return public_events
 
 def export_public_events(public_events, filepath="public_events.json"):
+    # Strip datetime objects before saving to JSON
+    exportable = []
+    for pe in public_events:
+        evt_dict = dict(pe)
+        if "start_dt" in evt_dict: del evt_dict["start_dt"]
+        if "end_dt" in evt_dict: del evt_dict["end_dt"]
+        exportable.append(evt_dict)
+
     with open(filepath, 'w') as f:
-        json.dump(public_events, f, indent=2)
+        json.dump(exportable, f, indent=2)
     print(f"Exported public events to {filepath}")
 
-def send_rf_email(public_events, fccla_events, to_email="cameron@cju.media"):
+def get_overlapping_events(fccla_events, public_events):
+    overlaps = []
+    for pe in public_events:
+        # Define the public event window
+        p_start = pe["start_dt"]
+        p_end = pe["end_dt"]
+
+        is_overlapping = False
+        for fe in fccla_events:
+            # FCCLA event padded window (plus or minus 3 hours)
+            f_start = fe["start_dt"] - timedelta(hours=3)
+            f_end = fe["end_dt"] + timedelta(hours=3)
+
+            # Check overlap between [p_start, p_end] and [f_start, f_end]
+            # (StartA <= EndB) and (EndA >= StartB)
+            if p_start <= f_end and p_end >= f_start:
+                is_overlapping = True
+                break
+
+        if is_overlapping:
+            overlaps.append(pe)
+
+    return overlaps
+
+def send_rf_email(fccla_events, overlapping_events, to_email="cameron@cju.media"):
     smtp_email = os.environ.get('SMTP_EMAIL')
     smtp_password = os.environ.get('SMTP_PASSWORD')
     smtp_server = os.environ.get('SMTP_SERVER', 'smtp.mail.me.com')
     smtp_port = int(os.environ.get('SMTP_PORT', 587))
 
     msg = EmailMessage()
-    msg['Subject'] = 'Upcoming RF Coordination Events (Local Area)'
+    msg['Subject'] = 'System Notification: Upcoming Events & RF Coordination'
     msg['From'] = smtp_email or 'rf-bot@example.com'
     msg['To'] = to_email
 
-    body = "Hi Cameron,\n\nHere are the upcoming public street closures, special events, and carnivals in the Koreatown/Westlake area (~1 mile radius of 540 Commonwealth Ave) for RF coordination awareness:\n\n"
+    body = "Hello,\n\n"
+    body += "This is an automated notification. The weekly events notification went out.\n\n"
 
-    if public_events:
-        for event in public_events:
+    body += "Here are the upcoming FCCLA events for the next two weeks:\n"
+    if fccla_events:
+        for event in fccla_events:
+            body += f"- {event['date']}: {event['name']} ({event['times']}) in {event['spaces']}\n"
+    else:
+        body += "No upcoming FCCLA events in the next two weeks.\n"
+
+    body += "\n---\n\n"
+    body += "Here are the public street events (closures/festivals within ~1 mile) that happen at the same time as FCCLA events (+/- 3 hours):\n\n"
+
+    if overlapping_events:
+        for event in overlapping_events:
             body += f"- {event['name']}\n"
             body += f"  Date: {event['date']}\n"
             body += f"  Location: {event['location']}\n"
             body += f"  Type: {event['type']}\n\n"
     else:
-        body += "No major public events/street closures found matching criteria in the active permit database at this time.\n\n"
-
-    body += "---\n\nHere are the upcoming FCCLA events from the Google Sheet:\n\n"
-    for event in fccla_events:
-        body += f"- {event['date']}: {event['name']} ({event['times']}) in {event['spaces']}\n"
+        body += "No overlapping public street events found matching criteria at this time.\n\n"
 
     body += "\nBest,\nCam-Bot\n"
 
@@ -249,13 +330,19 @@ def send_rf_email(public_events, fccla_events, to_email="cameron@cju.media"):
         sys.exit(1)
 
 def main():
-    public_events = get_public_events()
-    export_public_events(public_events)
-
+    # 1. Fetch FCCLA events and filter for next two weeks
     raw_events = fetch_events_from_sheet()
     fccla_events = get_upcoming_fccla_events(raw_events)
 
-    send_rf_email(public_events, fccla_events)
+    # 2. Fetch public events
+    public_events = get_public_events()
+    export_public_events(public_events)
+
+    # 3. Find overlapping events (within +/- 3 hours)
+    overlapping = get_overlapping_events(fccla_events, public_events)
+
+    # 4. Send the formatted email
+    send_rf_email(fccla_events, overlapping)
 
 if __name__ == "__main__":
     main()
