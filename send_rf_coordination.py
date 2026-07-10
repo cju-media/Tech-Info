@@ -78,7 +78,7 @@ def fetch_events_from_sheet():
 
 def get_upcoming_fccla_events(events):
     upcoming = []
-    current_date = datetime.now()
+    current_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     two_weeks = current_date + timedelta(days=14)
 
     for row in events:
@@ -132,7 +132,7 @@ def get_public_events():
     Filters for events near 540 Commonwealth Ave (Koreatown/Westlake/MacArthur Park area).
     """
     public_events = []
-    current_date = datetime.now()
+    current_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     url = "https://data.lacity.org/resource/8spw-3fhx.json?$limit=50000"
 
     try:
