@@ -311,7 +311,8 @@ def send_rf_email(fccla_events, overlapping_events, to_email="cameron@cju.media"
     smtp_email = os.environ.get('SMTP_EMAIL')
     smtp_password = os.environ.get('SMTP_PASSWORD')
     smtp_server = os.environ.get('SMTP_SERVER', 'smtp.mail.me.com')
-    smtp_port = int(os.environ.get('SMTP_PORT', 587))
+    smtp_port_env = os.environ.get('SMTP_PORT')
+    smtp_port = int(smtp_port_env) if smtp_port_env else 587
 
     msg = EmailMessage()
     msg['Subject'] = 'System Notification: Upcoming Events & RF Coordination'
