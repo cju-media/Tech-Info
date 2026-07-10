@@ -305,33 +305,6 @@ def send_email(to_email, member, start_date, pdf_filename, run_mode, is_dry_run=
         print(f"Failed to send email to {to_email}: {e}")
         sys.exit(1)
 
-def send_notification_email(start_date, is_dry_run=False):
-    creds = get_smtp_credentials()
-    to_email = "cjohnston@fccla.org"
-
-    subject = f"System Notification: Tech Schedules Sent ({start_date.strftime('%b %d')})"
-    body = f"Hello,\n\nThis is an automated notification. The weekly schedule workflow has successfully completed. Individual schedule PDFs for the next two weeks starting {start_date.strftime('%B %d, %Y')} have been generated and sent to the team members.\n\nBest,\nCam-Bot"
-
-    msg = EmailMessage()
-    msg['Subject'] = subject
-    msg['From'] = creds['email'] or "dry-run@example.com"
-    msg['To'] = to_email
-    msg.set_content(body)
-
-    if is_dry_run or not creds['email'] or not creds['password']:
-        print(f"DRY RUN: Would send notification email to {to_email}")
-        print(f"Subject: {subject}\nBody:\n{body}")
-        return
-
-    try:
-        with smtplib.SMTP(creds['server'], creds['port']) as server:
-            server.starttls()
-            server.login(creds['email'], creds['password'])
-            server.send_message(msg)
-        print(f"Successfully sent notification email to {to_email}")
-    except Exception as e:
-        print(f"Failed to send notification email to {to_email}: {e}")
-        sys.exit(1)
 
 def send_broadcast_email(team_emails, global_new_events, pdf_filename, is_dry_run=False):
     creds = get_smtp_credentials()
@@ -637,7 +610,7 @@ if __name__ == "__main__":
                             send_imessage(team_phones["Cameron"], admin_text, is_dry_run)
 
             print("Sending admin notification email for update mode.")
-            send_notification_email(today, is_dry_run)
+        # send_notification_email replaced by send_rf_coordination.py
 
     elif run_mode == 'avail_check':
         print("Running in Availability Check Mode.")
@@ -826,4 +799,4 @@ if __name__ == "__main__":
                 print(f"No email configured for {member}, skipping.")
 
         print("Sending admin notification email.")
-        send_notification_email(today, is_dry_run)
+        # send_notification_email replaced by send_rf_coordination.py
