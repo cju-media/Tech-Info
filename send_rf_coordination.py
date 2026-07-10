@@ -26,26 +26,57 @@ def parse_time(time_str):
     if not time_str or time_str == 'None':
         return None, None
 
-    # E.g. "8:45am-12:30pm"
-    match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?\s*(?:-|to)?\s*(\d{1,2})?(?::(\d{2}))?\s*(am|pm|a|p)?', time_str, re.IGNORECASE)
-    if not match:
+    # Extract all valid time matches
+    matches = list(re.finditer(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?', time_str, re.IGNORECASE))
+
+    valid_matches = []
+    for m in matches:
+        h, mn, p = m.groups()
+        if h:
+            try:
+                # Discard standalone "30" as in "30 Min Lunch"
+                val = int(h)
+                if val <= 12 or (val <= 23 and val != 30):
+                    valid_matches.append(m)
+            except ValueError:
+                pass
+
+    if not valid_matches:
         return None, None
 
-    h1, m1, p1, h2, m2, p2 = match.groups()
+    start_match = valid_matches[0]
+    end_match = valid_matches[-1]
 
+    h1, m1, p1 = start_match.groups()
     start_hour = int(h1) if h1 else 0
     start_min = int(m1) if m1 else 0
+
+    h2, m2, p2 = end_match.groups()
+    end_hour = int(h2) if h2 else start_hour
+    end_min = int(m2) if m2 else 0
+
     if p1 and p1.lower().startswith('p') and start_hour != 12:
         start_hour += 12
     elif p1 and p1.lower().startswith('a') and start_hour == 12:
         start_hour = 0
 
-    end_hour = int(h2) if h2 else start_hour
-    end_min = int(m2) if m2 else 0
     if p2 and p2.lower().startswith('p') and end_hour != 12:
         end_hour += 12
     elif p2 and p2.lower().startswith('a') and end_hour == 12:
         end_hour = 0
+
+    # Infer AM/PM if not provided but the other one has it
+    if not p1 and p2:
+        if p2.lower().startswith('p') and start_hour < 12 and start_hour + 12 <= end_hour:
+             start_hour += 12
+
+    if not p2 and p1:
+        if p1.lower().startswith('p') and end_hour < 12:
+             end_hour += 12
+
+    # If end hour < start hour and we didn't have explicit am/pm, try to fix
+    if end_hour < start_hour and not p2:
+        end_hour += 12
 
     return (start_hour, start_min), (end_hour, end_min)
 
