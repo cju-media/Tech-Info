@@ -173,7 +173,9 @@ def get_public_events():
 
         target_keywords = [
             'commonwealth', 'lafayette', 'macarthur', 'koreatown',
-            'westlake', 'wilshire', '7th', '8th', '6th', 'hoover', 'vermont', 'shatto'
+            'westlake', 'wilshire', '7th', '8th', '6th', 'hoover', 'vermont', 'shatto',
+            '3rd', '4th', '5th', 'normandie', 'alexandria', 'kenmore', 'catalina', 'berendo', 'new hampshire',
+            '90020', '90004', '90005', '90057', '90010'
         ]
 
         for e in data:
