@@ -1,0 +1,43 @@
+name: Weekly RF Coordination
+
+on:
+  schedule:
+    # Run every Wednesday at 9:00 AM PST (which is 17:00 UTC)
+    - cron: '0 17 * * 3'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  run_rf_coordination:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Run RF Coordination Script
+      env:
+        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      run: |
+        python send_rf_coordination.py
+
+    - name: Commit updated JSON
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add public_events.json
+        git commit -m "Update upcoming public events JSON" || echo "No changes to commit"
+        # Standard push; GitHub Actions handles the rest via GITHUB_TOKEN
+        # Note: Do not run this script directly in the sandbox as it pushes
+        git push
