@@ -14,23 +14,9 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "RELIGIOUS CELEBRATION",
-    "date": "2109-12-14",
-    "location": "665 W JEFFERSON BL @ FIGUEROA ST",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "2026 OBON FESTIVAL",
     "date": "2026-07-11",
     "location": "Cultural Festival",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "Victory for Victims",
-    "date": "2104-04-13",
-    "location": "6350 Woodley Ave. at Burbank and Victory",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },

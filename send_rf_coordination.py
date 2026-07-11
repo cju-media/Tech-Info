@@ -194,9 +194,9 @@ def get_all_and_nearby_public_events():
                         pass
 
                 is_future = False
-                if evt_date and evt_date >= current_date:
+                if evt_date and current_date <= evt_date < datetime(2100, 1, 1):
                     is_future = True
-                elif end_date and end_date >= current_date:
+                elif end_date and current_date <= end_date < datetime(2100, 1, 1):
                     is_future = True
 
                 if not is_future:
