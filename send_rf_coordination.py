@@ -313,7 +313,7 @@ def get_overlapping_events(fccla_events, public_events):
 
     return overlaps
 
-def send_rf_email(fccla_events, overlapping_events, to_email="cameron@cju.media"):
+def send_rf_email(fccla_events, overlapping_events, to_email="cjohnston@fccla.org"):
     smtp_email = os.environ.get('SMTP_EMAIL')
     smtp_password = os.environ.get('SMTP_PASSWORD')
     smtp_server = os.environ.get('SMTP_SERVER', 'smtp.mail.me.com')
