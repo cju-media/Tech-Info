@@ -156,13 +156,10 @@ def get_upcoming_fccla_events(events):
                 })
     return upcoming
 
-def get_public_events():
-    """
-    Fetches real upcoming public street closures, special events, and carnivals from the
-    LA City Open Data Portal for Temporary Special Event (TSE) Permits.
-    Filters for events near 540 Commonwealth Ave (Koreatown/Westlake/MacArthur Park area).
-    """
-    public_events = []
+def get_all_and_nearby_public_events():
+    all_upcoming_events = []
+    nearby_events = []
+
     current_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     url = "https://data.lacity.org/resource/8spw-3fhx.json?$limit=50000"
 
@@ -183,18 +180,65 @@ def get_public_events():
                 date_str = str(e.get('event_start_date', ''))
                 end_str = str(e.get('event_end_date', ''))
 
+                evt_date = None
+                end_date = None
+                if date_str:
+                    try:
+                        evt_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
+                    except Exception:
+                        pass
+                if end_str:
+                    try:
+                        end_date = datetime.strptime(end_str, "%Y-%m-%dT%H:%M:%S.%f")
+                    except Exception:
+                        pass
+
+                is_future = False
+                if evt_date and evt_date >= current_date:
+                    is_future = True
+                elif end_date and end_date >= current_date:
+                    is_future = True
+
+                if not is_future:
+                    continue
+
+                # It's an upcoming event, so parse its details
                 addr_start = str(e.get('address_start', ''))
                 addr_name = str(e.get('addr_name', ''))
                 loc_val = e.get('location')
                 loc = str(loc_val) if loc_val else f"{addr_start} {addr_name}".strip()
                 loc_lower = loc.lower()
 
+                name_val = e.get('event_name')
+                name = str(name_val) if name_val else 'LA City Special Event'
+
+                if not evt_date and end_date:
+                    evt_date = end_date
+                if evt_date and not end_date:
+                    end_date = evt_date
+
+                public_start = evt_date.replace(hour=0, minute=0)
+                public_end = end_date.replace(hour=23, minute=59)
+
+                event_dict = {
+                    "name": name,
+                    "date": date_str.split('T')[0] if 'T' in date_str else date_str,
+                    "location": loc.replace('\n', ', '),
+                    "type": "Street Closure / Festival (LA City Permit)",
+                    "source": "https://data.lacity.org/resource/8spw-3fhx",
+                    "start_dt": public_start,
+                    "end_dt": public_end
+                }
+
+                # 1. Add to the global ALL upcoming events list
+                all_upcoming_events.append(event_dict)
+
+                # 2. Check if it's NEARBY
                 lat_lon = e.get('lat_lon')
                 lat_str = str(lat_lon.get('latitude')) if isinstance(lat_lon, dict) and 'latitude' in lat_lon else None
                 lon_str = str(lat_lon.get('longitude')) if isinstance(lat_lon, dict) and 'longitude' in lat_lon else None
 
                 is_near = False
-
                 if lat_str and lon_str and lat_str != 'None' and lon_str != 'None':
                     try:
                         dist = haversine(LAT_540, LON_540, float(lat_str), float(lon_str))
@@ -208,61 +252,22 @@ def get_public_events():
                         is_near = True
 
                 if is_near:
-                    name_val = e.get('event_name')
-                    name = str(name_val) if name_val else 'LA City Special Event'
                     name_lower = name.lower()
-
                     if 'usc' in loc_lower or 'usc' in name_lower:
                         continue
 
                     desc_val = e.get('work_desc')
                     desc_lower = str(desc_val).lower() if desc_val else ''
 
-                    is_target_event = any(kw in name_lower or kw in desc_lower for kw in ['carnival', 'festival', 'fair', 'street', 'block party', 'closure', 'market', 'parade', 'park'])
+                    is_target_event = any(kw in name_lower or kw in desc_lower for kw in ['carnival', 'festival', 'fair', 'street', 'block party', 'closure', 'market', 'parade', 'park', 'rides', 'outdoor'])
 
                     if not is_target_event:
-                         if 'lafayette' in loc_lower or 'macarthur' in loc_lower:
+                         per_sub_type = str(e.get('per_sub_type', '')).lower()
+                         if 'lafayette' in loc_lower or 'macarthur' in loc_lower or 'public way' in per_sub_type:
                              is_target_event = True
 
                     if is_target_event:
-                        evt_date = None
-                        end_date = None
-                        if date_str:
-                            try:
-                                evt_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
-                            except Exception:
-                                pass
-                        if end_str:
-                            try:
-                                end_date = datetime.strptime(end_str, "%Y-%m-%dT%H:%M:%S.%f")
-                            except Exception:
-                                pass
-
-                        is_future = False
-                        if evt_date and evt_date >= current_date:
-                            is_future = True
-                        elif end_date and end_date >= current_date:
-                            is_future = True
-
-                        if is_future:
-                            # Add full start and end dates to compare overlaps
-                            if not evt_date and end_date:
-                                evt_date = end_date
-                            if evt_date and not end_date:
-                                end_date = evt_date
-                            # The API doesn't always provide times, assume all day (midnight to midnight)
-                            public_start = evt_date.replace(hour=0, minute=0)
-                            public_end = end_date.replace(hour=23, minute=59)
-
-                            public_events.append({
-                                "name": name,
-                                "date": date_str.split('T')[0] if 'T' in date_str else date_str,
-                                "location": loc.replace('\n', ', '),
-                                "type": "Street Closure / Festival (LA City Permit)",
-                                "source": "https://data.lacity.org/resource/8spw-3fhx",
-                                "start_dt": public_start,
-                                "end_dt": public_end
-                            })
+                        nearby_events.append(event_dict)
 
             except Exception as loop_error:
                 continue
@@ -270,12 +275,11 @@ def get_public_events():
     except Exception as e:
         print(f"Error fetching LA City data: {e}")
 
-    return public_events
+    return all_upcoming_events, nearby_events
 
-def export_public_events(public_events, filepath="public_events.json"):
-    # Strip datetime objects before saving to JSON
+def export_json(events_list, filepath):
     exportable = []
-    for pe in public_events:
+    for pe in events_list:
         evt_dict = dict(pe)
         if "start_dt" in evt_dict: del evt_dict["start_dt"]
         if "end_dt" in evt_dict: del evt_dict["end_dt"]
@@ -283,7 +287,7 @@ def export_public_events(public_events, filepath="public_events.json"):
 
     with open(filepath, 'w') as f:
         json.dump(exportable, f, indent=2)
-    print(f"Exported public events to {filepath}")
+    print(f"Exported {len(exportable)} events to {filepath}")
 
 def get_overlapping_events(fccla_events, public_events):
     overlaps = []
@@ -368,14 +372,17 @@ def main():
     raw_events = fetch_events_from_sheet()
     fccla_events = get_upcoming_fccla_events(raw_events)
 
-    # 2. Fetch public events
-    public_events = get_public_events()
-    export_public_events(public_events)
+    # 2. Fetch ALL upcoming LA City events, and NEARBY upcoming events
+    all_events, nearby_events = get_all_and_nearby_public_events()
 
-    # 3. Find overlapping events (within +/- 3 hours)
-    overlapping = get_overlapping_events(fccla_events, public_events)
+    # 3. Export both JSON files
+    export_json(all_events, "all_la_events.json")
+    export_json(nearby_events, "public_events.json")
 
-    # 4. Send the formatted email
+    # 4. Find overlapping events (within +/- 3 hours) using the NEARBY list
+    overlapping = get_overlapping_events(fccla_events, nearby_events)
+
+    # 5. Send the formatted email
     send_rf_email(fccla_events, overlapping)
 
 if __name__ == "__main__":
