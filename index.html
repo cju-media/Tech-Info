@@ -893,7 +893,14 @@
                 if (window.location.hash) {
                     const hashId = decodeURIComponent(window.location.hash.substring(1));
                     if (hashId) {
-                        openModal(hashId);
+                        if (hashId.toLowerCase() === 'today') {
+                            const todayEvent = currentEvents.find(event => event.dateObj.getTime() === today.getTime());
+                            if (todayEvent) {
+                                openModal(todayEvent.id);
+                            }
+                        } else {
+                            openModal(hashId);
+                        }
                     }
                 }
 
