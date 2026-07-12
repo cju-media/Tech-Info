@@ -530,6 +530,39 @@
             const existingNotes = document.getElementById('event-modal-notes');
             if (existingNotes) existingNotes.remove();
 
+            // Prepare a unified notes container
+            const notesSection = document.createElement('div');
+            notesSection.id = 'event-modal-notes';
+            notesSection.style.marginBottom = '15px';
+            notesSection.style.padding = '10px';
+            notesSection.style.backgroundColor = '#f8f9fa'; // Default light gray, may change below
+            notesSection.style.border = '1px solid #dee2e6';
+            notesSection.style.borderRadius = '5px';
+            notesSection.style.fontSize = '14px';
+            notesSection.style.textAlign = 'center';
+            notesSection.style.display = 'none'; // Hidden by default
+
+            let notesContent = '';
+            let isWarning = false;
+
+            // Check for overlapping public events FIRST (so they appear at the top of the notes box)
+            if (typeof publicEvents !== 'undefined' && publicEvents.length > 0 && event.dateObj) {
+                const year = event.dateObj.getFullYear();
+                const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(event.dateObj.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
+
+                const overlapping = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
+                if (overlapping.length > 0) {
+                    isWarning = true;
+                    notesContent += '<strong>⚠️ Nearby Public Event Conflict:</strong><br>';
+                    overlapping.forEach(pe => {
+                        notesContent += `<em>${pe.name}</em> at ${pe.location}<br>`;
+                    });
+                }
+            }
+
+
             if (event.name && event.name.toLowerCase().includes('worship service')) {
                 // Try to format event.dateObj as YYYY-MM-DD to match JSON keys
                 const year = event.dateObj.getFullYear();
@@ -538,32 +571,40 @@
                 const dateKey = `${year}-${month}-${day}`;
 
                 // Determine Communion Status
-                // If there's a script available, it might mark isCommunion.
-                // Otherwise, default to false.
                 let isCommunion = false;
                 if (worshipScripts[dateKey]) {
                     isCommunion = worshipScripts[dateKey].isCommunion === true;
                 }
 
-                // Create the Notes section and conditionally inject it
-                // We add the note even if there is no script, as requested by the user:
-                // "On Sunday services that do not indicate a communion, in the notes section write 'Food at First Likely, TV Setup Needed'."
-                const notesSection = document.createElement('div');
-                notesSection.id = 'event-modal-notes';
-                notesSection.style.marginBottom = '15px';
-                notesSection.style.padding = '10px';
-                notesSection.style.backgroundColor = '#f8f9fa';
-                notesSection.style.border = '1px solid #dee2e6';
-                notesSection.style.borderRadius = '5px';
-                notesSection.style.fontSize = '14px';
-                notesSection.style.textAlign = 'center';
+                if (notesContent.length > 0) {
+                    notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
+                }
 
                 if (isCommunion) {
-                    notesSection.innerHTML = '<strong>Notes:</strong><br>Communion Sunday';
+                    notesContent += '<strong>Notes:</strong><br>Communion Sunday';
                 } else {
-                    notesSection.innerHTML = '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
+                    notesContent += '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
+                }
+
+            }
+
+            if (notesContent.length > 0) {
+                notesSection.innerHTML = notesContent;
+                notesSection.style.display = 'block'; // Make it visible
+                if (isWarning) {
+                    notesSection.style.backgroundColor = '#fff3cd';
+                    notesSection.style.color = '#856404';
+                    notesSection.style.borderColor = '#ffeeba';
                 }
                 buttonContainer.insertBefore(notesSection, buttonContainer.firstChild);
+            }
+
+            if (event.name && event.name.toLowerCase().includes('worship service')) {
+                // Try to format event.dateObj as YYYY-MM-DD to match JSON keys
+                const year = event.dateObj.getFullYear();
+                const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(event.dateObj.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
 
                 if (worshipScripts[dateKey]) {
                     const scriptBtn = document.createElement('a');
@@ -632,40 +673,6 @@
                 targetTop = visibleTop + ((visibleBottom - visibleTop) / 2);
             } else if (appRect.top > 0) {
                  // App is entirely in view, but pushed down by other CMS elements.
-
-            // Check for overlapping public events
-            const publicEventNote = document.getElementById('event-modal-public-note');
-            if (publicEventNote) publicEventNote.remove();
-
-            if (typeof publicEvents !== 'undefined' && publicEvents.length > 0 && event.dateObj) {
-                const year = event.dateObj.getFullYear();
-                const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
-                const day = String(event.dateObj.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
-
-                // Find if any public event is on the same day
-                const overlapping = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
-                if (overlapping.length > 0) {
-                    const note = document.createElement('div');
-                    note.id = 'event-modal-public-note';
-                    note.style.marginTop = '15px';
-                    note.style.padding = '10px';
-                    note.style.backgroundColor = '#fff3cd';
-                    note.style.color = '#856404';
-                    note.style.border = '1px solid #ffeeba';
-                    note.style.borderRadius = '5px';
-                    note.style.fontSize = '14px';
-                    note.style.textAlign = 'center';
-
-                    let conflictText = '<strong>⚠️ Nearby Public Event Conflict:</strong><br>';
-                    overlapping.forEach(pe => {
-                        conflictText += `<em>${pe.name}</em> at ${pe.location}<br>`;
-                    });
-                    note.innerHTML = conflictText;
-
-                    buttonContainer.appendChild(note);
-                }
-            }
 
                  // We don't want it exactly at appContainer half, we want it in the middle of the *screen*
                  // Wait, we just want it centered in the widget space.
@@ -924,14 +931,7 @@
                 if (window.location.hash) {
                     const hashId = decodeURIComponent(window.location.hash.substring(1));
                     if (hashId) {
-                        if (hashId.toLowerCase() === 'today') {
-                            const todayEvent = currentEvents.find(event => event.dateObj.getTime() === today.getTime());
-                            if (todayEvent) {
-                                openModal(todayEvent.id);
-                            }
-                        } else {
-                            openModal(hashId);
-                        }
+                        openModal(hashId);
                     }
                 }
 
