@@ -570,14 +570,20 @@
                 const day = String(event.dateObj.getDate()).padStart(2, '0');
                 const dateKey = `${year}-${month}-${day}`;
 
-                // Determine Communion Status
+                // Determine Communion and Speaker Status
                 let isCommunion = false;
+                let speakerInfo = null;
                 if (worshipScripts[dateKey]) {
                     isCommunion = worshipScripts[dateKey].isCommunion === true;
+                    speakerInfo = worshipScripts[dateKey].speakerInfo;
                 }
 
                 if (notesContent.length > 0) {
                     notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
+                }
+
+                if (speakerInfo) {
+                    notesContent += `<strong>Speakers:</strong><br>${speakerInfo}<br><br>`;
                 }
 
                 if (isCommunion) {

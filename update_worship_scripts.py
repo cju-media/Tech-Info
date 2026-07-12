@@ -5,6 +5,7 @@ from datetime import datetime
 from googleapiclient.discovery import build
 import dateutil.parser
 import pypdf
+import google.generativeai as genai
 
 ROOT_FOLDER_ID = '1LW_e2qjwXiI5m-TOqbLiuurTO7XzZ4OT'
 
@@ -86,16 +87,54 @@ def extract_date(text):
     return None
 
 
-def check_communion(pdf_path):
+def get_speaker_info(text):
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        print("No GEMINI_API_KEY found, skipping speaker info extraction.")
+        return None
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+        Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
+        Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
+        Format the output exactly like this, on a single line:
+        Worship Leader: [Name] | Sermon: [Name]
+
+        If you cannot find one of them, write "Unknown" for that person.
+
+        Text:
+        {text}
+        """
+        response = model.generate_content(prompt)
+        if response and response.text:
+            return response.text.strip()
+    except Exception as e:
+        print(f"Error querying Gemini: {e}")
+    return None
+
+def extract_pdf_info(pdf_path):
+    is_communion = False
+    speaker_info = None
     try:
         reader = pypdf.PdfReader(pdf_path)
         if len(reader.pages) > 0:
             first_page_text = reader.pages[0].extract_text()
             if first_page_text and "Communion" in first_page_text:
-                return True
+                is_communion = True
+
+            full_text = ""
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
+
+            if full_text:
+                speaker_info = get_speaker_info(full_text)
     except Exception as e:
         print(f"Error reading PDF {pdf_path}: {e}")
-    return False
+    return is_communion, speaker_info
 
 def parse_date_range(text):
     # Try to find (Start Date - End Date)
@@ -263,7 +302,8 @@ def main():
                         should_download = True
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
-                            if old_modified_time and old_modified_time == modified_time:
+                            has_speaker_info = 'speakerInfo' in worship_scripts[date_str]
+                            if old_modified_time and old_modified_time == modified_time and has_speaker_info:
                                 # File hasn't changed, skip download but keep in new state
                                 worship_scripts_new[date_str] = worship_scripts[date_str]
                                 print(f"Skipping {date_str} (No changes since last run)")
@@ -277,13 +317,14 @@ def main():
                                 with open(pdf_path, 'wb') as pdf_file:
                                     pdf_file.write(pdf_content)
 
-                                is_communion = check_communion(pdf_path)
+                                is_communion, speaker_info = extract_pdf_info(pdf_path)
 
                                 # Save URL encoded path for the web and modifiedTime
                                 worship_scripts_new[date_str] = {
                                     'path': pdf_path,
                                     'modifiedTime': modified_time,
-                                    'isCommunion': is_communion
+                                    'isCommunion': is_communion,
+                                    'speakerInfo': speaker_info
                                 }
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
                             except Exception as e:
