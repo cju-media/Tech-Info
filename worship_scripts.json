@@ -1,4 +1,9 @@
 {
+  "2026-07-12": {
+    "path": "service-scripts/2026-07-12.pdf",
+    "modifiedTime": "2026-07-12T16:06:06.463Z",
+    "isCommunion": false
+  },
   "2026-07-26": {
     "path": "service-scripts/2026-07-26.pdf",
     "modifiedTime": "2026-07-11T20:35:24.126Z",
@@ -8,11 +13,6 @@
     "path": "service-scripts/2026-07-19.pdf",
     "modifiedTime": "2026-07-11T20:33:22.641Z",
     "isCommunion": false
-  },
-  "2026-07-12": {
-    "path": "service-scripts/2026-07-12.pdf",
-    "modifiedTime": "2026-07-11T20:30:24.957Z",
-    "isCommunion": true
   },
   "2026-08-02": {
     "path": "service-scripts/2026-08-02.pdf",
