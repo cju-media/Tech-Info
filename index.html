@@ -435,6 +435,7 @@
         let currentEvents = [];
         let worshipScripts = {};
         let owScripts = {};
+        let manualOverrides = {};
         let allEvents = [];
         let publicEvents = [];
 
@@ -462,6 +463,14 @@
                 owScripts = data;
             })
             .catch(error => console.error('Error fetching OW scripts:', error));
+
+        // Fetch manual overrides
+        fetch('https://cju-media.github.io/Tech-Info/manual_overrides.json')
+            .then(response => response.json())
+            .then(data => {
+                manualOverrides = data;
+            })
+            .catch(error => console.error('Error fetching manual overrides:', error));
 
 
         window.applyFilter = function() {
@@ -563,35 +572,72 @@
             }
 
 
-            if (event.name && event.name.toLowerCase().includes('worship service')) {
-                // Try to format event.dateObj as YYYY-MM-DD to match JSON keys
+            let hasOverrides = false;
+            let overrideData = null;
+            if (event.dateObj) {
                 const year = event.dateObj.getFullYear();
                 const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
                 const day = String(event.dateObj.getDate()).padStart(2, '0');
                 const dateKey = `${year}-${month}-${day}`;
 
-                // Determine Communion and Speaker Status
-                let isCommunion = false;
-                let speakerInfo = null;
-                if (worshipScripts[dateKey]) {
-                    isCommunion = worshipScripts[dateKey].isCommunion === true;
-                    speakerInfo = worshipScripts[dateKey].speakerInfo;
+                if (manualOverrides[dateKey]) {
+                    hasOverrides = true;
+                    overrideData = manualOverrides[dateKey];
+                }
+            }
+
+            if (hasOverrides) {
+                // Completely replace notes, warnings, etc. with overrides if they exist
+                let overrideHtml = '';
+
+                if (overrideData.rfWarnings) {
+                    isWarning = true; // Still trigger the yellow box if it's an RF warning
+                    overrideHtml += `<strong>⚠️ RF/Public Warnings (Override):</strong><br>${overrideData.rfWarnings.replace(/\n/g, '<br>')}<br>`;
                 }
 
-                if (notesContent.length > 0) {
-                    notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
+                // If there were standard warnings already generated, but an override exists, we just append to the existing warnings or replace?
+                // Let's replace the whole notes section contents to give full control to the override
+                notesContent = overrideHtml;
+
+                if (overrideData.micInfo) {
+                    if (notesContent.length > 0) notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
+                    notesContent += `<strong>Speakers/Mic Info:</strong><br>${overrideData.micInfo.replace(/\n/g, '<br>')}<br>`;
                 }
 
-                if (speakerInfo) {
-                    notesContent += `<strong>Speakers:</strong><br>${speakerInfo}<br><br>`;
+                if (overrideData.notes) {
+                    if (notesContent.length > 0) notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
+                    notesContent += `<strong>Notes:</strong><br>${overrideData.notes.replace(/\n/g, '<br>')}`;
                 }
+            } else {
+                if (event.name && event.name.toLowerCase().includes('worship service')) {
+                    // Try to format event.dateObj as YYYY-MM-DD to match JSON keys
+                    const year = event.dateObj.getFullYear();
+                    const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
+                    const day = String(event.dateObj.getDate()).padStart(2, '0');
+                    const dateKey = `${year}-${month}-${day}`;
 
-                if (isCommunion) {
-                    notesContent += '<strong>Notes:</strong><br>Communion Sunday';
-                } else {
-                    notesContent += '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
+                    // Determine Communion and Speaker Status
+                    let isCommunion = false;
+                    let speakerInfo = null;
+                    if (worshipScripts[dateKey]) {
+                        isCommunion = worshipScripts[dateKey].isCommunion === true;
+                        speakerInfo = worshipScripts[dateKey].speakerInfo;
+                    }
+
+                    if (notesContent.length > 0) {
+                        notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
+                    }
+
+                    if (speakerInfo) {
+                        notesContent += `<strong>Speakers:</strong><br>${speakerInfo}<br><br>`;
+                    }
+
+                    if (isCommunion) {
+                        notesContent += '<strong>Notes:</strong><br>Communion Sunday';
+                    } else {
+                        notesContent += '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
+                    }
                 }
-
             }
 
             if (notesContent.length > 0) {
