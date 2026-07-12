@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from googleapiclient.discovery import build
 import dateutil.parser
+import pypdf
 
 ROOT_FOLDER_ID = '1LW_e2qjwXiI5m-TOqbLiuurTO7XzZ4OT'
 
@@ -84,6 +85,17 @@ def extract_date(text):
                 pass
     return None
 
+
+def check_communion(pdf_path):
+    try:
+        reader = pypdf.PdfReader(pdf_path)
+        if len(reader.pages) > 0:
+            first_page_text = reader.pages[0].extract_text()
+            if first_page_text and "Communion" in first_page_text:
+                return True
+    except Exception as e:
+        print(f"Error reading PDF {pdf_path}: {e}")
+    return False
 
 def parse_date_range(text):
     # Try to find (Start Date - End Date)
@@ -265,10 +277,13 @@ def main():
                                 with open(pdf_path, 'wb') as pdf_file:
                                     pdf_file.write(pdf_content)
 
+                                is_communion = check_communion(pdf_path)
+
                                 # Save URL encoded path for the web and modifiedTime
                                 worship_scripts_new[date_str] = {
                                     'path': pdf_path,
-                                    'modifiedTime': modified_time
+                                    'modifiedTime': modified_time,
+                                    'isCommunion': is_communion
                                 }
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
                             except Exception as e:
