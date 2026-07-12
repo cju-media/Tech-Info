@@ -97,7 +97,8 @@ def get_speaker_info(text):
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
-        Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text, which is the first page of a worship service script.
+        Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
+        Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
         Format the output exactly like this, on a single line:
         Worship Leader: [Name] | Sermon: [Name]
 
@@ -120,10 +121,17 @@ def extract_pdf_info(pdf_path):
         reader = pypdf.PdfReader(pdf_path)
         if len(reader.pages) > 0:
             first_page_text = reader.pages[0].extract_text()
-            if first_page_text:
-                if "Communion" in first_page_text:
-                    is_communion = True
-                speaker_info = get_speaker_info(first_page_text)
+            if first_page_text and "Communion" in first_page_text:
+                is_communion = True
+
+            full_text = ""
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
+
+            if full_text:
+                speaker_info = get_speaker_info(full_text)
     except Exception as e:
         print(f"Error reading PDF {pdf_path}: {e}")
     return is_communion, speaker_info
@@ -294,7 +302,8 @@ def main():
                         should_download = True
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
-                            if old_modified_time and old_modified_time == modified_time:
+                            has_speaker_info = 'speakerInfo' in worship_scripts[date_str]
+                            if old_modified_time and old_modified_time == modified_time and has_speaker_info:
                                 # File hasn't changed, skip download but keep in new state
                                 worship_scripts_new[date_str] = worship_scripts[date_str]
                                 print(f"Skipping {date_str} (No changes since last run)")
