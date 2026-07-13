@@ -7,6 +7,7 @@ import dateutil.parser
 import pypdf
 import time
 from google import genai
+from google.genai import types
 
 ROOT_FOLDER_ID = '1LW_e2qjwXiI5m-TOqbLiuurTO7XzZ4OT'
 
@@ -101,7 +102,13 @@ def get_speaker_info(text, date_str):
 
     try:
         print(f"[Gemini] Passing full PDF text for {date_str} to Gemini for speaker extraction...")
-        client = genai.Client(api_key=api_key)
+
+        configs = [
+            (genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version='v1')), 'gemini-1.5-flash'),
+            (genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version='v1')), 'gemini-1.5-flash-8b'),
+            (genai.Client(api_key=api_key), 'gemini-2.0-flash') # Default v1beta
+        ]
+
         prompt = f"""
         Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
         Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
@@ -114,27 +121,45 @@ def get_speaker_info(text, date_str):
         {text}
         """
 
-        # Simple backoff loop for 429 Resource Exhausted
-        for attempt in range(3):
+        for client, model_name in configs:
             try:
-                response = client.models.generate_content(
-                    model='gemini-2.0-flash',
-                    contents=prompt
-                )
-                if response and response.text:
-                    result = response.text.strip()
-                    print(f"[Gemini] Response received for {date_str}: {result}")
-                    return result
-                else:
-                    print(f"[Gemini] Empty response received for {date_str}.")
-                    return None
-            except Exception as inner_e:
-                if '429' in str(inner_e) or 'RESOURCE_EXHAUSTED' in str(inner_e):
-                    delay = 15 * (attempt + 1)
-                    print(f"[Gemini] Rate limit hit. Retrying in {delay} seconds...")
-                    time.sleep(delay)
-                else:
-                    raise inner_e
+                # Simple backoff loop for 429 Resource Exhausted (where limit > 0)
+                for attempt in range(3):
+                    try:
+                        print(f"[Gemini] Attempting with model {model_name}...")
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=prompt
+                        )
+                        if response and response.text:
+                            result = response.text.strip()
+                            print(f"[Gemini] Response received for {date_str} via {model_name}: {result}")
+                            return result
+                        else:
+                            print(f"[Gemini] Empty response received for {date_str} via {model_name}.")
+                            return None
+                    except Exception as inner_e:
+                        error_msg = str(inner_e)
+                        # If limit is 0, we simply don't have access to this model. Skip to next model.
+                        if 'limit: 0' in error_msg:
+                            print(f"[Gemini] Limit 0 for {model_name}, moving to next model config...")
+                            break # Breaks attempt loop, goes to next client config
+                        elif '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
+                            if attempt == 2:
+                                print(f"[Gemini] Exhausted retries for {model_name}, trying next model...")
+                                break # Move to next model config
+                            delay = 15 * (attempt + 1)
+                            print(f"[Gemini] Rate limit hit. Retrying {model_name} in {delay} seconds...")
+                            time.sleep(delay)
+                        else:
+                            # E.g. 404 Model Not Found, move to next config
+                            print(f"[Gemini] Non-recoverable error for {model_name}: {error_msg}. Moving to next config...")
+                            break
+            except Exception as outer_e:
+                print(f"[Gemini] Outer error testing {model_name}: {outer_e}")
+                continue
+
+        print(f"[Gemini] All fallback models exhausted for {date_str}.")
 
     except Exception as e:
         print(f"[Gemini] Error querying Gemini for {date_str}: {e}")
