@@ -435,7 +435,6 @@
         let currentEvents = [];
         let worshipScripts = {};
         let owScripts = {};
-        let manualOverrides = {};
         let allEvents = [];
         let publicEvents = [];
 
@@ -463,85 +462,6 @@
                 owScripts = data;
             })
             .catch(error => console.error('Error fetching OW scripts:', error));
-
-        // Fetch manual overrides
-        fetch('https://cju-media.github.io/Tech-Info/manual_overrides.json')
-            .then(response => response.json())
-            .then(data => {
-                manualOverrides = data;
-            })
-            .catch(error => console.error('Error fetching manual overrides:', error));
-
-        // Helper to format unstructured speaker info into Lav assignments
-        function formatMicAssignments(text) {
-            if (!text) return '';
-            // If it already looks like the new format, just return it
-            if (text.includes('<strong>Speakers -') || text.includes('Lavs total')) {
-                return text.replace(/\n/g, '<br>');
-            }
-
-            // Otherwise, parse it.
-            // Look for any capitalized names in the text that are not common structural words.
-            // To be safe, let's specifically extract values after 'Worship Leader:' or 'Sermon:' if it's the legacy auto format.
-            let names = [];
-
-            if (text.includes('Worship Leader:') && text.includes('Sermon:')) {
-                const parts = text.split('|');
-                parts.forEach(p => {
-                    const match = p.match(/:\s*([A-Za-z]+)/);
-                    if (match && match[1] !== 'Unknown') {
-                        names.push(match[1].trim());
-                    }
-                });
-            } else {
-                // If it's a manual override, extract capitalized words.
-                const words = text.match(/[A-Z][a-z]+/g) || [];
-                // Filter out common words that might be capitalized
-                const ignore = ['Unknown', 'And', 'The', 'Worship', 'Leader', 'Sermon', 'Preaching', 'Speakers', 'Mic', 'Info', 'Notes'];
-                words.forEach(w => {
-                    if (!ignore.includes(w) && !names.includes(w)) {
-                        names.push(w);
-                    }
-                });
-
-                if (names.length === 0) {
-                    // Fallback if we can't extract names cleanly
-                    return `<strong>Speakers/Mic Info:</strong><br>${text.replace(/\n/g, '<br>')}`;
-                }
-            }
-
-            // Assign mics
-            let assignments = [];
-            let lavCount = 0;
-            let nextLavNum = 3; // Starting after 1 and 2
-
-            // Priority assignments
-            if (names.some(n => n.toLowerCase() === 'laura')) {
-                assignments.push('LAV1: Laura');
-                names = names.filter(n => n.toLowerCase() !== 'laura');
-                lavCount++;
-            }
-            if (names.some(n => n.toLowerCase() === 'michael')) {
-                assignments.push('LAV2: Michael');
-                names = names.filter(n => n.toLowerCase() !== 'michael');
-                lavCount++;
-            }
-
-            // Assign remaining
-            names.forEach(name => {
-                assignments.push(`LAV${nextLavNum}: ${name}`);
-                nextLavNum++;
-                lavCount++;
-            });
-
-            if (lavCount === 0) {
-                return `<strong>Speakers:</strong><br>${text.replace(/\n/g, '<br>')}`;
-            }
-
-            let finalHtml = `<strong>Speakers - ${lavCount} Lavs total</strong><br>`;
-            finalHtml += assignments.join('<br>');
-            return finalHtml;
-        }
 
 
         window.applyFilter = function() {
@@ -610,123 +530,40 @@
             const existingNotes = document.getElementById('event-modal-notes');
             if (existingNotes) existingNotes.remove();
 
-            // Prepare a unified notes container
-            const notesSection = document.createElement('div');
-            notesSection.id = 'event-modal-notes';
-            notesSection.style.marginBottom = '15px';
-            notesSection.style.padding = '10px';
-            notesSection.style.backgroundColor = '#f8f9fa'; // Default light gray, may change below
-            notesSection.style.border = '1px solid #dee2e6';
-            notesSection.style.borderRadius = '5px';
-            notesSection.style.fontSize = '14px';
-            notesSection.style.textAlign = 'center';
-            notesSection.style.display = 'none'; // Hidden by default
-
-            let notesContent = '';
-            let isWarning = false;
-
-            // Check for overlapping public events FIRST (so they appear at the top of the notes box)
-            if (typeof publicEvents !== 'undefined' && publicEvents.length > 0 && event.dateObj) {
-                const year = event.dateObj.getFullYear();
-                const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
-                const day = String(event.dateObj.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
-
-                const overlapping = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
-                if (overlapping.length > 0) {
-                    isWarning = true;
-                    notesContent += '<strong>⚠️ Nearby Public Event Conflict:</strong><br>';
-                    overlapping.forEach(pe => {
-                        notesContent += `<em>${pe.name}</em> at ${pe.location}<br>`;
-                    });
-                }
-            }
-
-
-            let overrideData = null;
-            let dateKey = null;
-            if (event.dateObj) {
-                const year = event.dateObj.getFullYear();
-                const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
-                const day = String(event.dateObj.getDate()).padStart(2, '0');
-                dateKey = `${year}-${month}-${day}`;
-
-                if (manualOverrides[dateKey]) {
-                    overrideData = manualOverrides[dateKey];
-                }
-            }
-
-            // --- 1. Compile Final RF/Public Warnings ---
-            let finalRfHtml = '';
-            if (overrideData && overrideData.rfWarnings) {
-                isWarning = true; // Still trigger the yellow box
-                finalRfHtml = `<strong>⚠️ RF/Public Warnings (Override):</strong><br>${overrideData.rfWarnings.replace(/\n/g, '<br>')}`;
-            } else if (notesContent.length > 0) { // Default warnings from publicEvents check above
-                finalRfHtml = notesContent;
-            }
-
-            // --- 2. Compile Final Speakers/Mic Info & Notes ---
-            let finalSpeakerHtml = '';
-            let finalNotesHtml = '';
-
-            let autoSpeakerInfo = null;
-            let autoIsCommunion = false;
-            let isWorshipService = event.name && event.name.toLowerCase().includes('worship service');
-
-            if (isWorshipService && dateKey && worshipScripts[dateKey]) {
-                autoSpeakerInfo = worshipScripts[dateKey].speakerInfo;
-                autoIsCommunion = worshipScripts[dateKey].isCommunion === true;
-            }
-
-            // Speakers
-            if (overrideData && overrideData.micInfo) {
-                finalSpeakerHtml = formatMicAssignments(overrideData.micInfo);
-            } else if (autoSpeakerInfo) {
-                finalSpeakerHtml = formatMicAssignments(autoSpeakerInfo);
-            }
-
-            // Notes
-            if (overrideData && overrideData.notes) {
-                finalNotesHtml = `<strong>Notes:</strong><br>${overrideData.notes.replace(/\n/g, '<br>')}`;
-            } else if (isWorshipService) {
-                if (autoIsCommunion) {
-                    finalNotesHtml = '<strong>Notes:</strong><br>Communion Sunday';
-                } else {
-                    finalNotesHtml = '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
-                }
-            }
-
-            // --- 3. Assemble Final Content ---
-            notesContent = ''; // Reset and build from parts
-            if (finalRfHtml) {
-                notesContent += finalRfHtml;
-            }
-            if (finalSpeakerHtml) {
-                if (notesContent.length > 0) notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
-                notesContent += finalSpeakerHtml;
-            }
-            if (finalNotesHtml) {
-                if (notesContent.length > 0) notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
-                notesContent += finalNotesHtml;
-            }
-
-            if (notesContent.length > 0) {
-                notesSection.innerHTML = notesContent;
-                notesSection.style.display = 'block'; // Make it visible
-                if (isWarning) {
-                    notesSection.style.backgroundColor = '#fff3cd';
-                    notesSection.style.color = '#856404';
-                    notesSection.style.borderColor = '#ffeeba';
-                }
-                buttonContainer.insertBefore(notesSection, buttonContainer.firstChild);
-            }
-
             if (event.name && event.name.toLowerCase().includes('worship service')) {
                 // Try to format event.dateObj as YYYY-MM-DD to match JSON keys
                 const year = event.dateObj.getFullYear();
                 const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
                 const day = String(event.dateObj.getDate()).padStart(2, '0');
                 const dateKey = `${year}-${month}-${day}`;
+
+                // Determine Communion Status
+                // If there's a script available, it might mark isCommunion.
+                // Otherwise, default to false.
+                let isCommunion = false;
+                if (worshipScripts[dateKey]) {
+                    isCommunion = worshipScripts[dateKey].isCommunion === true;
+                }
+
+                // Create the Notes section and conditionally inject it
+                // We add the note even if there is no script, as requested by the user:
+                // "On Sunday services that do not indicate a communion, in the notes section write 'Food at First Likely, TV Setup Needed'."
+                const notesSection = document.createElement('div');
+                notesSection.id = 'event-modal-notes';
+                notesSection.style.marginBottom = '15px';
+                notesSection.style.padding = '10px';
+                notesSection.style.backgroundColor = '#f8f9fa';
+                notesSection.style.border = '1px solid #dee2e6';
+                notesSection.style.borderRadius = '5px';
+                notesSection.style.fontSize = '14px';
+                notesSection.style.textAlign = 'center';
+
+                if (isCommunion) {
+                    notesSection.innerHTML = '<strong>Notes:</strong><br>Communion Sunday';
+                } else {
+                    notesSection.innerHTML = '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
+                }
+                buttonContainer.insertBefore(notesSection, buttonContainer.firstChild);
 
                 if (worshipScripts[dateKey]) {
                     const scriptBtn = document.createElement('a');
@@ -795,6 +632,40 @@
                 targetTop = visibleTop + ((visibleBottom - visibleTop) / 2);
             } else if (appRect.top > 0) {
                  // App is entirely in view, but pushed down by other CMS elements.
+
+            // Check for overlapping public events
+            const publicEventNote = document.getElementById('event-modal-public-note');
+            if (publicEventNote) publicEventNote.remove();
+
+            if (typeof publicEvents !== 'undefined' && publicEvents.length > 0 && event.dateObj) {
+                const year = event.dateObj.getFullYear();
+                const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(event.dateObj.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
+
+                // Find if any public event is on the same day
+                const overlapping = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
+                if (overlapping.length > 0) {
+                    const note = document.createElement('div');
+                    note.id = 'event-modal-public-note';
+                    note.style.marginTop = '15px';
+                    note.style.padding = '10px';
+                    note.style.backgroundColor = '#fff3cd';
+                    note.style.color = '#856404';
+                    note.style.border = '1px solid #ffeeba';
+                    note.style.borderRadius = '5px';
+                    note.style.fontSize = '14px';
+                    note.style.textAlign = 'center';
+
+                    let conflictText = '<strong>⚠️ Nearby Public Event Conflict:</strong><br>';
+                    overlapping.forEach(pe => {
+                        conflictText += `<em>${pe.name}</em> at ${pe.location}<br>`;
+                    });
+                    note.innerHTML = conflictText;
+
+                    buttonContainer.appendChild(note);
+                }
+            }
 
                  // We don't want it exactly at appContainer half, we want it in the middle of the *screen*
                  // Wait, we just want it centered in the widget space.
