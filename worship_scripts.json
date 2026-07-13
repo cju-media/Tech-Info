@@ -2,12 +2,14 @@
   "2026-07-19": {
     "path": "service-scripts/2026-07-19.pdf",
     "modifiedTime": "2026-07-13T20:37:34.333Z",
-    "isCommunion": false
+    "isCommunion": false,
+    "speakerInfo": null
   },
   "2026-08-02": {
     "path": "service-scripts/2026-08-02.pdf",
     "modifiedTime": "2026-07-13T19:46:10.375Z",
-    "isCommunion": false
+    "isCommunion": false,
+    "speakerInfo": null
   },
   "2026-07-26": {
     "path": "service-scripts/2026-07-26.pdf",
