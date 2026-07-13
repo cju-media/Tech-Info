@@ -95,91 +95,62 @@ def get_speaker_info(text, date_str):
         print("No GEMINI_API_KEY found, skipping speaker info extraction.")
         return None
 
-    # Gemini free tier allows 15 RPM. Add a 5 second delay to ensure we stay under the limit
-    # especially during the initial cache backfill of multiple scripts.
-    print("[Gemini] Sleeping for 5 seconds to respect rate limits...")
-    time.sleep(5)
+    # Initialize the correct modern client
+    client = genai.Client(api_key=api_key)
 
-    try:
-        print(f"[Gemini] Passing full PDF text for {date_str} to Gemini for speaker extraction...")
+    # Use the current stable models compatible with the google-genai SDK
+    # 2.5-flash is the best free tier model for long-context text processing.
+    model_name = 'gemini-2.5-flash'
 
-        default_client = genai.Client(api_key=api_key) # Defaults to v1beta
+    prompt = f"""
+    Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
+    Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
+    Format the output exactly like this, on a single line:
+    Worship Leader: [Name] | Sermon: [Name]
 
-        # A comprehensive list of potential model names to overcome 404s and Limit 0s across tiers
-        models_to_try = [
-            'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-2.0-flash-exp',
-            'gemini-1.5-flash',
-            'gemini-1.5-flash-latest',
-            'gemini-1.5-flash-001',
-            'gemini-1.5-flash-002',
-            'gemini-1.5-flash-8b',
-            'gemini-1.5-flash-8b-latest',
-            'gemini-1.5-pro',
-            'gemini-1.5-pro-latest',
-            'gemini-1.0-pro',
-            'gemini-1.0-pro-latest',
-            'gemini-pro'
-        ]
+    If you cannot find one of them, write "Unknown" for that person.
 
-        configs = [(default_client, m) for m in models_to_try]
+    Text:
+    {text}
+    """
 
-        prompt = f"""
-        Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
-        Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
-        Format the output exactly like this, on a single line:
-        Worship Leader: [Name] | Sermon: [Name]
+    # Retry mechanism for managing Free Tier limits (15 RPM / 250 RPD)
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            print(f"[Gemini] Requesting speaker extraction for {date_str} using {model_name}...")
 
-        If you cannot find one of them, write "Unknown" for that person.
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt
+            )
 
-        Text:
-        {text}
-        """
+            if response and response.text:
+                result = response.text.strip()
+                print(f"[Gemini] Response received: {result}")
+                return result
+            else:
+                print(f"[Gemini] Empty response received for {date_str}.")
+                return None
 
-        for client, model_name in configs:
-            try:
-                # Simple backoff loop for 429 Resource Exhausted (where limit > 0)
-                for attempt in range(3):
-                    try:
-                        print(f"[Gemini] Attempting with model {model_name}...")
-                        response = client.models.generate_content(
-                            model=model_name,
-                            contents=prompt
-                        )
-                        if response and response.text:
-                            result = response.text.strip()
-                            print(f"[Gemini] Response received for {date_str} via {model_name}: {result}")
-                            return result
-                        else:
-                            print(f"[Gemini] Empty response received for {date_str} via {model_name}.")
-                            return None
-                    except Exception as inner_e:
-                        error_msg = str(inner_e)
-                        # The string 'limit: 0' can appear in standard 429 quota exhaustion errors on the free tier.
-                        # We should only treat it as a hard model lockout if it's explicitly a 404 or a permission error,
-                        # but given standard free tier behavior, we'll treat 429s as standard rate limits and retry.
-                        if '404' in error_msg or 'NOT_FOUND' in error_msg:
-                            print(f"[Gemini] 404 Not Found for {model_name}, moving to next model config...")
-                            break # Breaks attempt loop, goes to next client config
-                        elif '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
-                            if attempt == 2:
-                                print(f"[Gemini] Exhausted retries for {model_name}, trying next model...")
-                                break # Move to next model config
-                            delay = 15 * (attempt + 1)
-                            print(f"[Gemini] Rate limit hit. Retrying {model_name} in {delay} seconds...")
-                            time.sleep(delay)
-                        else:
-                            print(f"[Gemini] Non-recoverable error for {model_name}: {error_msg}. Moving to next config...")
-                            break
-            except Exception as outer_e:
-                print(f"[Gemini] Outer error testing {model_name}: {outer_e}")
-                continue
+        except Exception as e:
+            error_msg = str(e)
 
-        print(f"[Gemini] All fallback models exhausted for {date_str}.")
+            # Catch Rate Limits or Quota Exceeded exceptions
+            if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
+                if attempt == max_attempts - 1:
+                    print(f"[Gemini] Exhausted all {max_attempts} attempts due to rate limits.")
+                    break
 
-    except Exception as e:
-        print(f"[Gemini] Error querying Gemini for {date_str}: {e}")
+                # Exponential backoff delay
+                delay = 15 * (attempt + 1)
+                print(f"[Gemini] Rate limit hit (429). Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                # Fatal errors like wrong API key or bad syntax
+                print(f"[Gemini] Non-recoverable error: {error_msg}")
+                break
+
     return None
 
 def extract_pdf_info(pdf_path, date_str):
