@@ -105,10 +105,17 @@ def get_speaker_info(text, date_str):
     prompt = f"""
     Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
     Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
-    Format the output exactly like this, on a single line:
-    Worship Leader: [Name] | Sermon: [Name]
 
-    If you cannot find one of them, write "Unknown" for that person.
+    Instead of just listing the names, you need to assign them to microphones based on these rules:
+    - If Laura is speaking, she is always LAV1.
+    - If Michael is speaking, he is always LAV2.
+    - Any additional speakers should be numbered sequentially in any order (LAV3, LAV4, etc.).
+
+    Format the output exactly like this, on multiple lines:
+    <strong>Speakers - [X] Lavs total</strong>
+    LAV1: [Name]
+    LAV2: [Name]
+    LAV3: [Name]
 
     Text:
     {text}

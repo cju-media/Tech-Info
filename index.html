@@ -611,7 +611,11 @@
             if (overrideData && overrideData.micInfo) {
                 finalSpeakerHtml = `<strong>Speakers/Mic Info:</strong><br>${overrideData.micInfo.replace(/\n/g, '<br>')}`;
             } else if (autoSpeakerInfo) {
-                finalSpeakerHtml = `<strong>Speakers:</strong><br>${autoSpeakerInfo}`;
+                if (autoSpeakerInfo.includes('<strong>Speakers')) {
+                    finalSpeakerHtml = autoSpeakerInfo.replace(/\n/g, '<br>');
+                } else {
+                    finalSpeakerHtml = `<strong>Speakers:</strong><br>${autoSpeakerInfo}`;
+                }
             }
 
             // Notes
