@@ -21,14 +21,25 @@ def main():
             doc_dt = dateutil.parser.parse(date_str)
             if doc_dt.date() >= now.date():
                 pdf_path = data.get('path')
+                # In GitHub Actions, the service-scripts folder is checked in.
                 if pdf_path and os.path.exists(pdf_path):
                     print(f"Reprocessing local PDF: {pdf_path}")
+
+                    # Fetching existing data
+                    existing_speaker_info = data.get('speakerInfo')
+
                     is_communion, speaker_info = extract_pdf_info(pdf_path, date_str)
 
+                    # Always save isCommunion because it is extracted locally
                     worship_scripts[date_str]['isCommunion'] = is_communion
-                    worship_scripts[date_str]['speakerInfo'] = speaker_info
-                    print(f"[Record] Updated repo JSON for {date_str}: speakerInfo='{speaker_info}'")
                     processed_count += 1
+
+                    # Only overwrite speakerInfo if we successfully extracted new info, to avoid destructive nulls
+                    if speaker_info is not None:
+                        worship_scripts[date_str]['speakerInfo'] = speaker_info
+                        print(f"[Record] Updated repo JSON for {date_str}: isCommunion={is_communion}, speakerInfo='{speaker_info}'")
+                    else:
+                        print(f"[Record] Gemini returned None for {date_str}. isCommunion={is_communion}. Preserving existing speaker_info: '{existing_speaker_info}'")
                 else:
                     print(f"PDF missing for {date_str}, skipping.")
         except Exception as e:

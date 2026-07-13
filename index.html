@@ -472,6 +472,77 @@
             })
             .catch(error => console.error('Error fetching manual overrides:', error));
 
+        // Helper to format unstructured speaker info into Lav assignments
+        function formatMicAssignments(text) {
+            if (!text) return '';
+            // If it already looks like the new format, just return it
+            if (text.includes('<strong>Speakers -') || text.includes('Lavs total')) {
+                return text.replace(/\n/g, '<br>');
+            }
+
+            // Otherwise, parse it.
+            // Look for any capitalized names in the text that are not common structural words.
+            // To be safe, let's specifically extract values after 'Worship Leader:' or 'Sermon:' if it's the legacy auto format.
+            let names = [];
+
+            if (text.includes('Worship Leader:') && text.includes('Sermon:')) {
+                const parts = text.split('|');
+                parts.forEach(p => {
+                    const match = p.match(/:\s*([A-Za-z]+)/);
+                    if (match && match[1] !== 'Unknown') {
+                        names.push(match[1].trim());
+                    }
+                });
+            } else {
+                // If it's a manual override, extract capitalized words.
+                const words = text.match(/[A-Z][a-z]+/g) || [];
+                // Filter out common words that might be capitalized
+                const ignore = ['Unknown', 'And', 'The', 'Worship', 'Leader', 'Sermon', 'Preaching', 'Speakers', 'Mic', 'Info', 'Notes'];
+                words.forEach(w => {
+                    if (!ignore.includes(w) && !names.includes(w)) {
+                        names.push(w);
+                    }
+                });
+
+                if (names.length === 0) {
+                    // Fallback if we can't extract names cleanly
+                    return `<strong>Speakers/Mic Info:</strong><br>${text.replace(/\n/g, '<br>')}`;
+                }
+            }
+
+            // Assign mics
+            let assignments = [];
+            let lavCount = 0;
+            let nextLavNum = 3; // Starting after 1 and 2
+
+            // Priority assignments
+            if (names.some(n => n.toLowerCase() === 'laura')) {
+                assignments.push('LAV1: Laura');
+                names = names.filter(n => n.toLowerCase() !== 'laura');
+                lavCount++;
+            }
+            if (names.some(n => n.toLowerCase() === 'michael')) {
+                assignments.push('LAV2: Michael');
+                names = names.filter(n => n.toLowerCase() !== 'michael');
+                lavCount++;
+            }
+
+            // Assign remaining
+            names.forEach(name => {
+                assignments.push(`LAV${nextLavNum}: ${name}`);
+                nextLavNum++;
+                lavCount++;
+            });
+
+            if (lavCount === 0) {
+                return `<strong>Speakers:</strong><br>${text.replace(/\n/g, '<br>')}`;
+            }
+
+            let finalHtml = `<strong>Speakers - ${lavCount} Lavs total</strong><br>`;
+            finalHtml += assignments.join('<br>');
+            return finalHtml;
+        }
+
 
         window.applyFilter = function() {
             const filterValue = document.getElementById('assignment-filter').value.toLowerCase();
@@ -609,13 +680,9 @@
 
             // Speakers
             if (overrideData && overrideData.micInfo) {
-                finalSpeakerHtml = `<strong>Speakers/Mic Info:</strong><br>${overrideData.micInfo.replace(/\n/g, '<br>')}`;
+                finalSpeakerHtml = formatMicAssignments(overrideData.micInfo);
             } else if (autoSpeakerInfo) {
-                if (autoSpeakerInfo.includes('<strong>Speakers')) {
-                    finalSpeakerHtml = autoSpeakerInfo.replace(/\n/g, '<br>');
-                } else {
-                    finalSpeakerHtml = `<strong>Speakers:</strong><br>${autoSpeakerInfo}`;
-                }
+                finalSpeakerHtml = formatMicAssignments(autoSpeakerInfo);
             }
 
             // Notes
