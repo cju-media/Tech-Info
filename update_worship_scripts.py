@@ -5,7 +5,7 @@ from datetime import datetime
 from googleapiclient.discovery import build
 import dateutil.parser
 import pypdf
-import google.generativeai as genai
+from google import genai
 
 ROOT_FOLDER_ID = '1LW_e2qjwXiI5m-TOqbLiuurTO7XzZ4OT'
 
@@ -95,8 +95,7 @@ def get_speaker_info(text, date_str):
 
     try:
         print(f"[Gemini] Passing full PDF text for {date_str} to Gemini for speaker extraction...")
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        client = genai.Client(api_key=api_key)
         prompt = f"""
         Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
         Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
@@ -108,7 +107,10 @@ def get_speaker_info(text, date_str):
         Text:
         {text}
         """
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt
+        )
         if response and response.text:
             result = response.text.strip()
             print(f"[Gemini] Response received for {date_str}: {result}")
@@ -308,11 +310,13 @@ def main():
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
                             has_speaker_info = 'speakerInfo' in worship_scripts[date_str]
-                            if old_modified_time and old_modified_time == modified_time and has_speaker_info:
+                            if old_modified_time == modified_time and has_speaker_info:
                                 # File hasn't changed, skip download but keep in new state
                                 worship_scripts_new[date_str] = worship_scripts[date_str]
-                                print(f"Skipping {date_str} (No changes since last run)")
+                                print(f"Skipping {date_str} (No changes since last run and speaker info exists)")
                                 should_download = False
+                            elif old_modified_time == modified_time and not has_speaker_info:
+                                print(f"Re-downloading {date_str} to extract missing speaker info...")
 
                         if should_download:
                             try:
