@@ -545,6 +545,12 @@
                     speakerInfo = worshipScripts[dateKey].speakerInfo;
                 }
 
+                // Find if any public event is on the same day for RF coordination overlap checking
+                let overlappingPublicEvents = [];
+                if (typeof publicEvents !== 'undefined' && publicEvents.length > 0) {
+                    overlappingPublicEvents = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
+                }
+
                 // Create the Notes section and conditionally inject it
                 // We add the note even if there is no script, as requested by the user:
                 // "On Sunday services that do not indicate a communion, in the notes section write 'Food at First Likely, TV Setup Needed'."
@@ -570,6 +576,15 @@
                     // Convert newlines to breaks
                     const formattedSpeakerInfo = speakerInfo.replace(/\n/g, '<br>');
                     notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">' + formattedSpeakerInfo;
+                }
+
+                if (overlappingPublicEvents.length > 0) {
+                    let warningHtml = '<strong>⚠️ Street Closure / Event Alert</strong><br>The following nearby events may cause traffic or RF interference:<ul style="margin: 5px 0 0 0; padding-left: 20px; text-align: left;">';
+                    overlappingPublicEvents.forEach(pe => {
+                        warningHtml += `<li>${pe.name} (${pe.type})</li>`;
+                    });
+                    warningHtml += '</ul>';
+                    notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">' + warningHtml;
                 }
 
                 notesSection.innerHTML = notesHtml;
@@ -643,11 +658,14 @@
             } else if (appRect.top > 0) {
                  // App is entirely in view, but pushed down by other CMS elements.
 
-            // Check for overlapping public events
+            // Overlapping public events note unified with event-modal-notes above for 'worship service'
+            // Need to conditionally handle it if it is NOT a worship service
             const publicEventNote = document.getElementById('event-modal-public-note');
             if (publicEventNote) publicEventNote.remove();
 
-            if (typeof publicEvents !== 'undefined' && publicEvents.length > 0 && event.dateObj) {
+            const isWorshipService = event.name && event.name.toLowerCase().includes('worship service');
+
+            if (!isWorshipService && typeof publicEvents !== 'undefined' && publicEvents.length > 0 && event.dateObj) {
                 const year = event.dateObj.getFullYear();
                 const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
                 const day = String(event.dateObj.getDate()).padStart(2, '0');

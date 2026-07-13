@@ -96,38 +96,49 @@ def get_speaker_info(text, date_str):
         print("No GEMINI_API_KEY found, skipping speaker info extraction.")
         return None
 
-    # Estimate token size (approx. 4 characters = 1 token)
+    # 1. Calculate a dynamic delay to stay under the 250,000 TPM limit
+    # (Approx. 4 characters = 1 token). We calculate how much of our TPM bucket
+    # this massive text consumes and wait that proportion of 60 seconds.
     char_count = len(text)
     estimated_tokens = int(char_count / 4)
-    print(f"[Gemini] Text length: {char_count} chars (~{estimated_tokens} tokens).")
+    print(f"[Gemini] Full PDF size: {char_count} chars (~{estimated_tokens} tokens).")
 
-    # Dynamic delay: Calculate how much of our 250,000 TPM limit this consumes,
-    # then sleep that proportion of 60 seconds (with a 20s minimum baseline).
-    safe_delay = max(20, int((estimated_tokens / 250000) * 60) + 5)
-    print(f"[Gemini] Sleeping for {safe_delay}s to safeguard rolling TPM bucket...")
+    # Calculate delay (Minimum 15 seconds, maximum 50 seconds based on file size)
+    safe_delay = max(15, min(50, int((estimated_tokens / 250000) * 60) + 5))
+    print(f"[Gemini] Resting for {safe_delay}s to safeguard the TPM rate limit...")
     time.sleep(safe_delay)
 
-    client = genai.Client(api_key=api_key)
-    model_name = 'gemini-3.5-flash' # Primary modern model
+    # 2. Configure the client to fail fast using an explicit timeout (e.g., 30 seconds)
+    from google.genai import types
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(timeout=30.0) # Prevents 15-minute hanging
+    )
+    model_name = 'gemini-3.5-flash'
 
     prompt = f"""
-    You are an assistant parsing church worship service scripts.
-    Analyze the full text below and extract:
-    1. The Worship Leader
-    2. The Sermon Speaker (or Preacher)
-    3. A sequential list of all other performers, readers, musicians, or speakers mentioned.
+    Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
+    Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
 
-    Format the output EXACTLY like this (on a single line):
-    Worship Leader: [Name] | Sermon: [Name] | Other Performers: [Name 1, Name 2, etc.]
+    Instead of just listing the names, you need to assign them to microphones based on these rules:
+    - If Laura is speaking, she is always LAV1.
+    - If Michael is speaking, he is always LAV2.
+    - Any additional speakers should be numbered sequentially in any order (LAV3, LAV4, etc.).
+
+    Format the output exactly like this, on multiple lines:
+    <strong>Speakers - [X] Lavs total</strong>
+    LAV1: [Name]
+    LAV2: [Name]
+    LAV3: [Name]
 
     Text:
     {text}
     """
 
-    # Clean single-model retry loop
+    # 3. Simple, non-cascading retry loop
     for attempt in range(3):
         try:
-            print(f"[Gemini] Processing script for {date_str}...")
+            print(f"[Gemini] Requesting analysis for {date_str} (Attempt {attempt + 1}/3)...")
             response = client.models.generate_content(
                 model=model_name,
                 contents=prompt
@@ -135,20 +146,22 @@ def get_speaker_info(text, date_str):
 
             if response and response.text:
                 result = response.text.strip()
-                print(f"[Gemini] Success: {result}")
+                print(f"[Gemini] Successfully parsed: {result}")
                 return result
 
         except Exception as e:
             error_msg = str(e)
             if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
-                # Exponential backoff on rate limits
-                retry_delay = 45 * (attempt + 1)
-                print(f"[Gemini] TPM Limit hit. Backing off for {retry_delay}s...")
+                # If we hit a 429, back off exponentially and try again
+                retry_delay = 30 * (attempt + 1)
+                print(f"[Gemini] Rate limit hit. Backing off for {retry_delay}s...")
                 time.sleep(retry_delay)
             else:
-                print(f"[Gemini] Non-recoverable error: {error_msg}")
+                # Fail fast on other errors (like auth or invalid keys)
+                print(f"[Gemini] Non-recoverable API error: {error_msg}")
                 break
 
+    print(f"[Gemini] Failed to process {date_str} after all attempts.")
     return None
 
 def extract_pdf_info(pdf_path, date_str):
