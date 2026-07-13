@@ -103,11 +103,25 @@ def get_speaker_info(text, date_str):
     try:
         print(f"[Gemini] Passing full PDF text for {date_str} to Gemini for speaker extraction...")
 
-        configs = [
-            (genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version='v1')), 'gemini-1.5-flash'),
-            (genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version='v1')), 'gemini-1.5-flash-8b'),
-            (genai.Client(api_key=api_key), 'gemini-2.0-flash') # Default v1beta
+        default_client = genai.Client(api_key=api_key) # Defaults to v1beta
+
+        # A comprehensive list of potential model names to overcome 404s and Limit 0s across tiers
+        models_to_try = [
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-latest',
+            'gemini-1.5-flash-001',
+            'gemini-1.5-flash-002',
+            'gemini-1.5-flash-8b',
+            'gemini-1.5-flash-8b-latest',
+            'gemini-1.5-pro',
+            'gemini-1.5-pro-latest',
+            'gemini-1.0-pro',
+            'gemini-1.0-pro-latest',
+            'gemini-pro',
+            'gemini-2.0-flash'
         ]
+
+        configs = [(default_client, m) for m in models_to_try]
 
         prompt = f"""
         Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
