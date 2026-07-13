@@ -309,13 +309,13 @@ def main():
                         should_download = True
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
-                            has_speaker_info = 'speakerInfo' in worship_scripts[date_str]
-                            if old_modified_time == modified_time and has_speaker_info:
+                            has_valid_speaker_info = worship_scripts[date_str].get('speakerInfo') is not None
+                            if old_modified_time == modified_time and has_valid_speaker_info:
                                 # File hasn't changed, skip download but keep in new state
                                 worship_scripts_new[date_str] = worship_scripts[date_str]
                                 print(f"Skipping {date_str} (No changes since last run and speaker info exists)")
                                 should_download = False
-                            elif old_modified_time == modified_time and not has_speaker_info:
+                            elif old_modified_time == modified_time and not has_valid_speaker_info:
                                 print(f"Re-downloading {date_str} to extract missing speaker info...")
 
                         if should_download:
