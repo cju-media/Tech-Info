@@ -89,43 +89,67 @@ def extract_date(text):
     return None
 
 
-def get_speaker_info(text, date_str):
+def extract_local_pdf_data(pdf_path):
+    is_communion = False
+    full_text = ""
+    try:
+        reader = pypdf.PdfReader(pdf_path)
+        if len(reader.pages) > 0:
+            first_page_text = reader.pages[0].extract_text()
+            if first_page_text and "Communion" in first_page_text:
+                is_communion = True
+
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
+
+    except Exception as e:
+        print(f"Error reading PDF {pdf_path}: {e}")
+    return is_communion, full_text
+
+def batch_get_speaker_info(scripts_to_query):
+    # scripts_to_query is a dict: {date_str: full_text}
+    if not scripts_to_query:
+        return {}
+
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
-        print("No GEMINI_API_KEY found, skipping speaker info extraction.")
-        return None
+        print("No GEMINI_API_KEY found, skipping batch speaker info extraction.")
+        return {}
 
-    # Initialize the correct modern client
     client = genai.Client(api_key=api_key)
-
-    # Use the current stable models compatible with the google-genai SDK
-    # 3.5-flash is the best free tier model for long-context text processing.
     model_name = 'gemini-3.5-flash'
 
+    # Constructing a batch prompt
     prompt = f"""
-    Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
-    Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
+    You will be provided with several worship service scripts, each identified by a date.
+    For EACH script, extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching).
+    Note that the key of who is speaking is usually located on the first page of each script.
 
     Instead of just listing the names, you need to assign them to microphones based on these rules:
     - If Laura is speaking, she is always LAV1.
     - If Michael is speaking, he is always LAV2.
     - Any additional speakers should be numbered sequentially in any order (LAV3, LAV4, etc.).
 
-    Format the output exactly like this, on multiple lines:
-    <strong>Speakers - [X] Lavs total</strong>
-    LAV1: [Name]
-    LAV2: [Name]
-    LAV3: [Name]
+    Output a JSON object where the keys are the exact dates provided, and the value is a single formatted string for that date.
+    The formatted string must strictly look exactly like this, using HTML <br> for line breaks:
+    <strong>Speakers - [X] Lavs total</strong><br>LAV1: [Name]<br>LAV2: [Name]<br>LAV3: [Name]
 
-    Text:
-    {text}
+    If you cannot find one of them, omit that LAV assignment. Ensure [X] accurately reflects the total number of LAVs assigned.
+
+    Scripts to analyze:
     """
 
-    # Retry mechanism for managing Free Tier limits (15 RPM / 250 RPD)
+    for date_str, text in scripts_to_query.items():
+        prompt += f"\n\n--- SCRIPT FOR DATE: {date_str} ---\n{text}\n-----------------------------------\n"
+
+    prompt += "\nReturn ONLY valid JSON."
+
     max_attempts = 3
     for attempt in range(max_attempts):
         try:
-            print(f"[Gemini] Requesting speaker extraction for {date_str} using {model_name}...")
+            print(f"[Gemini] Requesting batch speaker extraction for {len(scripts_to_query)} scripts using {model_name}...")
 
             response = client.models.generate_content(
                 model=model_name,
@@ -134,53 +158,41 @@ def get_speaker_info(text, date_str):
 
             if response and response.text:
                 result = response.text.strip()
-                print(f"[Gemini] Response received: {result}")
-                return result
+                # Clean up markdown code blocks if present
+                if result.startswith("```json"):
+                    result = result[7:]
+                if result.startswith("```"):
+                    result = result[3:]
+                if result.endswith("```"):
+                    result = result[:-3]
+
+                import json
+                try:
+                    parsed_result = json.loads(result)
+                    print(f"[Gemini] Batch response successfully parsed.")
+                    return parsed_result
+                except json.JSONDecodeError as e:
+                    print(f"[Gemini] Error parsing batch JSON response: {e}. Raw response was: {result}")
+                    return {}
             else:
-                print(f"[Gemini] Empty response received for {date_str}.")
-                return None
+                print(f"[Gemini] Empty batch response received.")
+                return {}
 
         except Exception as e:
             error_msg = str(e)
 
-            # Catch Rate Limits or Quota Exceeded exceptions
             if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
                 if attempt == max_attempts - 1:
-                    print(f"[Gemini] Exhausted all {max_attempts} attempts due to rate limits.")
+                    print(f"[Gemini] Exhausted all {max_attempts} batch attempts due to rate limits.")
                     break
-
-                # Exponential backoff delay
                 delay = 15 * (attempt + 1)
-                print(f"[Gemini] Rate limit hit (429). Retrying in {delay} seconds...")
+                print(f"[Gemini] Rate limit hit (429) on batch. Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
-                # Fatal errors like wrong API key or bad syntax
-                print(f"[Gemini] Non-recoverable error: {error_msg}")
+                print(f"[Gemini] Non-recoverable error during batch processing: {error_msg}")
                 break
 
-    return None
-
-def extract_pdf_info(pdf_path, date_str):
-    is_communion = False
-    speaker_info = None
-    try:
-        reader = pypdf.PdfReader(pdf_path)
-        if len(reader.pages) > 0:
-            first_page_text = reader.pages[0].extract_text()
-            if first_page_text and "Communion" in first_page_text:
-                is_communion = True
-
-            full_text = ""
-            for page in reader.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    full_text += page_text + "\n"
-
-            if full_text:
-                speaker_info = get_speaker_info(full_text, date_str)
-    except Exception as e:
-        print(f"Error reading PDF {pdf_path}: {e}")
-    return is_communion, speaker_info
+    return {}
 
 def parse_date_range(text):
     # Try to find (Start Date - End Date)
@@ -309,6 +321,8 @@ def main():
     output_dir = 'service-scripts'
     os.makedirs(output_dir, exist_ok=True)
 
+    scripts_to_query = {}
+
     for active_folder in active_folders:
         print(f"Searching docs in: {active_folder['name']}")
 
@@ -365,23 +379,33 @@ def main():
                                 with open(pdf_path, 'wb') as pdf_file:
                                     pdf_file.write(pdf_content)
 
-                                is_communion, speaker_info = extract_pdf_info(pdf_path, date_str)
+                                is_communion, full_text = extract_local_pdf_data(pdf_path)
+
+                                if full_text:
+                                    scripts_to_query[date_str] = full_text
 
                                 # Save URL encoded path for the web and modifiedTime
                                 worship_scripts_new[date_str] = {
                                     'path': pdf_path,
                                     'modifiedTime': modified_time,
                                     'isCommunion': is_communion,
-                                    'speakerInfo': speaker_info
+                                    'speakerInfo': None # Will be populated after batch query
                                 }
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
-                                print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, speakerInfo='{speaker_info}'")
+                                print(f"[Record] Scheduled for batch Gemini query: {date_str}")
                             except Exception as e:
                                 print(f"Error downloading {doc['name']}: {e}")
                                 # Keep old data if it fails
                                 if date_str in worship_scripts:
                                     worship_scripts_new[date_str] = worship_scripts[date_str]
 
+    # After collecting all texts, perform a single batch query
+    if scripts_to_query:
+        batch_results = batch_get_speaker_info(scripts_to_query)
+        for date_str, speaker_info in batch_results.items():
+            if date_str in worship_scripts_new:
+                worship_scripts_new[date_str]['speakerInfo'] = speaker_info
+                print(f"[Record] Recorded into repo JSON for {date_str}: speakerInfo='{speaker_info}'")
 
     with open('worship_scripts.json', 'w') as out:
         json.dump(worship_scripts_new, out, indent=2)
