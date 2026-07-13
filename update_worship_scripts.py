@@ -107,6 +107,9 @@ def get_speaker_info(text, date_str):
 
         # A comprehensive list of potential model names to overcome 404s and Limit 0s across tiers
         models_to_try = [
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-2.0-flash-exp',
             'gemini-1.5-flash',
             'gemini-1.5-flash-latest',
             'gemini-1.5-flash-001',
@@ -117,8 +120,7 @@ def get_speaker_info(text, date_str):
             'gemini-1.5-pro-latest',
             'gemini-1.0-pro',
             'gemini-1.0-pro-latest',
-            'gemini-pro',
-            'gemini-2.0-flash'
+            'gemini-pro'
         ]
 
         configs = [(default_client, m) for m in models_to_try]
@@ -154,9 +156,11 @@ def get_speaker_info(text, date_str):
                             return None
                     except Exception as inner_e:
                         error_msg = str(inner_e)
-                        # If limit is 0, we simply don't have access to this model. Skip to next model.
-                        if 'limit: 0' in error_msg:
-                            print(f"[Gemini] Limit 0 for {model_name}, moving to next model config...")
+                        # The string 'limit: 0' can appear in standard 429 quota exhaustion errors on the free tier.
+                        # We should only treat it as a hard model lockout if it's explicitly a 404 or a permission error,
+                        # but given standard free tier behavior, we'll treat 429s as standard rate limits and retry.
+                        if '404' in error_msg or 'NOT_FOUND' in error_msg:
+                            print(f"[Gemini] 404 Not Found for {model_name}, moving to next model config...")
                             break # Breaks attempt loop, goes to next client config
                         elif '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
                             if attempt == 2:
@@ -166,7 +170,6 @@ def get_speaker_info(text, date_str):
                             print(f"[Gemini] Rate limit hit. Retrying {model_name} in {delay} seconds...")
                             time.sleep(delay)
                         else:
-                            # E.g. 404 Model Not Found, move to next config
                             print(f"[Gemini] Non-recoverable error for {model_name}: {error_msg}. Moving to next config...")
                             break
             except Exception as outer_e:
