@@ -101,8 +101,10 @@ def get_speaker_info(text, date_str):
     # Initialize the correct modern client
     client = genai.Client(api_key=api_key)
 
-    # Use the current stable models compatible with the google-genai SDK
-    model_name = 'gemini-3.5-flash'
+    models_to_try = [
+        'gemini-2.5-flash',
+        'gemini-3.5-flash'
+    ]
 
     prompt = f"""
     Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
@@ -123,43 +125,57 @@ def get_speaker_info(text, date_str):
     {text}
     """
 
-    # Retry mechanism for managing Free Tier limits (15 RPM / 250 RPD)
+    # Retry mechanism for managing Free Tier limits
     max_attempts = 3
-    for attempt in range(max_attempts):
+
+    for model_name in models_to_try:
         try:
-            print(f"[Gemini] Requesting speaker extraction for {date_str} using {model_name}...")
+            for attempt in range(max_attempts):
+                try:
+                    print(f"[Gemini] Requesting speaker extraction for {date_str} using {model_name}...")
 
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt
-            )
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt
+                    )
 
-            if response and response.text:
-                result = response.text.strip()
-                print(f"[Gemini] Response received: {result}")
-                return result
-            else:
-                print(f"[Gemini] Empty response received for {date_str}.")
-                return None
+                    if response and response.text:
+                        result = response.text.strip()
+                        print(f"[Gemini] Response received via {model_name}: {result}")
+                        return result
+                    else:
+                        print(f"[Gemini] Empty response received via {model_name}.")
+                        return None
 
-        except Exception as e:
-            error_msg = str(e)
+                except Exception as inner_e:
+                    error_msg = str(inner_e)
 
-            # Catch Rate Limits or Quota Exceeded exceptions
-            if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
-                if attempt == max_attempts - 1:
-                    print(f"[Gemini] Exhausted all {max_attempts} attempts due to rate limits.")
-                    break
+                    # If quota is strictly 0, this model is locked out for this tier. Skip it entirely.
+                    if 'limit: 0' in error_msg:
+                        print(f"[Gemini] Limit 0 for {model_name}, moving to next fallback model...")
+                        break # Break out of the attempt loop, go to next model
 
-                # Exponential backoff delay
-                delay = 15 * (attempt + 1)
-                print(f"[Gemini] Rate limit hit (429). Retrying in {delay} seconds...")
-                time.sleep(delay)
-            else:
-                # Fatal errors like wrong API key or bad syntax
-                print(f"[Gemini] Non-recoverable error: {error_msg}")
-                break
+                    if '404' in error_msg or 'NOT_FOUND' in error_msg:
+                        print(f"[Gemini] 404 Not Found for {model_name}, moving to next fallback model...")
+                        break
 
+                    if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
+                        if attempt == max_attempts - 1:
+                            print(f"[Gemini] Exhausted retries for {model_name}. Moving to next fallback model...")
+                            break # Move to next model
+
+                        # Exponential backoff delay
+                        delay = 30 * (attempt + 1)
+                        print(f"[Gemini] Rate limit hit (429). Retrying {model_name} in {delay} seconds...")
+                        time.sleep(delay)
+                    else:
+                        print(f"[Gemini] Non-recoverable error for {model_name}: {error_msg}")
+                        break
+        except Exception as outer_e:
+            print(f"[Gemini] Outer error testing {model_name}: {outer_e}")
+            continue
+
+    print(f"[Gemini] All fallback models exhausted for {date_str}.")
     return None
 
 def extract_pdf_info(pdf_path, date_str):
