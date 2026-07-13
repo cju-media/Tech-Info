@@ -6,7 +6,6 @@ from googleapiclient.discovery import build
 import dateutil.parser
 import pypdf
 import time
-import random
 from google import genai
 from google.genai import types
 
@@ -96,38 +95,31 @@ def get_speaker_info(text, date_str):
         print("No GEMINI_API_KEY found, skipping speaker info extraction.")
         return None
 
-    # Estimate token size (approx. 4 characters = 1 token)
-    char_count = len(text)
-    estimated_tokens = int(char_count / 4)
-    print(f"[Gemini] Text length: {char_count} chars (~{estimated_tokens} tokens).")
-
-    # Dynamic delay: Calculate how much of our 250,000 TPM limit this consumes,
-    # then sleep that proportion of 60 seconds (with a 20s minimum baseline).
-    safe_delay = max(20, int((estimated_tokens / 250000) * 60) + 5)
-    print(f"[Gemini] Sleeping for {safe_delay}s to safeguard rolling TPM bucket...")
-    time.sleep(safe_delay)
-
+    # Initialize the correct modern client
     client = genai.Client(api_key=api_key)
-    model_name = 'gemini-3.5-flash' # Primary modern model
+
+    # Use the current stable models compatible with the google-genai SDK
+    # 3.5-flash is the best free tier model for long-context text processing.
+    model_name = 'gemini-3.5-flash'
 
     prompt = f"""
-    You are an assistant parsing church worship service scripts.
-    Analyze the full text below and extract:
-    1. The Worship Leader
-    2. The Sermon Speaker (or Preacher)
-    3. A sequential list of all other performers, readers, musicians, or speakers mentioned.
+    Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
+    Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
+    Format the output exactly like this, on a single line:
+    Worship Leader: [Name] | Sermon: [Name]
 
-    Format the output EXACTLY like this (on a single line):
-    Worship Leader: [Name] | Sermon: [Name] | Other Performers: [Name 1, Name 2, etc.]
+    If you cannot find one of them, write "Unknown" for that person.
 
     Text:
     {text}
     """
 
-    # Clean single-model retry loop
-    for attempt in range(3):
+    # Retry mechanism for managing Free Tier limits (15 RPM / 250 RPD)
+    max_attempts = 3
+    for attempt in range(max_attempts):
         try:
-            print(f"[Gemini] Processing script for {date_str}...")
+            print(f"[Gemini] Requesting speaker extraction for {date_str} using {model_name}...")
+
             response = client.models.generate_content(
                 model=model_name,
                 contents=prompt
@@ -135,17 +127,27 @@ def get_speaker_info(text, date_str):
 
             if response and response.text:
                 result = response.text.strip()
-                print(f"[Gemini] Success: {result}")
+                print(f"[Gemini] Response received: {result}")
                 return result
+            else:
+                print(f"[Gemini] Empty response received for {date_str}.")
+                return None
 
         except Exception as e:
             error_msg = str(e)
+
+            # Catch Rate Limits or Quota Exceeded exceptions
             if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
-                # Exponential backoff on rate limits
-                retry_delay = 45 * (attempt + 1)
-                print(f"[Gemini] TPM Limit hit. Backing off for {retry_delay}s...")
-                time.sleep(retry_delay)
+                if attempt == max_attempts - 1:
+                    print(f"[Gemini] Exhausted all {max_attempts} attempts due to rate limits.")
+                    break
+
+                # Exponential backoff delay
+                delay = 15 * (attempt + 1)
+                print(f"[Gemini] Rate limit hit (429). Retrying in {delay} seconds...")
+                time.sleep(delay)
             else:
+                # Fatal errors like wrong API key or bad syntax
                 print(f"[Gemini] Non-recoverable error: {error_msg}")
                 break
 
@@ -235,10 +237,6 @@ def main():
         return
 
     service = get_drive_service()
-
-    # Add this before hitting Gemini:
-    print("[System] Adding startup jitter to bypass shared IP rate-limiting blocks...")
-    time.sleep(random.randint(10, 30))
 
     print("Fetching series folders from Google Drive root...")
 
@@ -343,13 +341,14 @@ def main():
                         should_download = True
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
-                            # User requested: "Always send upcoming PDFs to Gemini for now just for testing"
-                            # So we bypass the modification time check and always download/process
-                            # if old_modified_time and old_modified_time == modified_time:
-                            #     # File hasn't changed, skip download but keep in new state
-                            #     worship_scripts_new[date_str] = worship_scripts[date_str]
-                            #     print(f"Skipping {date_str} (No changes since last run)")
-                            #     should_download = False
+                            has_valid_speaker_info = worship_scripts[date_str].get('speakerInfo') is not None
+                            if old_modified_time == modified_time and has_valid_speaker_info:
+                                # File hasn't changed, skip download but keep in new state
+                                worship_scripts_new[date_str] = worship_scripts[date_str]
+                                print(f"Skipping {date_str} (No changes since last run and speaker info exists)")
+                                should_download = False
+                            elif old_modified_time == modified_time and not has_valid_speaker_info:
+                                print(f"Re-downloading {date_str} to extract missing speaker info...")
 
                         if should_download:
                             try:
@@ -375,6 +374,7 @@ def main():
                                 # Keep old data if it fails
                                 if date_str in worship_scripts:
                                     worship_scripts_new[date_str] = worship_scripts[date_str]
+
 
     with open('worship_scripts.json', 'w') as out:
         json.dump(worship_scripts_new, out, indent=2)
