@@ -5,6 +5,9 @@ from datetime import datetime
 from googleapiclient.discovery import build
 import dateutil.parser
 import pypdf
+import time
+from google import genai
+from google.genai import types
 
 ROOT_FOLDER_ID = '1LW_e2qjwXiI5m-TOqbLiuurTO7XzZ4OT'
 
@@ -86,16 +89,116 @@ def extract_date(text):
     return None
 
 
-def check_communion(pdf_path):
+def get_speaker_info(text, date_str):
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        print("No GEMINI_API_KEY found, skipping speaker info extraction.")
+        return None
+
+    print("[Gemini] Sleeping for 15 seconds to respect Tokens-Per-Minute rate limits...")
+    time.sleep(15)
+
+    # Initialize the correct modern client
+    client = genai.Client(api_key=api_key)
+
+    models_to_try = [
+        'gemini-2.5-flash',
+        'gemini-3.5-flash'
+    ]
+
+    prompt = f"""
+    Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
+    Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
+
+    Instead of just listing the names, you need to assign them to microphones based on these rules:
+    - If Laura is speaking, she is always LAV1.
+    - If Michael is speaking, he is always LAV2.
+    - Any additional speakers should be numbered sequentially in any order (LAV3, LAV4, etc.).
+
+    Format the output exactly like this, on multiple lines:
+    <strong>Speakers - [X] Lavs total</strong>
+    LAV1: [Name]
+    LAV2: [Name]
+    LAV3: [Name]
+
+    Text:
+    {text}
+    """
+
+    # Retry mechanism for managing Free Tier limits
+    max_attempts = 1
+
+    for model_name in models_to_try:
+        try:
+            for attempt in range(max_attempts):
+                try:
+                    print(f"[Gemini] Requesting speaker extraction for {date_str} using {model_name}...")
+
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt
+                    )
+
+                    if response and response.text:
+                        result = response.text.strip()
+                        print(f"[Gemini] Response received via {model_name}: {result}")
+                        return result
+                    else:
+                        print(f"[Gemini] Empty response received via {model_name}.")
+                        return None
+
+                except Exception as inner_e:
+                    error_msg = str(inner_e)
+
+                    # If quota is strictly 0, this model is locked out for this tier. Skip it entirely.
+                    if 'limit: 0' in error_msg:
+                        print(f"[Gemini] Limit 0 for {model_name}, moving to next fallback model...")
+                        break # Break out of the attempt loop, go to next model
+
+                    if '404' in error_msg or 'NOT_FOUND' in error_msg:
+                        print(f"[Gemini] 404 Not Found for {model_name}, moving to next fallback model...")
+                        break
+
+                    if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
+                        if attempt == max_attempts - 1:
+                            print(f"[Gemini] Exhausted retries for {model_name}. Moving to next fallback model...")
+                            break # Move to next model
+
+                        # Exponential backoff delay
+                        delay = 30 * (attempt + 1)
+                        print(f"[Gemini] Rate limit hit (429). Retrying {model_name} in {delay} seconds...")
+                        time.sleep(delay)
+                    else:
+                        print(f"[Gemini] Non-recoverable error for {model_name}: {error_msg}")
+                        break
+        except Exception as outer_e:
+            print(f"[Gemini] Outer error testing {model_name}: {outer_e}")
+            continue
+
+    print(f"[Gemini] All fallback models exhausted for {date_str}.")
+    return None
+
+def extract_pdf_info(pdf_path, date_str):
+    is_communion = False
+    speaker_info = None
     try:
         reader = pypdf.PdfReader(pdf_path)
         if len(reader.pages) > 0:
             first_page_text = reader.pages[0].extract_text()
             if first_page_text and "Communion" in first_page_text:
-                return True
+                is_communion = True
+
+            full_text = ""
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
+
+            if full_text:
+                speaker_info = get_speaker_info(full_text, date_str)
     except Exception as e:
         print(f"Error reading PDF {pdf_path}: {e}")
-    return False
+    return is_communion, speaker_info
 
 def parse_date_range(text):
     # Try to find (Start Date - End Date)
@@ -263,11 +366,13 @@ def main():
                         should_download = True
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
-                            if old_modified_time and old_modified_time == modified_time:
-                                # File hasn't changed, skip download but keep in new state
-                                worship_scripts_new[date_str] = worship_scripts[date_str]
-                                print(f"Skipping {date_str} (No changes since last run)")
-                                should_download = False
+                            # User requested: "Always send upcoming PDFs to Gemini for now just for testing"
+                            # So we bypass the modification time check and always download/process
+                            # if old_modified_time and old_modified_time == modified_time:
+                            #     # File hasn't changed, skip download but keep in new state
+                            #     worship_scripts_new[date_str] = worship_scripts[date_str]
+                            #     print(f"Skipping {date_str} (No changes since last run)")
+                            #     should_download = False
 
                         if should_download:
                             try:
@@ -277,21 +382,22 @@ def main():
                                 with open(pdf_path, 'wb') as pdf_file:
                                     pdf_file.write(pdf_content)
 
-                                is_communion = check_communion(pdf_path)
+                                is_communion, speaker_info = extract_pdf_info(pdf_path, date_str)
 
                                 # Save URL encoded path for the web and modifiedTime
                                 worship_scripts_new[date_str] = {
                                     'path': pdf_path,
                                     'modifiedTime': modified_time,
-                                    'isCommunion': is_communion
+                                    'isCommunion': is_communion,
+                                    'speakerInfo': speaker_info
                                 }
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
+                                print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, speakerInfo='{speaker_info}'")
                             except Exception as e:
                                 print(f"Error downloading {doc['name']}: {e}")
                                 # Keep old data if it fails
                                 if date_str in worship_scripts:
                                     worship_scripts_new[date_str] = worship_scripts[date_str]
-
 
     with open('worship_scripts.json', 'w') as out:
         json.dump(worship_scripts_new, out, indent=2)

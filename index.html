@@ -537,12 +537,12 @@
                 const day = String(event.dateObj.getDate()).padStart(2, '0');
                 const dateKey = `${year}-${month}-${day}`;
 
-                // Determine Communion Status
-                // If there's a script available, it might mark isCommunion.
-                // Otherwise, default to false.
+                // Determine Communion Status and Speaker Info
                 let isCommunion = false;
+                let speakerInfo = null;
                 if (worshipScripts[dateKey]) {
                     isCommunion = worshipScripts[dateKey].isCommunion === true;
+                    speakerInfo = worshipScripts[dateKey].speakerInfo;
                 }
 
                 // Create the Notes section and conditionally inject it
@@ -558,11 +558,21 @@
                 notesSection.style.fontSize = '14px';
                 notesSection.style.textAlign = 'center';
 
+                let notesHtml = '<strong>Notes:</strong><br>';
+
                 if (isCommunion) {
-                    notesSection.innerHTML = '<strong>Notes:</strong><br>Communion Sunday';
+                    notesHtml += 'Communion Sunday';
                 } else {
-                    notesSection.innerHTML = '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
+                    notesHtml += 'Food at First Likely, TV Setup Needed';
                 }
+
+                if (speakerInfo) {
+                    // Convert newlines to breaks
+                    const formattedSpeakerInfo = speakerInfo.replace(/\n/g, '<br>');
+                    notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">' + formattedSpeakerInfo;
+                }
+
+                notesSection.innerHTML = notesHtml;
                 buttonContainer.insertBefore(notesSection, buttonContainer.firstChild);
 
                 if (worshipScripts[dateKey]) {
