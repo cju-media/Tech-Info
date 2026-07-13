@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 import dateutil.parser
 import pypdf
 import time
+import random
 from google import genai
 from google.genai import types
 
@@ -95,87 +96,59 @@ def get_speaker_info(text, date_str):
         print("No GEMINI_API_KEY found, skipping speaker info extraction.")
         return None
 
-    print("[Gemini] Sleeping for 15 seconds to respect Tokens-Per-Minute rate limits...")
-    time.sleep(15)
+    # Estimate token size (approx. 4 characters = 1 token)
+    char_count = len(text)
+    estimated_tokens = int(char_count / 4)
+    print(f"[Gemini] Text length: {char_count} chars (~{estimated_tokens} tokens).")
 
-    # Initialize the correct modern client
+    # Dynamic delay: Calculate how much of our 250,000 TPM limit this consumes,
+    # then sleep that proportion of 60 seconds (with a 20s minimum baseline).
+    safe_delay = max(20, int((estimated_tokens / 250000) * 60) + 5)
+    print(f"[Gemini] Sleeping for {safe_delay}s to safeguard rolling TPM bucket...")
+    time.sleep(safe_delay)
+
     client = genai.Client(api_key=api_key)
-
-    models_to_try = [
-        'gemini-2.5-flash',
-        'gemini-3.5-flash'
-    ]
+    model_name = 'gemini-3.5-flash' # Primary modern model
 
     prompt = f"""
-    Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
-    Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
+    You are an assistant parsing church worship service scripts.
+    Analyze the full text below and extract:
+    1. The Worship Leader
+    2. The Sermon Speaker (or Preacher)
+    3. A sequential list of all other performers, readers, musicians, or speakers mentioned.
 
-    Instead of just listing the names, you need to assign them to microphones based on these rules:
-    - If Laura is speaking, she is always LAV1.
-    - If Michael is speaking, he is always LAV2.
-    - Any additional speakers should be numbered sequentially in any order (LAV3, LAV4, etc.).
-
-    Format the output exactly like this, on multiple lines:
-    <strong>Speakers - [X] Lavs total</strong>
-    LAV1: [Name]
-    LAV2: [Name]
-    LAV3: [Name]
+    Format the output EXACTLY like this (on a single line):
+    Worship Leader: [Name] | Sermon: [Name] | Other Performers: [Name 1, Name 2, etc.]
 
     Text:
     {text}
     """
 
-    # Retry mechanism for managing Free Tier limits
-    max_attempts = 1
-
-    for model_name in models_to_try:
+    # Clean single-model retry loop
+    for attempt in range(3):
         try:
-            for attempt in range(max_attempts):
-                try:
-                    print(f"[Gemini] Requesting speaker extraction for {date_str} using {model_name}...")
+            print(f"[Gemini] Processing script for {date_str}...")
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt
+            )
 
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=prompt
-                    )
+            if response and response.text:
+                result = response.text.strip()
+                print(f"[Gemini] Success: {result}")
+                return result
 
-                    if response and response.text:
-                        result = response.text.strip()
-                        print(f"[Gemini] Response received via {model_name}: {result}")
-                        return result
-                    else:
-                        print(f"[Gemini] Empty response received via {model_name}.")
-                        return None
+        except Exception as e:
+            error_msg = str(e)
+            if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
+                # Exponential backoff on rate limits
+                retry_delay = 45 * (attempt + 1)
+                print(f"[Gemini] TPM Limit hit. Backing off for {retry_delay}s...")
+                time.sleep(retry_delay)
+            else:
+                print(f"[Gemini] Non-recoverable error: {error_msg}")
+                break
 
-                except Exception as inner_e:
-                    error_msg = str(inner_e)
-
-                    # If quota is strictly 0, this model is locked out for this tier. Skip it entirely.
-                    if 'limit: 0' in error_msg:
-                        print(f"[Gemini] Limit 0 for {model_name}, moving to next fallback model...")
-                        break # Break out of the attempt loop, go to next model
-
-                    if '404' in error_msg or 'NOT_FOUND' in error_msg:
-                        print(f"[Gemini] 404 Not Found for {model_name}, moving to next fallback model...")
-                        break
-
-                    if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
-                        if attempt == max_attempts - 1:
-                            print(f"[Gemini] Exhausted retries for {model_name}. Moving to next fallback model...")
-                            break # Move to next model
-
-                        # Exponential backoff delay
-                        delay = 30 * (attempt + 1)
-                        print(f"[Gemini] Rate limit hit (429). Retrying {model_name} in {delay} seconds...")
-                        time.sleep(delay)
-                    else:
-                        print(f"[Gemini] Non-recoverable error for {model_name}: {error_msg}")
-                        break
-        except Exception as outer_e:
-            print(f"[Gemini] Outer error testing {model_name}: {outer_e}")
-            continue
-
-    print(f"[Gemini] All fallback models exhausted for {date_str}.")
     return None
 
 def extract_pdf_info(pdf_path, date_str):
@@ -262,6 +235,10 @@ def main():
         return
 
     service = get_drive_service()
+
+    # Add this before hitting Gemini:
+    print("[System] Adding startup jitter to bypass shared IP rate-limiting blocks...")
+    time.sleep(random.randint(10, 30))
 
     print("Fetching series folders from Google Drive root...")
 
