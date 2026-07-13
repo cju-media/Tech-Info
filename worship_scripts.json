@@ -1,19 +1,17 @@
 {
   "2026-07-19": {
     "path": "service-scripts/2026-07-19.pdf",
-    "modifiedTime": "2026-07-13T19:24:42.562Z",
-    "isCommunion": false,
-    "speakerInfo": null
+    "modifiedTime": "2026-07-13T20:01:39.877Z",
+    "isCommunion": false
+  },
+  "2026-08-02": {
+    "path": "service-scripts/2026-08-02.pdf",
+    "modifiedTime": "2026-07-13T19:46:10.375Z",
+    "isCommunion": false
   },
   "2026-07-26": {
     "path": "service-scripts/2026-07-26.pdf",
     "modifiedTime": "2026-07-13T19:07:34.758Z",
-    "isCommunion": false,
-    "speakerInfo": null
-  },
-  "2026-08-02": {
-    "path": "service-scripts/2026-08-02.pdf",
-    "modifiedTime": "2026-07-07T22:49:11.385Z",
     "isCommunion": false,
     "speakerInfo": null
   },
