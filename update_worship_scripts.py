@@ -99,8 +99,8 @@ def get_speaker_info(text, date_str):
     client = genai.Client(api_key=api_key)
 
     # Use the current stable models compatible with the google-genai SDK
-    # 2.5-flash is the best free tier model for long-context text processing.
-    model_name = 'gemini-2.5-flash'
+    # 3.5-flash is the best free tier model for long-context text processing.
+    model_name = 'gemini-3.5-flash'
 
     prompt = f"""
     Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
