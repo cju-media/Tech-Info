@@ -87,13 +87,14 @@ def extract_date(text):
     return None
 
 
-def get_speaker_info(text):
+def get_speaker_info(text, date_str):
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         print("No GEMINI_API_KEY found, skipping speaker info extraction.")
         return None
 
     try:
+        print(f"[Gemini] Passing full PDF text for {date_str} to Gemini for speaker extraction...")
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
@@ -109,12 +110,16 @@ def get_speaker_info(text):
         """
         response = model.generate_content(prompt)
         if response and response.text:
-            return response.text.strip()
+            result = response.text.strip()
+            print(f"[Gemini] Response received for {date_str}: {result}")
+            return result
+        else:
+            print(f"[Gemini] Empty response received for {date_str}.")
     except Exception as e:
-        print(f"Error querying Gemini: {e}")
+        print(f"[Gemini] Error querying Gemini for {date_str}: {e}")
     return None
 
-def extract_pdf_info(pdf_path):
+def extract_pdf_info(pdf_path, date_str):
     is_communion = False
     speaker_info = None
     try:
@@ -131,7 +136,7 @@ def extract_pdf_info(pdf_path):
                     full_text += page_text + "\n"
 
             if full_text:
-                speaker_info = get_speaker_info(full_text)
+                speaker_info = get_speaker_info(full_text, date_str)
     except Exception as e:
         print(f"Error reading PDF {pdf_path}: {e}")
     return is_communion, speaker_info
@@ -317,7 +322,7 @@ def main():
                                 with open(pdf_path, 'wb') as pdf_file:
                                     pdf_file.write(pdf_content)
 
-                                is_communion, speaker_info = extract_pdf_info(pdf_path)
+                                is_communion, speaker_info = extract_pdf_info(pdf_path, date_str)
 
                                 # Save URL encoded path for the web and modifiedTime
                                 worship_scripts_new[date_str] = {
@@ -327,6 +332,7 @@ def main():
                                     'speakerInfo': speaker_info
                                 }
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
+                                print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, speakerInfo='{speaker_info}'")
                             except Exception as e:
                                 print(f"Error downloading {doc['name']}: {e}")
                                 # Keep old data if it fails

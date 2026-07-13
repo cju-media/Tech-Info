@@ -572,72 +572,71 @@
             }
 
 
-            let hasOverrides = false;
             let overrideData = null;
+            let dateKey = null;
             if (event.dateObj) {
                 const year = event.dateObj.getFullYear();
                 const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
                 const day = String(event.dateObj.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
+                dateKey = `${year}-${month}-${day}`;
 
                 if (manualOverrides[dateKey]) {
-                    hasOverrides = true;
                     overrideData = manualOverrides[dateKey];
                 }
             }
 
-            if (hasOverrides) {
-                // Completely replace notes, warnings, etc. with overrides if they exist
-                let overrideHtml = '';
+            // --- 1. Compile Final RF/Public Warnings ---
+            let finalRfHtml = '';
+            if (overrideData && overrideData.rfWarnings) {
+                isWarning = true; // Still trigger the yellow box
+                finalRfHtml = `<strong>⚠️ RF/Public Warnings (Override):</strong><br>${overrideData.rfWarnings.replace(/\n/g, '<br>')}`;
+            } else if (notesContent.length > 0) { // Default warnings from publicEvents check above
+                finalRfHtml = notesContent;
+            }
 
-                if (overrideData.rfWarnings) {
-                    isWarning = true; // Still trigger the yellow box if it's an RF warning
-                    overrideHtml += `<strong>⚠️ RF/Public Warnings (Override):</strong><br>${overrideData.rfWarnings.replace(/\n/g, '<br>')}<br>`;
+            // --- 2. Compile Final Speakers/Mic Info & Notes ---
+            let finalSpeakerHtml = '';
+            let finalNotesHtml = '';
+
+            let autoSpeakerInfo = null;
+            let autoIsCommunion = false;
+            let isWorshipService = event.name && event.name.toLowerCase().includes('worship service');
+
+            if (isWorshipService && dateKey && worshipScripts[dateKey]) {
+                autoSpeakerInfo = worshipScripts[dateKey].speakerInfo;
+                autoIsCommunion = worshipScripts[dateKey].isCommunion === true;
+            }
+
+            // Speakers
+            if (overrideData && overrideData.micInfo) {
+                finalSpeakerHtml = `<strong>Speakers/Mic Info:</strong><br>${overrideData.micInfo.replace(/\n/g, '<br>')}`;
+            } else if (autoSpeakerInfo) {
+                finalSpeakerHtml = `<strong>Speakers:</strong><br>${autoSpeakerInfo}`;
+            }
+
+            // Notes
+            if (overrideData && overrideData.notes) {
+                finalNotesHtml = `<strong>Notes:</strong><br>${overrideData.notes.replace(/\n/g, '<br>')}`;
+            } else if (isWorshipService) {
+                if (autoIsCommunion) {
+                    finalNotesHtml = '<strong>Notes:</strong><br>Communion Sunday';
+                } else {
+                    finalNotesHtml = '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
                 }
+            }
 
-                // If there were standard warnings already generated, but an override exists, we just append to the existing warnings or replace?
-                // Let's replace the whole notes section contents to give full control to the override
-                notesContent = overrideHtml;
-
-                if (overrideData.micInfo) {
-                    if (notesContent.length > 0) notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
-                    notesContent += `<strong>Speakers/Mic Info:</strong><br>${overrideData.micInfo.replace(/\n/g, '<br>')}<br>`;
-                }
-
-                if (overrideData.notes) {
-                    if (notesContent.length > 0) notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
-                    notesContent += `<strong>Notes:</strong><br>${overrideData.notes.replace(/\n/g, '<br>')}`;
-                }
-            } else {
-                if (event.name && event.name.toLowerCase().includes('worship service')) {
-                    // Try to format event.dateObj as YYYY-MM-DD to match JSON keys
-                    const year = event.dateObj.getFullYear();
-                    const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
-                    const day = String(event.dateObj.getDate()).padStart(2, '0');
-                    const dateKey = `${year}-${month}-${day}`;
-
-                    // Determine Communion and Speaker Status
-                    let isCommunion = false;
-                    let speakerInfo = null;
-                    if (worshipScripts[dateKey]) {
-                        isCommunion = worshipScripts[dateKey].isCommunion === true;
-                        speakerInfo = worshipScripts[dateKey].speakerInfo;
-                    }
-
-                    if (notesContent.length > 0) {
-                        notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
-                    }
-
-                    if (speakerInfo) {
-                        notesContent += `<strong>Speakers:</strong><br>${speakerInfo}<br><br>`;
-                    }
-
-                    if (isCommunion) {
-                        notesContent += '<strong>Notes:</strong><br>Communion Sunday';
-                    } else {
-                        notesContent += '<strong>Notes:</strong><br>Food at First Likely, TV Setup Needed';
-                    }
-                }
+            // --- 3. Assemble Final Content ---
+            notesContent = ''; // Reset and build from parts
+            if (finalRfHtml) {
+                notesContent += finalRfHtml;
+            }
+            if (finalSpeakerHtml) {
+                if (notesContent.length > 0) notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
+                notesContent += finalSpeakerHtml;
+            }
+            if (finalNotesHtml) {
+                if (notesContent.length > 0) notesContent += '<br><hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">';
+                notesContent += finalNotesHtml;
             }
 
             if (notesContent.length > 0) {
