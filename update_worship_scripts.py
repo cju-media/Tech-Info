@@ -108,7 +108,7 @@ def get_speaker_info(text, date_str):
         {text}
         """
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.0-flash',
             contents=prompt
         )
         if response and response.text:
