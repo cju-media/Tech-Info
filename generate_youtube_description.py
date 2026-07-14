@@ -8,32 +8,29 @@ import pypdf
 from google import genai
 from weasyprint import HTML
 
-PROMPT = """
-Create a Youtube Description
-    - Add all of these into a single combined list, always starting with announcements. Only list the musical piece performed, all other parts of the service condense to “Sunday Service”. Do not list the lyrics. For the organ prelude do not list the performer for every piece unless the performer is different. Include Gloria Deo and Doxology in the Sunday Service sections. Have a line break in-between each section (Not the Organ Prelude). Do not write anything before announcements. Include the sermon as its own section. Format as TITLE OF SECTION, TITLE OF WORK - ETC. LVF should be written as Laura Vail Fregin. ML should be written as Michael Lehman
-    - Example:
-        - Announcements
-        - Organ-Prelude Concert, NAME, Organ-In-Residence
-            - Piece 1
-            - Piece 2
-            - Etc
-        - Worship Service
-        - Hymn of Gathering, NAME OF HYMN
-        - Worship Service
-        - Introit, NAME OF PIECE, COMPOSER - GROUP PERFORMING
-        - ETC.
-"""
+def get_prompt():
+    prompt_path = os.path.join("Processed Scripts", "YoutubePrompt.md")
+    if os.path.exists(prompt_path):
+        with open(prompt_path, 'r') as f:
+            return f.read()
+    else:
+        print(f"Warning: Prompt file not found at {prompt_path}")
+        return ""
 
-def generate_youtube_description(text, date_str):
+def generate_youtube_description(text, date_str, base_prompt):
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         print("No GEMINI_API_KEY found, skipping YouTube description generation.")
         return None
 
+    if not base_prompt:
+        print("No prompt provided, skipping YouTube description generation.")
+        return None
+
     client = genai.Client(api_key=api_key)
     model_name = 'gemini-3.5-flash'
 
-    full_prompt = f"{PROMPT}\n\nText:\n{text}"
+    full_prompt = f"{base_prompt}\n\nText:\n{text}"
 
     print(f"[Gemini] Requesting YouTube description for {date_str}...")
     try:
@@ -59,6 +56,8 @@ def main():
 
     now = datetime.now()
     changes_made = False
+
+    base_prompt = get_prompt()
 
     for date_str, data in worship_scripts.items():
         try:
@@ -96,7 +95,7 @@ def main():
                     continue
 
                 # Generate Description
-                description = generate_youtube_description(full_text, date_str)
+                description = generate_youtube_description(full_text, date_str, base_prompt)
                 if not description:
                     continue
 
