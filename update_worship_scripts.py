@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 import dateutil.parser
 import pypdf
 import time
+import random
 from google import genai
 from google.genai import types
 
@@ -107,11 +108,12 @@ def get_speaker_info(text, date_str):
     print(f"[Gemini] Resting for {safe_delay}s to safeguard the TPM rate limit...")
     time.sleep(safe_delay)
 
-    # 2. Configure the client to fail fast using an explicit timeout (e.g., 30 seconds)
+    # 2. Configure the client to fail fast using an explicit timeout in milliseconds
+    # Set timeout to 120,000 milliseconds (2 minutes)
     from google.genai import types
     client = genai.Client(
         api_key=api_key,
-        http_options=types.HttpOptions(timeout=30.0) # Prevents 15-minute hanging
+        http_options=types.HttpOptions(timeout=120000)
     )
     model_name = 'gemini-3.5-flash'
 
@@ -147,14 +149,9 @@ def get_speaker_info(text, date_str):
                 result = response.text.strip()
                 print(f"[Gemini] Successfully parsed: {result}")
                 return result
-            else:
-                print(f"[Gemini] Empty response received for {date_str}.")
-                return None
 
         except Exception as e:
             error_msg = str(e)
-
-            # Catch Rate Limits or Quota Exceeded exceptions
             if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
                 # If we hit a 429, back off exponentially and try again
                 retry_delay = 30 * (attempt + 1)
@@ -252,6 +249,10 @@ def main():
         return
 
     service = get_drive_service()
+
+    # Add this before hitting Gemini:
+    print("[System] Adding startup jitter to bypass shared IP rate-limiting blocks...")
+    time.sleep(random.randint(10, 30))
 
     print("Fetching series folders from Google Drive root...")
 
@@ -356,14 +357,13 @@ def main():
                         should_download = True
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
-                            has_valid_speaker_info = worship_scripts[date_str].get('speakerInfo') is not None
-                            if old_modified_time == modified_time and has_valid_speaker_info:
-                                # File hasn't changed, skip download but keep in new state
-                                worship_scripts_new[date_str] = worship_scripts[date_str]
-                                print(f"Skipping {date_str} (No changes since last run and speaker info exists)")
-                                should_download = False
-                            elif old_modified_time == modified_time and not has_valid_speaker_info:
-                                print(f"Re-downloading {date_str} to extract missing speaker info...")
+                            # User requested: "Always send upcoming PDFs to Gemini for now just for testing"
+                            # So we bypass the modification time check and always download/process
+                            # if old_modified_time and old_modified_time == modified_time:
+                            #     # File hasn't changed, skip download but keep in new state
+                            #     worship_scripts_new[date_str] = worship_scripts[date_str]
+                            #     print(f"Skipping {date_str} (No changes since last run)")
+                            #     should_download = False
 
                         if should_download:
                             try:
@@ -389,7 +389,6 @@ def main():
                                 # Keep old data if it fails
                                 if date_str in worship_scripts:
                                     worship_scripts_new[date_str] = worship_scripts[date_str]
-
 
     with open('worship_scripts.json', 'w') as out:
         json.dump(worship_scripts_new, out, indent=2)
