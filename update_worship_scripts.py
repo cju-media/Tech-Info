@@ -108,12 +108,11 @@ def get_speaker_info(text, date_str):
     print(f"[Gemini] Resting for {safe_delay}s to safeguard the TPM rate limit...")
     time.sleep(safe_delay)
 
-    # 2. Configure the client to fail fast using an explicit timeout in milliseconds
-    # Set timeout to 120,000 milliseconds (2 minutes)
+    # 2. Configure the client to fail fast using an explicit timeout (e.g., 120,000 milliseconds)
     from google.genai import types
     client = genai.Client(
         api_key=api_key,
-        http_options=types.HttpOptions(timeout=120000)
+        http_options=types.HttpOptions(timeout=120000) # Prevents 15-minute hanging
     )
     model_name = 'gemini-3.5-flash'
 
