@@ -108,11 +108,11 @@ def get_speaker_info(text, date_str):
     print(f"[Gemini] Resting for {safe_delay}s to safeguard the TPM rate limit...")
     time.sleep(safe_delay)
 
-    # 2. Configure the client to fail fast using an explicit timeout (e.g., 120,000 milliseconds)
+    # 2. Configure the client to fail fast using an explicit timeout (e.g., 30,000 milliseconds)
     from google.genai import types
     client = genai.Client(
         api_key=api_key,
-        http_options=types.HttpOptions(timeout=120000) # Prevents 15-minute hanging
+        http_options=types.HttpOptions(timeout=30000) # Prevents 15-minute hanging
     )
     model_name = 'gemini-3.5-flash'
 
@@ -135,33 +135,24 @@ def get_speaker_info(text, date_str):
     {text}
     """
 
-    # 3. Simple, non-cascading retry loop
-    for attempt in range(3):
-        try:
-            print(f"[Gemini] Requesting analysis for {date_str} (Attempt {attempt + 1}/3)...")
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt
-            )
+    # User requested: "Only use Gemini 3.5 flash once per request"
+    try:
+        print(f"[Gemini] Requesting analysis for {date_str}...")
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt
+        )
 
-            if response and response.text:
-                result = response.text.strip()
-                print(f"[Gemini] Successfully parsed: {result}")
-                return result
+        if response and response.text:
+            result = response.text.strip()
+            print(f"[Gemini] Successfully parsed: {result}")
+            return result
 
-        except Exception as e:
-            error_msg = str(e)
-            if '429' in error_msg or 'RESOURCE_EXHAUSTED' in error_msg:
-                # If we hit a 429, back off exponentially and try again
-                retry_delay = 30 * (attempt + 1)
-                print(f"[Gemini] Rate limit hit. Backing off for {retry_delay}s...")
-                time.sleep(retry_delay)
-            else:
-                # Fail fast on other errors (like auth or invalid keys)
-                print(f"[Gemini] Non-recoverable API error: {error_msg}")
-                break
+    except Exception as e:
+        error_msg = str(e)
+        print(f"[Gemini] API error: {error_msg}")
 
-    print(f"[Gemini] Failed to process {date_str} after all attempts.")
+    print(f"[Gemini] Failed to process {date_str}.")
     return None
 
 def extract_pdf_info(pdf_path, date_str):
@@ -356,13 +347,16 @@ def main():
                         should_download = True
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
-                            # User requested: "Always send upcoming PDFs to Gemini for now just for testing"
-                            # So we bypass the modification time check and always download/process
-                            # if old_modified_time and old_modified_time == modified_time:
-                            #     # File hasn't changed, skip download but keep in new state
-                            #     worship_scripts_new[date_str] = worship_scripts[date_str]
-                            #     print(f"Skipping {date_str} (No changes since last run)")
-                            #     should_download = False
+                            has_valid_speaker_info = worship_scripts[date_str].get('speakerInfo') is not None
+
+                            # Only download/process if the file is new/modified OR if it's missing speakerInfo
+                            if old_modified_time == modified_time and has_valid_speaker_info:
+                                # File hasn't changed and we already have speaker info, skip download but keep in new state
+                                worship_scripts_new[date_str] = worship_scripts[date_str]
+                                print(f"Skipping {date_str} (No changes since last run and speaker info exists)")
+                                should_download = False
+                            elif old_modified_time == modified_time and not has_valid_speaker_info:
+                                print(f"Re-downloading {date_str} to extract missing speaker info...")
 
                         if should_download:
                             try:
