@@ -494,6 +494,10 @@
             ];
 
             rowData.forEach(item => {
+                if ((item.label === 'Schedule' || item.label === 'Tech') && (!item.value || item.value.toString().trim() === '')) {
+                    return; // Skip rendering empty Schedule or Tech cells
+                }
+
                 const row = document.createElement('div');
                 row.className = 'event-card-row'; // Reuse styles
 
