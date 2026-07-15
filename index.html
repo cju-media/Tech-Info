@@ -414,6 +414,100 @@
         // Force headers=0 so we get all rows including headers, allowing us to map row index directly to sheet row.
         const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&headers=0&tqx=responseHandler:${callbackName}`;
 
+
+        window.saveOverrides = async function(e, dateKey) {
+            let pat = localStorage.getItem('GITHUB_PAT');
+            if (!pat) {
+                pat = prompt('Enter your GitHub Personal Access Token:');
+                if (!pat) return;
+                localStorage.setItem('GITHUB_PAT', pat);
+            }
+
+            const customNotes = document.getElementById('edit-custom-notes').value;
+            const speakerInfo = document.getElementById('edit-speaker-info').value;
+            const saveBtn = e.target;
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+
+            const repo = 'cju-media/Tech-Info';
+            const path = 'Worship Scripts/worship_scripts.json';
+
+            try {
+                // 1. Get current file to get the SHA
+                const getResp = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+                    headers: { 'Authorization': `token ${pat}` }
+                });
+
+                if (getResp.status === 401) {
+                     localStorage.removeItem('GITHUB_PAT');
+                     alert("Invalid GitHub Token. Try again.");
+                     saveBtn.textContent = 'Save Overrides';
+                     saveBtn.disabled = false;
+                     return;
+                }
+                if (!getResp.ok) throw new Error(`GitHub API Error: ${getResp.status}`);
+
+                const fileData = await getResp.json();
+
+                // 2. Decode the base64 content
+                const decodedContent = new TextDecoder().decode(Uint8Array.from(atob(fileData.content), c => c.charCodeAt(0)));
+                let jsonData = JSON.parse(decodedContent);
+
+                // 3. Modify the data
+                if (!jsonData[dateKey]) {
+                    jsonData[dateKey] = {};
+                }
+                jsonData[dateKey].customNotes = customNotes;
+                jsonData[dateKey].speakerInfo = speakerInfo;
+                jsonData[dateKey].manualOverride = true;
+
+                // 4. Encode back to base64
+
+                // Safe way to convert large strings to base64 avoiding call stack limits
+                const textEncoder = new TextEncoder();
+                const utf8 = textEncoder.encode(JSON.stringify(jsonData, null, 2));
+                let binaryStr = '';
+                for (let i = 0; i < utf8.length; i++) {
+                    binaryStr += String.fromCharCode(utf8[i]);
+                }
+                const updatedContent = btoa(binaryStr);
+
+                // 5. Commit the file back
+                const putResp = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${pat}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Manual override for ${dateKey} notes/speakers`,
+                        content: updatedContent,
+                        sha: fileData.sha,
+                        branch: 'main'
+                    })
+                });
+
+                if (!putResp.ok) throw new Error(`GitHub Commit Error: ${putResp.status}`);
+
+                alert('Saved successfully!');
+
+                // Update local state so it reflects immediately without reload
+                if (!worshipScripts[dateKey]) worshipScripts[dateKey] = {};
+                worshipScripts[dateKey].customNotes = customNotes;
+                worshipScripts[dateKey].speakerInfo = speakerInfo;
+                worshipScripts[dateKey].manualOverride = true;
+
+                saveBtn.textContent = 'Save Overrides';
+                saveBtn.disabled = false;
+
+            } catch (err) {
+                console.error(err);
+                alert(`Error saving: ${err.message}`);
+                saveBtn.textContent = 'Save Overrides';
+                saveBtn.disabled = false;
+            }
+        };
+
         window.switchView = function(view) {
             const gridContainer = document.getElementById('view-grid-container');
             const cardContainer = document.getElementById('view-card-container');
@@ -433,6 +527,7 @@
         };
 
         let currentEvents = [];
+        let isEditMode = window.location.hash.includes('#edit');
         let worshipScripts = {};
         let owScripts = {};
         let allEvents = [];
@@ -541,12 +636,15 @@
                 const day = String(event.dateObj.getDate()).padStart(2, '0');
                 const dateKey = `${year}-${month}-${day}`;
 
+
                 // Determine Communion Status and Speaker Info
                 let isCommunion = false;
                 let speakerInfo = null;
+                let customNotes = null;
                 if (worshipScripts[dateKey]) {
                     isCommunion = worshipScripts[dateKey].isCommunion === true;
                     speakerInfo = worshipScripts[dateKey].speakerInfo;
+                    customNotes = worshipScripts[dateKey].customNotes;
                 }
 
                 // Find if any public event is on the same day for RF coordination overlap checking
@@ -555,9 +653,6 @@
                     overlappingPublicEvents = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
                 }
 
-                // Create the Notes section and conditionally inject it
-                // We add the note even if there is no script, as requested by the user:
-                // "On Sunday services that do not indicate a communion, in the notes section write 'Food at First Likely, TV Setup Needed'."
                 const notesSection = document.createElement('div');
                 notesSection.id = 'event-modal-notes';
                 notesSection.style.marginBottom = '15px';
@@ -568,31 +663,48 @@
                 notesSection.style.fontSize = '14px';
                 notesSection.style.textAlign = 'center';
 
-                let notesHtml = '<strong>Notes:</strong><br>';
+                if (isEditMode) {
+                    notesSection.innerHTML = `
+                        <strong>Edit Overrides for ${dateKey}</strong><br><br>
+                        <label style="display:block;text-align:left;font-weight:bold;">Custom Notes:</label>
+                        <textarea id="edit-custom-notes" style="width:100%;height:60px;margin-bottom:10px;">${customNotes !== null && customNotes !== undefined ? customNotes : (isCommunion ? 'Communion Sunday' : 'Food at First Likely, TV Setup Needed')}</textarea>
 
-                if (overlappingPublicEvents.length > 0) {
-                    let warningHtml = '<strong>⚠️ Street Closure / Event Alert</strong><br>The following nearby events may cause traffic or RF interference:<ul style="margin: 5px 0 0 0; padding-left: 20px; text-align: left;">';
-                    overlappingPublicEvents.forEach(pe => {
-                        warningHtml += `<li>${pe.name} (${pe.type})</li>`;
-                    });
-                    warningHtml += '</ul>';
-                    notesHtml += warningHtml + '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">';
-                }
+                        <label style="display:block;text-align:left;font-weight:bold;">Speaker Info (HTML allowed):</label>
+                        <textarea id="edit-speaker-info" style="width:100%;height:100px;margin-bottom:10px;">${speakerInfo || ''}</textarea>
 
-                if (isCommunion) {
-                    notesHtml += 'Communion Sunday';
+                        <button onclick="saveOverrides(event, '${dateKey}')" class="event-modal-sheet-button" style="background-color:#dc3545;width:100%;">Save Overrides</button>
+                    `;
+                    buttonContainer.insertBefore(notesSection, buttonContainer.firstChild);
                 } else {
-                    notesHtml += 'Food at First Likely, TV Setup Needed';
+                    let notesHtml = '<strong>Notes:</strong><br>';
+
+                    if (overlappingPublicEvents.length > 0) {
+                        let warningHtml = '<strong>⚠️ Street Closure / Event Alert</strong><br>The following nearby events may cause traffic or RF interference:<ul style="margin: 5px 0 0 0; padding-left: 20px; text-align: left;">';
+                        overlappingPublicEvents.forEach(pe => {
+                            warningHtml += `<li>${pe.name} (${pe.type})</li>`;
+                        });
+                        warningHtml += '</ul>';
+                        notesHtml += warningHtml + '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">';
+                    }
+
+                    if (customNotes !== null && customNotes !== undefined) {
+                         notesHtml += customNotes;
+                    } else if (isCommunion) {
+                        notesHtml += 'Communion Sunday';
+                    } else {
+                        notesHtml += 'Food at First Likely, TV Setup Needed';
+                    }
+
+                    if (speakerInfo) {
+                        // Convert newlines to breaks
+                        const formattedSpeakerInfo = speakerInfo.replace(/\n/g, '<br>');
+                        notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">' + formattedSpeakerInfo;
+                    }
+
+                    notesSection.innerHTML = notesHtml;
+                    buttonContainer.insertBefore(notesSection, buttonContainer.firstChild);
                 }
 
-                if (speakerInfo) {
-                    // Convert newlines to breaks
-                    const formattedSpeakerInfo = speakerInfo.replace(/\n/g, '<br>');
-                    notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">' + formattedSpeakerInfo;
-                }
-
-                notesSection.innerHTML = notesHtml;
-                buttonContainer.insertBefore(notesSection, buttonContainer.firstChild);
 
                 if (worshipScripts[dateKey]) {
                     const scriptBtn = document.createElement('a');
@@ -638,7 +750,7 @@
 
 
             // Update URL hash without scrolling
-            history.pushState(null, null, `#${eventId}`);
+            history.pushState(null, null, isEditMode ? `#edit-${eventId}` : `#${eventId}`);
 
 
             // Calculate center position based on current scroll
@@ -717,7 +829,7 @@
             // document.body.style.overflow = '';
 
             // Remove hash from URL cleanly
-            history.pushState(null, null, window.location.pathname + window.location.search);
+            history.pushState(null, null, window.location.pathname + window.location.search + (isEditMode ? '#edit' : ''));
         };
 
         // Close modal when clicking anywhere outside the modal content
@@ -954,7 +1066,10 @@
 
                 // Check for hash in URL to auto-open modal
                 if (window.location.hash) {
-                    const hashId = decodeURIComponent(window.location.hash.substring(1));
+                    let hashId = decodeURIComponent(window.location.hash.substring(1));
+                    if (hashId === 'edit') hashId = '';
+                    else if (hashId.startsWith('edit-')) hashId = hashId.substring(5);
+
                     if (hashId) {
                         openModal(hashId);
                     }

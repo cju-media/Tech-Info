@@ -352,6 +352,8 @@ def main():
                             # Only download/process if the file is new/modified OR if it's missing speakerInfo
                             if old_modified_time == modified_time and has_valid_speaker_info:
                                 # File hasn't changed and we already have speaker info, skip download but keep in new state
+                                # Ensure we don't lose old custom properties if they aren't fully merged.
+                                # Actually, worship_scripts[date_str] already has everything from the file.
                                 worship_scripts_new[date_str] = worship_scripts[date_str]
                                 print(f"Skipping {date_str} (No changes since last run and speaker info exists)")
                                 should_download = False
@@ -369,12 +371,25 @@ def main():
                                 is_communion, speaker_info = extract_pdf_info(pdf_path, date_str)
 
                                 # Save URL encoded path for the web and modifiedTime
-                                worship_scripts_new[date_str] = {
+                                new_entry = {
                                     'path': pdf_path,
                                     'modifiedTime': modified_time,
                                     'isCommunion': is_communion,
                                     'speakerInfo': speaker_info
                                 }
+
+                                # Preserve manual overrides and other keys if they exist
+                                if date_str in worship_scripts:
+                                    old_entry = worship_scripts[date_str]
+                                    if old_entry.get('manualOverride'):
+                                        new_entry['manualOverride'] = True
+                                        new_entry['speakerInfo'] = old_entry.get('speakerInfo', speaker_info)
+                                        if 'customNotes' in old_entry:
+                                            new_entry['customNotes'] = old_entry['customNotes']
+                                    if 'youtubeDescriptionModifiedTime' in old_entry:
+                                        new_entry['youtubeDescriptionModifiedTime'] = old_entry['youtubeDescriptionModifiedTime']
+
+                                worship_scripts_new[date_str] = new_entry
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
                                 print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, speakerInfo='{speaker_info}'")
                             except Exception as e:
