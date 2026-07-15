@@ -36,12 +36,12 @@ jobs:
       - name: Run script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: cd "Youtube Desciptions" && python generate_youtube_description.py
+        run: cd "Youtube Descriptions" && python generate_youtube_description.py
 
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git pull --rebase origin ${{ github.event.workflow_run.head_branch || github.ref_name }}
-          git add -A "Worship Scripts/worship_scripts.json" "Youtube Desciptions/Processed Scripts/"
+          git add -A "Worship Scripts/worship_scripts.json" "Youtube Descriptions/Processed Scripts/"
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Generate YouTube description text files" && git push)
