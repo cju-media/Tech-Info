@@ -351,6 +351,7 @@
 <body>
 <div class="app-container" id="app-container">
     <h1>Tech Info</h1>
+    <h2 id="editing-subtitle" style="display:none; color: #dc3545; text-align: center; margin-top: -10px; margin-bottom: 10px; font-size: 1.2em;">Editing</h2>
     <div id="upcoming-events-loading">Loading upcoming events...</div>
     <div id="upcoming-events-error" class="upcoming-events-error"></div>
 
@@ -404,6 +405,9 @@
             </div>
         </div>
     </div>
+    <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+        <button id="mode-toggle-btn" onclick="toggleEditMode()" class="upcoming-events-sheet-button" style="background-color: #6c757d;">Edit</button>
+    </div>
 </div> <!-- Close app-container -->
 
     <script>
@@ -414,6 +418,54 @@
         // Force headers=0 so we get all rows including headers, allowing us to map row index directly to sheet row.
         const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&headers=0&tqx=responseHandler:${callbackName}`;
 
+
+
+        window.toggleEditMode = async function() {
+            if (isEditMode) {
+                // Switch to read view
+                window.location.hash = '';
+                window.location.reload();
+            } else {
+                // Try to authenticate and switch to edit mode
+                let pat = localStorage.getItem('GITHUB_PAT');
+                if (!pat) {
+                    pat = prompt('Enter your GitHub Personal Access Token to enable editing:');
+                    if (!pat) return;
+                }
+
+                const btn = document.getElementById('mode-toggle-btn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Authenticating...';
+                btn.disabled = true;
+
+                try {
+                    // Validate token by making a quick API call
+                    const getResp = await fetch(`https://api.github.com/user`, {
+                        headers: { 'Authorization': `token ${pat}` }
+                    });
+
+                    if (getResp.status === 401) {
+                         localStorage.removeItem('GITHUB_PAT');
+                         alert("Invalid GitHub Token. Please try again.");
+                         btn.textContent = originalText;
+                         btn.disabled = false;
+                         return;
+                    }
+                    if (!getResp.ok) throw new Error(`GitHub API Error: ${getResp.status}`);
+
+                    // Token is valid
+                    localStorage.setItem('GITHUB_PAT', pat);
+                    window.location.hash = 'edit';
+                    window.location.reload();
+
+                } catch (err) {
+                    console.error(err);
+                    alert(`Authentication error: ${err.message}`);
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            }
+        };
 
         window.saveOverrides = async function(e, dateKey) {
             let pat = localStorage.getItem('GITHUB_PAT');
@@ -528,6 +580,12 @@
 
         let currentEvents = [];
         let isEditMode = window.location.hash.includes('#edit');
+
+        if (isEditMode) {
+            document.getElementById('editing-subtitle').style.display = 'block';
+            document.getElementById('mode-toggle-btn').textContent = 'Read View';
+        }
+
         let worshipScripts = {};
         let owScripts = {};
         let allEvents = [];
