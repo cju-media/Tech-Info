@@ -380,7 +380,6 @@
                     <th>Assignment</th>
                     <th>Call Time</th>
                     <th>Event</th>
-                    <th>Venue</th>
                 </tr>
             </thead>
             <tbody id="upcoming-events-body">
@@ -860,7 +859,7 @@
                     if (filteredEvents.length === 0) {
                          const tr = document.createElement('tr');
                          const td = document.createElement('td');
-                         td.colSpan = 5;
+                         td.colSpan = 4;
                          td.textContent = filter === 'all' ? "No upcoming events found." : "No upcoming events match the filter.";
                          td.style.textAlign = 'center';
                          td.style.cursor = 'default'; // Disable pointer for empty message
@@ -899,7 +898,7 @@
                             cardRight.className = 'event-card-right';
 
                             rowData.forEach(item => {
-                                if (item.label !== 'Schedule' && item.label !== 'Tech') {
+                                if (item.label !== 'Schedule' && item.label !== 'Tech' && item.label !== 'Venue') {
                                     const td = document.createElement('td');
                                     td.textContent = item.value;
                                     tr.appendChild(td);
