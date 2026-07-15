@@ -18,7 +18,9 @@
     "modifiedTime": "2026-07-14T22:40:58.304Z",
     "isCommunion": false,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV3: Lisa Domke\nLAV4: Sharon Duncan",
-    "youtubeDescriptionModifiedTime": "2026-07-14T22:40:58.304Z"
+    "youtubeDescriptionModifiedTime": "2026-07-14T22:40:58.304Z",
+    "customNotes": "Food at First Likely, TV Setup Needed",
+    "manualOverride": true
   },
   "2026-08-30": {
     "path": "service-scripts/2026-08-30.pdf",
