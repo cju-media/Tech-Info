@@ -730,18 +730,38 @@ if __name__ == "__main__":
         cron_schedule = os.environ.get('CRON_SCHEDULE', '')
         # '0 3 * * *' is the 8 PM PDT night cron.
         # '0 12 * * *' is the 5 AM PDT morning cron.
+        # '0 17 * * *' is the 10 AM PDT day-before cron.
+
+        is_night_cron = False
+        is_morning_cron = False
+        is_day_before_cron = False
 
         if cron_schedule == '0 3 * * *':
             is_night_cron = True
         elif cron_schedule == '0 12 * * *':
-            is_night_cron = False
+            is_morning_cron = True
+        elif cron_schedule == '0 17 * * *':
+            is_day_before_cron = True
         else:
             # Fallback to UTC time heuristic if run manually
             current_utc_hour = datetime.utcnow().hour
             # 8 PM PDT = 3 AM UTC. Let's say if it's between 2 AM and 10 AM UTC, it's night.
-            is_night_cron = (2 <= current_utc_hour <= 10)
+            if 2 <= current_utc_hour <= 10:
+                is_night_cron = True
+            # 10 AM PDT = 17 UTC (or 18 in PST). Let's say if it's between 16 and 19 UTC, it's day-before.
+            elif 16 <= current_utc_hour <= 19:
+                is_day_before_cron = True
+            else:
+                is_morning_cron = True
 
-        if is_night_cron:
+        if is_day_before_cron:
+            print("Day Before Cron Detected. Checking for all shifts tomorrow...")
+            target_date = today + timedelta(days=1)
+            target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
+            # No filtering by time, include all events for tomorrow
+            target_events = target_events_raw
+            date_word = "tomorrow"
+        elif is_night_cron:
             print("Night Cron Detected. Checking for tomorrow's early shifts (<= 7:00 AM)...")
             target_date = today + timedelta(days=1)
             target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
