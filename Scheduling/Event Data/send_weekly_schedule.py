@@ -494,11 +494,11 @@ if __name__ == "__main__":
     print("Fetching events...")
     events = fetch_events_from_sheet()
 
-    with open('team_emails.json', 'r') as f:
+    with open('../Team Data/team_emails.json', 'r') as f:
         team_emails = json.load(f)
 
     try:
-        with open('team_phones.json', 'r') as f:
+        with open('../Team Data/team_phones.json', 'r') as f:
             team_phones = json.load(f)
     except FileNotFoundError:
         team_phones = {}

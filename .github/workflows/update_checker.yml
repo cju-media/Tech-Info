@@ -35,12 +35,12 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
           RUN_MODE: 'update'
-        run: python3 send_weekly_schedule.py
+        run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py
 
       - name: Commit and push state changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add state.json
+          git add "Scheduling/Event Data/state.json"
           # Only commit and push if state.json has changed
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update schedule state" && git push)

@@ -46,11 +46,11 @@ def generate_youtube_description(text, date_str, base_prompt):
     return None
 
 def main():
-    if not os.path.exists('worship_scripts.json'):
-        print("worship_scripts.json not found.")
+    if not os.path.exists('../Worship Scripts/worship_scripts.json'):
+        print("../Worship Scripts/worship_scripts.json not found.")
         return
 
-    with open('worship_scripts.json', 'r') as f:
+    with open('../Worship Scripts/worship_scripts.json', 'r') as f:
         worship_scripts = json.load(f)
 
     now = datetime.now()
@@ -64,7 +64,7 @@ def main():
             # Process upcoming Sundays (or today) that are within the current week (7 days)
             days_until = (doc_dt.date() - now.date()).days
             if 0 <= days_until <= 7:
-                script_path = data.get('path')
+                script_path = os.path.join('../Worship Scripts', data.get('path'))
                 if not script_path or not os.path.exists(script_path):
                     continue
 
@@ -130,9 +130,9 @@ def main():
             print(f"Error processing {date_str}: {e}")
 
     if changes_made:
-        with open('worship_scripts.json', 'w') as out:
+        with open('../Worship Scripts/worship_scripts.json', 'w') as out:
             json.dump(worship_scripts, out, indent=2)
-        print("Updated worship_scripts.json with new YouTube description timestamps.")
+        print("Updated ../Worship Scripts/worship_scripts.json with new YouTube description timestamps.")
 
 if __name__ == '__main__':
     main()
