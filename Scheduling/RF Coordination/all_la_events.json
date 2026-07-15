@@ -1,22 +1,64 @@
 [
   {
-    "name": "SUMMER TRAMP",
-    "date": "2026-07-12",
-    "location": "410 BOYD",
+    "name": "NIKYS SPORT",
+    "date": "2026-07-09",
+    "location": "1536 W 7th",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "2026 OBON FESTIVAL",
-    "date": "2026-07-11",
-    "location": "Cultural Festival",
+    "name": "2026 ASLA CONFERENCE",
+    "date": "2026-09-16",
+    "location": "1201 FIGUEROA",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "ILOVEMICHELADAS FIRST FRIDAYS",
-    "date": "2026-07-10",
-    "location": "1000 60TH",
+    "name": "DELL TECHNOLOGIES - 20X30",
+    "date": "2026-07-21",
+    "location": "1301 FIGUEROA",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "FUEVZA REGIDA",
+    "date": "2026-07-18",
+    "location": "On the field",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "SUMMER CONCERTS",
+    "date": "2026-07-13",
+    "location": "Pershing square",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CARNIVAL",
+    "date": "2026-07-17",
+    "location": "870 West 8th Street , San Pedro CA, 90731",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "WESTWOOD VILLAGE FARMERS' MARKET",
+    "date": "2026-07-02",
+    "location": "Broxton Plaza",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "SUNSET CONCERTS",
+    "date": "2026-07-16",
+    "location": "Taper Courtyard in Skirball",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LAWC26FZ",
+    "date": "2026-07-14",
+    "location": "1332 S Harbor Blvd, San Pedro, CA 90731",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
