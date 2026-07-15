@@ -440,7 +440,7 @@
 
 
         // Fetch Public Events (for RF coordination overlap checking)
-        fetch('https://cju-media.github.io/Tech-Info/public_events.json')
+        fetch('https://cju-media.github.io/Tech-Info/Scheduling/RF Coordination/public_events.json')
             .then(response => response.json())
             .then(data => {
                 publicEvents = data;
@@ -448,7 +448,7 @@
             .catch(error => console.error('Error fetching public events:', error));
 
         // Fetch worship scripts mapping
-        fetch('https://cju-media.github.io/Tech-Info/worship_scripts.json')
+        fetch('https://cju-media.github.io/Tech-Info/Worship Scripts/worship_scripts.json')
             .then(response => response.json())
             .then(data => {
                 worshipScripts = data;
@@ -594,7 +594,7 @@
                     const scriptBtn = document.createElement('a');
                     scriptBtn.id = 'event-modal-script-link';
                     const path = typeof worshipScripts[dateKey] === 'string' ? worshipScripts[dateKey] : worshipScripts[dateKey].path;
-                    scriptBtn.href = 'https://cju-media.github.io/Tech-Info/' + path;
+                    scriptBtn.href = 'https://cju-media.github.io/Tech-Info/Worship Scripts/' + path;
                     scriptBtn.target = '_blank';
                     scriptBtn.className = 'event-modal-sheet-button';
                     scriptBtn.style.backgroundColor = '#17a2b8'; // Distinct color

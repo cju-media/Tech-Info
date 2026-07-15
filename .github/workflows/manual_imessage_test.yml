@@ -28,4 +28,4 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
           RUN_MODE: 'imessage_test'
-        run: python3 send_weekly_schedule.py
+        run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py

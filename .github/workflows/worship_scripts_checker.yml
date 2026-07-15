@@ -34,11 +34,11 @@ jobs:
           GDRIVE_API_KEY: ${{ secrets.GDRIVE_API_KEY }}
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python update_worship_scripts.py
+        run: cd "Worship Scripts" && python update_worship_scripts.py
 
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add -A worship_scripts.json service-scripts/
+          git add -A "Worship Scripts/worship_scripts.json" "Worship Scripts/service-scripts/"
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update worship scripts JSON and remove old scripts" && git push)

@@ -32,4 +32,4 @@ jobs:
           DRY_RUN: '0'
           RUN_MODE: 'imessage_reminder'
           CRON_SCHEDULE: ${{ github.event.schedule }}
-        run: python3 send_weekly_schedule.py
+        run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py
