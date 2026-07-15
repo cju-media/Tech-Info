@@ -3,6 +3,7 @@ import json
 import dateutil.parser
 from datetime import datetime
 import pytz
+import re
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -35,19 +36,17 @@ def get_upcoming_streams(service):
             maxResults=50
         ).execute()
 
-        for item in playlist_response.get('items', []):
-            video_id = item['snippet']['resourceId']['videoId']
+        video_ids = [item['snippet']['resourceId']['videoId'] for item in playlist_response.get('items', [])]
+        if not video_ids:
+            return upcoming_streams
 
-            # Fetch video details to check if it's an upcoming live stream
-            video_response = service.videos().list(
-                part='snippet,liveStreamingDetails',
-                id=video_id
-            ).execute()
+        # Fetch video details in batch
+        video_response = service.videos().list(
+            part='snippet,liveStreamingDetails',
+            id=','.join(video_ids)
+        ).execute()
 
-            if not video_response.get('items'):
-                continue
-
-            video = video_response['items'][0]
+        for video in video_response.get('items', []):
             snippet = video['snippet']
 
             # Check if it's an upcoming live broadcast
@@ -55,7 +54,7 @@ def get_upcoming_streams(service):
                 scheduled_start_time = video['liveStreamingDetails'].get('scheduledStartTime')
                 if scheduled_start_time:
                     upcoming_streams.append({
-                        'id': video_id,
+                        'id': video['id'],
                         'title': snippet['title'],
                         'description': snippet['description'],
                         'scheduledStartTime': scheduled_start_time,
@@ -93,10 +92,16 @@ def get_combined_description(service_date_str, dt):
 
     # Update order of worship URL in boilerplate
     ows_date_str = format_date_for_ows(dt)
-    boilerplate = boilerplate.replace("[DATE OF SERVICE]", ows_date_str)
+
+    # Use re.sub to replace any date pattern at the end of the URL
+    boilerplate = re.sub(
+        r'(https://www\.fccla\.org/ows/)(?:\[DATE OF SERVICE\]|[\w-]+)',
+        rf'\g<1>{ows_date_str}',
+        boilerplate
+    )
 
     # Combine
-    combined = f"{generated_desc.strip()}\n\n{boilerplate.strip()}"
+    combined = f"{boilerplate.strip()}\n\n{generated_desc.strip()}"
     return combined
 
 def main():
