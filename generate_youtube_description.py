@@ -71,12 +71,20 @@ def main():
                 modified_time = data.get('modifiedTime')
                 youtube_modified_time = data.get('youtubeDescriptionModifiedTime')
 
-                # Only process if the script has been updated since we last generated the description
-                if youtube_modified_time == modified_time and youtube_modified_time is not None:
-                    print(f"Skipping {date_str} (YouTube description is up to date).")
+                # Check if the output file actually exists
+                output_dir = os.path.join("Processed Scripts", date_str)
+                txt_output_path = os.path.join(output_dir, f"Description {date_str}.txt")
+                txt_exists = os.path.exists(txt_output_path)
+
+                # Only process if the script has been updated OR if the text file is missing
+                if youtube_modified_time == modified_time and youtube_modified_time is not None and txt_exists:
+                    print(f"Skipping {date_str} (YouTube description is up to date and text file exists).")
                     continue
 
-                print(f"Processing script for {date_str} (happening in {days_until} days)...")
+                if not txt_exists:
+                    print(f"Processing script for {date_str} (happening in {days_until} days) because text file is missing...")
+                else:
+                    print(f"Processing script for {date_str} (happening in {days_until} days) due to script update...")
 
                 # Extract text from PDF
                 full_text = ""
