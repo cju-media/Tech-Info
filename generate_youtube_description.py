@@ -2,11 +2,10 @@ import os
 import sys
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import dateutil.parser
 import pypdf
 from google import genai
-from weasyprint import HTML
 
 def get_prompt():
     prompt_path = os.path.join("Processed Scripts", "YoutubePrompt.md")
@@ -62,8 +61,9 @@ def main():
     for date_str, data in worship_scripts.items():
         try:
             doc_dt = dateutil.parser.parse(date_str)
-            # Process upcoming Sundays (or today)
-            if doc_dt.date() >= now.date():
+            # Process upcoming Sundays (or today) that are within the current week (7 days)
+            days_until = (doc_dt.date() - now.date()).days
+            if 0 <= days_until <= 7:
                 script_path = data.get('path')
                 if not script_path or not os.path.exists(script_path):
                     continue
@@ -76,7 +76,7 @@ def main():
                     print(f"Skipping {date_str} (YouTube description is up to date).")
                     continue
 
-                print(f"Processing script for {date_str}...")
+                print(f"Processing script for {date_str} (happening in {days_until} days)...")
 
                 # Extract text from PDF
                 full_text = ""
@@ -99,28 +99,15 @@ def main():
                 if not description:
                     continue
 
-                # Save to PDF
+                # Save to txt
                 output_dir = os.path.join("Processed Scripts", date_str)
                 os.makedirs(output_dir, exist_ok=True)
-                pdf_output_path = os.path.join(output_dir, "youtube_description.pdf")
+                txt_output_path = os.path.join(output_dir, f"Description {date_str}.txt")
 
-                html_content = f"""
-                <html>
-                    <head>
-                        <style>
-                            body {{ font-family: sans-serif; padding: 40px; white-space: pre-wrap; }}
-                            h1 {{ text-align: center; color: #333; }}
-                        </style>
-                    </head>
-                    <body>
-                        <h1>YouTube Description - {date_str}</h1>
-                        <div>{description}</div>
-                    </body>
-                </html>
-                """
+                with open(txt_output_path, 'w', encoding='utf-8') as f:
+                    f.write(description)
 
-                HTML(string=html_content).write_pdf(pdf_output_path)
-                print(f"Saved YouTube description PDF to {pdf_output_path}")
+                print(f"Saved YouTube description text to {txt_output_path}")
 
                 # Update JSON
                 worship_scripts[date_str]['youtubeDescriptionModifiedTime'] = modified_time
@@ -128,6 +115,8 @@ def main():
 
                 # Sleep to avoid rate limits if there are multiple to process
                 time.sleep(15)
+            elif days_until > 7:
+                 print(f"Skipping {date_str} (Service is more than a week away: {days_until} days).")
 
         except Exception as e:
             print(f"Error processing {date_str}: {e}")
