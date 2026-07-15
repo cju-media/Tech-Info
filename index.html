@@ -566,6 +566,15 @@
 
                 let notesHtml = '<strong>Notes:</strong><br>';
 
+                if (overlappingPublicEvents.length > 0) {
+                    let warningHtml = '<strong>⚠️ Street Closure / Event Alert</strong><br>The following nearby events may cause traffic or RF interference:<ul style="margin: 5px 0 0 0; padding-left: 20px; text-align: left;">';
+                    overlappingPublicEvents.forEach(pe => {
+                        warningHtml += `<li>${pe.name} (${pe.type})</li>`;
+                    });
+                    warningHtml += '</ul>';
+                    notesHtml += warningHtml + '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">';
+                }
+
                 if (isCommunion) {
                     notesHtml += 'Communion Sunday';
                 } else {
@@ -576,15 +585,6 @@
                     // Convert newlines to breaks
                     const formattedSpeakerInfo = speakerInfo.replace(/\n/g, '<br>');
                     notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">' + formattedSpeakerInfo;
-                }
-
-                if (overlappingPublicEvents.length > 0) {
-                    let warningHtml = '<strong>⚠️ Street Closure / Event Alert</strong><br>The following nearby events may cause traffic or RF interference:<ul style="margin: 5px 0 0 0; padding-left: 20px; text-align: left;">';
-                    overlappingPublicEvents.forEach(pe => {
-                        warningHtml += `<li>${pe.name} (${pe.type})</li>`;
-                    });
-                    warningHtml += '</ul>';
-                    notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">' + warningHtml;
                 }
 
                 notesSection.innerHTML = notesHtml;
