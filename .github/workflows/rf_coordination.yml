@@ -30,13 +30,13 @@ jobs:
         SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
         SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
       run: |
-        python send_rf_coordination.py
+        cd "Scheduling/RF Coordination" && python send_rf_coordination.py
 
     - name: Commit updated JSON
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add public_events.json all_la_events.json
+        git add "Scheduling/RF Coordination/public_events.json" "Scheduling/RF Coordination/all_la_events.json"
         git commit -m "Update upcoming public events JSON" || echo "No changes to commit"
         # Standard push; GitHub Actions handles the rest via GITHUB_TOKEN
         # Note: Do not run this script directly in the sandbox as it pushes

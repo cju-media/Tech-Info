@@ -37,4 +37,4 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
           RUN_MODE: 'daily_reminder'
-        run: python send_weekly_schedule.py
+        run: cd "Scheduling/Event Data" && python send_weekly_schedule.py

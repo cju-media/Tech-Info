@@ -36,7 +36,7 @@ jobs:
       - name: Run script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python generate_youtube_description.py
+        run: cd "Youtube Descriptions" && python generate_youtube_description.py
 
       - name: Commit and push changes
         run: |

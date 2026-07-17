@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '0 3 * * *'  # 8 PM PDT (previous night) for early morning shifts (<= 7am)
     - cron: '0 12 * * *' # 5 AM PDT for regular shifts (> 7am)
+    - cron: '0 17 * * *' # 10 AM PDT (previous day) for all shifts tomorrow
   workflow_dispatch:
 
 jobs:
@@ -32,4 +33,4 @@ jobs:
           DRY_RUN: '0'
           RUN_MODE: 'imessage_reminder'
           CRON_SCHEDULE: ${{ github.event.schedule }}
-        run: python3 send_weekly_schedule.py
+        run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py

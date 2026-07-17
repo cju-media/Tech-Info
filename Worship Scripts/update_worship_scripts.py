@@ -374,15 +374,30 @@ def main():
                                     youtube_mod_time = worship_scripts[date_str].get('youtubeDescriptionModifiedTime')
 
                                 # Save URL encoded path for the web and modifiedTime
-                                worship_scripts_new[date_str] = {
+                                new_entry = {
                                     'path': pdf_path,
                                     'modifiedTime': modified_time,
                                     'isCommunion': is_communion,
                                     'speakerInfo': speaker_info
                                 }
 
-                                if youtube_mod_time:
-                                    worship_scripts_new[date_str]['youtubeDescriptionModifiedTime'] = youtube_mod_time
+                                # Preserve manual overrides and other extra fields from the previous state
+                                if date_str in worship_scripts:
+                                    old_entry = worship_scripts[date_str]
+                                    if old_entry.get('manualOverride'):
+                                        new_entry['manualOverride'] = True
+                                        if 'speakerInfo' in old_entry:
+                                            new_entry['speakerInfo'] = old_entry['speakerInfo']
+                                        if 'customNotes' in old_entry:
+                                            new_entry['customNotes'] = old_entry['customNotes']
+                                        if 'customRfWarning' in old_entry:
+                                            new_entry['customRfWarning'] = old_entry['customRfWarning']
+
+                                    # Always preserve youtube description modifications across downloads
+                                    if 'youtubeDescriptionModifiedTime' in old_entry:
+                                        new_entry['youtubeDescriptionModifiedTime'] = old_entry['youtubeDescriptionModifiedTime']
+
+                                worship_scripts_new[date_str] = new_entry
 
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
                                 print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, speakerInfo='{speaker_info}'")
@@ -391,6 +406,18 @@ def main():
                                 # Keep old data if it fails
                                 if date_str in worship_scripts:
                                     worship_scripts_new[date_str] = worship_scripts[date_str]
+
+    # Preserve any manual overrides that don't correspond to a processed document (e.g. non-worship RF warnings)
+    for date_str, entry in worship_scripts.items():
+        if date_str not in worship_scripts_new and entry.get('manualOverride'):
+            # Only keep it if it's for today or the future to prevent permanent bloat
+            try:
+                entry_dt = datetime.strptime(date_str, "%Y-%m-%d")
+                if entry_dt.date() >= now.date():
+                    worship_scripts_new[date_str] = entry
+            except Exception as e:
+                print(f"Skipping preservation of manual override for {date_str}: invalid date format ({e})")
+                pass
 
     with open('worship_scripts.json', 'w') as out:
         json.dump(worship_scripts_new, out, indent=2)
