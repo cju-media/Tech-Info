@@ -368,6 +368,11 @@ def main():
 
                                 is_communion, speaker_info = extract_pdf_info(pdf_path, date_str)
 
+                                # Retain youtubeDescriptionModifiedTime if it exists so we don't accidentally wipe it
+                                youtube_mod_time = None
+                                if date_str in worship_scripts:
+                                    youtube_mod_time = worship_scripts[date_str].get('youtubeDescriptionModifiedTime')
+
                                 # Save URL encoded path for the web and modifiedTime
                                 new_entry = {
                                     'path': pdf_path,
