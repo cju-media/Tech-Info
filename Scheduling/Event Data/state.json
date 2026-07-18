@@ -24,7 +24,6 @@
             "su-7-19-2026-worship-service"
         ],
         "Saad": [
-            "fr-7-17-2026-cmala-friday-shift",
             "fr-7-31-2026-neo-fest-concert-2"
         ]
     },
@@ -68,11 +67,6 @@
             "date": "2026-07-18",
             "name": "CMALA Saturady Shift 1",
             "call_time": "7:30am-4:30pm"
-        },
-        "fr-7-17-2026-cmala-friday-shift": {
-            "date": "2026-07-17",
-            "name": "CMALA Friday Shift",
-            "call_time": "2:30pm-10:30pm"
         }
     }
 }
