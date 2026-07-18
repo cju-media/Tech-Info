@@ -10,11 +10,22 @@ from google import genai
 from google.genai import types
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaIoBaseUpload
 
 DRIVE_FOLDER_ID = '1BICfy0OQa3fNvo69iEOpEx_66KCQGeUv'
 
 def get_drive_service():
+    oauth_json = os.environ.get('GDRIVE_OAUTH_JSON')
+    if oauth_json:
+        try:
+            creds_dict = json.loads(oauth_json)
+            creds = Credentials.from_authorized_user_info(creds_dict, scopes=['https://www.googleapis.com/auth/drive'])
+            print("Using GDRIVE_OAUTH_JSON for authentication.")
+            return build('drive', 'v3', credentials=creds)
+        except Exception as e:
+            print(f"Error parsing GDRIVE_OAUTH_JSON: {e}")
+
     service_account_json = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
     if service_account_json:
         try:
@@ -23,11 +34,12 @@ def get_drive_service():
             creds = service_account.Credentials.from_service_account_info(
                 creds_dict, scopes=['https://www.googleapis.com/auth/drive']
             )
+            print("Using GDRIVE_SERVICE_ACCOUNT_JSON for authentication.")
             return build('drive', 'v3', credentials=creds)
         except Exception as e:
             print(f"Error parsing GDRIVE_SERVICE_ACCOUNT_JSON: {e}")
             return None
-    print("Warning: GDRIVE_SERVICE_ACCOUNT_JSON is missing.")
+    print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
     return None
 
 def upload_to_drive(service, file_path, filename):
