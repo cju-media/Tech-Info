@@ -8,6 +8,68 @@ import pypdf
 import io
 from google import genai
 from google.genai import types
+from googleapiclient.discovery import build
+from google.oauth2 import service_account
+from googleapiclient.http import MediaIoBaseUpload
+
+DRIVE_FOLDER_ID = '1BICfy0OQa3fNvo69iEOpEx_66KCQGeUv'
+
+def get_drive_service():
+    service_account_json = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
+    if service_account_json:
+        try:
+            creds_dict = json.loads(service_account_json)
+            # Must have write access
+            creds = service_account.Credentials.from_service_account_info(
+                creds_dict, scopes=['https://www.googleapis.com/auth/drive']
+            )
+            return build('drive', 'v3', credentials=creds)
+        except Exception as e:
+            print(f"Error parsing GDRIVE_SERVICE_ACCOUNT_JSON: {e}")
+            return None
+    print("Warning: GDRIVE_SERVICE_ACCOUNT_JSON is missing.")
+    return None
+
+def upload_to_drive(service, file_path, filename):
+    print(f"Uploading {filename} to Google Drive...")
+
+    # Check if file exists in folder
+    query = f"'{DRIVE_FOLDER_ID}' in parents and name = '{filename}' and trashed = false"
+    try:
+        results = service.files().list(
+            q=query,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+            fields="files(id, name)"
+        ).execute()
+        files = results.get('files', [])
+
+        media = MediaIoBaseUpload(io.BytesIO(open(file_path, "rb").read()), mimetype='text/plain', resumable=True)
+
+        if files:
+            # Update existing file
+            file_id = files[0]['id']
+            service.files().update(
+                fileId=file_id,
+                media_body=media,
+                supportsAllDrives=True
+            ).execute()
+            print(f"Updated existing file {filename} in Drive.")
+        else:
+            # Create new file
+            file_metadata = {
+                'name': filename,
+                'parents': [DRIVE_FOLDER_ID]
+            }
+            service.files().create(
+                body=file_metadata,
+                media_body=media,
+                supportsAllDrives=True
+            ).execute()
+            print(f"Created new file {filename} in Drive.")
+    except Exception as e:
+        print(f"Error uploading {filename} to Google Drive: {e}")
+
 
 def main():
     # 1. Check if today is Sunday
@@ -175,6 +237,24 @@ def main():
                     f.write(content.strip())
             else:
                 print(f"Warning: File {filename} does not exist in {titles_dir}. Skipping.")
+
+
+    # 16. Upload to Google Drive
+    print("Uploading updated files to Google Drive...")
+    drive_service = get_drive_service()
+    if drive_service:
+        for filename in os.listdir(titles_dir):
+            if filename.endswith(".txt"):
+                file_path = os.path.join(titles_dir, filename)
+                # Only upload if the file is not empty to avoid uploading cleared files,
+                # actually wait, the user said "Update files with the same name and add files if they don't exist currently."
+                # If a section was omitted by Gemini, it was cleared in step 13.
+                # Let's upload all files regardless, or maybe only non-empty?
+                # Re-reading prompt: "Whenever the service title text files are updated upload them to this Google Drive folder."
+                # We should upload all files that exist in the directory.
+                upload_to_drive(drive_service, file_path, filename)
+    else:
+        print("Skipping Google Drive upload due to missing credentials.")
 
     # Update state file
     state_data["last_processed_sha"] = current_sha
