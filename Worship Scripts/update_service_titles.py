@@ -137,10 +137,33 @@ def main():
         except json.JSONDecodeError:
             pass
 
+    titles_dir = "service-titles"
     last_processed_sha = state_data.get("last_processed_sha")
     if last_processed_sha == current_sha:
-        print("PDF SHA matches last processed SHA. No updates needed. Exiting.")
-        return
+        print("PDF SHA matches last processed SHA. Checking if files are missing in Google Drive...")
+        drive_service = get_drive_service()
+        needs_update = False
+        if drive_service:
+            try:
+                query = f"'{DRIVE_FOLDER_ID}' in parents and trashed = false"
+                results = drive_service.files().list(q=query, supportsAllDrives=True, includeItemsFromAllDrives=True, fields="files(name)").execute()
+                drive_files = [f['name'] for f in results.get('files', [])]
+
+                if os.path.exists(titles_dir):
+                    local_files = [f for f in os.listdir(titles_dir) if f.endswith('.txt')]
+                    for lf in local_files:
+                        if lf not in drive_files:
+                            needs_update = True
+                            print(f"File {lf} missing in Drive. Forcing update and write to disk.")
+                            break
+                else:
+                    needs_update = True
+            except Exception as e:
+                print(f"Error checking drive: {e}")
+
+        if not needs_update:
+            print("PDF SHA matches last processed SHA and all files exist in Drive. No updates needed. Exiting.")
+            return
 
     # 9. Download the PDF
     print(f"Downloading PDF from {download_url}...")
