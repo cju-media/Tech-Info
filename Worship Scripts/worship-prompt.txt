@@ -28,6 +28,7 @@ offering-prayer
 life-at-church
 response-group
 response-title-composer
+words-of-blessing
 hymn-for-journey
-postlude-title
+postlude-title-composer
 postlude-performer
