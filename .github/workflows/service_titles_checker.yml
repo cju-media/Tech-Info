@@ -37,6 +37,18 @@ jobs:
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
         run: cd "Worship Scripts" && python update_service_titles.py
 
+      - name: Trigger Notification
+        if: success()
+        run: |
+          if [ -f "Worship Scripts/.sync_success" ]; then
+            echo "Triggering macOS notification workflow..."
+            curl -X POST https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.PAT }}" \
+            -d '{"event_type": "drive_upload_complete"}'
+            rm "Worship Scripts/.sync_success"
+          fi
+
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"

@@ -58,6 +58,7 @@ def upload_to_drive(service, file_path, filename):
                 supportsAllDrives=True
             ).execute()
             print(f"Updated existing file {filename} in Drive.")
+            return True
         else:
             file_metadata = {
                 'name': filename,
@@ -69,6 +70,7 @@ def upload_to_drive(service, file_path, filename):
                 supportsAllDrives=True
             ).execute()
             print(f"Created new file {filename} in Drive.")
+            return True
     except Exception as e:
         error_msg = str(e)
         if "storageQuotaExceeded" in error_msg or "Service Accounts do not have storage quota" in error_msg:
@@ -78,6 +80,7 @@ def upload_to_drive(service, file_path, filename):
             print("  -> FIX: Manually delete the problematic file from Google Drive so the script can recreate it under your account.")
         else:
             print(f"Error uploading {filename} to Google Drive: {e}")
+        return False
 
 def main():
     titles_dir = "service-titles"
@@ -92,12 +95,19 @@ def main():
         return
 
     print("Syncing files to Google Drive...")
+    files_uploaded = 0
     for filename in os.listdir(titles_dir):
         if filename.endswith(".txt"):
             file_path = os.path.join(titles_dir, filename)
-            upload_to_drive(drive_service, file_path, filename)
+            if upload_to_drive(drive_service, file_path, filename):
+                files_uploaded += 1
 
     print("Sync complete.")
+
+    # If any files were uploaded, write a flag file for the github action to see
+    if files_uploaded > 0:
+        with open(".sync_success", "w") as f:
+            f.write("true")
 
 if __name__ == "__main__":
     main()
