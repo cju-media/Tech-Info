@@ -6,7 +6,6 @@
             "sa-7-25-2026-neo-fest-concert-1"
         ],
         "Danny": [
-            "sa-7-18-2026-cmala-saturday-shift-2",
             "su-7-26-2026-worship-service",
             "su-8-2-2026-worship-service"
         ],
@@ -20,7 +19,6 @@
             "fr-7-24-2026-wedding-ceremony"
         ],
         "Marc": [
-            "sa-7-18-2026-cmala-saturady-shift-1",
             "su-7-19-2026-worship-service"
         ],
         "Saad": [
@@ -57,16 +55,6 @@
             "date": "2026-07-19",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "sa-7-18-2026-cmala-saturday-shift-2": {
-            "date": "2026-07-18",
-            "name": "CMALA Saturday Shift 2",
-            "call_time": "4:30pm-11:00pm"
-        },
-        "sa-7-18-2026-cmala-saturady-shift-1": {
-            "date": "2026-07-18",
-            "name": "CMALA Saturady Shift 1",
-            "call_time": "7:30am-4:30pm"
         }
     }
 }
