@@ -72,8 +72,10 @@ def upload_to_drive(service, file_path, filename):
     except Exception as e:
         error_msg = str(e)
         if "storageQuotaExceeded" in error_msg or "Service Accounts do not have storage quota" in error_msg:
-            print(f"Error creating {filename}: Service Account quota exceeded.")
-            print("  -> FIX: Run 'python get_drive_credentials.py' locally, and save the output to the GDRIVE_OAUTH_JSON GitHub Secret.")
+            print(f"Error modifying {filename}: Quota exceeded.")
+            print(f"  -> Raw Error: {error_msg}")
+            print("  -> If you are using GDRIVE_OAUTH_JSON, the file in Drive may be owned by the Service Account which has no quota.")
+            print("  -> FIX: Manually delete the problematic file from Google Drive so the script can recreate it under your account.")
         else:
             print(f"Error uploading {filename} to Google Drive: {e}")
 
