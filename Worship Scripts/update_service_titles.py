@@ -309,6 +309,8 @@ def main():
         return
 
     print("Update complete.")
+    with open(".sync_success", "w") as f:
+        f.write("true")
 
 if __name__ == "__main__":
     main()
