@@ -1,7 +1,6 @@
 {
     "assignments": {
         "Cameron": [
-            "su-7-19-2026-worship-service",
             "fr-7-24-2026-wedding-ceremony",
             "sa-7-25-2026-neo-fest-concert-1"
         ],
@@ -18,9 +17,7 @@
         "Kaspar": [
             "fr-7-24-2026-wedding-ceremony"
         ],
-        "Marc": [
-            "su-7-19-2026-worship-service"
-        ],
+        "Marc": [],
         "Saad": [
             "fr-7-31-2026-neo-fest-concert-2"
         ]
@@ -50,11 +47,6 @@
             "date": "2026-07-24",
             "name": "Wedding Ceremony",
             "call_time": "3:00pm-7:00pm"
-        },
-        "su-7-19-2026-worship-service": {
-            "date": "2026-07-19",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
