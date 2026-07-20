@@ -88,7 +88,8 @@
                 // Fetch workflows
                 const wfResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows`);
                 const wfData = await wfResponse.json();
-                const workflows = wfData.workflows;
+                // Filter out test runners
+                const workflows = wfData.workflows.filter(wf => !wf.name.toLowerCase().includes('test'));
 
                 // Fetch recent runs
                 const runsResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=50`);
