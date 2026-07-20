@@ -105,7 +105,10 @@
                 const res = await fetch(commitUrl);
                 if (res.ok) {
                     const data = await res.json();
-                    return data.files ? data.files.map(f => f.filename) : [];
+                    return data.files ? data.files.map(f => ({
+                        filename: f.filename,
+                        blob_url: f.blob_url
+                    })) : [];
                 }
             } catch(e) {}
             return [];
@@ -179,7 +182,7 @@
                     }
 
                     // Find if it edited files based on commit message match
-                    let editedFilesText = 'N/A';
+                    let editedFilesHtml = null;
                     let expectedCommitMsg = null;
                     const commitMatch = yamlContent ? yamlContent.match(/git commit -m "([^"]+)"/) : null;
 
@@ -190,17 +193,14 @@
                         if (matchingCommit) {
                             const files = await fetchCommitFiles(matchingCommit.url);
                             if (files.length > 0) {
-                                editedFilesText = files.join('\n');
-                            } else {
-                                editedFilesText = 'No files changed in the latest execution.';
+                                editedFilesHtml = files.map(f => {
+                                    if (f.blob_url) {
+                                        return `<a href="${f.blob_url}" target="_blank" rel="noopener noreferrer">${f.filename}</a>`;
+                                    }
+                                    return f.filename;
+                                }).join('<br>');
                             }
-                        } else {
-                            editedFilesText = 'No recent commits found matching this workflow.';
                         }
-                    } else {
-                         // Check if this workflow doesn't explicitly commit, but we can guess it generates files
-                         // Alternatively, we can check if it uploads artifacts.
-                         editedFilesText = 'This workflow does not push commits.';
                     }
 
                     // Construct Card
@@ -244,10 +244,12 @@
                     details.appendChild(document.createElement('div'));
 
                     // Files Edited
-                    const filesDiv = document.createElement('div');
-                    filesDiv.className = 'files-list';
-                    filesDiv.innerHTML = `<div class="detail-label" style="margin-bottom: 5px;">Files Edited:</div>${editedFilesText}`;
-                    details.appendChild(filesDiv);
+                    if (editedFilesHtml) {
+                        const filesDiv = document.createElement('div');
+                        filesDiv.className = 'files-list';
+                        filesDiv.innerHTML = `<div class="detail-label" style="margin-bottom: 5px;">Files Edited:</div>${editedFilesHtml}`;
+                        details.appendChild(filesDiv);
+                    }
 
                     card.appendChild(details);
                     dashboard.appendChild(card);
