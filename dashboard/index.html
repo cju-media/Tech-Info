@@ -118,7 +118,11 @@
                 // Fetch workflows
                 const wfResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows`);
                 const wfData = await wfResponse.json();
-                const workflows = wfData.workflows.filter(wf => !wf.name.toLowerCase().includes('test'));
+                const excludedWorkflows = ["Deploy to GitHub Pages", "Send Admin Schedules (Manual)"];
+                const workflows = wfData.workflows.filter(wf =>
+                    !wf.name.toLowerCase().includes('test') &&
+                    !excludedWorkflows.includes(wf.name)
+                );
 
                 // Fetch recent runs
                 const runsResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100`);
