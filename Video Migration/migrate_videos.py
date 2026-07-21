@@ -36,6 +36,22 @@ def get_drive_service():
     print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
     return None
 
+
+def get_youtube_service():
+    creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
+    if not creds_json:
+        print("Error: YOUTUBE_CREDENTIALS_JSON environment variable not found.")
+        return None
+
+    try:
+        creds_info = json.loads(creds_json)
+        creds = Credentials.from_authorized_user_info(creds_info)
+        service = build('youtube', 'v3', credentials=creds)
+        return service
+    except Exception as e:
+        print(f"Error authenticating with YouTube: {e}")
+        return None
+
 def get_or_create_folder(service, parent_id, folder_name):
     query = f"'{parent_id}' in parents and name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
     results = service.files().list(
@@ -159,26 +175,49 @@ def main():
     ).execute()
     if existing_results.get('files'):
         print(f"Video '{recent_video['name']}' already exists in destination subfolder '{sunday_str_formatted}'. Skipping copy.")
-        return
-
-    # Copy file to destination subfolder
-    print(f"Copying video to destination subfolder...")
-    copied_file = {
-        'name': recent_video['name'],
-        'parents': [dest_subfolder_id]
-    }
-    service.files().copy(
-        fileId=recent_video['id'],
-        body=copied_file,
-        supportsAllDrives=True
-    ).execute()
-    print(f"Successfully copied video '{recent_video['name']}' to '{sunday_str_formatted}'!")
+    else:
+        # Copy file to destination subfolder
+        print(f"Copying video to destination subfolder...")
+        copied_file = {
+            'name': recent_video['name'],
+            'parents': [dest_subfolder_id]
+        }
+        service.files().copy(
+            fileId=recent_video['id'],
+            body=copied_file,
+            supportsAllDrives=True
+        ).execute()
+        print(f"Successfully copied video '{recent_video['name']}' to '{sunday_str_formatted}'!")
 
     # Process Sermon-Series-Description.txt
     sermon_desc_path = "Worship Scripts/Sermon-Series/Sermon-Series-Description.txt"
     if os.path.exists(sermon_desc_path):
         print(f"Found {sermon_desc_path}. Processing...")
         try:
+
+            # Get the most recent video from the YouTube playlist
+            youtube_service = get_youtube_service()
+            youtube_link = ""
+            if youtube_service:
+                try:
+                    playlist_response = youtube_service.playlistItems().list(
+                        part='snippet',
+                        playlistId='PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs',
+                        maxResults=1
+                    ).execute()
+
+                    items = playlist_response.get('items', [])
+                    if items:
+                        video_id = items[0]['snippet']['resourceId']['videoId']
+                        youtube_link = f"https://youtube.com/watch?v={video_id}"
+                        print(f"Found recent YouTube video: {youtube_link}")
+                    else:
+                        print("No videos found in YouTube playlist.")
+                except Exception as e:
+                    print(f"Error querying YouTube playlist: {e}")
+            else:
+                print("Skipping YouTube link replacement because YouTube service could not be initialized.")
+
             with open(sermon_desc_path, 'r', encoding='utf-8') as f:
                 content = f.read()
 
@@ -186,8 +225,11 @@ def main():
             m_dd_yy = f"{sunday_date.month}-{sunday_date.strftime('%d-%y')}"
             ow_link = f"https://www.fccla.org/ows/{m_dd_yy}"
 
-            # Replace placeholder
+            # Replace placeholders
             modified_content = content.replace("OW LINK", ow_link)
+            if youtube_link:
+                modified_content = modified_content.replace("Youtube Service Link", youtube_link)
+
 
             # Upload modified text to the Drive subfolder
             from googleapiclient.http import MediaIoBaseUpload

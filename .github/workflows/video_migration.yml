@@ -27,5 +27,6 @@ jobs:
       - name: Run video migration script
         env:
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
         run: |
           python "Video Migration/migrate_videos.py"
