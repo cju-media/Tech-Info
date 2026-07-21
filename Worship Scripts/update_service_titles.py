@@ -6,6 +6,7 @@ import datetime
 import zoneinfo
 import pypdf
 import io
+import hashlib
 from google import genai
 from google.genai import types
 from googleapiclient.discovery import build
@@ -158,10 +159,11 @@ def main():
 
     titles_dir = "service-titles"
     last_processed_sha = state_data.get("last_processed_sha")
+    needs_update = False
+
     if last_processed_sha == current_sha:
         print("PDF SHA matches last processed SHA. Checking if files are missing in Google Drive...")
         drive_service = get_drive_service()
-        needs_update = False
         if drive_service:
             try:
                 query = f"'{DRIVE_FOLDER_ID}' in parents and trashed = false"
@@ -194,17 +196,36 @@ def main():
         print(f"Error downloading PDF: {e}")
         return
 
-    # 10. Extract text from PDF
+    # 10. Extract text from PDF and check first page hash
     print("Extracting text from PDF...")
     pdf_text = ""
+    first_page_text = ""
     try:
         reader = pypdf.PdfReader(io.BytesIO(pdf_content))
+        if len(reader.pages) > 0:
+            first_page_text = reader.pages[0].extract_text() or ""
+
         for page in reader.pages:
             text = page.extract_text()
             if text:
                 pdf_text += text + "\n"
     except Exception as e:
         print(f"Error reading PDF: {e}")
+        return
+
+    # Check if first page changed
+    first_page_hash = hashlib.sha256(first_page_text.encode('utf-8')).hexdigest()
+    last_first_page_hash = state_data.get("last_first_page_hash")
+
+    if first_page_hash == last_first_page_hash and not needs_update:
+        print("First page of PDF has not changed and all files exist in Drive. Skipping Gemini request.")
+        # We still update the overall SHA so we don't redownload it next hour
+        state_data["last_processed_sha"] = current_sha
+        try:
+            with open(state_file, "w") as f:
+                json.dump(state_data, f)
+        except:
+            pass
         return
 
     # 11. Read worship-prompt.txt
@@ -300,6 +321,7 @@ def main():
 
     # Update state file
     state_data["last_processed_sha"] = current_sha
+    state_data["last_first_page_hash"] = first_page_hash
     try:
         with open(state_file, "w") as f:
             json.dump(state_data, f)
