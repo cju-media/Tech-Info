@@ -134,29 +134,30 @@ def main():
         print(f"Video size {size_bytes} bytes is not around 100MB. Skipping.")
         return
 
-    # 2. Modified on Sunday (in US/Pacific)
-    modified_time_str = recent_video.get('modifiedTime')
-    if not modified_time_str:
-        print("Could not retrieve modified time. Skipping.")
+    # 2 & 3 & 4. Validate Date and Time based on Filename
+    # Filenames are expected to be like "2026-07-19 11-28-40.mp4"
+    import re
+    match = re.search(r"(\d{4}-\d{2}-\d{2}) (\d{2})-\d{2}-\d{2}", recent_video['name'])
+    if not match:
+        print(f"Video filename '{recent_video['name']}' does not match expected date format. Skipping.")
         return
 
-    # Parse RFC 3339 format
-    # modifiedTime is like '2024-07-21T18:30:00.000Z'
-    modified_time = datetime.strptime(modified_time_str, '%Y-%m-%dT%H:%M:%S.%fZ')
-    modified_time_utc = pytz.utc.localize(modified_time)
-    modified_time_pt = modified_time_utc.astimezone(tz)
+    parsed_date_str = match.group(1)
+    parsed_hour_str = match.group(2)
 
-    if modified_time_pt.date() != sunday_date.date():
-        print(f"Video was modified on {modified_time_pt.date()}, not target Sunday {sunday_date.date()}. Skipping.")
+    parsed_date = datetime.strptime(parsed_date_str, '%Y-%m-%d').date()
+    parsed_hour = int(parsed_hour_str)
+
+    if parsed_date != sunday_date.date():
+        print(f"Video was recorded on {parsed_date}, not target Sunday {sunday_date.date()}. Skipping.")
         return
 
-    # 3. Modified in the 11am hour
-    if modified_time_pt.hour != 11:
-        print(f"Video was modified in hour {modified_time_pt.hour}, not 11am. Skipping.")
+    if parsed_hour != 11:
+        print(f"Video was recorded in hour {parsed_hour}, not 11am. Skipping.")
         return
 
-    # 4. "11" in the title
     if '11' not in recent_video['name']:
+        # This is somewhat redundant with the hour check, but keeping to strictly follow original rule
         print(f"Video title does not contain '11'. Skipping.")
         return
 
