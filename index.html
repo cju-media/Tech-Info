@@ -6,6 +6,68 @@
             margin-top: -43px !important;
             color: #333;
         }
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 10px 0;
+            margin-top: 40px;
+        }
+        .header-container h1 {
+            text-align: center;
+            margin: 0;
+        }
+
+        .nav-menu-btn {
+            position: absolute;
+            left: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            color: #555;
+            z-index: 10;
+        }
+
+        .nav-menu-btn:hover {
+            color: #000;
+        }
+
+        .nav-dropdown {
+            display: none;
+            position: absolute;
+            left: 10px;
+            top: 50px;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            z-index: 1000;
+            border: 1px solid #ddd;
+        }
+
+        .nav-dropdown.show {
+            display: block;
+        }
+
+        .nav-dropdown a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            border-bottom: 1px solid #eee;
+        }
+
+        .nav-dropdown a:last-child {
+            border-bottom: none;
+        }
+
+        .nav-dropdown a:hover {
+            background-color: #f5f5f5;
+        }
+
         h1 {
             text-align: center;
         }
@@ -350,7 +412,15 @@
 </head>
 <body>
 <div class="app-container" id="app-container">
-    <h1>Tech Info</h1>
+    <div class="header-container">
+        <button id="navMenuBtn" class="nav-menu-btn" style="display:none;">☰</button>
+        <button id="backMenuBtn" class="nav-menu-btn" style="display:none;">&#x2039; Back</button>
+        <div id="navDropdown" class="nav-dropdown">
+            <a href="#" id="editScheduleLink">Edit Schedule</a>
+            <a href="dashboard/index.html">Automated Workflows</a>
+        </div>
+        <h1>Tech Info</h1>
+    </div>
     <h2 id="editing-subtitle" style="display:none; color: #dc3545; text-align: center; margin-top: -10px; margin-bottom: 10px; font-size: 1.2em;">Editing</h2>
     <div id="upcoming-events-loading">Loading upcoming events...</div>
     <div id="upcoming-events-error" class="upcoming-events-error"></div>
@@ -592,6 +662,18 @@
         if (isEditMode) {
             document.getElementById('editing-subtitle').style.display = 'block';
             document.getElementById('mode-toggle-btn').textContent = 'Read View';
+            document.getElementById('backMenuBtn').style.display = 'block';
+        } else {
+            document.getElementById('navMenuBtn').style.display = 'block';
+        }
+
+        const backMenuBtn = document.getElementById('backMenuBtn');
+        if (backMenuBtn) {
+            backMenuBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.hash = '';
+                window.location.reload();
+            });
         }
 
         let worshipScripts = {};
@@ -932,6 +1014,38 @@
             // If the modal is open, and the click target is NOT inside the modal content
             if (modalOverlay.classList.contains('active') && !modalContent.contains(event.target)) {
                 closeModal();
+            }
+        });
+
+        // Navigation menu setup
+        const navMenuBtn = document.getElementById('navMenuBtn');
+        const navDropdown = document.getElementById('navDropdown');
+        const editScheduleLink = document.getElementById('editScheduleLink');
+
+        if (navMenuBtn) {
+            navMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navDropdown.classList.toggle('show');
+            });
+        }
+
+        if (editScheduleLink) {
+            editScheduleLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                navDropdown.classList.remove('show');
+                if (typeof window.toggleEditMode === 'function') {
+                    if (!isEditMode) window.toggleEditMode();
+                } else {
+                    window.location.hash = 'edit';
+                    window.location.reload();
+                }
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (navDropdown && navDropdown.classList.contains('show') && !navMenuBtn.contains(e.target)) {
+                navDropdown.classList.remove('show');
             }
         });
 
