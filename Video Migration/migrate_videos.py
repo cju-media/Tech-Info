@@ -174,5 +174,46 @@ def main():
     ).execute()
     print(f"Successfully copied video '{recent_video['name']}' to '{sunday_str_formatted}'!")
 
+    # Process Sermon-Series-Description.txt
+    sermon_desc_path = "Worship Scripts/Sermon-Series/Sermon-Series-Description.txt"
+    if os.path.exists(sermon_desc_path):
+        print(f"Found {sermon_desc_path}. Processing...")
+        try:
+            with open(sermon_desc_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Format M-DD-YY (no leading zero for month, 2-digit year)
+            m_dd_yy = f"{sunday_date.month}-{sunday_date.strftime('%d-%y')}"
+            ow_link = f"https://www.fccla.org/ows/{m_dd_yy}"
+
+            # Replace placeholder
+            modified_content = content.replace("OW LINK", ow_link)
+
+            # Upload modified text to the Drive subfolder
+            from googleapiclient.http import MediaIoBaseUpload
+            import io
+
+            new_filename = f"Sermon-Series-Description-{sunday_str_formatted}.txt"
+            print(f"Uploading {new_filename} to Drive subfolder...")
+
+            media = MediaIoBaseUpload(io.BytesIO(modified_content.encode('utf-8')), mimetype='text/plain', resumable=True)
+            file_metadata = {
+                'name': new_filename,
+                'parents': [dest_subfolder_id]
+            }
+
+            service.files().create(
+                body=file_metadata,
+                media_body=media,
+                supportsAllDrives=True
+            ).execute()
+            print(f"Successfully uploaded {new_filename}!")
+
+        except Exception as e:
+            print(f"Error processing {sermon_desc_path}: {e}")
+    else:
+        print(f"{sermon_desc_path} not found locally. Skipping description upload.")
+
+
 if __name__ == "__main__":
     main()
