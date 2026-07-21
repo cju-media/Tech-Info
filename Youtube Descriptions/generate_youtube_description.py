@@ -60,6 +60,14 @@ def main():
 
     base_prompt = get_prompt()
 
+    # Fetch OW Index
+    try:
+        ow_index_resp = requests.get('https://raw.githubusercontent.com/TheCathedralFCCLA/OW/refs/heads/main/OWs/index.json')
+        ow_index = ow_index_resp.json()
+    except Exception as e:
+        print(f"Error fetching OW index: {e}")
+        ow_index = {}
+
     for date_str, data in worship_scripts.items():
         try:
             doc_dt = dateutil.parser.parse(date_str)
@@ -84,22 +92,22 @@ def main():
                 else:
                     print(f"Processing script for {date_str} (happening in {days_until} days) due to script update...")
 
-                # Get the OW URL for this date using M.DD.YY format as requested
-                # Try both exact date and with ' OW' suffix to handle repo variations
-                ow_date_str = f"{doc_dt.month}.{doc_dt.day:02d}.{doc_dt.strftime('%y')}"
-                ow_url_1 = f"https://raw.githubusercontent.com/TheCathedralFCCLA/OW/main/OWs/{ow_date_str}.pdf"
-                ow_url_2 = f"https://raw.githubusercontent.com/TheCathedralFCCLA/OW/main/OWs/{ow_date_str}%20OW.pdf"
+                # Find the OW URL using the index.json mapping (format: M-D-YY)
+                ow_date_key = f"{doc_dt.month}-{doc_dt.day}-{doc_dt.strftime('%y')}"
+                ow_info = ow_index.get(ow_date_key)
+
+                if not ow_info or not ow_info.get('url'):
+                    print(f"No OW found in remote index for date {ow_date_key}, skipping...")
+                    continue
+
+                ow_url = ow_info['url']
 
                 # Download and extract text from OW PDF
                 full_text = ""
                 try:
-                    print(f"Downloading OW...")
-                    pdf_resp = requests.get(ow_url_1)
-                    if pdf_resp.status_code == 404:
-                        pdf_resp = requests.get(ow_url_2)
-
+                    print(f"Downloading OW from {ow_url}...")
+                    pdf_resp = requests.get(ow_url)
                     pdf_resp.raise_for_status()
-                    print(f"Successfully downloaded OW from {pdf_resp.url}")
 
                     pdf_file = io.BytesIO(pdf_resp.content)
                     reader = pypdf.PdfReader(pdf_file)
