@@ -229,7 +229,8 @@ def main():
             # Replace placeholders
             modified_content = content.replace("OW LINK", ow_link)
             if youtube_link:
-                modified_content = modified_content.replace("Youtube Service Link", youtube_link)
+                import re
+                modified_content = re.sub(r'(?i)youtube service link', youtube_link, modified_content)
 
 
             # Upload modified text to the Drive subfolder
