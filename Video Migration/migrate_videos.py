@@ -238,20 +238,40 @@ def main():
             import io
 
             new_filename = f"Sermon-Series-Description-{sunday_str_formatted}.txt"
-            print(f"Uploading {new_filename} to Drive subfolder...")
 
-            media = MediaIoBaseUpload(io.BytesIO(modified_content.encode('utf-8')), mimetype='text/plain', resumable=True)
-            file_metadata = {
-                'name': new_filename,
-                'parents': [dest_subfolder_id]
-            }
-
-            service.files().create(
-                body=file_metadata,
-                media_body=media,
-                supportsAllDrives=True
+            # Check if file already exists
+            query_desc = f"'{dest_subfolder_id}' in parents and name = '{new_filename}' and trashed = false"
+            desc_results = service.files().list(
+                q=query_desc,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+                fields="files(id)"
             ).execute()
-            print(f"Successfully uploaded {new_filename}!")
+
+            existing_files = desc_results.get('files', [])
+            media = MediaIoBaseUpload(io.BytesIO(modified_content.encode('utf-8')), mimetype='text/plain', resumable=True)
+
+            if existing_files:
+                file_id = existing_files[0]['id']
+                print(f"Updating existing {new_filename} (ID: {file_id}) in Drive subfolder...")
+                service.files().update(
+                    fileId=file_id,
+                    media_body=media,
+                    supportsAllDrives=True
+                ).execute()
+                print(f"Successfully updated {new_filename}!")
+            else:
+                print(f"Uploading new {new_filename} to Drive subfolder...")
+                file_metadata = {
+                    'name': new_filename,
+                    'parents': [dest_subfolder_id]
+                }
+                service.files().create(
+                    body=file_metadata,
+                    media_body=media,
+                    supportsAllDrives=True
+                ).execute()
+                print(f"Successfully uploaded {new_filename}!")
 
         except Exception as e:
             print(f"Error processing {sermon_desc_path}: {e}")
