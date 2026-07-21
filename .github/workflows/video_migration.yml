@@ -1,0 +1,31 @@
+name: Video Migration
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM Pacific Time (16:00 UTC, or 17:00 UTC depending on DST)
+    # Using 17:00 UTC to safely align around Monday morning PT.
+    - cron: '0 17 * * 1'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  migrate_video:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install google-api-python-client google-auth google-auth-oauthlib pytz
+
+      - name: Run video migration script
+        env:
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+        run: |
+          python "Video Migration/migrate_videos.py"
