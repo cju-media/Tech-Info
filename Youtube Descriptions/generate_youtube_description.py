@@ -4,6 +4,8 @@ import json
 import time
 from datetime import datetime, timedelta
 import dateutil.parser
+import io
+import requests
 import pypdf
 from google import genai
 
@@ -64,10 +66,6 @@ def main():
             # Process upcoming Sundays (or today) that are within the current week (7 days)
             days_until = (doc_dt.date() - now.date()).days
             if 0 <= days_until <= 7:
-                script_path = os.path.join('../Worship Scripts', data.get('path'))
-                if not script_path or not os.path.exists(script_path):
-                    continue
-
                 modified_time = data.get('modifiedTime')
                 youtube_modified_time = data.get('youtubeDescriptionModifiedTime')
 
@@ -86,20 +84,35 @@ def main():
                 else:
                     print(f"Processing script for {date_str} (happening in {days_until} days) due to script update...")
 
-                # Extract text from PDF
+                # Get the OW URL for this date using M.DD.YY format as requested
+                # Try both exact date and with ' OW' suffix to handle repo variations
+                ow_date_str = f"{doc_dt.month}.{doc_dt.day:02d}.{doc_dt.strftime('%y')}"
+                ow_url_1 = f"https://raw.githubusercontent.com/TheCathedralFCCLA/OW/main/OWs/{ow_date_str}.pdf"
+                ow_url_2 = f"https://raw.githubusercontent.com/TheCathedralFCCLA/OW/main/OWs/{ow_date_str}%20OW.pdf"
+
+                # Download and extract text from OW PDF
                 full_text = ""
                 try:
-                    reader = pypdf.PdfReader(script_path)
+                    print(f"Downloading OW...")
+                    pdf_resp = requests.get(ow_url_1)
+                    if pdf_resp.status_code == 404:
+                        pdf_resp = requests.get(ow_url_2)
+
+                    pdf_resp.raise_for_status()
+                    print(f"Successfully downloaded OW from {pdf_resp.url}")
+
+                    pdf_file = io.BytesIO(pdf_resp.content)
+                    reader = pypdf.PdfReader(pdf_file)
                     for page in reader.pages:
                         page_text = page.extract_text()
                         if page_text:
                             full_text += page_text + "\n"
                 except Exception as e:
-                    print(f"Error reading PDF {script_path}: {e}")
+                    print(f"Error reading OW PDF from {ow_url}: {e}")
                     continue
 
                 if not full_text:
-                    print(f"No text extracted from {script_path}")
+                    print(f"No text extracted from OW PDF for {date_str}")
                     continue
 
                 # Generate Description
