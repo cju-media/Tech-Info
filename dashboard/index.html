@@ -164,7 +164,7 @@
                         let earliestNext = null;
                         for (const c of cronMatches) {
                             try {
-                                const next = Cron(c, { timezone: "UTC" }).next();
+                                const next = new Cron(c, { timezone: "UTC" }).nextRun();
                                 if (!earliestNext || next < earliestNext) {
                                     earliestNext = next;
                                 }
@@ -209,7 +209,8 @@
 
                     const title = document.createElement('h3');
                     const titleLink = document.createElement('a');
-                    titleLink.href = run ? run.html_url : '#';
+                    const wfFileName = wf.path.split('/').pop();
+                    titleLink.href = run ? run.html_url : `https://github.com/${REPO}/actions/workflows/${wfFileName}`;
                     titleLink.target = '_blank';
                     titleLink.textContent = wf.name;
                     title.appendChild(titleLink);
