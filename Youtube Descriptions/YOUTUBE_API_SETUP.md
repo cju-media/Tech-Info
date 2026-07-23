@@ -53,3 +53,12 @@ Because GitHub Actions runs in a headless environment, it cannot perform the int
 6. Click **Add secret**.
 
 The automated workflow will now have the necessary permissions to update the upcoming live stream descriptions!
+
+## Troubleshooting: "Token has been expired or revoked"
+If your workflow suddenly fails with a `RefreshError` stating your token expired, it is likely because your Google Cloud project is still in **Testing** mode. In Testing mode, Google automatically expires all tokens after 7 days.
+
+**To make your credentials permanent:**
+1. Go back to the **OAuth consent screen** in the Google Cloud Console.
+2. Under "Publishing status", click the **PUBLISH APP** button to move it from "Testing" to "In production".
+3. Google will warn you that your app needs verification. **You can safely ignore this and skip verification**, because you are the only user of this app.
+4. Once the app is "In production", run `get_youtube_credentials.py` on your computer one last time to generate a permanent token, and update your GitHub secret.
