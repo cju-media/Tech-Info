@@ -92,12 +92,17 @@ def main():
                 else:
                     print(f"Processing script for {date_str} (happening in {days_until} days) due to script update...")
 
-                # Find the OW URL using the index.json mapping (format: M-D-YY)
-                ow_date_key = f"{doc_dt.month}-{doc_dt.day}-{doc_dt.strftime('%y')}"
-                ow_info = ow_index.get(ow_date_key)
+                # Find the OW URL using the index.json mapping
+                # Support both M-D-YY and M-DD-YY to handle variations in the index
+                ow_date_key_1 = f"{doc_dt.month}-{doc_dt.day}-{doc_dt.strftime('%y')}"
+                ow_date_key_2 = f"{doc_dt.month}-{doc_dt.day:02d}-{doc_dt.strftime('%y')}"
+
+                ow_info = ow_index.get(ow_date_key_1)
+                if not ow_info:
+                    ow_info = ow_index.get(ow_date_key_2)
 
                 if not ow_info or not ow_info.get('url'):
-                    print(f"No OW found in remote index for date {ow_date_key}, skipping...")
+                    print(f"No OW found in remote index for date {ow_date_key_1} or {ow_date_key_2}, skipping...")
                     continue
 
                 ow_url = ow_info['url']
