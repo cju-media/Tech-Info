@@ -301,6 +301,12 @@ def main():
             else:
                 print(f"Warning: File {filename} does not exist in {titles_dir}. Skipping.")
 
+    # Also generate communion.txt based on first page text
+    is_communion = "Communion" in first_page_text
+    communion_filepath = os.path.join(titles_dir, "communion.txt")
+    with open(communion_filepath, "w") as f:
+        f.write("Yes" if is_communion else "No")
+
 
     # 16. Upload to Google Drive
     print("Uploading updated files to Google Drive...")
