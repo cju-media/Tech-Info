@@ -6,7 +6,6 @@ import datetime
 import zoneinfo
 import pypdf
 import io
-import hashlib
 from google import genai
 from google.genai import types
 from googleapiclient.discovery import build
@@ -196,36 +195,17 @@ def main():
         print(f"Error downloading PDF: {e}")
         return
 
-    # 10. Extract text from PDF and check first page hash
+    # 10. Extract text from PDF
     print("Extracting text from PDF...")
     pdf_text = ""
-    first_page_text = ""
     try:
         reader = pypdf.PdfReader(io.BytesIO(pdf_content))
-        if len(reader.pages) > 0:
-            first_page_text = reader.pages[0].extract_text() or ""
-
         for page in reader.pages:
             text = page.extract_text()
             if text:
                 pdf_text += text + "\n"
     except Exception as e:
         print(f"Error reading PDF: {e}")
-        return
-
-    # Check if first page changed
-    first_page_hash = hashlib.sha256(first_page_text.encode('utf-8')).hexdigest()
-    last_first_page_hash = state_data.get("last_first_page_hash")
-
-    if first_page_hash == last_first_page_hash and not needs_update:
-        print("First page of PDF has not changed and all files exist in Drive. Skipping Gemini request.")
-        # We still update the overall SHA so we don't redownload it next hour
-        state_data["last_processed_sha"] = current_sha
-        try:
-            with open(state_file, "w") as f:
-                json.dump(state_data, f)
-        except:
-            pass
         return
 
     # 11. Read worship-prompt.txt
@@ -301,8 +281,8 @@ def main():
             else:
                 print(f"Warning: File {filename} does not exist in {titles_dir}. Skipping.")
 
-    # Also generate communion.txt based on first page text
-    is_communion = "Communion" in first_page_text
+    # Also generate communion.txt based on the entire PDF text
+    is_communion = "Communion" in pdf_text
     communion_filepath = os.path.join(titles_dir, "communion.txt")
     with open(communion_filepath, "w") as f:
         f.write("Yes" if is_communion else "No")
@@ -327,7 +307,6 @@ def main():
 
     # Update state file
     state_data["last_processed_sha"] = current_sha
-    state_data["last_first_page_hash"] = first_page_hash
     try:
         with open(state_file, "w") as f:
             json.dump(state_data, f)
