@@ -6,6 +6,12 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force Gemini processing for upcoming scripts'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -36,7 +42,8 @@ jobs:
       - name: Run script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: cd "Youtube Descriptions" && python generate_youtube_description.py
+          FORCE_UPDATE: ${{ github.event.inputs.force_update }}
+        run: cd "Youtube Desciptions" && python generate_youtube_description.py
 
       - name: Commit and push changes
         run: |
