@@ -144,13 +144,24 @@ def main():
 
         # Stop updating on the day of the service (after 12:00 AM)
         # That means if the current date is >= the service date, skip it,
-        # unless FORCE_UPDATE environment variable is set to true.
+        # unless FORCE_UPDATE environment variable is set to true, OR
+        # the generated text file was modified very recently (e.g., last 60 minutes).
         force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
-        if now_la.date() >= service_date and not force_update:
+
+        txt_path = os.path.join("Processed Scripts", service_date_str, f"Description {service_date_str}.txt")
+        recently_modified = False
+        if os.path.exists(txt_path):
+            mtime = os.path.getmtime(txt_path)
+            # Check if modified within the last 60 minutes
+            if (datetime.now().timestamp() - mtime) < 3600:
+                recently_modified = True
+
+        if now_la.date() >= service_date and not (force_update or recently_modified):
             print("  Today is the service day (or past). Skipping updates.")
             continue
-        elif now_la.date() >= service_date and force_update:
-            print("  Today is the service day, but FORCE_UPDATE is enabled. Proceeding...")
+        elif now_la.date() >= service_date:
+            reason = "FORCE_UPDATE is enabled" if force_update else "the description was just generated"
+            print(f"  Today is the service day, but {reason}. Proceeding...")
 
         # Get combined description
         combined_desc = get_combined_description(service_date_str, start_time_la)

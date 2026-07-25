@@ -82,12 +82,16 @@ def main():
                 txt_output_path = os.path.join(output_dir, f"Description {date_str}.txt")
                 txt_exists = os.path.exists(txt_output_path)
 
-                # Only process if the script has been updated OR if the text file is missing
-                if youtube_modified_time == modified_time and youtube_modified_time is not None and txt_exists:
+                force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
+
+                # Only process if the script has been updated OR if the text file is missing OR if force_update is true
+                if youtube_modified_time == modified_time and youtube_modified_time is not None and txt_exists and not force_update:
                     print(f"Skipping {date_str} (YouTube description is up to date and text file exists).")
                     continue
 
-                if not txt_exists:
+                if force_update:
+                    print(f"Processing script for {date_str} (happening in {days_until} days) because FORCE_UPDATE is enabled...")
+                elif not txt_exists:
                     print(f"Processing script for {date_str} (happening in {days_until} days) because text file is missing...")
                 else:
                     print(f"Processing script for {date_str} (happening in {days_until} days) due to script update...")
