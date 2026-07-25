@@ -31,5 +31,6 @@ response-group
 response-title-composer
 words-of-blessing
 hymn-for-journey
-postlude-title-composer
+postlude-title
 postlude-performer
+communion
