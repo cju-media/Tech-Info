@@ -37,11 +37,10 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-genai pypdf python-dateutil requests
+          pip install pytz python-dateutil requests
 
       - name: Run script
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update }}
         run: cd "Youtube Descriptions" && python generate_youtube_description.py
 

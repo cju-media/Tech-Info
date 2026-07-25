@@ -80,20 +80,7 @@ def get_upcoming_streams(service):
 
     return upcoming_streams
 
-def format_date_for_ows(dt):
-    # Format date as M-DD-YY
-    return f"{dt.month}-{dt.day:02d}-{dt.strftime('%y')}"
-
-def get_combined_description(service_date_str, dt):
-    # Read boilerplate
-    boiler_path = "DescriptionBoiler.txt"
-    if not os.path.exists(boiler_path):
-        print(f"Boilerplate not found at {boiler_path}")
-        return None
-
-    with open(boiler_path, 'r') as f:
-        boilerplate = f.read()
-
+def get_combined_description(service_date_str):
     # Read generated description
     desc_path = os.path.join("Processed Scripts", service_date_str, f"Description {service_date_str}.txt")
     if not os.path.exists(desc_path):
@@ -103,19 +90,7 @@ def get_combined_description(service_date_str, dt):
     with open(desc_path, 'r') as f:
         generated_desc = f.read()
 
-    # Update order of worship URL in boilerplate
-    ows_date_str = format_date_for_ows(dt)
-
-    # Use re.sub to replace any date pattern at the end of the URL
-    boilerplate = re.sub(
-        r'(https://www\.fccla\.org/ows/)(?:\[DATE OF SERVICE\]|[\w-]+)',
-        rf'\g<1>{ows_date_str}',
-        boilerplate
-    )
-
-    # Combine
-    combined = f"{boilerplate.strip()}\n\n{generated_desc.strip()}"
-    return combined
+    return generated_desc
 
 def main():
     service = get_youtube_service()
@@ -163,10 +138,10 @@ def main():
             reason = "FORCE_UPDATE is enabled" if force_update else "the description was just generated"
             print(f"  Today is the service day, but {reason}. Proceeding...")
 
-        # Get combined description
-        combined_desc = get_combined_description(service_date_str, start_time_la)
+        # Get description
+        combined_desc = get_combined_description(service_date_str)
         if not combined_desc:
-            print("  Could not generate combined description. Skipping.")
+            print("  Could not read description. Skipping.")
             continue
 
         # Check if they match

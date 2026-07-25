@@ -1,0 +1,24 @@
+DescriptionBoiler.txt
+
+Announcements
+Organ Prelude-Concert
+prelude1.txt
+prelude2.txt
+prelude3.txt
+prelude4.txt
+prelude5.txt
+Welcome
+hymn-of-gathering.txt
+Prayers of Awareness
+Introit, introit-title-composer.txt - introit-group.txt
+Prayers, Readings, Meditations
+Meditation Anthem, meditation-title-composer.txt - meditation-group.txt
+Sermon, sermon-title.txt - sermon-minister.txt
+Communion, communion.txt
+Offering Prayers
+Offertory, offertory-title-composer.txt, offertory-group.txt
+Life of The Church
+Choral Response, response-title-composer.txt - response-group.txt
+Hymn for the Journey, hymn-for-journey.txt
+Postlude, postlude-title-composer.txt - postlude-performer.txt
+Postroll Chat
