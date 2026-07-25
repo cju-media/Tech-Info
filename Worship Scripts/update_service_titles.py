@@ -95,7 +95,9 @@ def main():
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
 
-    if now_pt.weekday() == 6:
+    force_update = os.environ.get("FORCE_UPDATE", "").lower() == "true"
+
+    if now_pt.weekday() == 6 and not force_update:
         print("Today is Sunday. Do not update text files. Exiting.")
         return
 
@@ -160,7 +162,10 @@ def main():
     last_processed_sha = state_data.get("last_processed_sha")
     needs_update = False
 
-    if last_processed_sha == current_sha:
+    if force_update:
+        print("FORCE_UPDATE is set to true. Bypassing SHA checks and forcing an update.")
+        needs_update = True
+    elif last_processed_sha == current_sha:
         print("PDF SHA matches last processed SHA. Checking if files are missing in Google Drive...")
         drive_service = get_drive_service()
         if drive_service:
