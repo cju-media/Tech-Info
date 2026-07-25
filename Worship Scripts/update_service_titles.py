@@ -235,7 +235,7 @@ def main():
         http_options=types.HttpOptions(timeout=30000)
     )
 
-    model_name = 'gemini-3.5-flash'
+    model_name = 'gemini-1.5-flash'
 
     try:
         gemini_response = client.models.generate_content(
@@ -286,11 +286,7 @@ def main():
             else:
                 print(f"Warning: File {filename} does not exist in {titles_dir}. Skipping.")
 
-    # Also generate communion.txt based on the entire PDF text
-    is_communion = "communion" in pdf_text.lower()
-    communion_filepath = os.path.join(titles_dir, "communion.txt")
-    with open(communion_filepath, "w") as f:
-        f.write("True" if is_communion else "False")
+
 
 
     # 16. Upload to Google Drive

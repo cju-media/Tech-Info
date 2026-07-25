@@ -31,3 +31,4 @@ response-title-composer
 hymn-for-journey
 postlude-title
 postlude-performer
+communion
