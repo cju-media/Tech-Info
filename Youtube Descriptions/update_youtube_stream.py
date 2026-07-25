@@ -143,10 +143,14 @@ def main():
         print(f"  Service date: {service_date_str}")
 
         # Stop updating on the day of the service (after 12:00 AM)
-        # That means if the current date is >= the service date, skip it.
-        if now_la.date() >= service_date:
+        # That means if the current date is >= the service date, skip it,
+        # unless FORCE_UPDATE environment variable is set to true.
+        force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
+        if now_la.date() >= service_date and not force_update:
             print("  Today is the service day (or past). Skipping updates.")
             continue
+        elif now_la.date() >= service_date and force_update:
+            print("  Today is the service day, but FORCE_UPDATE is enabled. Proceeding...")
 
         # Get combined description
         combined_desc = get_combined_description(service_date_str, start_time_la)
