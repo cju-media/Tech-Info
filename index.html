@@ -6,6 +6,68 @@
             margin-top: -43px !important;
             color: #333;
         }
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 10px 0;
+            margin-top: 40px;
+        }
+        .header-container h1 {
+            text-align: center;
+            margin: 0;
+        }
+
+        .nav-menu-btn {
+            position: absolute;
+            left: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            color: #555;
+            z-index: 10;
+        }
+
+        .nav-menu-btn:hover {
+            color: #000;
+        }
+
+        .nav-dropdown {
+            display: none;
+            position: absolute;
+            left: 10px;
+            top: 50px;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            z-index: 1000;
+            border: 1px solid #ddd;
+        }
+
+        .nav-dropdown.show {
+            display: block;
+        }
+
+        .nav-dropdown a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            border-bottom: 1px solid #eee;
+        }
+
+        .nav-dropdown a:last-child {
+            border-bottom: none;
+        }
+
+        .nav-dropdown a:hover {
+            background-color: #f5f5f5;
+        }
+
         h1 {
             text-align: center;
         }
@@ -350,7 +412,16 @@
 </head>
 <body>
 <div class="app-container" id="app-container">
-    <h1>Tech Info</h1>
+    <div class="header-container">
+        <button id="navMenuBtn" class="nav-menu-btn" style="display:none;">☰</button>
+        <button id="backMenuBtn" class="nav-menu-btn" style="display:none;">&#x2039; Back</button>
+        <div id="navDropdown" class="nav-dropdown">
+            <a href="#" id="editScheduleLink">Edit Schedule</a>
+            <a href="https://cju-media.github.io/Tech-Info/dashboard/index.html">Automated Workflows</a>
+        </div>
+        <h1>Tech Info</h1>
+    </div>
+    <h2 id="editing-subtitle" style="display:none; color: #dc3545; text-align: center; margin-top: -10px; margin-bottom: 10px; font-size: 1.2em;">Editing</h2>
     <div id="upcoming-events-loading">Loading upcoming events...</div>
     <div id="upcoming-events-error" class="upcoming-events-error"></div>
 
@@ -403,6 +474,9 @@
             </div>
         </div>
     </div>
+    <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+        <button id="mode-toggle-btn" onclick="toggleEditMode()" class="upcoming-events-sheet-button" style="background-color: #6c757d;">Edit</button>
+    </div>
 </div> <!-- Close app-container -->
 
     <script>
@@ -414,7 +488,55 @@
         const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&headers=0&tqx=responseHandler:${callbackName}`;
 
 
-        window.saveOverrides = async function(e, dateKey) {
+
+        window.toggleEditMode = async function() {
+            if (isEditMode) {
+                // Switch to read view
+                window.location.hash = '';
+                window.location.reload();
+            } else {
+                // Try to authenticate and switch to edit mode
+                let pat = localStorage.getItem('GITHUB_PAT');
+                if (!pat) {
+                    pat = prompt('Enter your GitHub Personal Access Token to enable editing:');
+                    if (!pat) return;
+                }
+
+                const btn = document.getElementById('mode-toggle-btn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Authenticating...';
+                btn.disabled = true;
+
+                try {
+                    // Validate token by making a quick API call
+                    const getResp = await fetch(`https://api.github.com/user`, {
+                        headers: { 'Authorization': `token ${pat}` }
+                    });
+
+                    if (getResp.status === 401) {
+                         localStorage.removeItem('GITHUB_PAT');
+                         alert("Invalid GitHub Token. Please try again.");
+                         btn.textContent = originalText;
+                         btn.disabled = false;
+                         return;
+                    }
+                    if (!getResp.ok) throw new Error(`GitHub API Error: ${getResp.status}`);
+
+                    // Token is valid
+                    localStorage.setItem('GITHUB_PAT', pat);
+                    window.location.hash = 'edit';
+                    window.location.reload();
+
+                } catch (err) {
+                    console.error(err);
+                    alert(`Authentication error: ${err.message}`);
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            }
+        };
+
+        window.saveOverrides = async function(e, dateKey, isWorship) {
             let pat = localStorage.getItem('GITHUB_PAT');
             if (!pat) {
                 pat = prompt('Enter your GitHub Personal Access Token:');
@@ -422,8 +544,7 @@
                 localStorage.setItem('GITHUB_PAT', pat);
             }
 
-            const customNotes = document.getElementById('edit-custom-notes').value;
-            const speakerInfo = document.getElementById('edit-speaker-info').value;
+
             const saveBtn = e.target;
             saveBtn.textContent = 'Saving...';
             saveBtn.disabled = true;
@@ -456,8 +577,13 @@
                 if (!jsonData[dateKey]) {
                     jsonData[dateKey] = {};
                 }
-                jsonData[dateKey].customNotes = customNotes;
-                jsonData[dateKey].speakerInfo = speakerInfo;
+                if (isWorship) {
+                    jsonData[dateKey].customNotes = document.getElementById('edit-custom-notes').value;
+                    jsonData[dateKey].speakerInfo = document.getElementById('edit-speaker-info').value;
+                    jsonData[dateKey].customRfWarning = document.getElementById('edit-rf-warning').value;
+                } else {
+                    jsonData[dateKey].customRfWarning = document.getElementById('edit-rf-warning').value;
+                }
                 jsonData[dateKey].manualOverride = true;
 
                 // 4. Encode back to base64
@@ -492,8 +618,13 @@
 
                 // Update local state so it reflects immediately without reload
                 if (!worshipScripts[dateKey]) worshipScripts[dateKey] = {};
-                worshipScripts[dateKey].customNotes = customNotes;
-                worshipScripts[dateKey].speakerInfo = speakerInfo;
+                if (isWorship) {
+                    worshipScripts[dateKey].customNotes = document.getElementById('edit-custom-notes').value;
+                    worshipScripts[dateKey].speakerInfo = document.getElementById('edit-speaker-info').value;
+                    worshipScripts[dateKey].customRfWarning = document.getElementById('edit-rf-warning').value;
+                } else {
+                    worshipScripts[dateKey].customRfWarning = document.getElementById('edit-rf-warning').value;
+                }
                 worshipScripts[dateKey].manualOverride = true;
 
                 saveBtn.textContent = 'Save Overrides';
@@ -527,6 +658,24 @@
 
         let currentEvents = [];
         let isEditMode = window.location.hash.includes('#edit');
+
+        if (isEditMode) {
+            document.getElementById('editing-subtitle').style.display = 'block';
+            document.getElementById('mode-toggle-btn').textContent = 'Read View';
+            document.getElementById('backMenuBtn').style.display = 'block';
+        } else {
+            document.getElementById('navMenuBtn').style.display = 'block';
+        }
+
+        const backMenuBtn = document.getElementById('backMenuBtn');
+        if (backMenuBtn) {
+            backMenuBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.hash = '';
+                window.location.reload();
+            });
+        }
+
         let worshipScripts = {};
         let owScripts = {};
         let allEvents = [];
@@ -628,12 +777,36 @@
             const existingNotes = document.getElementById('event-modal-notes');
             if (existingNotes) existingNotes.remove();
 
-            if (event.name && event.name.toLowerCase().includes('worship service')) {
-                // Try to format event.dateObj as YYYY-MM-DD to match JSON keys
+            const isWorshipService = event.name && event.name.toLowerCase().includes('worship service');
+            let dateKey = null;
+            if (event.dateObj) {
                 const year = event.dateObj.getFullYear();
                 const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
                 const day = String(event.dateObj.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
+                dateKey = `${year}-${month}-${day}`;
+            }
+
+            let customRfWarning = null;
+            if (dateKey && worshipScripts[dateKey] && worshipScripts[dateKey].customRfWarning !== undefined) {
+                customRfWarning = worshipScripts[dateKey].customRfWarning;
+            }
+
+            // Find if any public event is on the same day for RF coordination overlap checking
+            let overlappingPublicEvents = [];
+            if (dateKey && typeof publicEvents !== 'undefined' && publicEvents.length > 0) {
+                overlappingPublicEvents = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
+            }
+
+            let defaultRfWarning = '';
+            if (overlappingPublicEvents.length > 0) {
+                defaultRfWarning = '<strong>⚠️ Street Closure / Event Alert</strong><br>The following nearby events may cause traffic or RF interference:<ul style="margin: 5px 0 0 0; padding-left: 20px; text-align: left;">';
+                overlappingPublicEvents.forEach(pe => {
+                    defaultRfWarning += `<li>${pe.name} (${pe.type})</li>`;
+                });
+                defaultRfWarning += '</ul>';
+            }
+
+            if (isWorshipService && dateKey) {
 
 
                 // Determine Communion Status and Speaker Info
@@ -644,12 +817,6 @@
                     isCommunion = worshipScripts[dateKey].isCommunion === true;
                     speakerInfo = worshipScripts[dateKey].speakerInfo;
                     customNotes = worshipScripts[dateKey].customNotes;
-                }
-
-                // Find if any public event is on the same day for RF coordination overlap checking
-                let overlappingPublicEvents = [];
-                if (typeof publicEvents !== 'undefined' && publicEvents.length > 0) {
-                    overlappingPublicEvents = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
                 }
 
                 const notesSection = document.createElement('div');
@@ -665,24 +832,24 @@
                 if (isEditMode) {
                     notesSection.innerHTML = `
                         <strong>Edit Overrides for ${dateKey}</strong><br><br>
+
+                        <label style="display:block;text-align:left;font-weight:bold;">Custom RF Warning (HTML allowed):</label>
+                        <textarea id="edit-rf-warning" style="width:100%;height:80px;margin-bottom:10px;">${customRfWarning !== null ? customRfWarning : defaultRfWarning}</textarea>
+
                         <label style="display:block;text-align:left;font-weight:bold;">Custom Notes:</label>
                         <textarea id="edit-custom-notes" style="width:100%;height:60px;margin-bottom:10px;">${customNotes !== null && customNotes !== undefined ? customNotes : (isCommunion ? 'Communion Sunday' : 'Food at First Likely, TV Setup Needed')}</textarea>
 
                         <label style="display:block;text-align:left;font-weight:bold;">Speaker Info (HTML allowed):</label>
                         <textarea id="edit-speaker-info" style="width:100%;height:100px;margin-bottom:10px;">${speakerInfo || ''}</textarea>
 
-                        <button onclick="saveOverrides(event, '${dateKey}')" class="event-modal-sheet-button" style="background-color:#dc3545;width:100%;">Save Overrides</button>
+                        <button onclick="saveOverrides(event, '${dateKey}', true)" class="event-modal-sheet-button" style="background-color:#dc3545;width:100%;">Save Overrides</button>
                     `;
                     buttonContainer.insertBefore(notesSection, buttonContainer.firstChild);
                 } else {
                     let notesHtml = '<strong>Notes:</strong><br>';
 
-                    if (overlappingPublicEvents.length > 0) {
-                        let warningHtml = '<strong>⚠️ Street Closure / Event Alert</strong><br>The following nearby events may cause traffic or RF interference:<ul style="margin: 5px 0 0 0; padding-left: 20px; text-align: left;">';
-                        overlappingPublicEvents.forEach(pe => {
-                            warningHtml += `<li>${pe.name} (${pe.type})</li>`;
-                        });
-                        warningHtml += '</ul>';
+                    let warningHtml = customRfWarning !== null ? customRfWarning : defaultRfWarning;
+                    if (warningHtml) {
                         notesHtml += warningHtml + '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">';
                     }
 
@@ -705,7 +872,7 @@
                 }
 
 
-                if (worshipScripts[dateKey]) {
+                if (dateKey && worshipScripts[dateKey]) {
                     const scriptBtn = document.createElement('a');
                     scriptBtn.id = 'event-modal-script-link';
                     const path = typeof worshipScripts[dateKey] === 'string' ? worshipScripts[dateKey] : worshipScripts[dateKey].path;
@@ -778,35 +945,43 @@
             const publicEventNote = document.getElementById('event-modal-public-note');
             if (publicEventNote) publicEventNote.remove();
 
-            const isWorshipService = event.name && event.name.toLowerCase().includes('worship service');
-
-            if (!isWorshipService && typeof publicEvents !== 'undefined' && publicEvents.length > 0 && event.dateObj) {
-                const year = event.dateObj.getFullYear();
-                const month = String(event.dateObj.getMonth() + 1).padStart(2, '0');
-                const day = String(event.dateObj.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
-
-                // Find if any public event is on the same day
-                const overlapping = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
-                if (overlapping.length > 0) {
+            if (!isWorshipService && event.dateObj) {
+                if (isEditMode) {
                     const note = document.createElement('div');
                     note.id = 'event-modal-public-note';
                     note.style.marginTop = '15px';
                     note.style.padding = '10px';
-                    note.style.backgroundColor = '#fff3cd';
-                    note.style.color = '#856404';
-                    note.style.border = '1px solid #ffeeba';
+                    note.style.backgroundColor = '#f8f9fa';
+                    note.style.border = '1px solid #dee2e6';
                     note.style.borderRadius = '5px';
                     note.style.fontSize = '14px';
                     note.style.textAlign = 'center';
 
-                    let conflictText = '<strong>⚠️ Nearby Public Event Conflict:</strong><br>';
-                    overlapping.forEach(pe => {
-                        conflictText += `<em>${pe.name}</em> at ${pe.location}<br>`;
-                    });
-                    note.innerHTML = conflictText;
+                    note.innerHTML = `
+                        <strong>Edit Overrides for ${dateKey}</strong><br><br>
+                        <label style="display:block;text-align:left;font-weight:bold;">Custom RF Warning (HTML allowed):</label>
+                        <textarea id="edit-rf-warning" style="width:100%;height:100px;margin-bottom:10px;">${customRfWarning !== null ? customRfWarning : defaultRfWarning}</textarea>
 
-                    buttonContainer.appendChild(note);
+                        <button onclick="saveOverrides(event, '${dateKey}', false)" class="event-modal-sheet-button" style="background-color:#dc3545;width:100%;">Save Overrides</button>
+                    `;
+                    buttonContainer.insertBefore(note, buttonContainer.firstChild);
+                } else {
+                    let warningHtml = customRfWarning !== null ? customRfWarning : defaultRfWarning;
+                    if (warningHtml) {
+                        const note = document.createElement('div');
+                        note.id = 'event-modal-public-note';
+                        note.style.marginTop = '15px';
+                        note.style.padding = '10px';
+                        note.style.backgroundColor = '#fff3cd';
+                        note.style.color = '#856404';
+                        note.style.border = '1px solid #ffeeba';
+                        note.style.borderRadius = '5px';
+                        note.style.fontSize = '14px';
+                        note.style.textAlign = 'center';
+
+                        note.innerHTML = warningHtml;
+                        buttonContainer.insertBefore(note, buttonContainer.firstChild);
+                    }
                 }
             }
 
@@ -839,6 +1014,38 @@
             // If the modal is open, and the click target is NOT inside the modal content
             if (modalOverlay.classList.contains('active') && !modalContent.contains(event.target)) {
                 closeModal();
+            }
+        });
+
+        // Navigation menu setup
+        const navMenuBtn = document.getElementById('navMenuBtn');
+        const navDropdown = document.getElementById('navDropdown');
+        const editScheduleLink = document.getElementById('editScheduleLink');
+
+        if (navMenuBtn) {
+            navMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navDropdown.classList.toggle('show');
+            });
+        }
+
+        if (editScheduleLink) {
+            editScheduleLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                navDropdown.classList.remove('show');
+                if (typeof window.toggleEditMode === 'function') {
+                    if (!isEditMode) window.toggleEditMode();
+                } else {
+                    window.location.hash = 'edit';
+                    window.location.reload();
+                }
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (navDropdown && navDropdown.classList.contains('show') && !navMenuBtn.contains(e.target)) {
+                navDropdown.classList.remove('show');
             }
         });
 
@@ -1068,6 +1275,16 @@
                     let hashId = decodeURIComponent(window.location.hash.substring(1));
                     if (hashId === 'edit') hashId = '';
                     else if (hashId.startsWith('edit-')) hashId = hashId.substring(5);
+
+                    if (hashId === 'service') {
+                        const nextService = currentEvents.find(e => e.name && e.name.toLowerCase().includes('worship service'));
+                        if (nextService) hashId = nextService.id;
+                        else hashId = '';
+                    } else if (hashId === 'today') {
+                        const todayEvent = currentEvents.find(e => e.dateObj.getTime() === today.getTime());
+                        if (todayEvent) hashId = todayEvent.id;
+                        else hashId = '';
+                    }
 
                     if (hashId) {
                         openModal(hashId);
