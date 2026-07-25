@@ -8,6 +8,12 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force update even on or after the service day'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,4 +40,5 @@ jobs:
       - name: Run update script
         env:
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
+          FORCE_UPDATE: ${{ github.event.inputs.force_update }}
         run: cd "Youtube Descriptions" && python update_youtube_stream.py
