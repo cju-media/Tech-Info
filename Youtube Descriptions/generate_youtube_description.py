@@ -4,6 +4,8 @@ import json
 import time
 from datetime import datetime, timedelta
 import dateutil.parser
+import io
+import requests
 import pypdf
 from google import genai
 
@@ -58,16 +60,20 @@ def main():
 
     base_prompt = get_prompt()
 
+    # Fetch OW Index
+    try:
+        ow_index_resp = requests.get('https://raw.githubusercontent.com/TheCathedralFCCLA/OW/refs/heads/main/OWs/index.json')
+        ow_index = ow_index_resp.json()
+    except Exception as e:
+        print(f"Error fetching OW index: {e}")
+        ow_index = {}
+
     for date_str, data in worship_scripts.items():
         try:
             doc_dt = dateutil.parser.parse(date_str)
             # Process upcoming Sundays (or today) that are within the current week (7 days)
             days_until = (doc_dt.date() - now.date()).days
             if 0 <= days_until <= 7:
-                script_path = os.path.join('../Worship Scripts', data.get('path'))
-                if not script_path or not os.path.exists(script_path):
-                    continue
-
                 modified_time = data.get('modifiedTime')
                 youtube_modified_time = data.get('youtubeDescriptionModifiedTime')
 
@@ -86,20 +92,40 @@ def main():
                 else:
                     print(f"Processing script for {date_str} (happening in {days_until} days) due to script update...")
 
-                # Extract text from PDF
+                # Find the OW URL using the index.json mapping
+                # Support both M-D-YY and M-DD-YY to handle variations in the index
+                ow_date_key_1 = f"{doc_dt.month}-{doc_dt.day}-{doc_dt.strftime('%y')}"
+                ow_date_key_2 = f"{doc_dt.month}-{doc_dt.day:02d}-{doc_dt.strftime('%y')}"
+
+                ow_info = ow_index.get(ow_date_key_1)
+                if not ow_info:
+                    ow_info = ow_index.get(ow_date_key_2)
+
+                if not ow_info or not ow_info.get('url'):
+                    print(f"No OW found in remote index for date {ow_date_key_1} or {ow_date_key_2}, skipping...")
+                    continue
+
+                ow_url = ow_info['url']
+
+                # Download and extract text from OW PDF
                 full_text = ""
                 try:
-                    reader = pypdf.PdfReader(script_path)
+                    print(f"Downloading OW from {ow_url}...")
+                    pdf_resp = requests.get(ow_url)
+                    pdf_resp.raise_for_status()
+
+                    pdf_file = io.BytesIO(pdf_resp.content)
+                    reader = pypdf.PdfReader(pdf_file)
                     for page in reader.pages:
                         page_text = page.extract_text()
                         if page_text:
                             full_text += page_text + "\n"
                 except Exception as e:
-                    print(f"Error reading PDF {script_path}: {e}")
+                    print(f"Error reading OW PDF from {ow_url}: {e}")
                     continue
 
                 if not full_text:
-                    print(f"No text extracted from {script_path}")
+                    print(f"No text extracted from OW PDF for {date_str}")
                     continue
 
                 # Generate Description

@@ -1,4 +1,4 @@
-Given this PDF, label the speaker for each section based on the list below, one line per attribute. Each line should be TITLE ATTRIBUTE. Each title should be shown exactly how it is below. Prelude-performer is just crediting the performing during the prelude. Prelude1, prelude2, etc should be attributed PIECE NAME - COMPOSER. Sections labeled “X-title-composer” should be formatted: TITLE OF PIECE - COMPOSER OF PIECE. Sections labeled “X-group” should be labeled the group performing the work. Sermon should be labeled Sermon - TITLE OF SERMON. Hymns should only attribute the name of the hymn, not the author. Reading-name attributes the name of the reader of the verse. Reader-verse attributes the verse being read.
+Given this PDF, label the speaker for each section based on the list below, one line per attribute. Each line should be TITLE ATTRIBUTE. Each title should be shown exactly how it is below. Prelude-performer is just crediting the performing during the prelude. Prelude1, prelude2, etc should be attributed PIECE NAME - COMPOSER. Sections labeled “X-title-composer” should be formatted: TITLE OF PIECE - COMPOSER OF PIECE. Sections labeled “X-group” should be labeled the group performing the work. Sermon should be labeled Sermon - TITLE OF SERMON. Hymns should only attribute the name of the hymn, not the author. Reading-name attributes the name of the reader of the verse. Reader-verse attributes the verse being read. Speakers for the section labeled "The Eucharist and Blessings" should be attributed under "communion." If a prelude piece has a performer that is different or in addition to the top line prelude performer, credit the piece: TITLE - COMPOSER, PERFORMER
 
 
 prelude-performer
@@ -21,6 +21,7 @@ meditation-title-composer
 meditation-group
 sermon-minister
 sermon-title
+communion
 generosity
 offertory-title-composer
 offertory-group
@@ -28,6 +29,7 @@ offering-prayer
 life-at-church
 response-group
 response-title-composer
+words-of-blessing
 hymn-for-journey
 postlude-title
 postlude-performer
