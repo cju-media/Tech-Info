@@ -37,7 +37,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-genai pypdf python-dateutil requests
+          pip install google-genai pypdf python-dateutil
 
       - name: Run script
         env:
@@ -49,6 +49,13 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git pull --rebase origin ${{ github.event.workflow_run.head_branch || github.ref_name }}
-          git add -A "Worship Scripts/worship_scripts.json" "Youtube Desciptions/Processed Scripts/"
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Generate YouTube description text files" && git push)
+          git add -A "Worship Scripts/worship_scripts.json" "Youtube Descriptions/Processed Scripts/"
+
+          # Check if there are changes to commit
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: Generate YouTube description text files"
+            git pull --rebase origin ${{ github.event.workflow_run.head_branch || github.ref_name }}
+            git push
+          else
+            echo "No changes to commit."
+          fi
