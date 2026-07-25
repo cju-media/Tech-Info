@@ -1,6 +1,5 @@
 import os
 import json
-import sys
 import dateutil.parser
 from datetime import datetime
 import pytz
@@ -8,7 +7,6 @@ import re
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from google.auth.exceptions import RefreshError
 
 PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs"
 
@@ -66,17 +64,6 @@ def get_upcoming_streams(service):
 
     except HttpError as e:
         print(f"An HTTP error occurred getting streams: {e}")
-        sys.exit(1)
-    except RefreshError as e:
-        print("\n=======================================================")
-        print("ERROR: YouTube API OAuth Token has expired or been revoked.")
-        print("Please run `get_youtube_credentials.py` locally again")
-        print("and update the YOUTUBE_CREDENTIALS_JSON GitHub Secret.")
-        print("=======================================================\n")
-        sys.exit(1)
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        sys.exit(1)
 
     return upcoming_streams
 

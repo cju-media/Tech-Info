@@ -235,7 +235,7 @@ def main():
         http_options=types.HttpOptions(timeout=30000)
     )
 
-    model_name = 'gemini-1.5-flash'
+    model_name = 'gemini-3.5-flash'
 
     try:
         gemini_response = client.models.generate_content(

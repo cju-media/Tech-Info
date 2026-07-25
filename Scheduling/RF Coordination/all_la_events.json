@@ -1,29 +1,8 @@
 [
   {
-    "name": "SIGGRAPH 2026",
-    "date": "2026-07-21",
-    "location": "Booth #643",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "LAPFCU 90TH ANNIVERSARY",
-    "date": "2026-10-10",
-    "location": "Los Angeles Police Academy Athletic Field",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "ASLA 2026 CONFERENCE ON LANDSCAPE ARCHIT",
-    "date": "2026-09-15",
-    "location": "South Level 1 Halls G/H/J",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CHECK IN TENTS",
-    "date": "2026-07-16",
-    "location": "USC Campus",
+    "name": "NIKYS SPORT",
+    "date": "2026-07-09",
+    "location": "1536 W 7th",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
@@ -42,9 +21,44 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
+    "name": "FUEVZA REGIDA",
+    "date": "2026-07-18",
+    "location": "On the field",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "SUMMER CONCERTS",
+    "date": "2026-07-13",
+    "location": "Pershing square",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CARNIVAL",
+    "date": "2026-07-17",
+    "location": "870 West 8th Street , San Pedro CA, 90731",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
     "name": "WESTWOOD VILLAGE FARMERS' MARKET",
     "date": "2026-07-02",
     "location": "Broxton Plaza",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "SUNSET CONCERTS",
+    "date": "2026-07-16",
+    "location": "Taper Courtyard in Skirball",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LAWC26FZ",
+    "date": "2026-07-14",
+    "location": "1332 S Harbor Blvd, San Pedro, CA 90731",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
