@@ -3,6 +3,8 @@ name: iMessage Notifications
 on:
   schedule:
     - cron: '0 * * * *'  # Runs every hour, relies on python script to filter
+  repository_dispatch:
+    types: [drive_upload_complete]
   workflow_dispatch:
     inputs:
       run_mode:
@@ -36,6 +38,7 @@ jobs:
           python3 -m pip install pandas weasyprint
 
       - name: Run iMessage schedule script
+        if: github.event_name != 'repository_dispatch'
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
@@ -46,6 +49,7 @@ jobs:
         run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py
 
       - name: Commit and push state changes
+        if: github.event_name != 'repository_dispatch'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -56,3 +60,35 @@ jobs:
 
           # Only commit and push if state files have changed
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update schedule states" && git pull --rebase origin ${{ github.ref_name }} && git push)
+
+      - name: Send Drive Upload Notification
+        if: github.event_name == 'repository_dispatch' && github.event.action == 'drive_upload_complete'
+        run: |
+          python3 -c '
+          import os, json, subprocess
+          try:
+              phones_path = os.path.join("Scheduling", "Team Data", "team_phones.json")
+              with open(phones_path, "r") as f:
+                  phones = json.load(f)
+              cameron_phone = phones.get("Cameron")
+              if not cameron_phone:
+                  print("Could not find Cameron phone number.")
+                  exit(1)
+
+              message = "New worship scripts and script titles have been uploaded to Google Drive."
+
+              print(f"Sending via osascript to {cameron_phone}...")
+              escaped_message = message.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\"")
+              applescript = f"""
+              tell application "Messages"
+                  set targetService to 1st service whose service type = iMessage
+                  set targetBuddy to buddy "{cameron_phone}" of targetService
+                  send "{escaped_message}" to targetBuddy
+              end tell
+              """
+              subprocess.run(["osascript", "-e", applescript], check=True, capture_output=True, text=True)
+              print("Successfully sent iMessage via osascript.")
+          except Exception as e:
+              print(f"Error preparing iMessage: {e}")
+              exit(1)
+          '
