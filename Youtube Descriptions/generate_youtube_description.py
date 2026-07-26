@@ -73,8 +73,6 @@ def main():
     if github_token:
         headers["Authorization"] = f"Bearer {github_token}"
 
-    changes_made = False
-
     for date_str, data in worship_scripts.items():
         try:
             doc_dt = dateutil.parser.parse(date_str)
@@ -84,17 +82,12 @@ def main():
 
             days_until = (doc_dt_aware.date() - now.date()).days
             if 0 <= days_until <= 7:
-                modified_time = data.get('modifiedTime')
-                youtube_modified_time = data.get('youtubeDescriptionModifiedTime')
-
                 txt_output_path = "Description.txt"
-                txt_exists = os.path.exists(txt_output_path)
-
                 force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
 
-                if youtube_modified_time == modified_time and youtube_modified_time is not None and txt_exists and not force_update:
-                    print(f"Skipping {date_str} (YouTube description is up to date and text file exists).")
-                    continue
+                # Empty the file initially
+                with open(txt_output_path, 'w', encoding='utf-8') as f:
+                    f.write("")
 
                 # Find the OW URL using the index.json mapping
                 ow_date_key_1 = f"{doc_dt_aware.month}-{doc_dt_aware.day}-{doc_dt_aware.strftime('%y')}"
@@ -177,16 +170,8 @@ def main():
 
                 print(f"Saved YouTube description text to {txt_output_path}")
 
-                worship_scripts[date_str]['youtubeDescriptionModifiedTime'] = modified_time
-                changes_made = True
-
         except Exception as e:
             print(f"Error processing {date_str}: {e}")
-
-    if changes_made:
-        with open('../Worship Scripts/worship_scripts.json', 'w') as out:
-            json.dump(worship_scripts, out, indent=2)
-        print("Updated ../Worship Scripts/worship_scripts.json with new YouTube description timestamps.")
 
 if __name__ == '__main__':
     main()
