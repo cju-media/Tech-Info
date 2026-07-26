@@ -91,11 +91,13 @@ def upload_to_drive(service, file_path, filename):
 
 
 def main():
+    force_update = str(os.environ.get("FORCE_UPDATE", "false")).lower() == "true"
+
     # 1. Check if today is Sunday
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
 
-    if now_pt.weekday() == 6:
+    if now_pt.weekday() == 6 and not force_update:
         print("Today is Sunday. Do not update text files. Exiting.")
         return
 
@@ -158,7 +160,6 @@ def main():
 
     titles_dir = "service-titles"
     last_processed_sha = state_data.get("last_processed_sha")
-    force_update = str(os.environ.get("FORCE_UPDATE", "false")).lower() == "true"
 
     if last_processed_sha == current_sha and not force_update:
         print("PDF SHA matches last processed SHA. Checking if files are missing in Google Drive...")
