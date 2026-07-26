@@ -1,29 +1,23 @@
-name: Schedule and Notifications
+name: iMessage Notifications
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs every hour at minute 0
+    - cron: '0 * * * *'  # Runs every hour, relies on python script to filter
   workflow_dispatch:
     inputs:
       run_mode:
         description: 'Run mode'
         required: false
-        default: 'auto'
+        default: 'auto_imessage'
         type: choice
         options:
-          - auto
-          - weekly
-          - admin
-          - update
-          - avail_check
-          - daily_reminder
+          - auto_imessage
           - imessage_reminder
           - imessage_test
-          - test
 
 jobs:
-  run-schedule:
-    runs-on: ubuntu-latest
+  run-imessages:
+    runs-on: [self-hosted, macOS]
 
     permissions:
       contents: write
@@ -32,29 +26,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
       - name: Install system dependencies for WeasyPrint
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
+          brew install pango || true
 
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install pandas weasyprint
 
-      - name: Run unified schedule script
+      - name: Run iMessage schedule script
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
-          RUN_MODE: ${{ github.event.inputs.run_mode || 'auto' }}
+          RUN_MODE: ${{ github.event.inputs.run_mode || 'auto_imessage' }}
         run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py
 
       - name: Commit and push state changes

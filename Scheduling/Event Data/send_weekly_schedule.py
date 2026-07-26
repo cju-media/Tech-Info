@@ -501,10 +501,6 @@ if __name__ == "__main__":
         # Hourly
         run_modes_to_execute.append('avail_check')
 
-        # Daily at 21:00 UTC
-        if hour == 21:
-            run_modes_to_execute.append('update')
-
         # Daily at 10:00 UTC
         if hour == 10:
             run_modes_to_execute.append('daily_reminder')
@@ -512,6 +508,14 @@ if __name__ == "__main__":
         # Weekly on Friday at 11:00 UTC (weekday 4 is Friday)
         if weekday == 4 and hour == 11:
             run_modes_to_execute.append('weekly')
+
+    elif run_mode_env == 'auto_imessage':
+        current_utc = datetime.now(dt.timezone.utc)
+        hour = current_utc.hour
+
+        # Daily at 21:00 UTC
+        if hour == 21:
+            run_modes_to_execute.append('update')
 
         # iMessage reminders
         if hour in [3, 12, 17]:
@@ -548,7 +552,7 @@ if __name__ == "__main__":
     os.makedirs('pdfs', exist_ok=True)
 
     # Compute State
-    needs_state_update = any(mode != 'avail_check' for mode in run_modes_to_execute)
+    needs_state_update = 'update' in run_modes_to_execute or 'test' in run_modes_to_execute
 
     state_changed = False
     members_with_updates = {}
