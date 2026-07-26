@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '0 * * * *'
   workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force Gemini processing for upcoming scripts'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,6 +41,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          FORCE_UPDATE: ${{ github.event.inputs.force_update }}
         run: cd "Worship Scripts" && python update_service_titles.py
 
       - name: Trigger Notification

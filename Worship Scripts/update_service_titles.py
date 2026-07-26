@@ -158,7 +158,9 @@ def main():
 
     titles_dir = "service-titles"
     last_processed_sha = state_data.get("last_processed_sha")
-    if last_processed_sha == current_sha:
+    force_update = str(os.environ.get("FORCE_UPDATE", "false")).lower() == "true"
+
+    if last_processed_sha == current_sha and not force_update:
         print("PDF SHA matches last processed SHA. Checking if files are missing in Google Drive...")
         drive_service = get_drive_service()
         needs_update = False
@@ -183,6 +185,8 @@ def main():
         if not needs_update:
             print("PDF SHA matches last processed SHA and all files exist in Drive. No updates needed. Exiting.")
             return
+    elif force_update:
+        print(f"FORCE_UPDATE is enabled. Reprocessing PDF (SHA: {current_sha})...")
 
     # 9. Download the PDF
     print(f"Downloading PDF from {download_url}...")
