@@ -91,11 +91,13 @@ def upload_to_drive(service, file_path, filename):
 
 
 def main():
+    force_update = str(os.environ.get("FORCE_UPDATE", "false")).lower() == "true"
+
     # 1. Check if today is Sunday
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
 
-    if now_pt.weekday() == 6:
+    if now_pt.weekday() == 6 and not force_update:
         print("Today is Sunday. Do not update text files. Exiting.")
         return
 
@@ -158,7 +160,6 @@ def main():
 
     titles_dir = "service-titles"
     last_processed_sha = state_data.get("last_processed_sha")
-    force_update = str(os.environ.get("FORCE_UPDATE", "false")).lower() == "true"
 
     if last_processed_sha == current_sha and not force_update:
         print("PDF SHA matches last processed SHA. Checking if files are missing in Google Drive...")
@@ -256,12 +257,7 @@ def main():
     if not os.path.exists(titles_dir):
         os.makedirs(titles_dir)
 
-    # Clear all .txt files in the directory first
-    for filename in os.listdir(titles_dir):
-        if filename.endswith(".txt"):
-            filepath = os.path.join(titles_dir, filename)
-            with open(filepath, "w") as f:
-                f.write("")
+    output_files = set()
 
     # Parse Gemini output
     lines = result_text.split('\n')
@@ -278,11 +274,17 @@ def main():
             filename = f"{file_key}.txt"
             filepath = os.path.join(titles_dir, filename)
 
-            if os.path.exists(filepath):
-                with open(filepath, "w") as f:
-                    f.write(content.strip())
-            else:
-                print(f"Warning: File {filename} does not exist in {titles_dir}. Skipping.")
+            with open(filepath, "w") as f:
+                f.write(content.strip())
+
+            output_files.add(filename)
+
+    # Clear files that already exist but were not output by Gemini
+    for filename in os.listdir(titles_dir):
+        if filename.endswith(".txt") and filename not in output_files:
+            filepath = os.path.join(titles_dir, filename)
+            with open(filepath, "w") as f:
+                f.write("")
 
 
     # 16. Upload to Google Drive
