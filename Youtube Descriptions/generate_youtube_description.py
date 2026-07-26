@@ -87,8 +87,7 @@ def main():
                 modified_time = data.get('modifiedTime')
                 youtube_modified_time = data.get('youtubeDescriptionModifiedTime')
 
-                output_dir = os.path.join("Processed Scripts", date_str)
-                txt_output_path = os.path.join(output_dir, f"Description {date_str}.txt")
+                txt_output_path = "Description.txt"
                 txt_exists = os.path.exists(txt_output_path)
 
                 force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
@@ -172,8 +171,6 @@ def main():
                         output_lines.append(modified_line)
 
                 description = "\n".join(output_lines)
-
-                os.makedirs(output_dir, exist_ok=True)
 
                 with open(txt_output_path, 'w', encoding='utf-8') as f:
                     f.write(description)
