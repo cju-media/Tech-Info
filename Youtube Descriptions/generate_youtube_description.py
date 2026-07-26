@@ -118,13 +118,12 @@ def main():
                     api_response = requests.get(api_url, headers=headers)
                     if api_response.status_code == 200:
                         current_sha = api_response.json().get("sha")
-                        if last_processed_sha != current_sha and not force_update:
+                        if last_processed_sha != current_sha:
                             print(f"Service titles not yet updated for {date_str} (current SHA: {current_sha}, last processed: {last_processed_sha}). Waiting for service_titles_checker to run.")
                             continue
                 except Exception as e:
                     print(f"Error fetching SHA for {filename}: {e}")
-                    if not force_update:
-                        continue
+                    continue
 
                 print(f"Processing script for {date_str} (happening in {days_until} days)...")
 
