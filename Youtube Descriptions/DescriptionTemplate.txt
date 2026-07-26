@@ -1,7 +1,7 @@
 DescriptionBoiler.txt
 
 Announcements
-Organ Prelude-Concert
+Organ Prelude-Concert, prelude-preformer.txt
 prelude1.txt
 prelude2.txt
 prelude3.txt
@@ -13,7 +13,7 @@ Prayers of Awareness
 Introit, introit-title-composer.txt - introit-group.txt
 Prayers, Readings, Meditations
 Meditation Anthem, meditation-title-composer.txt - meditation-group.txt
-Sermon, sermon-title.txt - sermon-minister.txt
+sermon-title.txt - sermon-minister.txt
 Communion, communion.txt
 Offering Prayers
 Offertory, offertory-title-composer.txt, offertory-group.txt
