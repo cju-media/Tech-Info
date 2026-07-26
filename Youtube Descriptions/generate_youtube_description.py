@@ -57,6 +57,22 @@ def main():
         print(f"Error fetching OW index: {e}")
         ow_index = {}
 
+    # Read service titles state to ensure we only process if titles have been updated for this OW
+    service_titles_state_path = "../Worship Scripts/service_titles_state.json"
+    last_processed_sha = None
+    if os.path.exists(service_titles_state_path):
+        try:
+            with open(service_titles_state_path, "r") as f:
+                state_data = json.load(f)
+                last_processed_sha = state_data.get("last_processed_sha")
+        except Exception as e:
+            print(f"Error reading service titles state: {e}")
+
+    headers = {}
+    github_token = os.environ.get("GITHUB_TOKEN")
+    if github_token:
+        headers["Authorization"] = f"Bearer {github_token}"
+
     changes_made = False
 
     for date_str, data in worship_scripts.items():
@@ -92,6 +108,23 @@ def main():
                 if not ow_info or not ow_info.get('url'):
                     print(f"No OW found in remote index for date {ow_date_key_1} or {ow_date_key_2}. Waiting for OW to be posted...")
                     continue
+
+                ow_url = ow_info['url']
+                filename = ow_url.split("/")[-1]
+
+                # Check if the service titles have been processed for this specific OW
+                api_url = f"https://api.github.com/repos/TheCathedralFCCLA/OW/contents/OWs/{filename}"
+                try:
+                    api_response = requests.get(api_url, headers=headers)
+                    if api_response.status_code == 200:
+                        current_sha = api_response.json().get("sha")
+                        if last_processed_sha != current_sha and not force_update:
+                            print(f"Service titles not yet updated for {date_str} (current SHA: {current_sha}, last processed: {last_processed_sha}). Waiting for service_titles_checker to run.")
+                            continue
+                except Exception as e:
+                    print(f"Error fetching SHA for {filename}: {e}")
+                    if not force_update:
+                        continue
 
                 print(f"Processing script for {date_str} (happening in {days_until} days)...")
 
