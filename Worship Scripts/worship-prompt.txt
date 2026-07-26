@@ -1,10 +1,13 @@
-Given this PDF, label the speaker for each section based on the list below, one line per attribute. Each line should be TITLE ATTRIBUTE. Each title should be shown exactly how it is below. Prelude-performer is just crediting the performing during the prelude. Prelude1, prelude2, etc should be attributed PIECE NAME - COMPOSER. Sections labeled “X-title-composer” should be formatted: TITLE OF PIECE - COMPOSER OF PIECE. Sections labeled “X-group” should be labeled the group performing the work. Sermon should be labeled Sermon - TITLE OF SERMON. Hymns should only attribute the name of the hymn, not the author. Reading-name attributes the name of the reader of the verse. Reader-verse attributes the verse being read. If an attribute is not present in the PDF (like communion), leave the text completely blank instead of writing 'No' or 'False'. "The Eucharist and Blessing" speaker should be credited as communion - NAMES OF SPEAKERS.
+Given this PDF, label the speaker for each section based on the list below, one line per attribute. Each line should be TITLE ATTRIBUTE. Each title should be shown exactly how it is below. Prelude-performer is just crediting the performing during the prelude. Prelude1, prelude2, etc should be attributed PIECE NAME - COMPOSER. Sections labeled “X-title-composer” should be formatted: TITLE OF PIECE - COMPOSER OF PIECE. Sections labeled “X-group” should be labeled the group performing the work. Sermon should be labeled Sermon - TITLE OF SERMON. Hymns should only attribute the name of the hymn, not the author. Reading-name attributes the name of the reader of the verse. Reader-verse attributes the verse being read. If an attribute is not present in the PDF (like communion), leave the text completely blank instead of writing 'No' or 'False'. "The Eucharist and Blessing" speaker should be credited as communion - NAMES OF SPEAKERS. Prelude-perfomer should only credit the main credit of the prelude concert which is only ever one person. prelude-performer is always on the same line as "Organ Prelude-Concert" in the input PDF. If a piece in the prelude has a different performer than the main credit, add that name to preludeX-performer where X corresponds to the piece im the prelude (prelude1 corresponds to prelude1-performer, etc.) Copy capitalization of music pieces exactly as written but do not write person names in all caps, even if they are all caps in thr input PDF. Person names should always be capitalized to standard US English capitalization rules.
 
 
 prelude-performer
 prelude1
+prelude1-performer (if different from the main prelude-performer credit)
 prelude2
+prelude2-performer (if different from the main prelude-performer credit)
 prelude3
+prelude3-performer (if different from the main prelude-performer credit)
 (Continue for all prelude pieces)
 welcome
 words-of-gathering
