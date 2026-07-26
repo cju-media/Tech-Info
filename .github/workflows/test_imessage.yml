@@ -1,0 +1,54 @@
+name: Test iMessage to Cameron
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Message to send'
+        required: true
+        default: 'This is a test message from the new osascript macOS runner workflow!'
+        type: string
+
+jobs:
+  test-imessage:
+    runs-on: [self-hosted, macOS]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Send Test iMessage
+        run: |
+          python3 -c '
+          import os, json, subprocess
+          import sys
+
+          try:
+              phones_path = os.path.join("Scheduling", "Team Data", "team_phones.json")
+              with open(phones_path, "r") as f:
+                  phones = json.load(f)
+
+              cameron_phone = phones.get("Cameron")
+              if not cameron_phone:
+                  print("Could not find Cameron phone number.")
+                  sys.exit(1)
+
+              message = os.environ.get("INPUT_MESSAGE", "Test Message")
+
+              print(f"Sending via osascript to {cameron_phone}...")
+              escaped_message = message.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\"")
+              applescript = f"""
+              tell application "Messages"
+                  set targetService to 1st service whose service type = iMessage
+                  set targetBuddy to buddy "{cameron_phone}" of targetService
+                  send "{escaped_message}" to targetBuddy
+              end tell
+              """
+              subprocess.run(["osascript", "-e", applescript], check=True, capture_output=True, text=True)
+              print("Successfully sent test iMessage via osascript.")
+          except Exception as e:
+              print(f"Error preparing iMessage: {e}")
+              sys.exit(1)
+          '
+        env:
+          INPUT_MESSAGE: ${{ github.event.inputs.message }}
