@@ -4,6 +4,7 @@ import json
 import re
 import pandas as pd
 from datetime import datetime, timedelta
+import datetime as dt
 import os
 from weasyprint import HTML
 import smtplib
@@ -489,7 +490,46 @@ def save_avail_state(state):
 
 if __name__ == "__main__":
     is_dry_run = os.environ.get('DRY_RUN', '1') == '1'
-    run_mode = os.environ.get('RUN_MODE', 'weekly') # 'weekly', 'admin', 'update', 'test', 'avail_check', 'daily_reminder'
+    run_mode_env = os.environ.get('RUN_MODE', 'auto') # 'auto', 'weekly', 'admin', 'update', 'test', 'avail_check', 'daily_reminder'
+
+    run_modes_to_execute = []
+    if run_mode_env == 'auto':
+        current_utc = datetime.now(dt.timezone.utc)
+        hour = current_utc.hour
+        weekday = current_utc.weekday()
+
+        # Hourly
+        run_modes_to_execute.append('avail_check')
+
+        # Daily at 21:00 UTC
+        if hour == 21:
+            run_modes_to_execute.append('update')
+
+        # Daily at 10:00 UTC
+        if hour == 10:
+            run_modes_to_execute.append('daily_reminder')
+
+        # Weekly on Friday at 11:00 UTC (weekday 4 is Friday)
+        if weekday == 4 and hour == 11:
+            run_modes_to_execute.append('weekly')
+
+        # iMessage reminders
+        if hour in [3, 12, 17]:
+            run_modes_to_execute.append('imessage_reminder')
+            if hour == 3:
+                os.environ['CRON_SCHEDULE'] = '0 3 * * *'
+            elif hour == 12:
+                os.environ['CRON_SCHEDULE'] = '0 12 * * *'
+            elif hour == 17:
+                os.environ['CRON_SCHEDULE'] = '0 17 * * *'
+    else:
+        run_modes_to_execute = [run_mode_env]
+
+    print(f"Modes to execute: {run_modes_to_execute}")
+
+    if not run_modes_to_execute:
+        print("No modes to run at this hour.")
+        sys.exit(0)
 
     print("Fetching events...")
     events = fetch_events_from_sheet()
@@ -507,8 +547,16 @@ if __name__ == "__main__":
 
     os.makedirs('pdfs', exist_ok=True)
 
-    if run_mode != 'avail_check':
-        # Update state logic (skip on avail_check to prevent unstaged git state issues)
+    # Compute State
+    needs_state_update = any(mode != 'avail_check' for mode in run_modes_to_execute)
+
+    state_changed = False
+    members_with_updates = {}
+    new_event_ids_globally = set()
+    global_new_events = []
+    all_upcoming_events = {}
+
+    if needs_state_update:
         current_state = get_assignment_state()
         current_assignments = current_state.get("assignments", {})
         current_details = current_state.get("event_details", {})
@@ -519,11 +567,8 @@ if __name__ == "__main__":
         new_details = {e['element_id']: {'date': e['date_obj'].strftime("%Y-%m-%d"), 'name': e['Event'], 'call_time': e['Call Time']} for e in events if e['date_obj'] and e['date_obj'] >= today}
 
         new_state = {"assignments": new_assignments, "event_details": new_details}
-        state_changed = False
-        members_with_updates = {}
 
         new_event_ids_globally = set(new_details.keys()) - set(current_details.keys())
-        global_new_events = []
         if new_event_ids_globally:
             global_new_events = [new_details[eid] for eid in new_event_ids_globally]
             state_changed = True
@@ -535,7 +580,6 @@ if __name__ == "__main__":
             removed_ids_raw = old_ids - new_ids
             retained_ids = old_ids.intersection(new_ids)
 
-            # Filter out removals that are just naturally passing events (date < today)
             canceled_events = []
             for rid in removed_ids_raw:
                 if rid in current_details:
@@ -544,7 +588,6 @@ if __name__ == "__main__":
                     if event_date >= today:
                         canceled_events.append(current_details[rid])
 
-            # Check for time changes on retained events
             time_changed_events = []
             time_changed_ids = set()
             for eid in retained_ids:
@@ -570,253 +613,223 @@ if __name__ == "__main__":
                 state_changed = True
 
         save_assignment_state(new_state)
-    generated_pdfs = []
 
-    if run_mode == 'update':
-        if not state_changed:
-            print("No schedule updates detected. Exiting.")
-            sys.exit(0)
+    for run_mode in run_modes_to_execute:
+        generated_pdfs = []
+        print(f"\n--- Executing Mode: {run_mode} ---")
 
-        if new_event_ids_globally:
-            print("Globally new events detected. Sending broadcast to team.")
-            master_filename = "pdfs/master_schedule.pdf"
-            # Generate a master PDF showing all events for the team
-            all_upcoming = [e for e in events if e['date_obj'] >= today]
-            all_upcoming.sort(key=lambda x: x['date_obj'])
-            # We can leverage generate_pdf and just pass "All Team" as the member name
-            generate_pdf("All Team", all_upcoming, today, master_filename, run_mode, new_event_ids=new_event_ids_globally)
-            send_broadcast_email(team_emails, global_new_events, master_filename, is_dry_run)
-
-        if members_with_updates:
-            print("Schedule assignment updates detected. Sending specific updates to affected members.")
-            for member, updates in members_with_updates.items():
-                if member in team_emails:
-                    filename = f"pdfs/{member}_schedule.pdf"
-                    # For update mode, we show ALL upcoming events (days_ahead=None)
-                    all_highlight_ids = updates['added'].union(updates['time_changed_ids'])
-                    generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=all_highlight_ids)
-                    send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'], time_changed_events=updates['time_changed'])
-                else:
-                    print(f"No email configured for {member}, skipping.")
-
-                # Send cancellation texts
-                if updates.get('canceled') and member in team_phones:
-                    for ce in updates['canceled']:
-                        member_text = f"Hi {member},\n\nYour shift for \"{ce['name']}\" on {ce['date']} has been CANCELLED.\n\nBest,\nCam-Bot"
-                        send_imessage(team_phones[member], member_text, is_dry_run)
-
-                        if "Cameron" in team_phones:
-                            admin_text = f"Notification: {member} was just notified that their shift for \"{ce['name']}\" on {ce['date']} was cancelled."
-                            send_imessage(team_phones["Cameron"], admin_text, is_dry_run)
-
-            print("Sending admin notification email for update mode.")
-        # send_notification_email replaced by send_rf_coordination.py
-
-    elif run_mode == 'avail_check':
-        print("Running in Availability Check Mode.")
-        current_avail_state = get_avail_state()
-        new_avail_state = {}
-        changes = []
-
-        upcoming_events = [e for e in events if e['date_obj'] >= today]
-
-        for e in upcoming_events:
-            if not e['element_id']:
+        if run_mode == 'update':
+            if not state_changed:
+                print("No schedule updates detected. Skipping update notifications.")
                 continue
 
-            # Parse names string into a set of normalized names
-            avail_str = e['Availability']
-            if avail_str:
-                names = set([n.strip() for n in re.split(r'[,&]', avail_str) if n.strip()])
+            if new_event_ids_globally:
+                print("Globally new events detected. Sending broadcast to team.")
+                master_filename = "pdfs/master_schedule.pdf"
+                all_upcoming = [e for e in events if e['date_obj'] >= today]
+                all_upcoming.sort(key=lambda x: x['date_obj'])
+                generate_pdf("All Team", all_upcoming, today, master_filename, run_mode, new_event_ids=new_event_ids_globally)
+                send_broadcast_email(team_emails, global_new_events, master_filename, is_dry_run)
+
+            if members_with_updates:
+                print("Schedule assignment updates detected. Sending specific updates to affected members.")
+                for member, updates in members_with_updates.items():
+                    if member in team_emails:
+                        filename = f"pdfs/{member}_schedule.pdf"
+                        all_highlight_ids = updates['added'].union(updates['time_changed_ids'])
+                        generate_pdf(member, all_upcoming_events[member], today, filename, run_mode, new_event_ids=all_highlight_ids)
+                        send_email(team_emails[member], member, today, filename, run_mode, is_dry_run, canceled_events=updates['canceled'], new_assignments=updates['added'], time_changed_events=updates['time_changed'])
+                    else:
+                        print(f"No email configured for {member}, skipping.")
+
+                    if updates.get('canceled') and member in team_phones:
+                        for ce in updates['canceled']:
+                            member_text = f"Hi {member},\n\nYour shift for \"{ce['name']}\" on {ce['date']} has been CANCELLED.\n\nBest,\nCam-Bot"
+                            send_imessage(team_phones[member], member_text, is_dry_run)
+
+                            if "Cameron" in team_phones:
+                                admin_text = f"Notification: {member} was just notified that their shift for \"{ce['name']}\" on {ce['date']} was cancelled."
+                                send_imessage(team_phones["Cameron"], admin_text, is_dry_run)
+
+        elif run_mode == 'avail_check':
+            print("Running in Availability Check Mode.")
+            current_avail_state = get_avail_state()
+            new_avail_state = {}
+            changes = []
+
+            upcoming_events = [e for e in events if e['date_obj'] >= today]
+
+            for e in upcoming_events:
+                if not e['element_id']:
+                    continue
+
+                avail_str = e['Availability']
+                if avail_str:
+                    names = set([n.strip() for n in re.split(r'[,&]', avail_str) if n.strip()])
+                else:
+                    names = set()
+
+                new_avail_state[e['element_id']] = list(names)
+
+                old_names = set(current_avail_state.get(e['element_id'], []))
+                added_names = names - old_names
+                if added_names:
+                    changes.append({
+                        'event_name': e['Event'],
+                        'date': e['Date'],
+                        'call_time': e['Call Time'],
+                        'sheet_row': e['sheet_row'],
+                        'added_names': list(added_names)
+                    })
+
+            save_avail_state(new_avail_state)
+
+            if changes:
+                print(f"Found {len(changes)} new availability additions.")
+                send_availability_email(changes, is_dry_run)
             else:
-                names = set()
+                print("No new availability found.")
 
-            new_avail_state[e['element_id']] = list(names)
-
-            old_names = set(current_avail_state.get(e['element_id'], []))
-            added_names = names - old_names
-            if added_names:
-                changes.append({
-                    'event_name': e['Event'],
-                    'date': e['Date'],
-                    'call_time': e['Call Time'],
-                    'sheet_row': e['sheet_row'],
-                    'added_names': list(added_names)
-                })
-
-        save_avail_state(new_avail_state)
-
-        if changes:
-            print(f"Found {len(changes)} new availability additions.")
-            send_availability_email(changes, is_dry_run)
-        else:
-            print("No new availability found.")
-
-    elif run_mode == 'admin':
-        print("Running in Admin Mode: Sending batched email.")
-        # Admin gets a 2-week view
-        two_week_events = get_events_by_member(events, today, days_ahead=14)
-        for member in TEAM_MEMBERS:
-            filename = f"pdfs/{member}_schedule.pdf"
-            generate_pdf(member, two_week_events[member], today, filename, run_mode)
-            generated_pdfs.append(filename)
-        send_admin_email(today, generated_pdfs, is_dry_run)
-
-    elif run_mode == 'test':
-        print("Running in Test Mode: Simulating 'update' mode for all members and sending batched to cjohnston@fccla.org")
-        for member in TEAM_MEMBERS:
-            filename = f"pdfs/{member}_schedule.pdf"
-            # For test mode, we want ALL events marked as new
-            all_ids_for_member = {e['element_id'] for e in all_upcoming_events[member]}
-            # we use 'update' string for the inner function so it formats the title as "All Upcoming Events"
-            generate_pdf(member, all_upcoming_events[member], today, filename, 'update', new_event_ids=all_ids_for_member)
-            generated_pdfs.append(filename)
-        send_test_email(today, generated_pdfs, is_dry_run)
-
-    elif run_mode == 'daily_reminder':
-        print("Running in Daily Reminder Mode.")
-        # Filter strictly for today's events (1 day ahead = today only)
-        todays_events = get_events_by_member(events, today, days_ahead=1)
-
-        sent_any = False
-        for member in TEAM_MEMBERS:
-            if member in team_emails and todays_events[member]:
-                filename = f"pdfs/{member}_schedule.pdf"
-                generate_pdf(member, todays_events[member], today, filename, run_mode)
-                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
-                sent_any = True
-            elif member not in team_emails and todays_events[member]:
-                print(f"No email configured for {member}, skipping today's reminder.")
-
-        if not sent_any:
-            print("No events scheduled for today. Exiting.")
-
-    elif run_mode == 'imessage_test':
-        print("Running in iMessage Test Mode.")
-        if "Cameron" not in team_phones:
-            print("Cameron's phone not configured. Cannot send test message.")
-        else:
-            # Look ahead to find the next day with any events to generate a sample digest
-            upcoming_events = get_events_by_member(events, today, days_ahead=30)
-
-            # Find the earliest date among all upcoming events
-            earliest_date = None
+        elif run_mode == 'admin':
+            print("Running in Admin Mode: Sending batched email.")
+            two_week_events = get_events_by_member(events, today, days_ahead=14)
             for member in TEAM_MEMBERS:
-                for ev in upcoming_events[member]:
-                    if earliest_date is None or ev['date_obj'] < earliest_date:
-                        earliest_date = ev['date_obj']
-
-            if not earliest_date:
-                msg_body = "This is a test message from Cam-Bot!\n\nThere are no upcoming events in the next 30 days to generate a sample digest."
-                send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
-            else:
-                # Filter events strictly for that earliest date
-                target_date_events = get_events_by_member(events, earliest_date, days_ahead=1)
-
-                summary_lines = []
-                for member in TEAM_MEMBERS:
-                    if member in team_phones and target_date_events[member]:
-                        summary_lines.append(f"{member}:")
-                        for ev in target_date_events[member]:
-                            summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
-
-                formatted_date = earliest_date.strftime('%B %d')
-                msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
-                send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
-
-    elif run_mode == 'imessage_reminder':
-        print("Running in iMessage Reminder Mode.")
-
-        cron_schedule = os.environ.get('CRON_SCHEDULE', '')
-        # '0 3 * * *' is the 8 PM PDT night cron.
-        # '0 12 * * *' is the 5 AM PDT morning cron.
-        # '0 17 * * *' is the 10 AM PDT day-before cron.
-
-        is_night_cron = False
-        is_morning_cron = False
-        is_day_before_cron = False
-
-        if cron_schedule == '0 3 * * *':
-            is_night_cron = True
-        elif cron_schedule == '0 12 * * *':
-            is_morning_cron = True
-        elif cron_schedule == '0 17 * * *':
-            is_day_before_cron = True
-        else:
-            # Fallback to UTC time heuristic if run manually
-            current_utc_hour = datetime.utcnow().hour
-            # 8 PM PDT = 3 AM UTC. Let's say if it's between 2 AM and 10 AM UTC, it's night.
-            if 2 <= current_utc_hour <= 10:
-                is_night_cron = True
-            # 10 AM PDT = 17 UTC (or 18 in PST). Let's say if it's between 16 and 19 UTC, it's day-before.
-            elif 16 <= current_utc_hour <= 19:
-                is_day_before_cron = True
-            else:
-                is_morning_cron = True
-
-        if is_day_before_cron:
-            print("Day Before Cron Detected. Checking for all shifts tomorrow...")
-            target_date = today + timedelta(days=1)
-            target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
-            # No filtering by time, include all events for tomorrow
-            target_events = target_events_raw
-            date_word = "tomorrow"
-        elif is_night_cron:
-            print("Night Cron Detected. Checking for tomorrow's early shifts (<= 7:00 AM)...")
-            target_date = today + timedelta(days=1)
-            target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
-
-            # Filter for early shifts only (<= 7 AM = <= 420 minutes)
-            target_events = {member: [e for e in evs if parse_time(e['Call Time']) <= 420]
-                             for member, evs in target_events_raw.items()}
-            date_word = "tomorrow"
-        else:
-            print("Morning Cron Detected. Checking for today's regular shifts (> 7:00 AM)...")
-            target_date = today
-            target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
-
-            # Filter for regular shifts only (> 7 AM = > 420 minutes)
-            target_events = {member: [e for e in evs if parse_time(e['Call Time']) > 420]
-                             for member, evs in target_events_raw.items()}
-            date_word = "today"
-
-        sent_any = False
-        summary_lines = []
-        for member in TEAM_MEMBERS:
-            if member in team_phones and target_events.get(member):
-                member_events = target_events[member]
-                msg_body = f"Hi {member},\n\nJust a quick reminder you have an event {date_word}:\n"
-                summary_lines.append(f"{member}:")
-                for ev in member_events:
-                    msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
-                    summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
-                msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
-
-                send_imessage(team_phones[member], msg_body, is_dry_run)
-                sent_any = True
-            elif member not in team_phones and target_events.get(member):
-                print(f"No phone configured for {member}, skipping {date_word}'s iMessage.")
-
-        if not sent_any:
-            print(f"No targeted events scheduled for {date_word}. Exiting.")
-        else:
-            summary_msg = f"Summary ({date_word.capitalize()}):\nThe following team members are working:\n" + "\n".join(summary_lines)
-            if "Cameron" in team_phones:
-                send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
-            else:
-                print("Cameron's phone not configured. Skipping summary message.")
-
-    else: # weekly mode
-        print("Running in Weekly Mode.")
-        # Weekly gets a 2-week view
-        two_week_events = get_events_by_member(events, today, days_ahead=14)
-        for member in TEAM_MEMBERS:
-            if member in team_emails:
                 filename = f"pdfs/{member}_schedule.pdf"
                 generate_pdf(member, two_week_events[member], today, filename, run_mode)
-                send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
-            else:
-                print(f"No email configured for {member}, skipping.")
+                generated_pdfs.append(filename)
+            send_admin_email(today, generated_pdfs, is_dry_run)
 
-        print("Sending admin notification email.")
-        # send_notification_email replaced by send_rf_coordination.py
+        elif run_mode == 'test':
+            print("Running in Test Mode: Simulating 'update' mode for all members and sending batched to cjohnston@fccla.org")
+            for member in TEAM_MEMBERS:
+                filename = f"pdfs/{member}_schedule.pdf"
+                all_ids_for_member = {e['element_id'] for e in all_upcoming_events[member]}
+                generate_pdf(member, all_upcoming_events[member], today, filename, 'update', new_event_ids=all_ids_for_member)
+                generated_pdfs.append(filename)
+            send_test_email(today, generated_pdfs, is_dry_run)
+
+        elif run_mode == 'daily_reminder':
+            print("Running in Daily Reminder Mode.")
+            todays_events = get_events_by_member(events, today, days_ahead=1)
+
+            sent_any = False
+            for member in TEAM_MEMBERS:
+                if member in team_emails and todays_events[member]:
+                    filename = f"pdfs/{member}_schedule.pdf"
+                    generate_pdf(member, todays_events[member], today, filename, run_mode)
+                    send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
+                    sent_any = True
+                elif member not in team_emails and todays_events[member]:
+                    print(f"No email configured for {member}, skipping today's reminder.")
+
+            if not sent_any:
+                print("No events scheduled for today.")
+
+        elif run_mode == 'imessage_test':
+            print("Running in iMessage Test Mode.")
+            if "Cameron" not in team_phones:
+                print("Cameron's phone not configured. Cannot send test message.")
+            else:
+                upcoming_events = get_events_by_member(events, today, days_ahead=30)
+                earliest_date = None
+                for member in TEAM_MEMBERS:
+                    for ev in upcoming_events[member]:
+                        if earliest_date is None or ev['date_obj'] < earliest_date:
+                            earliest_date = ev['date_obj']
+
+                if not earliest_date:
+                    msg_body = "This is a test message from Cam-Bot!\n\nThere are no upcoming events in the next 30 days to generate a sample digest."
+                    send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
+                else:
+                    target_date_events = get_events_by_member(events, earliest_date, days_ahead=1)
+                    summary_lines = []
+                    for member in TEAM_MEMBERS:
+                        if member in team_phones and target_date_events[member]:
+                            summary_lines.append(f"{member}:")
+                            for ev in target_date_events[member]:
+                                summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
+                    formatted_date = earliest_date.strftime('%B %d')
+                    msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
+                    send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
+
+        elif run_mode == 'imessage_reminder':
+            print("Running in iMessage Reminder Mode.")
+
+            cron_schedule = os.environ.get('CRON_SCHEDULE', '')
+
+            is_night_cron = False
+            is_morning_cron = False
+            is_day_before_cron = False
+
+            if cron_schedule == '0 3 * * *':
+                is_night_cron = True
+            elif cron_schedule == '0 12 * * *':
+                is_morning_cron = True
+            elif cron_schedule == '0 17 * * *':
+                is_day_before_cron = True
+            else:
+                current_utc_hour = datetime.utcnow().hour
+                if 2 <= current_utc_hour <= 10:
+                    is_night_cron = True
+                elif 16 <= current_utc_hour <= 19:
+                    is_day_before_cron = True
+                else:
+                    is_morning_cron = True
+
+            if is_day_before_cron:
+                print("Day Before Cron Detected. Checking for all shifts tomorrow...")
+                target_date = today + timedelta(days=1)
+                target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
+                target_events = target_events_raw
+                date_word = "tomorrow"
+            elif is_night_cron:
+                print("Night Cron Detected. Checking for tomorrow's early shifts (<= 7:00 AM)...")
+                target_date = today + timedelta(days=1)
+                target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
+                target_events = {member: [e for e in evs if parse_time(e['Call Time']) <= 420]
+                                 for member, evs in target_events_raw.items()}
+                date_word = "tomorrow"
+            else:
+                print("Morning Cron Detected. Checking for today's regular shifts (> 7:00 AM)...")
+                target_date = today
+                target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
+                target_events = {member: [e for e in evs if parse_time(e['Call Time']) > 420]
+                                 for member, evs in target_events_raw.items()}
+                date_word = "today"
+
+            sent_any = False
+            summary_lines = []
+            for member in TEAM_MEMBERS:
+                if member in team_phones and target_events.get(member):
+                    member_events = target_events[member]
+                    msg_body = f"Hi {member},\n\nJust a quick reminder you have an event {date_word}:\n"
+                    summary_lines.append(f"{member}:")
+                    for ev in member_events:
+                        msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
+                        summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
+                    msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
+
+                    send_imessage(team_phones[member], msg_body, is_dry_run)
+                    sent_any = True
+                elif member not in team_phones and target_events.get(member):
+                    print(f"No phone configured for {member}, skipping {date_word}'s iMessage.")
+
+            if not sent_any:
+                print(f"No targeted events scheduled for {date_word}.")
+            else:
+                summary_msg = f"Summary ({date_word.capitalize()}):\nThe following team members are working:\n" + "\n".join(summary_lines)
+                if "Cameron" in team_phones:
+                    send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
+                else:
+                    print("Cameron's phone not configured. Skipping summary message.")
+
+        elif run_mode == 'weekly':
+            print("Running in Weekly Mode.")
+            two_week_events = get_events_by_member(events, today, days_ahead=14)
+            for member in TEAM_MEMBERS:
+                if member in team_emails:
+                    filename = f"pdfs/{member}_schedule.pdf"
+                    generate_pdf(member, two_week_events[member], today, filename, run_mode)
+                    send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
+                else:
+                    print(f"No email configured for {member}, skipping.")
