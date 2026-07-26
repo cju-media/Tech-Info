@@ -27,29 +27,18 @@ jobs:
                   exit(1)
 
               message = "New worship scripts and script titles have been uploaded to Google Drive."
-              payload = json.dumps({"to": cameron_phone, "message": message})
 
-              print(f"Sending via Shortcuts to {cameron_phone}...")
-              process = subprocess.Popen(["shortcuts", "run", "SendTechMessage"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-              stdout, stderr = process.communicate(input=payload)
-
-              if process.returncode == 0:
-                  print("Successfully sent iMessage notification via Shortcut.")
-              else:
-                  print(f"Failed to send iMessage via Shortcut. Error: {stderr}")
-
-                  # Fallback to osascript
-                  print("Attempting fallback to osascript...")
-                  escaped_message = message.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\"")
-                  applescript = f"""
-                  tell application "Messages"
-                      set targetService to 1st service whose service type = iMessage
-                      set targetBuddy to buddy "{cameron_phone}" of targetService
-                      send "{escaped_message}" to targetBuddy
-                  end tell
-                  """
-                  subprocess.run(["osascript", "-e", applescript], check=True, capture_output=True, text=True)
-                  print("Successfully sent iMessage via fallback osascript.")
+              print(f"Sending via osascript to {cameron_phone}...")
+              escaped_message = message.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\"")
+              applescript = f"""
+              tell application "Messages"
+                  set targetService to 1st service whose service type = iMessage
+                  set targetBuddy to buddy "{cameron_phone}" of targetService
+                  send "{escaped_message}" to targetBuddy
+              end tell
+              """
+              subprocess.run(["osascript", "-e", applescript], check=True, capture_output=True, text=True)
+              print("Successfully sent iMessage via osascript.")
           except Exception as e:
               print(f"Error preparing iMessage: {e}")
               exit(1)

@@ -83,6 +83,7 @@ def main():
             days_until = (doc_dt_aware.date() - now.date()).days
             if 0 <= days_until <= 7:
                 txt_output_path = "Description.txt"
+                force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
 
                 # Empty the file initially
                 with open(txt_output_path, 'w', encoding='utf-8') as f:
