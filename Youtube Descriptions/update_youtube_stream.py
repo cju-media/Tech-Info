@@ -80,9 +80,9 @@ def get_upcoming_streams(service):
 
     return upcoming_streams
 
-def get_combined_description(service_date_str):
+def get_combined_description():
     # Read generated description
-    desc_path = os.path.join("Processed Scripts", service_date_str, f"Description {service_date_str}.txt")
+    desc_path = "Description.txt"
     if not os.path.exists(desc_path):
         print(f"Generated description not found at {desc_path}")
         return None
@@ -123,7 +123,7 @@ def main():
         # the generated text file was modified very recently (e.g., last 60 minutes).
         force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
 
-        txt_path = os.path.join("Processed Scripts", service_date_str, f"Description {service_date_str}.txt")
+        txt_path = "Description.txt"
         recently_modified = False
         if os.path.exists(txt_path):
             mtime = os.path.getmtime(txt_path)
@@ -139,7 +139,7 @@ def main():
             print(f"  Today is the service day, but {reason}. Proceeding...")
 
         # Get description
-        combined_desc = get_combined_description(service_date_str)
+        combined_desc = get_combined_description()
         if not combined_desc:
             print("  Could not read description. Skipping.")
             continue
