@@ -4,11 +4,9 @@
             "we-7-29-2026-neo-fest-reflecting-forward-concert"
         ],
         "Danny": [
-            "su-7-26-2026-worship-service",
             "su-8-2-2026-worship-service"
         ],
         "Jaffe": [
-            "su-7-26-2026-worship-service",
             "fr-7-31-2026-neo-fest-concert-2",
             "su-8-2-2026-worship-service"
         ],
@@ -35,11 +33,6 @@
             "date": "2026-07-29",
             "name": "NEO FEST: Reflecting Forward Concert",
             "call_time": "5:00pm-10:00pm"
-        },
-        "su-7-26-2026-worship-service": {
-            "date": "2026-07-26",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
