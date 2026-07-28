@@ -185,7 +185,14 @@ async function fetchChaptersFromGithub() {
     try {
         const response = await fetch(CHAPTERS_URL);
         if (!response.ok) {
-            console.error(`Failed to fetch chapters: ${response.statusText}`);
+            console.error(`Failed to fetch chapters from GitHub: ${response.statusText}`);
+            // Fallback to local chapters.txt for local testing on unmerged branches
+            const localPath = path.join(__dirname, "chapters.txt");
+            if (fs.existsSync(localPath)) {
+                console.log("Falling back to local chapters.txt...");
+                const text = fs.readFileSync(localPath, "utf-8");
+                return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            }
             return [];
         }
         const text = await response.text();
