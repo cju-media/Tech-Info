@@ -12,18 +12,21 @@ If you are running the `osc_server.js` script on your local machine (like your M
    cd "Youtube Descriptions"
    npm install
    ```
-3. **Set your Credentials**: The server requires two environment variables.
-   - `YOUTUBE_API_KEY`: Used to securely read the public title and start time of the active YouTube live stream.
-   - `GITHUB_PAT`: Used to push the final timestamps securely to GitHub when the stream concludes.
-
-   You can run the server like this:
+3. **Run the server**: You no longer need to pass environment variables in your terminal. You can simply run:
    ```bash
-   YOUTUBE_API_KEY='your_api_key' GITHUB_PAT='your_github_pat' node osc_server.js
+   node osc_server.js
    ```
 
-## Web UI
+## Web UI & Configuration
 
 Once running, the web UI will be accessible at:
 [http://localhost:3671](http://localhost:3671)
 
-This UI will show the active stream title, calculate the elapsed time, and show the remaining `chapters.txt` sections waiting to be timestamped by an OSC command. You can also manually configure the active OSC port from the UI's configuration menu.
+This UI will show the active stream title, calculate the elapsed time, and show the remaining `chapters.txt` sections waiting to be timestamped by an OSC command.
+
+**Important:** Open the hamburger menu (☰) in the top right corner to set up your configuration. You can configure:
+- **OSC Port:** The local UDP port to listen for OSC commands (defaults to 8000).
+- **YouTube API Key:** Used to securely read the public title and start time of the active YouTube live stream.
+- **GitHub PAT:** Used to push the final timestamps securely to GitHub when the stream concludes.
+
+These values are saved locally to your machine (`osc_config.json`) and will automatically reload every time you start the server.

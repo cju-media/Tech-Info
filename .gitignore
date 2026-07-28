@@ -2,3 +2,6 @@
 pdfs/
 __pycache__/
 node_modules/
+
+osc_config.json
+osc_node.log

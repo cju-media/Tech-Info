@@ -35,7 +35,45 @@ let isMockMode = false;
 let mockTitle = "Worship Service (Pending Start)";
 
 let oscPort = 8000;
+let youtubeApiKey = "";
+let githubPat = "";
 let udpPortInstance = null;
+let lastResetWeek = null;
+
+function getPacificWeekKey() {
+    // Get current time in America/Los_Angeles
+    const laTime = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
+    const d = new Date(laTime);
+
+    // We want to reset on Sunday at 12:00am.
+    // We can define the "week key" as the Sunday's date.
+    // Sunday is 0 in getDay().
+    const diffToSunday = d.getDay(); // 0 on Sunday, 1 on Monday...
+    const lastSunday = new Date(d);
+    lastSunday.setDate(d.getDate() - diffToSunday);
+
+    // Create a string like "2023-10-22" representing the start of the week (Sunday)
+    return `${lastSunday.getFullYear()}-${(lastSunday.getMonth() + 1).toString().padStart(2, '0')}-${lastSunday.getDate().toString().padStart(2, '0')}`;
+}
+
+function checkAndAutoReset() {
+    const currentWeekKey = getPacificWeekKey();
+    if (lastResetWeek === null) {
+        // First run, just initialize it
+        lastResetWeek = currentWeekKey;
+    } else if (lastResetWeek !== currentWeekKey) {
+        console.log(`Auto-resetting state for new week: ${currentWeekKey}`);
+
+        isMockMode = false;
+        overrideVideoId = null;
+        isStateInitialized = false;
+        activeStartTime = null;
+        lastResetWeek = currentWeekKey;
+
+        // This will fetch fresh chapters and default stream
+        fetchAndBroadcastState();
+    }
+}
 
 function loadConfig() {
     try {
@@ -45,6 +83,12 @@ function loadConfig() {
             if (config.oscPort && !isNaN(config.oscPort)) {
                 oscPort = parseInt(config.oscPort);
             }
+            if (config.youtubeApiKey) {
+                youtubeApiKey = config.youtubeApiKey;
+            }
+            if (config.githubPat) {
+                githubPat = config.githubPat;
+            }
         }
     } catch (e) {
         console.error("Error reading config:", e);
@@ -53,7 +97,11 @@ function loadConfig() {
 
 function saveConfig() {
     try {
-        const config = { oscPort: oscPort };
+        const config = {
+            oscPort: oscPort,
+            youtubeApiKey: youtubeApiKey,
+            githubPat: githubPat
+        };
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
     } catch (e) {
         console.error("Error writing config:", e);
@@ -62,11 +110,11 @@ function saveConfig() {
 
 function getYouTubeService() {
     if (isMockMode) return null;
-    if (currentService) return currentService;
 
-    const apiKey = process.env.YOUTUBE_API_KEY;
+    // Clear out the cached service if we change the key
+    const apiKey = youtubeApiKey || process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
-        console.error("Error: YOUTUBE_API_KEY environment variable not found. UI title/timer sync will not work.");
+        console.error("Error: YouTube API Key not configured. UI title/timer sync will not work.");
         return null;
     }
 
@@ -149,6 +197,8 @@ async function fetchChaptersFromGithub() {
 }
 
 async function fetchAndBroadcastState() {
+    checkAndAutoReset();
+
     if (!isStateInitialized) {
         const chapters = await fetchChaptersFromGithub();
         if (chapters.length > 0) {
@@ -180,7 +230,7 @@ async function fetchAndBroadcastState() {
                 broadcastTitle = "No active or upcoming live stream found.";
             }
         } else {
-            apiError = "Missing YOUTUBE_API_KEY. Stream lookup disabled.";
+            apiError = "Missing YouTube API Key. Configure it in the menu.";
         }
     }
 
@@ -191,6 +241,8 @@ async function fetchAndBroadcastState() {
         upcoming: upcoming,
         isMockMode: isMockMode,
         oscPort: oscPort,
+        hasYoutubeApiKey: !!youtubeApiKey,
+        hasGithubPat: !!githubPat,
         error: apiError
     });
 }
@@ -203,9 +255,9 @@ async function pushTimingsToGithub() {
 
     console.log("Pushing final timings to GitHub...");
 
-    const pat = process.env.GITHUB_PAT;
+    const pat = githubPat || process.env.GITHUB_PAT;
     if (!pat) {
-        console.error("Error: GITHUB_PAT environment variable not found. Cannot push to GitHub.");
+        console.error("Error: GitHub PAT not configured. Cannot push to GitHub.");
         return;
     }
 
@@ -272,6 +324,7 @@ setInterval(() => {
 
 async function handleNextTiming() {
     if (!activeStartTime) {
+        // If YouTube hasn't provided a start time yet, the first trigger forces it locally.
         activeStartTime = new Date().toISOString();
         console.log(`Stream timer locally started at: ${activeStartTime}`);
         await fetchAndBroadcastState();
@@ -395,6 +448,8 @@ io.on("connection", (socket) => {
         if (vId) {
             console.log(`Setting override video ID to: ${vId}`);
             overrideVideoId = vId;
+            // Clear current service so we re-fetch with API
+            currentService = null;
             fetchAndBroadcastState();
         }
     });
@@ -403,6 +458,7 @@ io.on("connection", (socket) => {
         console.log("Clearing override video ID.");
         isMockMode = false;
         overrideVideoId = null;
+        currentService = null;
         fetchAndBroadcastState();
     });
 
@@ -450,6 +506,21 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on("setYoutubeApiKey", (key) => {
+        console.log(`Setting YouTube API Key`);
+        youtubeApiKey = key;
+        currentService = null; // force re-init
+        saveConfig();
+        fetchAndBroadcastState();
+    });
+
+    socket.on("setGithubPat", (key) => {
+        console.log(`Setting GitHub PAT`);
+        githubPat = key;
+        saveConfig();
+        fetchAndBroadcastState();
+    });
+
     socket.on("nextTiming", () => {
         handleNextTiming();
     });
@@ -462,6 +533,12 @@ io.on("connection", (socket) => {
 function main() {
     loadConfig();
     startOscServer(oscPort);
+
+    // Seed initial state
+    fetchAndBroadcastState();
+
+    // Check state (and auto-reset if new week) every minute
+    setInterval(fetchAndBroadcastState, 60000);
 
     server.listen(WEB_PORT, () => {
         console.log(`Web UI listening on http://localhost:${WEB_PORT}`);
