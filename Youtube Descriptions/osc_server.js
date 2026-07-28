@@ -4,7 +4,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-const fetch = require("node-fetch"); // node-fetch@2
+const fetch = require("node-fetch");
 
 const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
 const OSC_IP = "0.0.0.0";
@@ -28,12 +28,19 @@ let past = [];
 let upcoming = [];
 let isStateInitialized = false;
 
+// Mock mode
+let isMockMode = false;
+let mockTitle = "";
+let mockActualStartTime = null;
+
 function getYouTubeService() {
+    if (isMockMode) return null; // Force null in mock mode to skip real API calls
+
     if (currentService) return currentService;
 
     const credsJson = process.env.YOUTUBE_CREDENTIALS_JSON;
     if (!credsJson) {
-        console.error("Error: YOUTUBE_CREDENTIALS_JSON environment variable not found.");
+        console.error("Error: YOUTUBE_CREDENTIALS_JSON environment variable not found. Use 'Load Sample List' in UI to test without credentials.");
         return null;
     }
 
@@ -57,6 +64,7 @@ function getYouTubeService() {
 }
 
 async function getLiveStream(service) {
+    if (isMockMode) return null; // Handled separately
     try {
         if (overrideVideoId) {
             const videoResponse = await service.videos.list({
@@ -122,8 +130,22 @@ async function fetchChaptersFromGithub() {
 }
 
 async function fetchAndBroadcastState() {
+    if (isMockMode) {
+        io.emit('stateUpdate', {
+            title: mockTitle,
+            actualStartTime: mockActualStartTime,
+            past: past,
+            upcoming: upcoming,
+            isMockMode: true
+        });
+        return;
+    }
+
     const service = getYouTubeService();
-    if (!service) return;
+    if (!service) {
+        io.emit('stateUpdate', { error: "Missing YouTube Credentials. Use 'Load Sample List' to test without an API key." });
+        return;
+    }
 
     currentVideo = await getLiveStream(service);
     if (!currentVideo) {
@@ -136,7 +158,6 @@ async function fetchAndBroadcastState() {
     const title = snippet.title || 'Untitled Stream';
 
     if (!isStateInitialized) {
-        // Initialize state from GitHub chapters if empty
         const chapters = await fetchChaptersFromGithub();
         if (chapters.length > 0) {
             upcoming = chapters;
@@ -149,11 +170,17 @@ async function fetchAndBroadcastState() {
         title: title,
         actualStartTime: actualStartTime,
         past: past,
-        upcoming: upcoming
+        upcoming: upcoming,
+        isMockMode: false
     });
 }
 
 async function pushTimestampsToYouTube() {
+    if (isMockMode) {
+        console.log("Mock Mode: Would push timestamps to YouTube here.");
+        return;
+    }
+
     console.log("Pushing final timestamps to YouTube...");
     const service = getYouTubeService();
     if (!service) return;
@@ -167,18 +194,14 @@ async function pushTimestampsToYouTube() {
     const snippet = video.snippet || {};
     let currentDesc = snippet.description || '';
 
-    // If past is empty, nothing to push
     if (past.length === 0) {
         console.log("No timestamps to push.");
         return;
     }
 
-    // Join past timestamps
     const timestampsText = past.join('\n');
 
-    // Check if we already appended timestamps to prevent duplicates
     if (!currentDesc.includes(timestampsText.split('\n')[0])) {
-        // Append timestamps to the boilerplate
         snippet.description = currentDesc + '\n\n' + timestampsText;
 
         try {
@@ -200,6 +223,8 @@ async function pushTimestampsToYouTube() {
 
 let lastPollStatus = null;
 async function pollStreamStatus() {
+    if (isMockMode) return;
+
     const service = getYouTubeService();
     if (!service) return;
 
@@ -208,7 +233,6 @@ async function pollStreamStatus() {
 
     const currentStatus = video.snippet?.liveBroadcastContent;
 
-    // If the stream was live and is now none, it ended
     if (lastPollStatus === 'live' && currentStatus === 'none') {
         console.log("Stream has ended! Triggering automatic push of timestamps.");
         await pushTimestampsToYouTube();
@@ -216,24 +240,31 @@ async function pollStreamStatus() {
 
     lastPollStatus = currentStatus;
 }
-setInterval(pollStreamStatus, 60000); // Check every minute
+setInterval(pollStreamStatus, 60000);
 
 async function handleOscMessage(oscMsg) {
     console.log(`Received OSC message at address: ${oscMsg.address}`);
 
-    const service = getYouTubeService();
-    if (!service) {
-        console.log("Could not get YouTube service.");
-        return;
+    let actualStartTimeStr = null;
+
+    if (isMockMode) {
+        actualStartTimeStr = mockActualStartTime;
+    } else {
+        const service = getYouTubeService();
+        if (!service) {
+            console.log("Could not get YouTube service. Are credentials set?");
+            return;
+        }
+
+        const video = await getLiveStream(service);
+        if (!video) {
+            console.log("No active live stream found.");
+            return;
+        }
+
+        actualStartTimeStr = video.liveStreamingDetails?.actualStartTime;
     }
 
-    const video = await getLiveStream(service);
-    if (!video) {
-        console.log("No active live stream found.");
-        return;
-    }
-
-    const actualStartTimeStr = video.liveStreamingDetails?.actualStartTime;
     if (!actualStartTimeStr) {
         console.log("No actual start time found on the stream. Cannot calculate elapsed time.");
         return;
@@ -263,7 +294,6 @@ async function handleOscMessage(oscMsg) {
         past.push(timestampedItem);
         console.log(`Added timestamp: ${timestampedItem}`);
 
-        // Broadcast the new local state immediately
         await fetchAndBroadcastState();
     } else {
         console.log("No upcoming sections left to timestamp.");
@@ -295,6 +325,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("setOverrideLink", (link) => {
+        isMockMode = false;
         const vId = extractVideoId(link);
         if (vId) {
             console.log(`Setting override video ID to: ${vId}`);
@@ -305,6 +336,7 @@ io.on("connection", (socket) => {
 
     socket.on("clearOverrideLink", () => {
         console.log("Clearing override video ID.");
+        isMockMode = false;
         overrideVideoId = null;
         fetchAndBroadcastState();
     });
@@ -316,8 +348,30 @@ io.on("connection", (socket) => {
 
     socket.on("resetState", async () => {
         console.log("Resetting local state from GitHub chapters.");
+        isMockMode = false;
         isStateInitialized = false;
         await fetchAndBroadcastState();
+    });
+
+    socket.on("loadSampleData", () => {
+        console.log("Loading Sample Data mode.");
+        isMockMode = true;
+
+        // Mock stream started 15 minutes ago
+        mockActualStartTime = new Date(Date.now() - 15 * 60000).toISOString();
+        mockTitle = "[SAMPLE MODE] Sunday Worship Service";
+
+        past = [];
+        upcoming = [
+            "Announcements",
+            "Organ Prelude-Concert",
+            "Welcome",
+            "Prayers of Awareness",
+            "Sermon",
+            "Communion"
+        ];
+
+        fetchAndBroadcastState();
     });
 });
 

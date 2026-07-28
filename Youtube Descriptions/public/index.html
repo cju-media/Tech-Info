@@ -63,6 +63,10 @@
         .upcoming li {
             color: #777;
         }
+        .upcoming li.active-target {
+            color: #d32f2f;
+            font-weight: bold;
+        }
         .past li {
             color: #333;
             font-weight: bold;
@@ -128,6 +132,11 @@
             background-color: #ff9800;
             color: white;
         }
+        .btn-sample {
+            background-color: #9c27b0;
+            color: white;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -137,6 +146,8 @@
             <h3>Actions</h3>
             <button class="btn-push" onclick="pushTimestamps()">Push Timestamps to YouTube</button>
             <button class="btn-danger" onclick="resetState()">Reset Local State</button>
+
+            <button class="btn-sample" onclick="loadSampleData()">Load Sample List (Mock API)</button>
 
             <h3 style="margin-top:20px;">Test Mode Override</h3>
             <p style="font-size: 0.9em; color: #666;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
@@ -201,6 +212,11 @@
                 socket.emit('resetState');
                 toggleMenu();
             }
+        }
+
+        function loadSampleData() {
+            socket.emit('loadSampleData');
+            toggleMenu();
         }
 
         function updateTimer() {
@@ -273,9 +289,17 @@
             const upcomingList = document.getElementById('upcoming-list');
             upcomingList.innerHTML = '';
             if (state.upcoming && state.upcoming.length > 0) {
-                state.upcoming.forEach(item => {
+                state.upcoming.forEach((item, index) => {
                     const li = document.createElement('li');
-                    li.innerText = item;
+
+                    // Add prominent arrow indicator to the very first item
+                    if (index === 0) {
+                        li.classList.add("active-target");
+                        li.innerHTML = `<span style="margin-right:8px;">&rarr;</span>${item}`;
+                    } else {
+                        li.innerText = item;
+                    }
+
                     upcomingList.appendChild(li);
                 });
             } else {
