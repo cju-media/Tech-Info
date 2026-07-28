@@ -1,12 +1,27 @@
 const osc = require("osc");
 const { google } = require("googleapis");
-const fs = require("fs");
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
 
 const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
 const OSC_IP = "0.0.0.0";
 const OSC_PORT = 8000;
+const WEB_PORT = 3000;
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+app.use(express.static(path.join(__dirname, "public")));
+
+let currentService = null;
+let currentVideo = null;
 
 function getYouTubeService() {
+    if (currentService) return currentService;
+
     const credsJson = process.env.YOUTUBE_CREDENTIALS_JSON;
     if (!credsJson) {
         console.error("Error: YOUTUBE_CREDENTIALS_JSON environment variable not found.");
@@ -21,10 +36,11 @@ function getYouTubeService() {
         );
         oauth2Client.setCredentials(credsInfo);
 
-        return google.youtube({
+        currentService = google.youtube({
             version: 'v3',
             auth: oauth2Client
         });
+        return currentService;
     } catch (e) {
         console.error(`Error authenticating with YouTube: ${e}`);
         return null;
@@ -33,7 +49,6 @@ function getYouTubeService() {
 
 async function getLiveStream(service) {
     try {
-        // Fallback to playlist search
         const playlistResponse = await service.playlistItems.list({
             part: 'snippet',
             playlistId: PLAYLIST_ID,
@@ -65,6 +80,56 @@ async function getLiveStream(service) {
     return null;
 }
 
+function parseStateFromDescription(description, actualStartTime) {
+    const lines = description.split('\n');
+    const timestampPattern = /^(\d{1,2}:)?\d{1,2}:\d{2}\s+/;
+
+    let past = [];
+    let upcoming = [];
+    let inSectionBlock = false;
+
+    // Determine where the boilerplate ends by finding the last link
+    let lastLinkIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes('http://') || lines[i].includes('https://')) {
+            lastLinkIdx = i;
+        }
+    }
+
+    const startIdx = lastLinkIdx !== -1 ? lastLinkIdx + 1 : 0;
+
+    for (let i = startIdx; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        if (timestampPattern.test(line)) {
+            past.push(line);
+        } else {
+            upcoming.push(line);
+        }
+    }
+
+    return {
+        actualStartTime: actualStartTime,
+        past: past,
+        upcoming: upcoming
+    };
+}
+
+async function fetchAndBroadcastState() {
+    const service = getYouTubeService();
+    if (!service) return;
+
+    currentVideo = await getLiveStream(service);
+    if (!currentVideo) return;
+
+    const actualStartTime = currentVideo.liveStreamingDetails.actualStartTime;
+    const description = (currentVideo.snippet || {}).description || '';
+
+    const state = parseStateFromDescription(description, actualStartTime);
+    io.emit('stateUpdate', state);
+}
+
 function addTimestampToDescription(description, elapsedStr) {
     const lines = description.split('\n');
     const timestampPattern = /^(\d{1,2}:)?\d{1,2}:\d{2}\s+/;
@@ -77,7 +142,6 @@ function addTimestampToDescription(description, elapsedStr) {
     }
 
     if (lastTimestampIdx !== -1) {
-        // Find the next non-empty line after the last timestamp
         for (let i = lastTimestampIdx + 1; i < lines.length; i++) {
             if (lines[i].trim()) {
                 lines[i] = `${elapsedStr} ${lines[i].trim()}`;
@@ -87,8 +151,6 @@ function addTimestampToDescription(description, elapsedStr) {
         return { newDesc: description, changed: false };
     }
 
-    // If no timestamps exist, we need to find the start of the sections block.
-    // The boilerplate ends after the social media links. Let's find the last line containing a link.
     let lastLinkIdx = -1;
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].includes('http://') || lines[i].includes('https://')) {
@@ -96,7 +158,6 @@ function addTimestampToDescription(description, elapsedStr) {
         }
     }
 
-    // The first non-empty line after the last link is the first section
     const startIdx = lastLinkIdx !== -1 ? lastLinkIdx + 1 : 0;
     for (let i = startIdx; i < lines.length; i++) {
         if (lines[i].trim()) {
@@ -129,14 +190,11 @@ async function handleOscMessage(oscMsg) {
         return;
     }
 
-    // Calculate elapsed time
     const startTime = new Date(actualStartTimeStr).getTime();
     const now = Date.now();
     let totalSeconds = Math.floor((now - startTime) / 1000);
 
-    if (totalSeconds < 0) {
-        totalSeconds = 0;
-    }
+    if (totalSeconds < 0) totalSeconds = 0;
 
     const hours = Math.floor(totalSeconds / 3600);
     const remainder = totalSeconds % 3600;
@@ -144,13 +202,9 @@ async function handleOscMessage(oscMsg) {
     const seconds = remainder % 60;
 
     const secondsStr = seconds.toString().padStart(2, '0');
-    let elapsedStr;
-    if (hours > 0) {
-        const minutesStr = minutes.toString().padStart(2, '0');
-        elapsedStr = `${hours}:${minutesStr}:${secondsStr}`;
-    } else {
-        elapsedStr = `${minutes}:${secondsStr}`;
-    }
+    let elapsedStr = hours > 0
+        ? `${hours}:${minutes.toString().padStart(2, '0')}:${secondsStr}`
+        : `${minutes}:${secondsStr}`;
 
     console.log(`Calculated elapsed time: ${elapsedStr}`);
 
@@ -172,6 +226,9 @@ async function handleOscMessage(oscMsg) {
                 }
             });
             console.log("Successfully updated YouTube description.");
+
+            // Re-fetch and broadcast to UI
+            await fetchAndBroadcastState();
         } catch (e) {
             console.error(`Failed to update description: ${e}`);
         }
@@ -179,6 +236,15 @@ async function handleOscMessage(oscMsg) {
         console.log("Could not find a suitable line to add a timestamp to, or description is fully timestamped.");
     }
 }
+
+io.on("connection", (socket) => {
+    console.log("Client connected to UI");
+    fetchAndBroadcastState();
+
+    socket.on("requestState", () => {
+        fetchAndBroadcastState();
+    });
+});
 
 function main() {
     const udpPort = new osc.UDPPort({
@@ -200,6 +266,10 @@ function main() {
     });
 
     udpPort.open();
+
+    server.listen(WEB_PORT, () => {
+        console.log(`Web UI listening on http://localhost:${WEB_PORT}`);
+    });
 }
 
 if (require.main === module) {
