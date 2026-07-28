@@ -18,6 +18,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 let currentService = null;
 let currentVideo = null;
+let overrideVideoId = null;
 
 function getYouTubeService() {
     if (currentService) return currentService;
@@ -49,6 +50,18 @@ function getYouTubeService() {
 
 async function getLiveStream(service) {
     try {
+        if (overrideVideoId) {
+            const videoResponse = await service.videos.list({
+                part: 'snippet,liveStreamingDetails',
+                id: overrideVideoId
+            });
+            if (videoResponse.data.items && videoResponse.data.items.length > 0) {
+                return videoResponse.data.items[0];
+            }
+            console.log(`Override video ID ${overrideVideoId} not found.`);
+            return null;
+        }
+
         const playlistResponse = await service.playlistItems.list({
             part: 'snippet',
             playlistId: PLAYLIST_ID,
@@ -65,14 +78,20 @@ async function getLiveStream(service) {
             id: videoIds.join(',')
         });
 
+        // First look for 'live', fallback to 'upcoming' if no live streams found
+        let foundUpcoming = null;
         for (const video of (videoResponse.data.items || [])) {
             const snippet = video.snippet || {};
             if (snippet.liveBroadcastContent === 'live' && video.liveStreamingDetails) {
                 if (video.liveStreamingDetails.actualStartTime) {
                     return video;
                 }
+            } else if (snippet.liveBroadcastContent === 'upcoming' && !foundUpcoming) {
+                foundUpcoming = video;
             }
         }
+
+        return foundUpcoming;
     } catch (e) {
         console.error(`An error occurred getting streams from playlist: ${e}`);
     }
@@ -86,9 +105,7 @@ function parseStateFromDescription(description, actualStartTime) {
 
     let past = [];
     let upcoming = [];
-    let inSectionBlock = false;
 
-    // Determine where the boilerplate ends by finding the last link
     let lastLinkIdx = -1;
     for (let i = 0; i < lines.length; i++) {
         if (lines[i].includes('http://') || lines[i].includes('https://')) {
@@ -121,12 +138,19 @@ async function fetchAndBroadcastState() {
     if (!service) return;
 
     currentVideo = await getLiveStream(service);
-    if (!currentVideo) return;
+    if (!currentVideo) {
+        io.emit('stateUpdate', { error: "No active or upcoming live stream found." });
+        return;
+    }
 
-    const actualStartTime = currentVideo.liveStreamingDetails.actualStartTime;
-    const description = (currentVideo.snippet || {}).description || '';
+    const actualStartTime = currentVideo.liveStreamingDetails?.actualStartTime || null;
+    const snippet = currentVideo.snippet || {};
+    const description = snippet.description || '';
+    const title = snippet.title || 'Untitled Stream';
 
     const state = parseStateFromDescription(description, actualStartTime);
+    state.title = title;
+
     io.emit('stateUpdate', state);
 }
 
@@ -184,9 +208,9 @@ async function handleOscMessage(oscMsg) {
         return;
     }
 
-    const actualStartTimeStr = video.liveStreamingDetails.actualStartTime;
+    const actualStartTimeStr = video.liveStreamingDetails?.actualStartTime;
     if (!actualStartTimeStr) {
-        console.log("No actual start time found on the stream.");
+        console.log("No actual start time found on the stream. Cannot calculate elapsed time.");
         return;
     }
 
@@ -237,11 +261,42 @@ async function handleOscMessage(oscMsg) {
     }
 }
 
+function extractVideoId(urlStr) {
+    try {
+        const url = new URL(urlStr);
+        if (url.hostname.includes('youtube.com')) {
+            if (url.searchParams.has('v')) {
+                return url.searchParams.get('v');
+            }
+        } else if (url.hostname.includes('youtu.be')) {
+            return url.pathname.slice(1); // removes leading slash
+        }
+    } catch (e) {
+        return null; // invalid URL
+    }
+    return urlStr; // might just be passing an ID directly
+}
+
 io.on("connection", (socket) => {
     console.log("Client connected to UI");
     fetchAndBroadcastState();
 
     socket.on("requestState", () => {
+        fetchAndBroadcastState();
+    });
+
+    socket.on("setOverrideLink", (link) => {
+        const vId = extractVideoId(link);
+        if (vId) {
+            console.log(`Setting override video ID to: ${vId}`);
+            overrideVideoId = vId;
+            fetchAndBroadcastState();
+        }
+    });
+
+    socket.on("clearOverrideLink", () => {
+        console.log("Clearing override video ID. Reverting to default playlist lookup.");
+        overrideVideoId = null;
         fetchAndBroadcastState();
     });
 });

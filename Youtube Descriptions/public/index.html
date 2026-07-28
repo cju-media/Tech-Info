@@ -17,6 +17,13 @@
         }
         h1 {
             color: #d32f2f;
+            text-align: center;
+        }
+        #stream-title {
+            color: #555;
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
         }
         .container {
             width: 100%;
@@ -25,6 +32,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
         }
         .timer {
             font-size: 3em;
@@ -63,11 +71,72 @@
             color: #1976d2;
             margin-right: 10px;
         }
+
+        /* Hamburger Menu Styles */
+        .menu-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            z-index: 100;
+        }
+        .menu-overlay {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            background: #fff;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 4px;
+            z-index: 99;
+            width: 300px;
+        }
+        .menu-overlay.active {
+            display: block;
+        }
+        .menu-overlay input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .menu-overlay button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        .btn-set {
+            background-color: #1976d2;
+            color: white;
+        }
+        .btn-reset {
+            background-color: #d32f2f;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <div class="menu-overlay" id="menuOverlay">
+            <h3>Test Mode Override</h3>
+            <p style="font-size: 0.9em; color: #666;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
+            <input type="text" id="overrideLink" placeholder="https://youtube.com/watch?v=..." />
+            <button class="btn-set" onclick="setOverride()">Set Override</button>
+            <button class="btn-reset" onclick="clearOverride()">Reset to Default</button>
+        </div>
+
         <h1>Live Stream Timestamps</h1>
+        <div id="stream-title">Loading stream details...</div>
+
         <div class="timer" id="timer">00:00:00</div>
 
         <div class="section">
@@ -91,8 +160,29 @@
         let startTime = null;
         let timerInterval = null;
 
+        function toggleMenu() {
+            document.getElementById('menuOverlay').classList.toggle('active');
+        }
+
+        function setOverride() {
+            const link = document.getElementById('overrideLink').value;
+            if (link) {
+                socket.emit('setOverrideLink', link);
+                toggleMenu(); // close menu
+            }
+        }
+
+        function clearOverride() {
+            socket.emit('clearOverrideLink');
+            document.getElementById('overrideLink').value = '';
+            toggleMenu(); // close menu
+        }
+
         function updateTimer() {
-            if (!startTime) return;
+            if (!startTime) {
+                document.getElementById('timer').innerText = "00:00:00";
+                return;
+            }
 
             const now = Date.now();
             let totalSeconds = Math.floor((now - startTime) / 1000);
@@ -113,12 +203,27 @@
         socket.on('stateUpdate', (state) => {
             console.log("Received state:", state);
 
+            if (state.error) {
+                document.getElementById('stream-title').innerText = state.error;
+                startTime = null;
+                updateTimer();
+                return;
+            }
+
+            if (state.title) {
+                document.getElementById('stream-title').innerText = state.title;
+            }
+
             if (state.actualStartTime) {
                 startTime = new Date(state.actualStartTime).getTime();
                 if (!timerInterval) {
                     timerInterval = setInterval(updateTimer, 1000);
                 }
                 updateTimer();
+            } else {
+                // It might be an upcoming stream that hasn't started yet
+                startTime = null;
+                document.getElementById('timer').innerText = "Not Started";
             }
 
             const pastList = document.getElementById('past-list');
@@ -127,7 +232,6 @@
                 state.past.forEach(item => {
                     const li = document.createElement('li');
 
-                    // highlight the timestamp
                     const match = item.match(/^(\d{1,2}:)?\d{1,2}:\d{2}/);
                     if (match) {
                         const timeStr = match[0];
