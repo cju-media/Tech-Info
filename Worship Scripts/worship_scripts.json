@@ -1,4 +1,11 @@
 {
+  "2026-08-16": {
+    "path": "service-scripts/2026-08-16.pdf",
+    "modifiedTime": "2026-07-28T21:54:50.065Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 1 Lavs total</strong>\nLAV1: Laura",
+    "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
+  },
   "2026-08-02": {
     "path": "service-scripts/2026-08-02.pdf",
     "modifiedTime": "2026-07-28T19:43:41.846Z",
@@ -26,12 +33,5 @@
     "isCommunion": false,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Lauren",
     "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z"
-  },
-  "2026-08-16": {
-    "path": "service-scripts/2026-08-16.pdf",
-    "modifiedTime": "2026-06-11T23:49:53.656Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 1 Lavs total</strong>\nLAV1: Laura Valley Fregin (Laura)",
-    "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
   }
 }
