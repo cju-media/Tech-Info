@@ -1,16 +1,16 @@
 const osc = require("osc");
-const { google } = require("googleapis");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-const fetch = require("node-fetch"); // node-fetch@2
+const fetch = require("node-fetch");
+const fs = require("fs");
+const { google } = require("googleapis");
 
-const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
 const OSC_IP = "0.0.0.0";
-const OSC_PORT = 8000;
-const WEB_PORT = 3000;
-
+const WEB_PORT = 3671;
+const CONFIG_FILE = path.join(__dirname, "osc_config.json");
+const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
 const CHAPTERS_URL = "https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/main/Youtube%20Descriptions/chapters.txt";
 
 const app = express();
@@ -19,44 +19,71 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
 
+let overrideVideoId = null;
 let currentService = null;
 let currentVideo = null;
-let overrideVideoId = null;
 
 // State maintained locally
 let past = [];
 let upcoming = [];
 let isStateInitialized = false;
 
+// We track start time, allowing the YT API to seed it if possible
+let activeStartTime = null;
+
+let isMockMode = false;
+let mockTitle = "Worship Service (Pending Start)";
+
+let oscPort = 8000;
+let udpPortInstance = null;
+
+function loadConfig() {
+    try {
+        if (fs.existsSync(CONFIG_FILE)) {
+            const data = fs.readFileSync(CONFIG_FILE, "utf-8");
+            const config = JSON.parse(data);
+            if (config.oscPort && !isNaN(config.oscPort)) {
+                oscPort = parseInt(config.oscPort);
+            }
+        }
+    } catch (e) {
+        console.error("Error reading config:", e);
+    }
+}
+
+function saveConfig() {
+    try {
+        const config = { oscPort: oscPort };
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+    } catch (e) {
+        console.error("Error writing config:", e);
+    }
+}
+
 function getYouTubeService() {
+    if (isMockMode) return null;
     if (currentService) return currentService;
 
-    const credsJson = process.env.YOUTUBE_CREDENTIALS_JSON;
-    if (!credsJson) {
-        console.error("Error: YOUTUBE_CREDENTIALS_JSON environment variable not found.");
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+        console.error("Error: YOUTUBE_API_KEY environment variable not found. UI title/timer sync will not work.");
         return null;
     }
 
     try {
-        const credsInfo = JSON.parse(credsJson);
-        const oauth2Client = new google.auth.OAuth2(
-            credsInfo.client_id,
-            credsInfo.client_secret
-        );
-        oauth2Client.setCredentials(credsInfo);
-
         currentService = google.youtube({
             version: 'v3',
-            auth: oauth2Client
+            auth: apiKey
         });
         return currentService;
     } catch (e) {
-        console.error(`Error authenticating with YouTube: ${e}`);
+        console.error(`Error authenticating with YouTube API Key: ${e}`);
         return null;
     }
 }
 
 async function getLiveStream(service) {
+    if (isMockMode) return null;
     try {
         if (overrideVideoId) {
             const videoResponse = await service.videos.list({
@@ -122,21 +149,7 @@ async function fetchChaptersFromGithub() {
 }
 
 async function fetchAndBroadcastState() {
-    const service = getYouTubeService();
-    if (!service) return;
-
-    currentVideo = await getLiveStream(service);
-    if (!currentVideo) {
-        io.emit('stateUpdate', { error: "No active or upcoming live stream found." });
-        return;
-    }
-
-    const actualStartTime = currentVideo.liveStreamingDetails?.actualStartTime || null;
-    const snippet = currentVideo.snippet || {};
-    const title = snippet.title || 'Untitled Stream';
-
     if (!isStateInitialized) {
-        // Initialize state from GitHub chapters if empty
         const chapters = await fetchChaptersFromGithub();
         if (chapters.length > 0) {
             upcoming = chapters;
@@ -145,104 +158,129 @@ async function fetchAndBroadcastState() {
         }
     }
 
+    let broadcastTitle = "Worship Service (Pending Start)";
+    let apiError = null;
+
+    if (isMockMode) {
+        broadcastTitle = mockTitle;
+    } else {
+        const service = getYouTubeService();
+        if (service) {
+            currentVideo = await getLiveStream(service);
+            if (currentVideo) {
+                broadcastTitle = currentVideo.snippet?.title || "Untitled Stream";
+
+                // If YouTube says the stream has started, seed the timer!
+                const ytActualStart = currentVideo.liveStreamingDetails?.actualStartTime;
+                if (ytActualStart && !activeStartTime) {
+                    console.log(`Seeded start time from YouTube API: ${ytActualStart}`);
+                    activeStartTime = ytActualStart;
+                }
+            } else {
+                broadcastTitle = "No active or upcoming live stream found.";
+            }
+        } else {
+            apiError = "Missing YOUTUBE_API_KEY. Stream lookup disabled.";
+        }
+    }
+
     io.emit('stateUpdate', {
-        title: title,
-        actualStartTime: actualStartTime,
+        title: broadcastTitle,
+        actualStartTime: activeStartTime,
         past: past,
-        upcoming: upcoming
+        upcoming: upcoming,
+        isMockMode: isMockMode,
+        oscPort: oscPort,
+        error: apiError
     });
 }
 
-async function pushTimestampsToYouTube() {
-    console.log("Pushing final timestamps to YouTube...");
-    const service = getYouTubeService();
-    if (!service) return;
-
-    const video = await getLiveStream(service);
-    if (!video) {
-        console.log("Could not find video to push timestamps to.");
+async function pushTimingsToGithub() {
+    if (isMockMode) {
+        console.log("Mock Mode: Would push timings.txt to GitHub here.");
         return;
     }
 
-    const snippet = video.snippet || {};
-    let currentDesc = snippet.description || '';
+    console.log("Pushing final timings to GitHub...");
 
-    // If past is empty, nothing to push
+    const pat = process.env.GITHUB_PAT;
+    if (!pat) {
+        console.error("Error: GITHUB_PAT environment variable not found. Cannot push to GitHub.");
+        return;
+    }
+
     if (past.length === 0) {
-        console.log("No timestamps to push.");
+        console.log("No timings to push.");
         return;
     }
 
-    // Join past timestamps
-    const timestampsText = past.join('\n');
+    const timingsText = past.join('\n');
+    const b64Content = Buffer.from(timingsText).toString('base64');
 
-    // Check if we already appended timestamps to prevent duplicates
-    if (!currentDesc.includes(timestampsText.split('\n')[0])) {
-        // Append timestamps to the boilerplate
-        snippet.description = currentDesc + '\n\n' + timestampsText;
+    const apiUrl = "https://api.github.com/repos/TheCathedralFCCLA/tech-schedule/contents/Youtube%20Descriptions/timings.txt";
 
-        try {
-            await service.videos.update({
-                part: 'snippet',
-                requestBody: {
-                    id: video.id,
-                    snippet: snippet
-                }
-            });
-            console.log("Successfully pushed timestamps to YouTube description.");
-        } catch (e) {
-            console.error(`Failed to update description: ${e}`);
+    try {
+        let sha = null;
+        const getRes = await fetch(apiUrl, {
+            headers: {
+                "Authorization": `Bearer ${pat}`,
+                "Accept": "application/vnd.github.v3+json"
+            }
+        });
+
+        if (getRes.ok) {
+            const fileData = await getRes.json();
+            sha = fileData.sha;
         }
-    } else {
-        console.log("Timestamps appear to already be in the description.");
+
+        const bodyPayload = {
+            message: "auto: push completed stream timings",
+            content: b64Content,
+            branch: "main"
+        };
+
+        if (sha) {
+            bodyPayload.sha = sha;
+        }
+
+        const putRes = await fetch(apiUrl, {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${pat}`,
+                "Accept": "application/vnd.github.v3+json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(bodyPayload)
+        });
+
+        if (!putRes.ok) {
+            const errText = await putRes.text();
+            console.error(`Failed to push timings to GitHub: ${putRes.status} - ${errText}`);
+        } else {
+            console.log("Successfully pushed timings.txt to GitHub repository!");
+        }
+
+    } catch (e) {
+        console.error(`Failed to push to GitHub: ${e}`);
     }
 }
 
-let lastPollStatus = null;
-async function pollStreamStatus() {
-    const service = getYouTubeService();
-    if (!service) return;
+// Ensure title updates periodically
+setInterval(() => {
+    if (!isMockMode) fetchAndBroadcastState();
+}, 60000);
 
-    const video = await getLiveStream(service);
-    if (!video) return;
-
-    const currentStatus = video.snippet?.liveBroadcastContent;
-
-    // If the stream was live and is now none, it ended
-    if (lastPollStatus === 'live' && currentStatus === 'none') {
-        console.log("Stream has ended! Triggering automatic push of timestamps.");
-        await pushTimestampsToYouTube();
-    }
-
-    lastPollStatus = currentStatus;
-}
-setInterval(pollStreamStatus, 60000); // Check every minute
-
-async function handleOscMessage(oscMsg) {
-    console.log(`Received OSC message at address: ${oscMsg.address}`);
-
-    const service = getYouTubeService();
-    if (!service) {
-        console.log("Could not get YouTube service.");
+async function handleNextTiming() {
+    if (!activeStartTime) {
+        activeStartTime = new Date().toISOString();
+        console.log(`Stream timer locally started at: ${activeStartTime}`);
+        await fetchAndBroadcastState();
         return;
     }
 
-    const video = await getLiveStream(service);
-    if (!video) {
-        console.log("No active live stream found.");
-        return;
-    }
-
-    const actualStartTimeStr = video.liveStreamingDetails?.actualStartTime;
-    if (!actualStartTimeStr) {
-        console.log("No actual start time found on the stream. Cannot calculate elapsed time.");
-        return;
-    }
-
-    const startTime = new Date(actualStartTimeStr).getTime();
+    const startTime = new Date(activeStartTime).getTime();
     const now = Date.now();
     let totalSeconds = Math.floor((now - startTime) / 1000);
-
     if (totalSeconds < 0) totalSeconds = 0;
 
     const hours = Math.floor(totalSeconds / 3600);
@@ -263,11 +301,39 @@ async function handleOscMessage(oscMsg) {
         past.push(timestampedItem);
         console.log(`Added timestamp: ${timestampedItem}`);
 
-        // Broadcast the new local state immediately
         await fetchAndBroadcastState();
     } else {
         console.log("No upcoming sections left to timestamp.");
     }
+}
+
+async function handlePrevTiming() {
+    if (past.length > 0) {
+        const lastItem = past.pop();
+        console.log(`Reverting timestamp: ${lastItem}`);
+
+        const match = lastItem.match(/^(\d{1,2}:)?\d{1,2}:\d{2}\s+/);
+        if (match) {
+            const timeStr = match[0];
+            const cleanTitle = lastItem.substring(timeStr.length).trim();
+            upcoming.unshift(cleanTitle);
+        } else {
+            upcoming.unshift(lastItem);
+        }
+
+        await fetchAndBroadcastState();
+    } else if (activeStartTime && past.length === 0) {
+        console.log("Reverting timer start.");
+        activeStartTime = null;
+        await fetchAndBroadcastState();
+    } else {
+        console.log("Nothing to revert.");
+    }
+}
+
+async function handleOscMessage(oscMsg) {
+    console.log(`Received OSC message at address: ${oscMsg.address}`);
+    await handleNextTiming();
 }
 
 function extractVideoId(urlStr) {
@@ -286,6 +352,35 @@ function extractVideoId(urlStr) {
     return urlStr;
 }
 
+function startOscServer(port) {
+    if (udpPortInstance) {
+        console.log("Closing existing OSC server...");
+        try {
+            udpPortInstance.close();
+        } catch (e) {}
+    }
+
+    udpPortInstance = new osc.UDPPort({
+        localAddress: OSC_IP,
+        localPort: port,
+        metadata: true
+    });
+
+    udpPortInstance.on("message", (oscMsg) => {
+        handleOscMessage(oscMsg).catch(console.error);
+    });
+
+    udpPortInstance.on("error", (err) => {
+        console.error("OSC Server Error:", err);
+    });
+
+    udpPortInstance.on("ready", () => {
+        console.log(`Started OSC server on ${OSC_IP}:${port}...`);
+    });
+
+    udpPortInstance.open();
+}
+
 io.on("connection", (socket) => {
     console.log("Client connected to UI");
     fetchAndBroadcastState();
@@ -295,6 +390,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("setOverrideLink", (link) => {
+        isMockMode = false;
         const vId = extractVideoId(link);
         if (vId) {
             console.log(`Setting override video ID to: ${vId}`);
@@ -305,42 +401,67 @@ io.on("connection", (socket) => {
 
     socket.on("clearOverrideLink", () => {
         console.log("Clearing override video ID.");
+        isMockMode = false;
         overrideVideoId = null;
         fetchAndBroadcastState();
     });
 
     socket.on("pushTimestamps", () => {
         console.log("Manual push triggered from UI.");
-        pushTimestampsToYouTube();
+        pushTimingsToGithub();
     });
 
     socket.on("resetState", async () => {
         console.log("Resetting local state from GitHub chapters.");
+        isMockMode = false;
         isStateInitialized = false;
+        activeStartTime = null;
         await fetchAndBroadcastState();
+    });
+
+    socket.on("loadSampleData", () => {
+        console.log("Loading Sample Data mode.");
+        isMockMode = true;
+
+        activeStartTime = new Date(Date.now() - 15 * 60000).toISOString();
+        mockTitle = "[SAMPLE MODE] Sunday Worship Service";
+
+        past = [];
+        upcoming = [
+            "Announcements",
+            "Organ Prelude-Concert",
+            "Welcome",
+            "Prayers of Awareness",
+            "Sermon",
+            "Communion"
+        ];
+
+        fetchAndBroadcastState();
+    });
+
+    socket.on("setOscPort", (portStr) => {
+        const port = parseInt(portStr);
+        if (!isNaN(port) && port > 0 && port < 65536) {
+            console.log(`Setting OSC port to ${port}`);
+            oscPort = port;
+            saveConfig();
+            startOscServer(oscPort);
+            fetchAndBroadcastState();
+        }
+    });
+
+    socket.on("nextTiming", () => {
+        handleNextTiming();
+    });
+
+    socket.on("prevTiming", () => {
+        handlePrevTiming();
     });
 });
 
 function main() {
-    const udpPort = new osc.UDPPort({
-        localAddress: OSC_IP,
-        localPort: OSC_PORT,
-        metadata: true
-    });
-
-    udpPort.on("message", (oscMsg) => {
-        handleOscMessage(oscMsg).catch(console.error);
-    });
-
-    udpPort.on("error", (err) => {
-        console.error("OSC Server Error:", err);
-    });
-
-    udpPort.on("ready", () => {
-        console.log(`Starting OSC server on ${OSC_IP}:${OSC_PORT}...`);
-    });
-
-    udpPort.open();
+    loadConfig();
+    startOscServer(oscPort);
 
     server.listen(WEB_PORT, () => {
         console.log(`Web UI listening on http://localhost:${WEB_PORT}`);

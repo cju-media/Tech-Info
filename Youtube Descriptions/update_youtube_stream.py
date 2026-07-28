@@ -31,7 +31,6 @@ def get_upcoming_streams(service):
     upcoming_streams = []
 
     try:
-        # Get videos from the playlist
         playlist_response = service.playlistItems().list(
             part='snippet',
             playlistId=PLAYLIST_ID,
@@ -42,7 +41,6 @@ def get_upcoming_streams(service):
         if not video_ids:
             return upcoming_streams
 
-        # Fetch video details in batch
         video_response = service.videos().list(
             part='snippet,liveStreamingDetails',
             id=','.join(video_ids)
@@ -51,8 +49,8 @@ def get_upcoming_streams(service):
         for video in video_response.get('items', []):
             snippet = video['snippet']
 
-            # Check if it's an upcoming live broadcast
-            if snippet.get('liveBroadcastContent') == 'upcoming' and 'liveStreamingDetails' in video:
+            # Allow updating both upcoming AND live/recently ended broadcasts if pushed
+            if snippet.get('liveBroadcastContent') in ['upcoming', 'live', 'none'] and 'liveStreamingDetails' in video:
                 scheduled_start_time = video['liveStreamingDetails'].get('scheduledStartTime')
                 if scheduled_start_time:
                     upcoming_streams.append({
@@ -68,11 +66,7 @@ def get_upcoming_streams(service):
         print(f"An HTTP error occurred getting streams: {e}")
         sys.exit(1)
     except RefreshError as e:
-        print("\n=======================================================")
         print("ERROR: YouTube API OAuth Token has expired or been revoked.")
-        print("Please run `get_youtube_credentials.py` locally again")
-        print("and update the YOUTUBE_CREDENTIALS_JSON GitHub Secret.")
-        print("=======================================================\n")
         sys.exit(1)
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
@@ -81,16 +75,23 @@ def get_upcoming_streams(service):
     return upcoming_streams
 
 def get_combined_description():
-    # Read generated description
     desc_path = "Description.txt"
+    timings_path = "timings.txt"
+
     if not os.path.exists(desc_path):
-        print(f"Generated description not found at {desc_path}")
+        print(f"Generated description boilerplate not found at {desc_path}")
         return None
 
     with open(desc_path, 'r') as f:
-        generated_desc = f.read()
+        desc = f.read().strip()
 
-    return generated_desc
+    if os.path.exists(timings_path):
+        with open(timings_path, 'r') as f:
+            timings = f.read().strip()
+        if timings:
+            desc = desc + "\n\n" + timings
+
+    return desc
 
 def main():
     service = get_youtube_service()
@@ -99,7 +100,7 @@ def main():
 
     upcoming_streams = get_upcoming_streams(service)
     if not upcoming_streams:
-        print("No upcoming streams found in the playlist.")
+        print("No eligible streams found in the playlist.")
         return
 
     la_tz = pytz.timezone('America/Los_Angeles')
@@ -108,50 +109,41 @@ def main():
     for stream in upcoming_streams:
         print(f"Checking stream: {stream['title']} (ID: {stream['id']})")
 
-        # Parse start time and convert to LA timezone
         start_time_utc = dateutil.parser.parse(stream['scheduledStartTime'])
         start_time_la = start_time_utc.astimezone(la_tz)
 
-        # Determine the service date
         service_date = start_time_la.date()
         service_date_str = service_date.strftime('%Y-%m-%d')
         print(f"  Service date: {service_date_str}")
 
-        # Stop updating on the day of the service (after 12:00 AM)
-        # That means if the current date is >= the service date, skip it,
-        # unless FORCE_UPDATE environment variable is set to true, OR
-        # the generated text file was modified very recently (e.g., last 60 minutes).
         force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
 
-        txt_path = "Description.txt"
+        # If a timings.txt was pushed, we usually want to update even if it's the service day
         recently_modified = False
-        if os.path.exists(txt_path):
-            mtime = os.path.getmtime(txt_path)
-            # Check if modified within the last 60 minutes
-            if (datetime.now().timestamp() - mtime) < 3600:
-                recently_modified = True
+        for p in ["Description.txt", "timings.txt"]:
+            if os.path.exists(p):
+                mtime = os.path.getmtime(p)
+                if (datetime.now().timestamp() - mtime) < 3600:
+                    recently_modified = True
 
         if now_la.date() >= service_date and not (force_update or recently_modified):
             print("  Today is the service day (or past). Skipping updates.")
             continue
         elif now_la.date() >= service_date:
-            reason = "FORCE_UPDATE is enabled" if force_update else "the description was just generated"
+            reason = "FORCE_UPDATE is enabled" if force_update else "files were modified recently"
             print(f"  Today is the service day, but {reason}. Proceeding...")
 
-        # Get description
         combined_desc = get_combined_description()
         if not combined_desc:
             print("  Could not read description. Skipping.")
             continue
 
-        # Check if they match
         if stream['description'].strip() == combined_desc.strip():
             print("  Description is already up to date.")
         else:
             print("  Description does not match. Updating...")
 
             try:
-                # Update the video
                 service.videos().update(
                     part='snippet',
                     body={

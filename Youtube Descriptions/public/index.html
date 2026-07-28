@@ -23,7 +23,7 @@
             color: #555;
             text-align: center;
             font-size: 1.2em;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .container {
             width: 100%;
@@ -38,9 +38,33 @@
             font-size: 3em;
             font-weight: bold;
             text-align: center;
-            margin: 20px 0;
+            margin: 10px 0;
             color: #4CAF50;
             font-family: monospace;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .controls button {
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #1565c0;
+        }
+        .controls button.btn-prev {
+            background-color: #ff9800;
+        }
+        .controls button.btn-prev:hover {
+            background-color: #e68a00;
         }
         .section {
             margin-top: 20px;
@@ -60,11 +84,15 @@
         li:last-child {
             border-bottom: none;
         }
-        .upcoming li {
+        .future-item {
             color: #777;
         }
-        .past li {
+        .past-item {
             color: #333;
+            font-weight: bold;
+        }
+        .active-target {
+            color: #d32f2f;
             font-weight: bold;
         }
         .timestamp {
@@ -128,18 +156,49 @@
             background-color: #ff9800;
             color: white;
         }
+        .btn-sample {
+            background-color: #9c27b0;
+            color: white;
+            margin-top: 15px;
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .input-row input {
+            margin-bottom: 0;
+            flex-grow: 1;
+        }
+        .input-row button {
+            margin-bottom: 0;
+            width: auto;
+            padding: 8px 15px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <button class="menu-btn" onclick="toggleMenu()">☰</button>
         <div class="menu-overlay" id="menuOverlay">
+            <h3>Configuration</h3>
+            <p style="font-size: 0.9em; color: #666; margin-top: 0;">Listening for incoming OSC commands on port:</p>
+            <div class="input-row">
+                <input type="number" id="oscPortInput" placeholder="8000" min="1" max="65535" />
+                <button class="btn-set" onclick="setOscPort()">Save</button>
+            </div>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;" />
+
             <h3>Actions</h3>
-            <button class="btn-push" onclick="pushTimestamps()">Push Timestamps to YouTube</button>
+            <button class="btn-push" onclick="pushTimestamps()">Push Timings to GitHub</button>
             <button class="btn-danger" onclick="resetState()">Reset Local State</button>
 
+            <button class="btn-sample" onclick="loadSampleData()">Load Sample List (Mock API)</button>
+
             <h3 style="margin-top:20px;">Test Mode Override</h3>
-            <p style="font-size: 0.9em; color: #666;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
+            <p style="font-size: 0.9em; color: #666; margin-top: 0;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
             <input type="text" id="overrideLink" placeholder="https://youtube.com/watch?v=..." />
             <button class="btn-set" onclick="setOverride()">Set Override</button>
             <button class="btn-reset" onclick="clearOverride()">Clear Override</button>
@@ -148,18 +207,15 @@
         <h1>Live Stream Timestamps</h1>
         <div id="stream-title">Loading stream details...</div>
 
+        <div class="controls">
+            <button class="btn-prev" onclick="prevTiming()">⬆ Previous Timing</button>
+            <button onclick="nextTiming()">⬇ Next Timing</button>
+        </div>
+
         <div class="timer" id="timer">00:00:00</div>
 
         <div class="section">
-            <h2>Past Timings</h2>
-            <ul id="past-list" class="past">
-                <li>Waiting for data...</li>
-            </ul>
-        </div>
-
-        <div class="section">
-            <h2>Upcoming Sections</h2>
-            <ul id="upcoming-list" class="upcoming">
+            <ul id="unified-list">
                 <li>Waiting for data...</li>
             </ul>
         </div>
@@ -190,7 +246,7 @@
         }
 
         function pushTimestamps() {
-            if(confirm("Are you sure you want to push the final timestamps to YouTube? This usually happens automatically when the stream ends.")) {
+            if(confirm("Are you sure you want to push the final timings to GitHub? This usually happens automatically when the stream ends.")) {
                 socket.emit('pushTimestamps');
                 toggleMenu();
             }
@@ -201,6 +257,27 @@
                 socket.emit('resetState');
                 toggleMenu();
             }
+        }
+
+        function loadSampleData() {
+            socket.emit('loadSampleData');
+            toggleMenu();
+        }
+
+        function setOscPort() {
+            const port = document.getElementById('oscPortInput').value;
+            if (port) {
+                socket.emit('setOscPort', port);
+                toggleMenu();
+            }
+        }
+
+        function nextTiming() {
+            socket.emit('nextTiming');
+        }
+
+        function prevTiming() {
+            socket.emit('prevTiming');
         }
 
         function updateTimer() {
@@ -228,6 +305,10 @@
         socket.on('stateUpdate', (state) => {
             console.log("Received state:", state);
 
+            if (state.oscPort) {
+                document.getElementById('oscPortInput').value = state.oscPort;
+            }
+
             if (state.error) {
                 document.getElementById('stream-title').innerText = state.error;
                 startTime = null;
@@ -250,11 +331,19 @@
                 document.getElementById('timer').innerText = "Not Started";
             }
 
-            const pastList = document.getElementById('past-list');
-            pastList.innerHTML = '';
+            const unifiedList = document.getElementById('unified-list');
+            unifiedList.innerHTML = '';
+
+            if ((!state.past || state.past.length === 0) && (!state.upcoming || state.upcoming.length === 0)) {
+                unifiedList.innerHTML = '<li>Waiting for data...</li>';
+                return;
+            }
+
+            // Render past items
             if (state.past && state.past.length > 0) {
                 state.past.forEach(item => {
                     const li = document.createElement('li');
+                    li.className = 'past-item';
 
                     const match = item.match(/^(\d{1,2}:)?\d{1,2}:\d{2}/);
                     if (match) {
@@ -264,22 +353,25 @@
                     } else {
                         li.innerText = item;
                     }
-                    pastList.appendChild(li);
+                    unifiedList.appendChild(li);
                 });
-            } else {
-                pastList.innerHTML = '<li>No timestamps added yet.</li>';
             }
 
-            const upcomingList = document.getElementById('upcoming-list');
-            upcomingList.innerHTML = '';
+            // Render upcoming items
             if (state.upcoming && state.upcoming.length > 0) {
-                state.upcoming.forEach(item => {
+                state.upcoming.forEach((item, index) => {
                     const li = document.createElement('li');
-                    li.innerText = item;
-                    upcomingList.appendChild(li);
+
+                    if (index === 0) {
+                        li.className = 'active-target';
+                        li.innerHTML = `<span style="margin-right:8px;">&rarr;</span>${item}`;
+                    } else {
+                        li.className = 'future-item';
+                        li.innerText = item;
+                    }
+
+                    unifiedList.appendChild(li);
                 });
-            } else {
-                upcomingList.innerHTML = '<li>No upcoming sections left!</li>';
             }
         });
 
