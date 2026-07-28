@@ -21,6 +21,6 @@ If you are running the `osc_server.js` script on your local machine (like your M
 ## Web UI
 
 Once running, the web UI will be accessible at:
-[http://localhost:3000](http://localhost:3000)
+[http://localhost:3671](http://localhost:3671)
 
 This UI will show the active stream title, calculate the elapsed time, and show the remaining `chapters.txt` sections waiting to be timestamped by an OSC command.

@@ -137,12 +137,38 @@
             color: white;
             margin-top: 15px;
         }
+
+        /* Two-column layout for small inputs */
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .input-row input {
+            margin-bottom: 0;
+            flex-grow: 1;
+        }
+        .input-row button {
+            margin-bottom: 0;
+            width: auto;
+            padding: 8px 15px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <button class="menu-btn" onclick="toggleMenu()">☰</button>
         <div class="menu-overlay" id="menuOverlay">
+            <h3>Configuration</h3>
+            <p style="font-size: 0.9em; color: #666; margin-top: 0;">Listening for incoming OSC commands on port:</p>
+            <div class="input-row">
+                <input type="number" id="oscPortInput" placeholder="8000" min="1" max="65535" />
+                <button class="btn-set" onclick="setOscPort()">Save</button>
+            </div>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;" />
+
             <h3>Actions</h3>
             <button class="btn-push" onclick="pushTimestamps()">Push Timestamps to YouTube</button>
             <button class="btn-danger" onclick="resetState()">Reset Local State</button>
@@ -150,7 +176,7 @@
             <button class="btn-sample" onclick="loadSampleData()">Load Sample List (Mock API)</button>
 
             <h3 style="margin-top:20px;">Test Mode Override</h3>
-            <p style="font-size: 0.9em; color: #666;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
+            <p style="font-size: 0.9em; color: #666; margin-top: 0;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
             <input type="text" id="overrideLink" placeholder="https://youtube.com/watch?v=..." />
             <button class="btn-set" onclick="setOverride()">Set Override</button>
             <button class="btn-reset" onclick="clearOverride()">Clear Override</button>
@@ -219,6 +245,14 @@
             toggleMenu();
         }
 
+        function setOscPort() {
+            const port = document.getElementById('oscPortInput').value;
+            if (port) {
+                socket.emit('setOscPort', port);
+                toggleMenu();
+            }
+        }
+
         function updateTimer() {
             if (!startTime) {
                 document.getElementById('timer').innerText = "00:00:00";
@@ -243,6 +277,10 @@
 
         socket.on('stateUpdate', (state) => {
             console.log("Received state:", state);
+
+            if (state.oscPort) {
+                document.getElementById('oscPortInput').value = state.oscPort;
+            }
 
             if (state.error) {
                 document.getElementById('stream-title').innerText = state.error;
@@ -292,7 +330,6 @@
                 state.upcoming.forEach((item, index) => {
                     const li = document.createElement('li');
 
-                    // Add prominent arrow indicator to the very first item
                     if (index === 0) {
                         li.classList.add("active-target");
                         li.innerHTML = `<span style="margin-right:8px;">&rarr;</span>${item}`;

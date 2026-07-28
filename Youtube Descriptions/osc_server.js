@@ -5,11 +5,12 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const fetch = require("node-fetch");
+const fs = require("fs");
 
 const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
 const OSC_IP = "0.0.0.0";
-const OSC_PORT = 8000;
-const WEB_PORT = 3000;
+const WEB_PORT = 3671;
+const CONFIG_FILE = path.join(__dirname, "osc_config.json");
 
 const CHAPTERS_URL = "https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/main/Youtube%20Descriptions/chapters.txt";
 
@@ -33,8 +34,34 @@ let isMockMode = false;
 let mockTitle = "";
 let mockActualStartTime = null;
 
+let oscPort = 8000;
+let udpPortInstance = null;
+
+function loadConfig() {
+    try {
+        if (fs.existsSync(CONFIG_FILE)) {
+            const data = fs.readFileSync(CONFIG_FILE, "utf-8");
+            const config = JSON.parse(data);
+            if (config.oscPort && !isNaN(config.oscPort)) {
+                oscPort = parseInt(config.oscPort);
+            }
+        }
+    } catch (e) {
+        console.error("Error reading config:", e);
+    }
+}
+
+function saveConfig() {
+    try {
+        const config = { oscPort: oscPort };
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+    } catch (e) {
+        console.error("Error writing config:", e);
+    }
+}
+
 function getYouTubeService() {
-    if (isMockMode) return null; // Force null in mock mode to skip real API calls
+    if (isMockMode) return null;
 
     if (currentService) return currentService;
 
@@ -64,7 +91,7 @@ function getYouTubeService() {
 }
 
 async function getLiveStream(service) {
-    if (isMockMode) return null; // Handled separately
+    if (isMockMode) return null;
     try {
         if (overrideVideoId) {
             const videoResponse = await service.videos.list({
@@ -136,20 +163,21 @@ async function fetchAndBroadcastState() {
             actualStartTime: mockActualStartTime,
             past: past,
             upcoming: upcoming,
-            isMockMode: true
+            isMockMode: true,
+            oscPort: oscPort
         });
         return;
     }
 
     const service = getYouTubeService();
     if (!service) {
-        io.emit('stateUpdate', { error: "Missing YouTube Credentials. Use 'Load Sample List' to test without an API key." });
+        io.emit('stateUpdate', { error: "Missing YouTube Credentials. Use 'Load Sample List' to test without an API key.", oscPort: oscPort });
         return;
     }
 
     currentVideo = await getLiveStream(service);
     if (!currentVideo) {
-        io.emit('stateUpdate', { error: "No active or upcoming live stream found." });
+        io.emit('stateUpdate', { error: "No active or upcoming live stream found.", oscPort: oscPort });
         return;
     }
 
@@ -171,7 +199,8 @@ async function fetchAndBroadcastState() {
         actualStartTime: actualStartTime,
         past: past,
         upcoming: upcoming,
-        isMockMode: false
+        isMockMode: false,
+        oscPort: oscPort
     });
 }
 
@@ -316,6 +345,35 @@ function extractVideoId(urlStr) {
     return urlStr;
 }
 
+function startOscServer(port) {
+    if (udpPortInstance) {
+        console.log("Closing existing OSC server...");
+        try {
+            udpPortInstance.close();
+        } catch (e) {}
+    }
+
+    udpPortInstance = new osc.UDPPort({
+        localAddress: OSC_IP,
+        localPort: port,
+        metadata: true
+    });
+
+    udpPortInstance.on("message", (oscMsg) => {
+        handleOscMessage(oscMsg).catch(console.error);
+    });
+
+    udpPortInstance.on("error", (err) => {
+        console.error("OSC Server Error:", err);
+    });
+
+    udpPortInstance.on("ready", () => {
+        console.log(`Started OSC server on ${OSC_IP}:${port}...`);
+    });
+
+    udpPortInstance.open();
+}
+
 io.on("connection", (socket) => {
     console.log("Client connected to UI");
     fetchAndBroadcastState();
@@ -357,7 +415,6 @@ io.on("connection", (socket) => {
         console.log("Loading Sample Data mode.");
         isMockMode = true;
 
-        // Mock stream started 15 minutes ago
         mockActualStartTime = new Date(Date.now() - 15 * 60000).toISOString();
         mockTitle = "[SAMPLE MODE] Sunday Worship Service";
 
@@ -373,28 +430,22 @@ io.on("connection", (socket) => {
 
         fetchAndBroadcastState();
     });
+
+    socket.on("setOscPort", (portStr) => {
+        const port = parseInt(portStr);
+        if (!isNaN(port) && port > 0 && port < 65536) {
+            console.log(`Setting OSC port to ${port}`);
+            oscPort = port;
+            saveConfig();
+            startOscServer(oscPort);
+            fetchAndBroadcastState();
+        }
+    });
 });
 
 function main() {
-    const udpPort = new osc.UDPPort({
-        localAddress: OSC_IP,
-        localPort: OSC_PORT,
-        metadata: true
-    });
-
-    udpPort.on("message", (oscMsg) => {
-        handleOscMessage(oscMsg).catch(console.error);
-    });
-
-    udpPort.on("error", (err) => {
-        console.error("OSC Server Error:", err);
-    });
-
-    udpPort.on("ready", () => {
-        console.log(`Starting OSC server on ${OSC_IP}:${OSC_PORT}...`);
-    });
-
-    udpPort.open();
+    loadConfig();
+    startOscServer(oscPort);
 
     server.listen(WEB_PORT, () => {
         console.log(`Web UI listening on http://localhost:${WEB_PORT}`);
