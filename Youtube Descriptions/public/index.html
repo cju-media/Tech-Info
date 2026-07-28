@@ -182,13 +182,54 @@
             margin: 5px 0 2px 0;
             display: block;
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+        }
+        .btn-config {
+            background-color: #607d8b;
+            color: white;
+            margin-bottom: 15px !important;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <button class="menu-btn" onclick="toggleMenu()">☰</button>
-        <div class="menu-overlay" id="menuOverlay">
-            <h3>Configuration</h3>
+    <div class="modal-overlay" id="configModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeConfigModal()">&times;</button>
+            <h3 style="margin-top:0;">Configuration</h3>
 
             <label class="config-label">OSC Port</label>
             <div class="input-row">
@@ -207,8 +248,13 @@
                 <input type="password" id="githubPatInput" placeholder="ghp_..." />
                 <button class="btn-set" onclick="setGithubPat()">Save</button>
             </div>
+        </div>
+    </div>
 
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;" />
+    <div class="container">
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <div class="menu-overlay" id="menuOverlay">
+            <button class="btn-config" onclick="openConfigModal()">⚙️ Settings</button>
 
             <h3>Actions</h3>
             <button class="btn-push" onclick="pushTimestamps()">Push Timings to GitHub</button>
@@ -250,6 +296,15 @@
             document.getElementById('menuOverlay').classList.toggle('active');
         }
 
+        function openConfigModal() {
+            document.getElementById('configModal').classList.add('active');
+            document.getElementById('menuOverlay').classList.remove('active');
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').classList.remove('active');
+        }
+
         function setOverride() {
             const link = document.getElementById('overrideLink').value;
             if (link) {
@@ -287,20 +342,20 @@
             const port = document.getElementById('oscPortInput').value;
             if (port) {
                 socket.emit('setOscPort', port);
-                toggleMenu();
+                closeConfigModal();
             }
         }
 
         function setYoutubeApiKey() {
             const key = document.getElementById('youtubeApiKeyInput').value;
             socket.emit('setYoutubeApiKey', key);
-            toggleMenu();
+            closeConfigModal();
         }
 
         function setGithubPat() {
             const pat = document.getElementById('githubPatInput').value;
             socket.emit('setGithubPat', pat);
-            toggleMenu();
+            closeConfigModal();
         }
 
         function nextTiming() {

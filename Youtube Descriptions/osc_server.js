@@ -38,6 +38,42 @@ let oscPort = 8000;
 let youtubeApiKey = "";
 let githubPat = "";
 let udpPortInstance = null;
+let lastResetWeek = null;
+
+function getPacificWeekKey() {
+    // Get current time in America/Los_Angeles
+    const laTime = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
+    const d = new Date(laTime);
+
+    // We want to reset on Sunday at 12:00am.
+    // We can define the "week key" as the Sunday's date.
+    // Sunday is 0 in getDay().
+    const diffToSunday = d.getDay(); // 0 on Sunday, 1 on Monday...
+    const lastSunday = new Date(d);
+    lastSunday.setDate(d.getDate() - diffToSunday);
+
+    // Create a string like "2023-10-22" representing the start of the week (Sunday)
+    return `${lastSunday.getFullYear()}-${(lastSunday.getMonth() + 1).toString().padStart(2, '0')}-${lastSunday.getDate().toString().padStart(2, '0')}`;
+}
+
+function checkAndAutoReset() {
+    const currentWeekKey = getPacificWeekKey();
+    if (lastResetWeek === null) {
+        // First run, just initialize it
+        lastResetWeek = currentWeekKey;
+    } else if (lastResetWeek !== currentWeekKey) {
+        console.log(`Auto-resetting state for new week: ${currentWeekKey}`);
+
+        isMockMode = false;
+        overrideVideoId = null;
+        isStateInitialized = false;
+        activeStartTime = null;
+        lastResetWeek = currentWeekKey;
+
+        // This will fetch fresh chapters and default stream
+        fetchAndBroadcastState();
+    }
+}
 
 function loadConfig() {
     try {
@@ -161,6 +197,8 @@ async function fetchChaptersFromGithub() {
 }
 
 async function fetchAndBroadcastState() {
+    checkAndAutoReset();
+
     if (!isStateInitialized) {
         const chapters = await fetchChaptersFromGithub();
         if (chapters.length > 0) {
@@ -495,6 +533,12 @@ io.on("connection", (socket) => {
 function main() {
     loadConfig();
     startOscServer(oscPort);
+
+    // Seed initial state
+    fetchAndBroadcastState();
+
+    // Check state (and auto-reset if new week) every minute
+    setInterval(fetchAndBroadcastState, 60000);
 
     server.listen(WEB_PORT, () => {
         console.log(`Web UI listening on http://localhost:${WEB_PORT}`);
