@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Automated Workflows Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/croner@8.0.0/dist/croner.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -92,6 +93,24 @@
             font-style: italic;
             padding: 40px;
         }
+        .flowchart-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        .flowchart-card h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            color: #333;
+            text-align: center;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -100,8 +119,35 @@
         <h1>Tech-Info Automated Workflows</h1>
     </div>
 
-    <div id="dashboard" class="dashboard-container">
-        <div class="loading">Loading workflow data...</div>
+    <div class="dashboard-container">
+        <div class="flowchart-card">
+            <h2>Workflow Automation Architecture</h2>
+            <div class="mermaid">
+                graph TD
+                %% Worship Scripts Flow
+                A1[worship_scripts_checker] -->|Completes| B1[youtube_description]
+                A1 -->|Completes| B2[pages_deployment]
+
+                %% Service Titles Flow
+                C1[service_titles_checker] -->|Success| D1[drive_upload_complete Dispatch]
+                C2[sync_service_titles] -->|Success| D1
+                D1 -->|Triggers| E1[imessage_notifications]
+
+                %% YouTube Descriptions Flow
+                B1 -->|Completes| F1[update_youtube_stream]
+                F2[Push to timings.txt] -->|Triggers| F1
+
+                %% Independent Workflows
+                G1[schedule_notifications]
+                G2[video_migration]
+                G3[rf_coordination]
+                G4[sermon_series]
+            </div>
+        </div>
+
+        <div id="dashboard">
+            <div class="loading">Loading workflow data...</div>
+        </div>
     </div>
 
     <script>
@@ -292,6 +338,7 @@
         }
 
         loadDashboard();
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
     </script>
 </body>
 </html>
