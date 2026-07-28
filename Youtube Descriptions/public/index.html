@@ -71,8 +71,6 @@
             color: #1976d2;
             margin-right: 10px;
         }
-
-        /* Hamburger Menu Styles */
         .menu-btn {
             position: absolute;
             top: 20px;
@@ -121,17 +119,30 @@
             background-color: #d32f2f;
             color: white;
         }
+        .btn-push {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-danger {
+            background-color: #ff9800;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <button class="menu-btn" onclick="toggleMenu()">☰</button>
         <div class="menu-overlay" id="menuOverlay">
-            <h3>Test Mode Override</h3>
+            <h3>Actions</h3>
+            <button class="btn-push" onclick="pushTimestamps()">Push Timestamps to YouTube</button>
+            <button class="btn-danger" onclick="resetState()">Reset Local State</button>
+
+            <h3 style="margin-top:20px;">Test Mode Override</h3>
             <p style="font-size: 0.9em; color: #666;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
             <input type="text" id="overrideLink" placeholder="https://youtube.com/watch?v=..." />
             <button class="btn-set" onclick="setOverride()">Set Override</button>
-            <button class="btn-reset" onclick="clearOverride()">Reset to Default</button>
+            <button class="btn-reset" onclick="clearOverride()">Clear Override</button>
         </div>
 
         <h1>Live Stream Timestamps</h1>
@@ -168,14 +179,28 @@
             const link = document.getElementById('overrideLink').value;
             if (link) {
                 socket.emit('setOverrideLink', link);
-                toggleMenu(); // close menu
+                toggleMenu();
             }
         }
 
         function clearOverride() {
             socket.emit('clearOverrideLink');
             document.getElementById('overrideLink').value = '';
-            toggleMenu(); // close menu
+            toggleMenu();
+        }
+
+        function pushTimestamps() {
+            if(confirm("Are you sure you want to push the final timestamps to YouTube? This usually happens automatically when the stream ends.")) {
+                socket.emit('pushTimestamps');
+                toggleMenu();
+            }
+        }
+
+        function resetState() {
+            if(confirm("Are you sure you want to reset the local state? This will clear all recorded timestamps and re-fetch the chapters from GitHub.")) {
+                socket.emit('resetState');
+                toggleMenu();
+            }
         }
 
         function updateTimer() {
@@ -221,7 +246,6 @@
                 }
                 updateTimer();
             } else {
-                // It might be an upcoming stream that hasn't started yet
                 startTime = null;
                 document.getElementById('timer').innerText = "Not Started";
             }

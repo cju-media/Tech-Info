@@ -4,11 +4,14 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
+const fetch = require("node-fetch"); // node-fetch@2
 
 const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
 const OSC_IP = "0.0.0.0";
 const OSC_PORT = 8000;
 const WEB_PORT = 3000;
+
+const CHAPTERS_URL = "https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/main/Youtube%20Descriptions/chapters.txt";
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +22,11 @@ app.use(express.static(path.join(__dirname, "public")));
 let currentService = null;
 let currentVideo = null;
 let overrideVideoId = null;
+
+// State maintained locally
+let past = [];
+let upcoming = [];
+let isStateInitialized = false;
 
 function getYouTubeService() {
     if (currentService) return currentService;
@@ -78,7 +86,6 @@ async function getLiveStream(service) {
             id: videoIds.join(',')
         });
 
-        // First look for 'live', fallback to 'upcoming' if no live streams found
         let foundUpcoming = null;
         for (const video of (videoResponse.data.items || [])) {
             const snippet = video.snippet || {};
@@ -99,38 +106,19 @@ async function getLiveStream(service) {
     return null;
 }
 
-function parseStateFromDescription(description, actualStartTime) {
-    const lines = description.split('\n');
-    const timestampPattern = /^(\d{1,2}:)?\d{1,2}:\d{2}\s+/;
-
-    let past = [];
-    let upcoming = [];
-
-    let lastLinkIdx = -1;
-    for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes('http://') || lines[i].includes('https://')) {
-            lastLinkIdx = i;
+async function fetchChaptersFromGithub() {
+    try {
+        const response = await fetch(CHAPTERS_URL);
+        if (!response.ok) {
+            console.error(`Failed to fetch chapters: ${response.statusText}`);
+            return [];
         }
+        const text = await response.text();
+        return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    } catch (e) {
+        console.error(`Error fetching chapters from GitHub: ${e}`);
+        return [];
     }
-
-    const startIdx = lastLinkIdx !== -1 ? lastLinkIdx + 1 : 0;
-
-    for (let i = startIdx; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        if (timestampPattern.test(line)) {
-            past.push(line);
-        } else {
-            upcoming.push(line);
-        }
-    }
-
-    return {
-        actualStartTime: actualStartTime,
-        past: past,
-        upcoming: upcoming
-    };
 }
 
 async function fetchAndBroadcastState() {
@@ -145,53 +133,90 @@ async function fetchAndBroadcastState() {
 
     const actualStartTime = currentVideo.liveStreamingDetails?.actualStartTime || null;
     const snippet = currentVideo.snippet || {};
-    const description = snippet.description || '';
     const title = snippet.title || 'Untitled Stream';
 
-    const state = parseStateFromDescription(description, actualStartTime);
-    state.title = title;
+    if (!isStateInitialized) {
+        // Initialize state from GitHub chapters if empty
+        const chapters = await fetchChaptersFromGithub();
+        if (chapters.length > 0) {
+            upcoming = chapters;
+            past = [];
+            isStateInitialized = true;
+        }
+    }
 
-    io.emit('stateUpdate', state);
+    io.emit('stateUpdate', {
+        title: title,
+        actualStartTime: actualStartTime,
+        past: past,
+        upcoming: upcoming
+    });
 }
 
-function addTimestampToDescription(description, elapsedStr) {
-    const lines = description.split('\n');
-    const timestampPattern = /^(\d{1,2}:)?\d{1,2}:\d{2}\s+/;
+async function pushTimestampsToYouTube() {
+    console.log("Pushing final timestamps to YouTube...");
+    const service = getYouTubeService();
+    if (!service) return;
 
-    let lastTimestampIdx = -1;
-    for (let i = 0; i < lines.length; i++) {
-        if (timestampPattern.test(lines[i].trim())) {
-            lastTimestampIdx = i;
-        }
+    const video = await getLiveStream(service);
+    if (!video) {
+        console.log("Could not find video to push timestamps to.");
+        return;
     }
 
-    if (lastTimestampIdx !== -1) {
-        for (let i = lastTimestampIdx + 1; i < lines.length; i++) {
-            if (lines[i].trim()) {
-                lines[i] = `${elapsedStr} ${lines[i].trim()}`;
-                return { newDesc: lines.join('\n'), changed: true };
-            }
-        }
-        return { newDesc: description, changed: false };
+    const snippet = video.snippet || {};
+    let currentDesc = snippet.description || '';
+
+    // If past is empty, nothing to push
+    if (past.length === 0) {
+        console.log("No timestamps to push.");
+        return;
     }
 
-    let lastLinkIdx = -1;
-    for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes('http://') || lines[i].includes('https://')) {
-            lastLinkIdx = i;
-        }
-    }
+    // Join past timestamps
+    const timestampsText = past.join('\n');
 
-    const startIdx = lastLinkIdx !== -1 ? lastLinkIdx + 1 : 0;
-    for (let i = startIdx; i < lines.length; i++) {
-        if (lines[i].trim()) {
-            lines[i] = `${elapsedStr} ${lines[i].trim()}`;
-            return { newDesc: lines.join('\n'), changed: true };
-        }
-    }
+    // Check if we already appended timestamps to prevent duplicates
+    if (!currentDesc.includes(timestampsText.split('\n')[0])) {
+        // Append timestamps to the boilerplate
+        snippet.description = currentDesc + '\n\n' + timestampsText;
 
-    return { newDesc: description, changed: false };
+        try {
+            await service.videos.update({
+                part: 'snippet',
+                requestBody: {
+                    id: video.id,
+                    snippet: snippet
+                }
+            });
+            console.log("Successfully pushed timestamps to YouTube description.");
+        } catch (e) {
+            console.error(`Failed to update description: ${e}`);
+        }
+    } else {
+        console.log("Timestamps appear to already be in the description.");
+    }
 }
+
+let lastPollStatus = null;
+async function pollStreamStatus() {
+    const service = getYouTubeService();
+    if (!service) return;
+
+    const video = await getLiveStream(service);
+    if (!video) return;
+
+    const currentStatus = video.snippet?.liveBroadcastContent;
+
+    // If the stream was live and is now none, it ended
+    if (lastPollStatus === 'live' && currentStatus === 'none') {
+        console.log("Stream has ended! Triggering automatic push of timestamps.");
+        await pushTimestampsToYouTube();
+    }
+
+    lastPollStatus = currentStatus;
+}
+setInterval(pollStreamStatus, 60000); // Check every minute
 
 async function handleOscMessage(oscMsg) {
     console.log(`Received OSC message at address: ${oscMsg.address}`);
@@ -232,32 +257,16 @@ async function handleOscMessage(oscMsg) {
 
     console.log(`Calculated elapsed time: ${elapsedStr}`);
 
-    const snippet = video.snippet || {};
-    const currentDesc = snippet.description || '';
+    if (upcoming.length > 0) {
+        const nextItem = upcoming.shift();
+        const timestampedItem = `${elapsedStr} ${nextItem}`;
+        past.push(timestampedItem);
+        console.log(`Added timestamp: ${timestampedItem}`);
 
-    const { newDesc, changed } = addTimestampToDescription(currentDesc, elapsedStr);
-
-    if (changed) {
-        console.log(`Adding timestamp '${elapsedStr}' to description...`);
-        snippet.description = newDesc;
-
-        try {
-            await service.videos.update({
-                part: 'snippet',
-                requestBody: {
-                    id: video.id,
-                    snippet: snippet
-                }
-            });
-            console.log("Successfully updated YouTube description.");
-
-            // Re-fetch and broadcast to UI
-            await fetchAndBroadcastState();
-        } catch (e) {
-            console.error(`Failed to update description: ${e}`);
-        }
+        // Broadcast the new local state immediately
+        await fetchAndBroadcastState();
     } else {
-        console.log("Could not find a suitable line to add a timestamp to, or description is fully timestamped.");
+        console.log("No upcoming sections left to timestamp.");
     }
 }
 
@@ -269,12 +278,12 @@ function extractVideoId(urlStr) {
                 return url.searchParams.get('v');
             }
         } else if (url.hostname.includes('youtu.be')) {
-            return url.pathname.slice(1); // removes leading slash
+            return url.pathname.slice(1);
         }
     } catch (e) {
-        return null; // invalid URL
+        return null;
     }
-    return urlStr; // might just be passing an ID directly
+    return urlStr;
 }
 
 io.on("connection", (socket) => {
@@ -295,9 +304,20 @@ io.on("connection", (socket) => {
     });
 
     socket.on("clearOverrideLink", () => {
-        console.log("Clearing override video ID. Reverting to default playlist lookup.");
+        console.log("Clearing override video ID.");
         overrideVideoId = null;
         fetchAndBroadcastState();
+    });
+
+    socket.on("pushTimestamps", () => {
+        console.log("Manual push triggered from UI.");
+        pushTimestampsToYouTube();
+    });
+
+    socket.on("resetState", async () => {
+        console.log("Resetting local state from GitHub chapters.");
+        isStateInitialized = false;
+        await fetchAndBroadcastState();
     });
 });
 

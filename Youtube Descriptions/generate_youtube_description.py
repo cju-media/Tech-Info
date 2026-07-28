@@ -33,14 +33,11 @@ def main():
     now = datetime.now(tz)
 
     # Calculate previous Sunday 12:00 AM (midnight)
-    # If today is Sunday (6), subtract 7 days to get the previous Sunday.
-    # If Monday (0), subtract 1.
     days_to_subtract = now.weekday() + 1
     previous_sunday_date = now.date() - timedelta(days=days_to_subtract)
     previous_sunday_dt = tz.localize(datetime.combine(previous_sunday_date, datetime.min.time()))
     previous_sunday_ts = previous_sunday_dt.timestamp()
 
-    # Read template
     template_path = "DescriptionTemplate.txt"
     if not os.path.exists(template_path):
         print(f"Template not found at {template_path}")
@@ -48,7 +45,6 @@ def main():
     with open(template_path, "r") as f:
         template_lines = f.read().splitlines()
 
-    # Fetch OW Index to check if OW is posted
     try:
         import requests
         ow_index_resp = requests.get('https://raw.githubusercontent.com/TheCathedralFCCLA/OW/refs/heads/main/OWs/index.json')
@@ -57,7 +53,6 @@ def main():
         print(f"Error fetching OW index: {e}")
         ow_index = {}
 
-    # Read service titles state to ensure we only process if titles have been updated for this OW
     service_titles_state_path = "../Worship Scripts/service_titles_state.json"
     last_processed_sha = None
     if os.path.exists(service_titles_state_path):
@@ -82,14 +77,9 @@ def main():
 
             days_until = (doc_dt_aware.date() - now.date()).days
             if 0 <= days_until <= 7:
-                txt_output_path = "Description.txt"
-                force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
+                desc_output_path = "Description.txt"
+                chapters_output_path = "chapters.txt"
 
-                # Empty the file initially
-                with open(txt_output_path, 'w', encoding='utf-8') as f:
-                    f.write("")
-
-                # Find the OW URL using the index.json mapping
                 ow_date_key_1 = f"{doc_dt_aware.month}-{doc_dt_aware.day}-{doc_dt_aware.strftime('%y')}"
                 ow_date_key_2 = f"{doc_dt_aware.month}-{doc_dt_aware.day:02d}-{doc_dt_aware.strftime('%y')}"
 
@@ -104,7 +94,6 @@ def main():
                 ow_url = ow_info['url']
                 filename = ow_url.split("/")[-1]
 
-                # Check if the service titles have been processed for this specific OW
                 api_url = f"https://api.github.com/repos/TheCathedralFCCLA/OW/contents/OWs/{filename}"
                 try:
                     api_response = requests.get(api_url, headers=headers)
@@ -119,16 +108,20 @@ def main():
 
                 print(f"Processing script for {date_str} (happening in {days_until} days)...")
 
-                output_lines = []
+                boilerplate_lines = []
+                chapter_lines = []
+
                 for line in template_lines:
                     txt_files = re.findall(r'[\w-]+\.txt', line)
 
                     line_valid = True
                     modified_line = line
+                    is_boiler = False
 
                     for txt_file in txt_files:
                         if txt_file == "DescriptionBoiler.txt":
                             filepath = txt_file
+                            is_boiler = True
                         else:
                             filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
 
@@ -143,14 +136,14 @@ def main():
                             line_valid = False
                             break
 
-                        if txt_file != "DescriptionBoiler.txt":
+                        if not is_boiler:
                             mtime = get_mtime(filepath)
                             if mtime < previous_sunday_ts:
                                 print(f"File {txt_file} is older than previous Sunday. Skipping line.")
                                 line_valid = False
                                 break
 
-                        if txt_file == "DescriptionBoiler.txt":
+                        if is_boiler:
                             ows_date_str = format_date_for_ows(doc_dt_aware)
                             content = re.sub(
                                 r'(https://www\.fccla\.org/ows/)(?:\[DATE OF SERVICE\]|[\w-]+)',
@@ -161,14 +154,20 @@ def main():
                         modified_line = modified_line.replace(txt_file, content)
 
                     if line_valid:
-                        output_lines.append(modified_line)
+                        if is_boiler:
+                            boilerplate_lines.append(modified_line)
+                        else:
+                            chapter_lines.append(modified_line)
 
-                description = "\n".join(output_lines)
+                # Save Description.txt (boilerplate only)
+                with open(desc_output_path, 'w', encoding='utf-8') as f:
+                    f.write("\n".join(boilerplate_lines))
+                print(f"Saved boilerplate to {desc_output_path}")
 
-                with open(txt_output_path, 'w', encoding='utf-8') as f:
-                    f.write(description)
-
-                print(f"Saved YouTube description text to {txt_output_path}")
+                # Save chapters.txt (sections only)
+                with open(chapters_output_path, 'w', encoding='utf-8') as f:
+                    f.write("\n".join(chapter_lines))
+                print(f"Saved chapters to {chapters_output_path}")
 
         except Exception as e:
             print(f"Error processing {date_str}: {e}")
