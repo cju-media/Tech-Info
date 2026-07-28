@@ -120,7 +120,7 @@
             padding: 15px;
             border-radius: 4px;
             z-index: 99;
-            width: 300px;
+            width: 320px;
         }
         .menu-overlay.active {
             display: block;
@@ -176,6 +176,12 @@
             width: auto;
             padding: 8px 15px;
         }
+        .config-label {
+            font-size: 0.85em;
+            color: #666;
+            margin: 5px 0 2px 0;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -183,10 +189,23 @@
         <button class="menu-btn" onclick="toggleMenu()">☰</button>
         <div class="menu-overlay" id="menuOverlay">
             <h3>Configuration</h3>
-            <p style="font-size: 0.9em; color: #666; margin-top: 0;">Listening for incoming OSC commands on port:</p>
+
+            <label class="config-label">OSC Port</label>
             <div class="input-row">
                 <input type="number" id="oscPortInput" placeholder="8000" min="1" max="65535" />
                 <button class="btn-set" onclick="setOscPort()">Save</button>
+            </div>
+
+            <label class="config-label">YouTube API Key</label>
+            <div class="input-row">
+                <input type="password" id="youtubeApiKeyInput" placeholder="AIzaSy..." />
+                <button class="btn-set" onclick="setYoutubeApiKey()">Save</button>
+            </div>
+
+            <label class="config-label">GitHub PAT</label>
+            <div class="input-row">
+                <input type="password" id="githubPatInput" placeholder="ghp_..." />
+                <button class="btn-set" onclick="setGithubPat()">Save</button>
             </div>
 
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;" />
@@ -198,7 +217,7 @@
             <button class="btn-sample" onclick="loadSampleData()">Load Sample List (Mock API)</button>
 
             <h3 style="margin-top:20px;">Test Mode Override</h3>
-            <p style="font-size: 0.9em; color: #666; margin-top: 0;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
+            <p style="font-size: 0.85em; color: #666; margin-top: 0;">Set a specific YouTube URL/ID to override the default FCCLA stream discovery.</p>
             <input type="text" id="overrideLink" placeholder="https://youtube.com/watch?v=..." />
             <button class="btn-set" onclick="setOverride()">Set Override</button>
             <button class="btn-reset" onclick="clearOverride()">Clear Override</button>
@@ -272,6 +291,18 @@
             }
         }
 
+        function setYoutubeApiKey() {
+            const key = document.getElementById('youtubeApiKeyInput').value;
+            socket.emit('setYoutubeApiKey', key);
+            toggleMenu();
+        }
+
+        function setGithubPat() {
+            const pat = document.getElementById('githubPatInput').value;
+            socket.emit('setGithubPat', pat);
+            toggleMenu();
+        }
+
         function nextTiming() {
             socket.emit('nextTiming');
         }
@@ -308,6 +339,16 @@
             if (state.oscPort) {
                 document.getElementById('oscPortInput').value = state.oscPort;
             }
+            if (state.hasYoutubeApiKey) {
+                document.getElementById('youtubeApiKeyInput').placeholder = "•••••••••••••••• (Set)";
+            } else {
+                document.getElementById('youtubeApiKeyInput').placeholder = "AIzaSy...";
+            }
+            if (state.hasGithubPat) {
+                document.getElementById('githubPatInput').placeholder = "•••••••••••••••• (Set)";
+            } else {
+                document.getElementById('githubPatInput').placeholder = "ghp_...";
+            }
 
             if (state.error) {
                 document.getElementById('stream-title').innerText = state.error;
@@ -339,7 +380,6 @@
                 return;
             }
 
-            // Render past items
             if (state.past && state.past.length > 0) {
                 state.past.forEach(item => {
                     const li = document.createElement('li');
@@ -357,7 +397,6 @@
                 });
             }
 
-            // Render upcoming items
             if (state.upcoming && state.upcoming.length > 0) {
                 state.upcoming.forEach((item, index) => {
                     const li = document.createElement('li');

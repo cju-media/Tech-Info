@@ -35,6 +35,8 @@ let isMockMode = false;
 let mockTitle = "Worship Service (Pending Start)";
 
 let oscPort = 8000;
+let youtubeApiKey = "";
+let githubPat = "";
 let udpPortInstance = null;
 
 function loadConfig() {
@@ -45,6 +47,12 @@ function loadConfig() {
             if (config.oscPort && !isNaN(config.oscPort)) {
                 oscPort = parseInt(config.oscPort);
             }
+            if (config.youtubeApiKey) {
+                youtubeApiKey = config.youtubeApiKey;
+            }
+            if (config.githubPat) {
+                githubPat = config.githubPat;
+            }
         }
     } catch (e) {
         console.error("Error reading config:", e);
@@ -53,7 +61,11 @@ function loadConfig() {
 
 function saveConfig() {
     try {
-        const config = { oscPort: oscPort };
+        const config = {
+            oscPort: oscPort,
+            youtubeApiKey: youtubeApiKey,
+            githubPat: githubPat
+        };
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
     } catch (e) {
         console.error("Error writing config:", e);
@@ -62,11 +74,11 @@ function saveConfig() {
 
 function getYouTubeService() {
     if (isMockMode) return null;
-    if (currentService) return currentService;
 
-    const apiKey = process.env.YOUTUBE_API_KEY;
+    // Clear out the cached service if we change the key
+    const apiKey = youtubeApiKey || process.env.YOUTUBE_API_KEY;
     if (!apiKey) {
-        console.error("Error: YOUTUBE_API_KEY environment variable not found. UI title/timer sync will not work.");
+        console.error("Error: YouTube API Key not configured. UI title/timer sync will not work.");
         return null;
     }
 
@@ -180,7 +192,7 @@ async function fetchAndBroadcastState() {
                 broadcastTitle = "No active or upcoming live stream found.";
             }
         } else {
-            apiError = "Missing YOUTUBE_API_KEY. Stream lookup disabled.";
+            apiError = "Missing YouTube API Key. Configure it in the menu.";
         }
     }
 
@@ -191,6 +203,8 @@ async function fetchAndBroadcastState() {
         upcoming: upcoming,
         isMockMode: isMockMode,
         oscPort: oscPort,
+        hasYoutubeApiKey: !!youtubeApiKey,
+        hasGithubPat: !!githubPat,
         error: apiError
     });
 }
@@ -203,9 +217,9 @@ async function pushTimingsToGithub() {
 
     console.log("Pushing final timings to GitHub...");
 
-    const pat = process.env.GITHUB_PAT;
+    const pat = githubPat || process.env.GITHUB_PAT;
     if (!pat) {
-        console.error("Error: GITHUB_PAT environment variable not found. Cannot push to GitHub.");
+        console.error("Error: GitHub PAT not configured. Cannot push to GitHub.");
         return;
     }
 
@@ -272,6 +286,7 @@ setInterval(() => {
 
 async function handleNextTiming() {
     if (!activeStartTime) {
+        // If YouTube hasn't provided a start time yet, the first trigger forces it locally.
         activeStartTime = new Date().toISOString();
         console.log(`Stream timer locally started at: ${activeStartTime}`);
         await fetchAndBroadcastState();
@@ -395,6 +410,8 @@ io.on("connection", (socket) => {
         if (vId) {
             console.log(`Setting override video ID to: ${vId}`);
             overrideVideoId = vId;
+            // Clear current service so we re-fetch with API
+            currentService = null;
             fetchAndBroadcastState();
         }
     });
@@ -403,6 +420,7 @@ io.on("connection", (socket) => {
         console.log("Clearing override video ID.");
         isMockMode = false;
         overrideVideoId = null;
+        currentService = null;
         fetchAndBroadcastState();
     });
 
@@ -448,6 +466,21 @@ io.on("connection", (socket) => {
             startOscServer(oscPort);
             fetchAndBroadcastState();
         }
+    });
+
+    socket.on("setYoutubeApiKey", (key) => {
+        console.log(`Setting YouTube API Key`);
+        youtubeApiKey = key;
+        currentService = null; // force re-init
+        saveConfig();
+        fetchAndBroadcastState();
+    });
+
+    socket.on("setGithubPat", (key) => {
+        console.log(`Setting GitHub PAT`);
+        githubPat = key;
+        saveConfig();
+        fetchAndBroadcastState();
     });
 
     socket.on("nextTiming", () => {
