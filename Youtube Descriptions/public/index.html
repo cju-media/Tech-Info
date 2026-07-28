@@ -283,6 +283,9 @@
             <ul id="unified-list">
                 <li>Waiting for data...</li>
             </ul>
+            <div style="text-align: center; margin-top: 15px;">
+                <button onclick="downloadTimings()" style="background-color: #607d8b; color: white; border: none; padding: 10px 20px; font-size: 1em; border-radius: 4px; cursor: pointer;">⬇ Download timings.txt</button>
+            </div>
         </div>
     </div>
 
@@ -291,6 +294,7 @@
         const socket = io();
         let startTime = null;
         let timerInterval = null;
+        let currentPastState = [];
 
         function toggleMenu() {
             document.getElementById('menuOverlay').classList.toggle('active');
@@ -388,8 +392,31 @@
             document.getElementById('timer').innerText = `${hStr}:${mStr}:${sStr}`;
         }
 
+        function downloadTimings() {
+            if (currentPastState.length === 0) {
+                alert("No timings recorded yet!");
+                return;
+            }
+
+            const textContent = currentPastState.join('\n');
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'timings.txt';
+            document.body.appendChild(a);
+            a.click();
+
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         socket.on('stateUpdate', (state) => {
             console.log("Received state:", state);
+            if (state.past) {
+                currentPastState = state.past;
+            }
 
             if (state.oscPort) {
                 document.getElementById('oscPortInput').value = state.oscPort;
