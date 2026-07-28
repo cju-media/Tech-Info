@@ -1,3 +1,4 @@
 .DS_Store
 pdfs/
 __pycache__/
+node_modules/
