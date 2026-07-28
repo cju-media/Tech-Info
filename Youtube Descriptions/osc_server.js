@@ -5,11 +5,12 @@ const { Server } = require("socket.io");
 const path = require("path");
 const fetch = require("node-fetch");
 const fs = require("fs");
+const { google } = require("googleapis");
 
 const OSC_IP = "0.0.0.0";
 const WEB_PORT = 3671;
 const CONFIG_FILE = path.join(__dirname, "osc_config.json");
-
+const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
 const CHAPTERS_URL = "https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/main/Youtube%20Descriptions/chapters.txt";
 
 const app = express();
@@ -19,13 +20,15 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, "public")));
 
 let overrideVideoId = null;
+let currentService = null;
+let currentVideo = null;
 
 // State maintained locally
 let past = [];
 let upcoming = [];
 let isStateInitialized = false;
 
-// We no longer query the YouTube API directly, so we just track a start time
+// We track start time, allowing the YT API to seed it if possible
 let activeStartTime = null;
 
 let isMockMode = false;
@@ -57,6 +60,79 @@ function saveConfig() {
     }
 }
 
+function getYouTubeService() {
+    if (isMockMode) return null;
+    if (currentService) return currentService;
+
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+        console.error("Error: YOUTUBE_API_KEY environment variable not found. UI title/timer sync will not work.");
+        return null;
+    }
+
+    try {
+        currentService = google.youtube({
+            version: 'v3',
+            auth: apiKey
+        });
+        return currentService;
+    } catch (e) {
+        console.error(`Error authenticating with YouTube API Key: ${e}`);
+        return null;
+    }
+}
+
+async function getLiveStream(service) {
+    if (isMockMode) return null;
+    try {
+        if (overrideVideoId) {
+            const videoResponse = await service.videos.list({
+                part: 'snippet,liveStreamingDetails',
+                id: overrideVideoId
+            });
+            if (videoResponse.data.items && videoResponse.data.items.length > 0) {
+                return videoResponse.data.items[0];
+            }
+            console.log(`Override video ID ${overrideVideoId} not found.`);
+            return null;
+        }
+
+        const playlistResponse = await service.playlistItems.list({
+            part: 'snippet',
+            playlistId: PLAYLIST_ID,
+            maxResults: 50
+        });
+
+        const videoIds = (playlistResponse.data.items || []).map(item => item.snippet.resourceId.videoId);
+        if (!videoIds.length) {
+            return null;
+        }
+
+        const videoResponse = await service.videos.list({
+            part: 'snippet,liveStreamingDetails',
+            id: videoIds.join(',')
+        });
+
+        let foundUpcoming = null;
+        for (const video of (videoResponse.data.items || [])) {
+            const snippet = video.snippet || {};
+            if (snippet.liveBroadcastContent === 'live' && video.liveStreamingDetails) {
+                if (video.liveStreamingDetails.actualStartTime) {
+                    return video;
+                }
+            } else if (snippet.liveBroadcastContent === 'upcoming' && !foundUpcoming) {
+                foundUpcoming = video;
+            }
+        }
+
+        return foundUpcoming;
+    } catch (e) {
+        console.error(`An error occurred getting streams from playlist: ${e}`);
+    }
+
+    return null;
+}
+
 async function fetchChaptersFromGithub() {
     try {
         const response = await fetch(CHAPTERS_URL);
@@ -82,13 +158,40 @@ async function fetchAndBroadcastState() {
         }
     }
 
+    let broadcastTitle = "Worship Service (Pending Start)";
+    let apiError = null;
+
+    if (isMockMode) {
+        broadcastTitle = mockTitle;
+    } else {
+        const service = getYouTubeService();
+        if (service) {
+            currentVideo = await getLiveStream(service);
+            if (currentVideo) {
+                broadcastTitle = currentVideo.snippet?.title || "Untitled Stream";
+
+                // If YouTube says the stream has started, seed the timer!
+                const ytActualStart = currentVideo.liveStreamingDetails?.actualStartTime;
+                if (ytActualStart && !activeStartTime) {
+                    console.log(`Seeded start time from YouTube API: ${ytActualStart}`);
+                    activeStartTime = ytActualStart;
+                }
+            } else {
+                broadcastTitle = "No active or upcoming live stream found.";
+            }
+        } else {
+            apiError = "Missing YOUTUBE_API_KEY. Stream lookup disabled.";
+        }
+    }
+
     io.emit('stateUpdate', {
-        title: mockTitle, // Defaulting to generic title since YouTube API is removed
+        title: broadcastTitle,
         actualStartTime: activeStartTime,
         past: past,
         upcoming: upcoming,
         isMockMode: isMockMode,
-        oscPort: oscPort
+        oscPort: oscPort,
+        error: apiError
     });
 }
 
@@ -117,7 +220,6 @@ async function pushTimingsToGithub() {
     const apiUrl = "https://api.github.com/repos/TheCathedralFCCLA/tech-schedule/contents/Youtube%20Descriptions/timings.txt";
 
     try {
-        // Try to get the existing file to grab its SHA
         let sha = null;
         const getRes = await fetch(apiUrl, {
             headers: {
@@ -163,16 +265,17 @@ async function pushTimingsToGithub() {
     }
 }
 
-// Without the YouTube API we don't automatically know when the stream ends.
-// We expose the functionality to the web UI push button.
+// Ensure title updates periodically
+setInterval(() => {
+    if (!isMockMode) fetchAndBroadcastState();
+}, 60000);
 
 async function handleNextTiming() {
-    // If we haven't set a start time yet, the first trigger SETS the start time.
     if (!activeStartTime) {
         activeStartTime = new Date().toISOString();
-        console.log(`Stream timer started at: ${activeStartTime}`);
+        console.log(`Stream timer locally started at: ${activeStartTime}`);
         await fetchAndBroadcastState();
-        return; // Don't burn the first chapter, just start the clock.
+        return;
     }
 
     const startTime = new Date(activeStartTime).getTime();
@@ -209,7 +312,6 @@ async function handlePrevTiming() {
         const lastItem = past.pop();
         console.log(`Reverting timestamp: ${lastItem}`);
 
-        // Strip the timestamp (e.g. "1:05:22 Sermon" -> "Sermon")
         const match = lastItem.match(/^(\d{1,2}:)?\d{1,2}:\d{2}\s+/);
         if (match) {
             const timeStr = match[0];
@@ -221,7 +323,6 @@ async function handlePrevTiming() {
 
         await fetchAndBroadcastState();
     } else if (activeStartTime && past.length === 0) {
-        // If we revert to the beginning, reset the timer
         console.log("Reverting timer start.");
         activeStartTime = null;
         await fetchAndBroadcastState();
@@ -233,6 +334,22 @@ async function handlePrevTiming() {
 async function handleOscMessage(oscMsg) {
     console.log(`Received OSC message at address: ${oscMsg.address}`);
     await handleNextTiming();
+}
+
+function extractVideoId(urlStr) {
+    try {
+        const url = new URL(urlStr);
+        if (url.hostname.includes('youtube.com')) {
+            if (url.searchParams.has('v')) {
+                return url.searchParams.get('v');
+            }
+        } else if (url.hostname.includes('youtu.be')) {
+            return url.pathname.slice(1);
+        }
+    } catch (e) {
+        return null;
+    }
+    return urlStr;
 }
 
 function startOscServer(port) {
@@ -274,12 +391,18 @@ io.on("connection", (socket) => {
 
     socket.on("setOverrideLink", (link) => {
         isMockMode = false;
-        console.log(`(Ignored) Stream override via link: ${link}`);
-        fetchAndBroadcastState();
+        const vId = extractVideoId(link);
+        if (vId) {
+            console.log(`Setting override video ID to: ${vId}`);
+            overrideVideoId = vId;
+            fetchAndBroadcastState();
+        }
     });
 
     socket.on("clearOverrideLink", () => {
+        console.log("Clearing override video ID.");
         isMockMode = false;
+        overrideVideoId = null;
         fetchAndBroadcastState();
     });
 
