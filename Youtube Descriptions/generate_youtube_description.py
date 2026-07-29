@@ -132,14 +132,17 @@ def main():
                                 has_numbered = True
 
                         if has_numbered:
-                            for i in range(1, max_index + 1):
+                            for i in range(0, max_index + 1):
                                 line_valid = True
                                 modified_line = line
                                 for txt_file in txt_files:
                                     base_name = txt_file[:-4]
-                                    num_filepath = os.path.join("../Worship Scripts/service-titles", f"{base_name}{i}.txt")
-                                    if not os.path.exists(num_filepath):
+                                    if i == 0:
                                         num_filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
+                                    else:
+                                        num_filepath = os.path.join("../Worship Scripts/service-titles", f"{base_name}{i}.txt")
+                                        if not os.path.exists(num_filepath):
+                                            num_filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
 
                                     if not os.path.exists(num_filepath):
                                         line_valid = False

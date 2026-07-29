@@ -1,10 +1,30 @@
-Given this PDF, label the speaker for each section based on the list below, one line per attribute. Each line should be TITLE ATTRIBUTE. Each title should be shown exactly how it is below. Prelude-performer is just crediting the performing during the prelude. Prelude1, prelude2, etc should be attributed PIECE NAME - COMPOSER. Sections labeled “X-title-composer” should be formatted: TITLE OF PIECE - COMPOSER OF PIECE. Sections labeled “X-group” should be labeled the group performing the work. Sermon should be labeled Sermon - TITLE OF SERMON. Hymns should only attribute the name of the hymn, not the author. Reading-name attributes the name of the reader of the verse. Reader-verse attributes the verse being read. If an attribute is not present in the PDF (like communion), leave the text completely blank instead of writing 'No' or 'False'. "The Eucharist and Blessing" speaker should be credited as communion - NAMES OF SPEAKERS. Names credited should follow standard English capitalization and should never be all caps, despite what the PDF has the names formatted as. If multiple items exist under one section, for example multiple pieces are apart of the meditation anthem, credit each subsequent piece "meditation-title-composer1", "meditation-group1", "meditation-title-composer2", "meditation-group2", etc.
-
+Given this PDF, label the speaker for each section based on the list below, one line per attribute. Each line should be TITLE ATTRIBUTE. Each title should be shown exactly how it is below.
+CAPITALIZATION RULES:
+ * Never output text in ALL CAPS, even if it is written in ALL CAPS in the PDF (e.g., convert "ABBIE BETINIS" to "Abbie Betinis", "DAVID HARRIS" to "David Harris", "W.A. MOZART" to "W.A. Mozart").
+ * All titles, composer names, minister names, group names, and reader names must strictly use standard English Title Case / capitalization.
+SECTION & FORMATTING RULES:
+ * Prelude Performers:
+   * Output prelude-performer for the main prelude performer listed.
+   * For each prelude piece (prelude1, prelude2, etc.), output a corresponding numbered performer attribute (prelude-performer1, prelude-performer2, etc.).
+   * If a piece names a specific performer, attribute that name. If a piece does NOT specify a new performer, carry over and repeat the top-line credited prelude performer.
+ * Prelude pieces should be labeled prelude1, prelude2, prelude3, etc., and formatted: PIECE NAME - COMPOSER.
+ * Sections labeled "X-title-composer" should be formatted: TITLE OF PIECE - COMPOSER OF PIECE.
+ * Sections labeled "X-group" should be labeled the group performing the work.
+ * Sermon should be labeled Sermon - TITLE OF SERMON.
+ * Hymns should only attribute the name of the hymn, not the author.
+ * Reading-name attributes the name of the reader of the verse.
+ * Reader-verse attributes the verse being read.
+ * "The Eucharist and Blessing" speaker should be credited as communion - NAMES OF SPEAKERS.
+ * If an attribute is not present in the PDF (like communion), leave the text completely blank after the attribute name instead of writing 'No' or 'False'.
+ * If multiple items exist under one section (for example, multiple pieces as part of the meditation anthem), credit each subsequent piece "meditation-title-composer1", "meditation-group1", "meditation-title-composer2", "meditation-group2", etc. Always output the first item of this category with no trailing number, and start with the number 1 on subsequent items in a single section.
 
 prelude-performer
 prelude1
+prelude-performer1
 prelude2
+prelude-performer2
 prelude3
+prelude-performer3
 (Continue for all prelude pieces)
 welcome
 words-of-gathering
