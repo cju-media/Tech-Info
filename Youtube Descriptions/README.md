@@ -30,3 +30,18 @@ This UI will show the active stream title, calculate the elapsed time, and show 
 - **GitHub PAT:** Used to push the final timestamps securely to GitHub when the stream concludes.
 
 These values are saved locally to your machine (`osc_config.json`) and will automatically reload every time you start the server.
+
+## Adding Timestamps via OSC
+
+The server listens for incoming OSC messages on the port you configured (default `8000`).
+**Any valid OSC message sent to the server will trigger the next timing.** The server currently ignores the specific address or arguments of the OSC message; it simply advances the arrow to the next item and logs the timestamp whenever a packet is received.
+
+You can also manually click the "Next Timing" or "Previous Timing" arrows on the Web UI if you missed a cue.
+
+## Auto-Reset and End of Service
+
+To ensure a clean slate every week and prevent accidental testing pushes from overwriting a real service, the server features a weekly automatic reset logic:
+- Every **Sunday at 12:00 AM Pacific Time**, the server will automatically drop any sample mode data or manual stream overrides.
+- It will then automatically fetch the fresh `chapters.txt` for the upcoming Sunday service from GitHub.
+
+Additionally, the server constantly queries the YouTube API. When it detects that the live stream has ended, it will automatically stop the timer and use your configured GitHub PAT to push the `timings.txt` file back to the repository. Note that pushes to GitHub are strictly permitted **only on Sundays** to safeguard the system from testing during the week.
