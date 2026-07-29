@@ -17,6 +17,7 @@ SECTION & FORMATTING RULES:
  * "The Eucharist and Blessing" speaker should be credited as communion - NAMES OF SPEAKERS.
  * If an attribute is not present in the PDF (like communion), leave the text completely blank after the attribute name instead of writing 'No' or 'False'.
  * If multiple items exist under one section (for example, multiple pieces as part of the meditation anthem), credit each subsequent piece "meditation-title-composer1", "meditation-group1", "meditation-title-composer2", "meditation-group2", etc. Always output the first item of this category with no trailing number, and start with the number 1 on subsequent items in a single section.
+* Make sure to include subtitles or bigger pieces from a credit. For example, include the full title '“You Are Music” from Symphony For Voices 3: Mycelial' as a title for a given piece, not just "You Are Music"
 
 prelude-performer
 prelude1
