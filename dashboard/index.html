@@ -111,15 +111,31 @@
             display: flex;
             justify-content: center;
         }
-        .mermaidTooltip {
-            z-index: 9999 !important;
-            background-color: #333 !important;
-            color: #fff !important;
-            padding: 8px !important;
-            border-radius: 4px !important;
-            font-size: 14px !important;
-            opacity: 1 !important;
-            display: block !important;
+.mermaidTooltip {
+            display: none !important; /* Hide default tooltips completely */
+        }
+        .flowchart-description {
+            text-align: center;
+            min-height: 24px;
+            margin-top: 15px;
+            font-size: 15px;
+            color: #555;
+            font-style: italic;
+            transition: opacity 0.3s ease;
+        }
+        .controls-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .sort-select {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -165,16 +181,58 @@
                 click G2 href "#video_migration" "Weekly job that organizes the VOD in Google Drive and updates playlist links"
                 click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails"
                 click G4 href "#sermon_series" "Combines sermon title and minister into a text file and syncs to Drive"
+
             </div>
+            <div id="flowchart-desc" class="flowchart-description">Hover over a workflow node to view its description.</div>
+        </div>
+
+        <div class="controls-bar">
+            <label for="sort-workflows" style="margin-right: 10px; font-weight: bold; color: #555;">Sort by:</label>
+            <select id="sort-workflows" class="sort-select">
+                <option value="default">Default (Original)</option>
+                <option value="last-run">Last Run (Newest First)</option>
+                <option value="next-run">Next Run (Soonest First)</option>
+            </select>
         </div>
 
         <div id="dashboard">
+
             <div class="loading">Loading workflow data...</div>
         </div>
     </div>
 
     <script>
         const REPO = 'cju-media/Tech-Info';
+
+        function setupFlowchartHovers() {
+            const descBox = document.getElementById('flowchart-desc');
+            const defaultText = "Hover over a workflow node to view its description.";
+
+            // Wait for mermaid to finish rendering the SVG
+            setTimeout(() => {
+                const nodes = document.querySelectorAll('.mermaid g.node');
+                nodes.forEach(node => {
+                    const titleEl = node.querySelector('title');
+                    if (titleEl) {
+                        const description = titleEl.textContent;
+                        node.addEventListener('mouseenter', () => {
+                            descBox.textContent = description;
+                            descBox.style.color = '#333';
+                            descBox.style.fontWeight = 'bold';
+                        });
+                        node.addEventListener('mouseleave', () => {
+                            descBox.textContent = defaultText;
+                            descBox.style.color = '#555';
+                            descBox.style.fontWeight = 'normal';
+                        });
+
+                        // We also need to remove the native tooltip so it doesn't double-show
+                        titleEl.remove();
+                    }
+                });
+            }, 500); // Give mermaid a moment
+        }
+
 
         async function fetchYAML(path) {
             try {
@@ -212,6 +270,41 @@
             } catch(e) {}
             return [];
         }
+
+
+        let allWorkflowCards = []; // Store parsed workflow objects
+
+        function renderSortedWorkflows(sortMode) {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.innerHTML = '';
+
+            let sorted = [...allWorkflowCards];
+
+if (sortMode === 'last-run') {
+                sorted.sort((a, b) => {
+                    const timeA = a.lastRunDate ? a.lastRunDate.getTime() : 0;
+                    const timeB = b.lastRunDate ? b.lastRunDate.getTime() : 0;
+                    return timeB - timeA; // Descending (newest first)
+                });
+            } else if (sortMode === 'next-run') {
+                sorted.sort((a, b) => {
+                    // Put nulls at the end
+                    if (!a.nextRunDate && !b.nextRunDate) return 0;
+                    if (!a.nextRunDate) return 1;
+                    if (!b.nextRunDate) return -1;
+                    return a.nextRunDate.getTime() - b.nextRunDate.getTime(); // Ascending (soonest first)
+                });
+            }
+            // 'default' uses the original order from GitHub API
+
+            sorted.forEach(item => {
+                dashboard.appendChild(item.element);
+            });
+        }
+
+        document.getElementById('sort-workflows').addEventListener('change', (e) => {
+            renderSortedWorkflows(e.target.value);
+        });
 
         async function loadDashboard() {
             try {
@@ -258,9 +351,11 @@
                         }
                     }
 
+                    let earliestNext = null;
                     if (cronMatches.length > 0) {
                         // Find the earliest next run among all crons
-                        let earliestNext = null;
+
+
                         for (const c of cronMatches) {
                             try {
                                 const next = new Cron(c, { timezone: "UTC" }).nextRun();
@@ -353,16 +448,26 @@
                     }
 
                     card.appendChild(details);
-                    dashboard.appendChild(card);
+
+                    allWorkflowCards.push({
+                        element: card,
+                        lastRunDate: run && run.updated_at ? new Date(run.updated_at) : null,
+                        nextRunDate: earliestNext ? new Date(earliestNext) : null
+                    });
                 }
             } catch (err) {
                 console.error(err);
-                document.getElementById('dashboard').innerHTML = '<div class="failure" style="text-align:center;">Error loading workflow data.</div>';
+                document.getElementById('dashboard').innerHTML = '<div class="failure" style="text-align:center;">Error loading workflow data. (Wait a moment or check network/rate limits).</div>';
+                return false;
             }
+            return true;
         }
 
-        loadDashboard();
+        loadDashboard().then((success) => {
+            if (success !== false) renderSortedWorkflows('default');
+        });
         mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        setupFlowchartHovers();
     </script>
 </body>
 </html>
