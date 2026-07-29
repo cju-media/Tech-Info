@@ -191,8 +191,25 @@ async function getLiveStream(service) {
     return null;
 }
 
+function processChapters(rawChapters) {
+    // Filter out "Organ Prelude-Concert,"
+    let filtered = rawChapters.filter(c => !c.startsWith("Organ Prelude-Concert,"));
+
+    let initialPast = [];
+    let initialUpcoming = [...filtered];
+
+    // Always start Announcements at 0:00
+    if (initialUpcoming.length > 0 && initialUpcoming[0].toLowerCase().includes("announcements")) {
+        const item = initialUpcoming.shift();
+        initialPast.push(`0:00 ${item}`);
+    }
+
+    return { past: initialPast, upcoming: initialUpcoming };
+}
+
 async function fetchChaptersFromGithub() {
     try {
+        let text = "";
         const response = await fetch(CHAPTERS_URL);
         if (!response.ok) {
             console.error(`Failed to fetch chapters from GitHub: ${response.statusText}`);
@@ -200,12 +217,13 @@ async function fetchChaptersFromGithub() {
             const localPath = path.join(__dirname, "chapters.txt");
             if (fs.existsSync(localPath)) {
                 console.log("Falling back to local chapters.txt...");
-                const text = fs.readFileSync(localPath, "utf-8");
-                return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                text = fs.readFileSync(localPath, "utf-8");
+            } else {
+                return [];
             }
-            return [];
+        } else {
+            text = await response.text();
         }
-        const text = await response.text();
         return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     } catch (e) {
         console.error(`Error fetching chapters from GitHub: ${e}`);
@@ -217,10 +235,11 @@ async function fetchAndBroadcastState() {
     checkAndAutoReset();
 
     if (!isStateInitialized) {
-        const chapters = await fetchChaptersFromGithub();
-        if (chapters.length > 0) {
-            upcoming = chapters;
-            past = [];
+        const rawChapters = await fetchChaptersFromGithub();
+        if (rawChapters.length > 0) {
+            const processed = processChapters(rawChapters);
+            upcoming = processed.upcoming;
+            past = processed.past;
             isStateInitialized = true;
         }
     }
@@ -292,6 +311,16 @@ async function pushTimingsToGithub() {
     if (isMockMode) {
         console.log("Mock Mode: Would push timings.txt to GitHub here.");
         io.emit('pushStatus', { status: 'info', message: 'Mock mode: Push skipped.' });
+        return;
+    }
+
+    const laTime = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
+    const currentDay = new Date(laTime).getDay();
+
+    // 0 is Sunday
+    if (currentDay !== 0) {
+        console.log("Not Sunday. Skipping push to GitHub.");
+        io.emit('pushStatus', { status: 'info', message: 'Test Mode: Push skipped because today is not Sunday.' });
         return;
     }
 
@@ -579,15 +608,18 @@ io.on("connection", (socket) => {
         activeStartTime = new Date(Date.now() - 15 * 60000).toISOString();
         mockTitle = "[SAMPLE MODE] Sunday Worship Service";
 
-        past = [];
-        upcoming = [
+        const sampleRaw = [
             "Announcements",
-            "Organ Prelude-Concert",
+            "Organ Prelude-Concert,",
             "Welcome",
             "Prayers of Awareness",
             "Sermon",
             "Communion"
         ];
+
+        const processed = processChapters(sampleRaw);
+        upcoming = processed.upcoming;
+        past = processed.past;
 
         fetchAndBroadcastState();
     });
