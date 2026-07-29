@@ -47,6 +47,7 @@ offertory-title-composer
 offertory-group
 offering-prayer
 life-at-church
+words-of-blessing
 response-group
 response-title-composer
 hymn-for-journey
