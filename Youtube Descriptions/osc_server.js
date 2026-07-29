@@ -314,6 +314,16 @@ async function pushTimingsToGithub() {
         return;
     }
 
+    const laTime = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
+    const currentDay = new Date(laTime).getDay();
+
+    // 0 is Sunday
+    if (currentDay !== 0) {
+        console.log("Not Sunday. Skipping push to GitHub.");
+        io.emit('pushStatus', { status: 'info', message: 'Test Mode: Push skipped because today is not Sunday.' });
+        return;
+    }
+
     console.log("Pushing final timings to GitHub...");
     io.emit('pushStatus', { status: 'info', message: 'Stream ended. Pushing timings to GitHub...' });
 
