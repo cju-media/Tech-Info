@@ -210,9 +210,16 @@ function processChapters(rawChapters) {
 async function fetchChaptersFromGithub() {
     try {
         let text = "";
-        const response = await fetch(CHAPTERS_URL);
+        const pat = githubPat || process.env.GITHUB_PAT;
+
+        let headers = {};
+        if (pat) {
+            headers["Authorization"] = `token ${pat}`;
+        }
+
+        const response = await fetch(CHAPTERS_URL, { headers: headers });
         if (!response.ok) {
-            console.error(`Failed to fetch chapters from GitHub: ${response.statusText}`);
+            console.error(`Failed to fetch chapters from GitHub: ${response.statusText} (Status: ${response.status})`);
             // Fallback to local chapters.txt for local testing on unmerged branches
             const localPath = path.join(__dirname, "chapters.txt");
             if (fs.existsSync(localPath)) {
