@@ -230,7 +230,7 @@ def main():
     print("Sending prompt to Gemini...")
     client = genai.Client(
         api_key=api_key,
-        http_options=types.HttpOptions(timeout=30000)
+        http_options=types.HttpOptions(timeout=600000)
     )
 
     model_name = 'gemini-3.5-flash'

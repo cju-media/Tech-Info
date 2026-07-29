@@ -112,7 +112,7 @@ def get_speaker_info(text, date_str):
     from google.genai import types
     client = genai.Client(
         api_key=api_key,
-        http_options=types.HttpOptions(timeout=30000) # Prevents 15-minute hanging
+        http_options=types.HttpOptions(timeout=600000) # Prevents 15-minute hanging
     )
     model_name = 'gemini-3.5-flash'
 
