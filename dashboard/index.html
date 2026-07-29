@@ -208,13 +208,18 @@
             const descBox = document.getElementById('flowchart-desc');
             const defaultText = "Hover over a workflow node to view its description.";
 
-            // Wait for mermaid to finish rendering the SVG
+            // Use MutationObserver or fallback to setTimeout
             setTimeout(() => {
                 const nodes = document.querySelectorAll('.mermaid g.node');
                 nodes.forEach(node => {
+                    // In Mermaid 9+, titles are often rendered as attributes on the node
+                    // or as child <title> elements. We'll check both.
+                    const titleAttr = node.getAttribute('title');
                     const titleEl = node.querySelector('title');
-                    if (titleEl) {
-                        const description = titleEl.textContent;
+
+                    const description = titleAttr || (titleEl ? titleEl.textContent : null);
+
+                    if (description) {
                         node.addEventListener('mouseenter', () => {
                             descBox.textContent = description;
                             descBox.style.color = '#333';
@@ -227,10 +232,15 @@
                         });
 
                         // We also need to remove the native tooltip so it doesn't double-show
-                        titleEl.remove();
+                        if (titleAttr) {
+                            node.removeAttribute('title');
+                        }
+                        if (titleEl) {
+                            titleEl.remove();
+                        }
                     }
                 });
-            }, 500); // Give mermaid a moment
+            }, 1000); // Give mermaid a moment
         }
 
 
