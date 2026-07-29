@@ -122,9 +122,48 @@ def main():
 
                     is_boiler = "DescriptionBoiler.txt" in txt_files
 
-                    if not is_boiler:
-                        max_index = 0
-                        has_numbered = False
+                    if is_boiler:
+                        line_valid = True
+                        modified_line = line
+                        for txt_file in txt_files:
+                            filepath = txt_file if txt_file == "DescriptionBoiler.txt" else os.path.join("../Worship Scripts/service-titles", txt_file)
+                            if not os.path.exists(filepath):
+                                line_valid = False
+                                break
+                            with open(filepath, 'r') as f:
+                                content = f.read().strip()
+                            if not content:
+                                line_valid = False
+                                break
+
+                            ows_date_str = format_date_for_ows(doc_dt_aware)
+                            content = re.sub(
+                                r'(https://www\.fccla\.org/ows/)(?:\[DATE OF SERVICE\]|[\w-]+)',
+                                rf'\g<1>{ows_date_str}',
+                                content
+                            )
+                            modified_line = modified_line.replace(txt_file, content)
+
+                        if line_valid:
+                            boilerplate_lines.append(modified_line)
+                        continue
+
+                    # Process Chapter Lines
+                    # Extract potential section title
+                    m = re.match(r'^([^,]+),\s*(.*\.txt.*)$', line)
+                    if m and not re.search(r'\.txt', m.group(1)):
+                        section_title = m.group(1).strip()
+                        rest_of_line = m.group(2).strip()
+                    else:
+                        section_title = None
+                        rest_of_line = line.strip()
+
+                    is_explicit_numbered_piece = bool(re.search(r'\d+\.txt', line))
+
+                    max_index = 0
+                    has_numbered = False
+
+                    if not is_explicit_numbered_piece:
                         for txt_file in txt_files:
                             base_name = txt_file[:-4]
                             idx = 1
@@ -134,148 +173,73 @@ def main():
                                 max_index = max(max_index, idx - 1)
                                 has_numbered = True
 
-                        if has_numbered:
-                            for i in range(0, max_index + 1):
-                                line_valid = True
-                                modified_line = line
-                                for txt_file in txt_files:
-                                    base_name = txt_file[:-4]
-                                    if i == 0:
-                                        num_filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
-                                    else:
-                                        num_filepath = os.path.join("../Worship Scripts/service-titles", f"{base_name}{i}.txt")
-                                        if not os.path.exists(num_filepath):
-                                            num_filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
+                    if has_numbered:
+                        for i in range(0, max_index + 1):
+                            line_valid = True
+                            resolved_rest = rest_of_line
 
+                            for txt_file in txt_files:
+                                base_name = txt_file[:-4]
+                                if i == 0:
+                                    num_filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
+                                else:
+                                    num_filepath = os.path.join("../Worship Scripts/service-titles", f"{base_name}{i}.txt")
                                     if not os.path.exists(num_filepath):
-                                        line_valid = False
-                                        break
+                                        num_filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
 
-                                    with open(num_filepath, 'r') as f:
-                                        content = f.read().strip()
+                                if not os.path.exists(num_filepath):
+                                    line_valid = False
+                                    break
 
-                                    if not content:
-                                        line_valid = False
-                                        break
+                                mtime = get_mtime(num_filepath)
+                                if mtime < previous_sunday_ts:
+                                    print(f"File {os.path.basename(num_filepath)} is older than previous Sunday. Skipping line.")
+                                    line_valid = False
+                                    break
 
-                                    mtime = get_mtime(num_filepath)
-                                    if mtime < previous_sunday_ts:
-                                        print(f"File {os.path.basename(num_filepath)} is older than previous Sunday. Skipping line.")
-                                        line_valid = False
-                                        break
+                                with open(num_filepath, 'r') as f:
+                                    content = f.read().strip()
 
-                                    modified_line = modified_line.replace(txt_file, content)
+                                if not content:
+                                    line_valid = False
+                                    break
 
-                                if line_valid:
-                                    chapter_lines.append(modified_line)
-                            continue
+                                resolved_rest = resolved_rest.replace(txt_file, content)
 
-                    line_valid = True
-                    modified_line = line
-
-                    for txt_file in txt_files:
-                        if txt_file == "DescriptionBoiler.txt":
-                            filepath = txt_file
-                        else:
+                            if line_valid:
+                                if i == 0 and section_title:
+                                    chapter_lines.append(f"{section_title} - {resolved_rest}")
+                                else:
+                                    chapter_lines.append(resolved_rest)
+                    else:
+                        line_valid = True
+                        resolved_rest = rest_of_line
+                        for txt_file in txt_files:
                             filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
+                            if not os.path.exists(filepath):
+                                line_valid = False
+                                break
 
-                        if not os.path.exists(filepath):
-                            line_valid = False
-                            break
-
-                        with open(filepath, 'r') as f:
-                            content = f.read().strip()
-
-                        if not content:
-                            line_valid = False
-                            break
-
-                        if not is_boiler:
                             mtime = get_mtime(filepath)
                             if mtime < previous_sunday_ts:
                                 print(f"File {txt_file} is older than previous Sunday. Skipping line.")
                                 line_valid = False
                                 break
 
-                        if is_boiler:
-                            ows_date_str = format_date_for_ows(doc_dt_aware)
-                            content = re.sub(
-                                r'(https://www\.fccla\.org/ows/)(?:\[DATE OF SERVICE\]|[\w-]+)',
-                                rf'\g<1>{ows_date_str}',
-                                content
-                            )
+                            with open(filepath, 'r') as f:
+                                content = f.read().strip()
 
-                        modified_line = modified_line.replace(txt_file, content)
+                            if not content:
+                                line_valid = False
+                                break
 
-                    if line_valid:
-                        if is_boiler:
-                            boilerplate_lines.append(modified_line)
-                        else:
-                            # Handling grouped items specifically (where a section has multiple numbered pieces)
-                            # First, check if this line is setting up a section header (e.g., "Organ Prelude-Concert, prelude-performer.txt")
-                            # We can identify headers that setup groups if the line doesn't resolve to a piece but has a comma separator.
-                            # Since `DescriptionTemplate.txt` explicitly lists `prelude1.txt`, `prelude2.txt`, etc., we will track ANY section header.
+                            resolved_rest = resolved_rest.replace(txt_file, content)
 
-                            # If the line contains a template file that wasn't found (and thus skipped), we wouldn't be here.
-                            # Let's detect a section header by checking if the next template lines are numbered pieces of the same type.
-                            # To keep it generic, if a line has a comma, we save it as a potential section title.
-                            # "Organ Prelude-Concert, Sabrina Tyas" -> title: "Organ Prelude-Concert"
-
-                            # Is this line a section setup? (It doesn't contain digits right before .txt in the original template line)
-                            is_numbered_piece = bool(re.search(r'\d+\.txt', line))
-
-                            # If we held a group setup header, but THIS line is not a numbered piece,
-                            # it means the previous line was just a standalone comma line. We must flush it!
-                            if isinstance(current_section_title, str) and not is_numbered_piece:
-                                chapter_lines.append(previous_modified_line_held)
-                                current_section_title = None
-                                current_section_performer = None
-
-                            if not is_numbered_piece and "," in modified_line:
-                                parts = modified_line.split(',', 1)
-                                potential_title = parts[0].strip()
-
-                                current_section_title = potential_title
-                                current_section_performer = None # Reset performer state for the new section
-                                previous_modified_line_held = modified_line # Hold the full string just in case it doesn't get consumed
-                                continue # Skip appending the header itself, wait for the first piece
-
-                            if is_numbered_piece and current_section_title:
-                                piece_content = modified_line.strip()
-
-                                # Extract performer from piece_content if it exists (Format: PIECE NAME - COMPOSER, PERFORMER)
-                                piece_parts = piece_content.rsplit(", ", 1)
-                                piece_base = piece_parts[0]
-                                piece_performer = piece_parts[1] if len(piece_parts) > 1 else None
-
-                                # Is this the first item in the section?
-                                if current_section_title is not True: # It's a string title
-                                    formatted = f"{current_section_title} - {piece_base}"
-                                    if piece_performer:
-                                        formatted += f", {piece_performer}"
-                                        current_section_performer = piece_performer
-                                    chapter_lines.append(formatted)
-
-                                    # Set to True so we know we are inside a section but past the first item
-                                    current_section_title = True
-                                else:
-                                    # It's a subsequent item
-                                    formatted = piece_base
-                                    if piece_performer and piece_performer != current_section_performer:
-                                        formatted += f", {piece_performer}"
-                                        current_section_performer = piece_performer
-
-                                    chapter_lines.append(formatted)
-
-                                continue
-
-                            # For any other normal chapter line, clear the grouping state
-                            current_section_title = None
-                            current_section_performer = None
-                            chapter_lines.append(modified_line)
-
-                if isinstance(current_section_title, str):
-                    chapter_lines.append(previous_modified_line_held)
+                        if line_valid:
+                            if section_title:
+                                chapter_lines.append(f"{section_title} - {resolved_rest}")
+                            else:
+                                chapter_lines.append(resolved_rest)
 
                 # Save Description.txt (boilerplate only)
                 with open(desc_output_path, 'w', encoding='utf-8') as f:
