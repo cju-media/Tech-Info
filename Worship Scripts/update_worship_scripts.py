@@ -347,18 +347,15 @@ def main():
                         should_download = True
                         if date_str in worship_scripts:
                             old_modified_time = worship_scripts[date_str].get('modifiedTime')
-                            has_valid_speaker_info = worship_scripts[date_str].get('speakerInfo') is not None
 
-                            # Only download/process if the file is new/modified OR if it's missing speakerInfo
-                            if old_modified_time == modified_time and has_valid_speaker_info:
-                                # File hasn't changed and we already have speaker info, skip download but keep in new state
+                            # Only download/process if the file is new/modified
+                            if old_modified_time == modified_time:
+                                # File hasn't changed, skip download but keep in new state
                                 # Ensure we don't lose old custom properties if they aren't fully merged.
                                 # Actually, worship_scripts[date_str] already has everything from the file.
                                 worship_scripts_new[date_str] = worship_scripts[date_str]
-                                print(f"Skipping {date_str} (No changes since last run and speaker info exists)")
+                                print(f"Skipping {date_str} (No changes since last run)")
                                 should_download = False
-                            elif old_modified_time == modified_time and not has_valid_speaker_info:
-                                print(f"Re-downloading {date_str} to extract missing speaker info...")
 
                         if should_download:
                             try:
