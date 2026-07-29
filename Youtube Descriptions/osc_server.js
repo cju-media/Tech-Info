@@ -192,16 +192,26 @@ async function getLiveStream(service) {
 }
 
 function processChapters(rawChapters) {
-    // Filter out "Organ Prelude-Concert,"
-    let filtered = rawChapters.filter(c => !c.startsWith("Organ Prelude-Concert,"));
-
     let initialPast = [];
-    let initialUpcoming = [...filtered];
+    let initialUpcoming = [];
 
-    // Always start Announcements at 0:00
-    if (initialUpcoming.length > 0 && initialUpcoming[0].toLowerCase().includes("announcements")) {
-        const item = initialUpcoming.shift();
-        initialPast.push(`0:00 ${item}`);
+    // Pass 1: find where "Announcements" is (typically index 0 or 1, maybe after prelude)
+    for (const c of rawChapters) {
+        initialUpcoming.push(c);
+    }
+
+    // We want 00:00 Announcements to be the VERY FIRST item in initialPast
+    let announcementsIndex = initialUpcoming.findIndex(c => c.toLowerCase().includes("announcements"));
+    if (announcementsIndex !== -1) {
+        const item = initialUpcoming.splice(announcementsIndex, 1)[0];
+        initialPast.push(`00:00 ${item}`);
+    }
+
+    // We want Organ Prelude-Concert, to be in initialPast, but without a timestamp
+    let preludeIndex = initialUpcoming.findIndex(c => c.startsWith("Organ Prelude-Concert,"));
+    if (preludeIndex !== -1) {
+        const item = initialUpcoming.splice(preludeIndex, 1)[0];
+        initialPast.push(item);
     }
 
     return { past: initialPast, upcoming: initialUpcoming };
@@ -210,9 +220,16 @@ function processChapters(rawChapters) {
 async function fetchChaptersFromGithub() {
     try {
         let text = "";
-        const response = await fetch(CHAPTERS_URL);
+        const pat = githubPat || process.env.GITHUB_PAT;
+
+        let headers = {};
+        if (pat) {
+            headers["Authorization"] = `token ${pat}`;
+        }
+
+        const response = await fetch(CHAPTERS_URL, { headers: headers });
         if (!response.ok) {
-            console.error(`Failed to fetch chapters from GitHub: ${response.statusText}`);
+            console.error(`Failed to fetch chapters from GitHub: ${response.statusText} (Status: ${response.status})`);
             // Fallback to local chapters.txt for local testing on unmerged branches
             const localPath = path.join(__dirname, "chapters.txt");
             if (fs.existsSync(localPath)) {
@@ -453,8 +470,9 @@ async function handleNextTiming() {
         // If YouTube hasn't provided a start time yet, the first trigger forces it locally.
         activeStartTime = new Date().toISOString();
         console.log(`Stream timer locally started at: ${activeStartTime}`);
-        await fetchAndBroadcastState();
-        return;
+
+        // We still want to timestamp the current item if there is one!
+        // (Don't just return here without stamping the item if user triggered it)
     }
 
     const startTime = new Date(activeStartTime).getTime();
@@ -476,9 +494,15 @@ async function handleNextTiming() {
 
     if (upcoming.length > 0) {
         const nextItem = upcoming.shift();
-        const timestampedItem = `${elapsedStr} ${nextItem}`;
-        past.push(timestampedItem);
-        console.log(`Added timestamp: ${timestampedItem}`);
+
+        if (nextItem.startsWith("Organ Prelude-Concert,")) {
+            past.push(nextItem);
+            console.log(`Skipped timestamping for: ${nextItem}`);
+        } else {
+            const timestampedItem = `${elapsedStr} ${nextItem}`;
+            past.push(timestampedItem);
+            console.log(`Added timestamp: ${timestampedItem}`);
+        }
 
         await fetchAndBroadcastState();
     } else {
