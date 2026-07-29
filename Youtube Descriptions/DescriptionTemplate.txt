@@ -1,14 +1,13 @@
 DescriptionBoiler.txt
 
 Announcements
-Organ Prelude-Concert, prelude-performer.txt
-prelude1.txt - prelude-performer1.txt
-prelude2.txt - prelude-performer2.txt
-prelude3.txt - prelude-performer3.txt
-prelude4.txt - prelude-performer4.txt
-prelude5.txt - prelude-performer5.txt
+Organ Prelude-Concert, prelude1.txt - prelude-performer.txt
+prelude2.txt - prelude-performer1.txt
+prelude3.txt - prelude-performer2.txt
+prelude4.txt - prelude-performer3.txt
+prelude5.txt - prelude-performer4.txt
 Welcome
-hymn-of-gathering.txt
+Hymn of Gathering, hymn-of-gathering.txt
 Prayers of Awareness
 Introit, introit-title-composer.txt - introit-group.txt
 Prayers, Readings, Meditations
