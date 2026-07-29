@@ -31,6 +31,15 @@ This UI will show the active stream title, calculate the elapsed time, and show 
 
 These values are saved locally to your machine (`osc_config.json`) and will automatically reload every time you start the server.
 
+### Generating a GitHub PAT
+To push the timings file to the repository, you must configure a classic GitHub PAT (Personal Access Token).
+1. Go to your GitHub account settings > **Developer settings** > **Personal access tokens** > **Tokens (classic)**.
+2. Click **Generate new token (classic)**.
+3. Give it a descriptive note (e.g., "YouTube OSC Server").
+4. Select an expiration (or set it to 'No expiration').
+5. Check the `repo` scope (this grants full control of private repositories, which is required to push files to `tech-schedule`).
+6. Generate the token, copy it, and paste it into the "GitHub PAT" field in the server's Configuration modal.
+
 ## Adding Timestamps via OSC
 
 The server listens for incoming OSC messages on the port you configured (default `8000`).
