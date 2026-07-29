@@ -12,7 +12,7 @@ Prayers of Awareness
 Introit, introit-title-composer.txt - introit-group.txt
 Prayers, Readings, Meditations
 Meditation Anthem, meditation-title-composer.txt - meditation-group.txt
-sermon-title.txt - sermon-minister.txt
+Sermon, sermon-title.txt - sermon-minister.txt
 Communion, communion.txt
 Offering Prayers
 Offertory, offertory-title-composer.txt, offertory-group.txt
