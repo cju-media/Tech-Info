@@ -151,11 +151,12 @@
             <div class="mermaid">
                 graph TD
                 %% Worship Scripts Flow
-                A1[worship_scripts_checker] -->|Completes| B1[youtube_description]
-                A1 -->|Completes| B2[pages_deployment]
+                A1[worship_scripts_checker] -->|Completes| B2[pages_deployment]
 
                 %% Service Titles Flow
                 C1[service_titles_checker] -->|Success| D1[drive_upload_complete Dispatch]
+                C1 -->|Output Used By| B1[youtube_description]
+                A1 -->|Triggers| B1
                 C2[sync_service_titles] -->|Success| D1
                 D1 -->|Triggers| E1[imessage_notifications]
 
@@ -170,8 +171,8 @@
                 G4[sermon_series]
 
                 %% Click Events
-                click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves to JSON"
-                click B1 href "#youtube_description" "Compiles extracted titles and timestamps into Description.txt and chapters.txt"
+                click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
+                click B1 href "#youtube_description" "Compiles extracted titles from service_titles_checker into Description.txt and chapters.txt"
                 click B2 href "#pages_deployment" "Deploys the static tech-info dashboard to GitHub Pages"
                 click C1 href "#service_titles_checker" "Extracts service components from upcoming OW PDF via Gemini and syncs to Drive"
                 click C2 href "#sync_service_titles" "Syncs manual edits of service title text files to Google Drive"
