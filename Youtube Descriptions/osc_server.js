@@ -19,6 +19,15 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
 
+app.get('/api/readme', (req, res) => {
+    const readmePath = path.join(__dirname, "README.md");
+    if (fs.existsSync(readmePath)) {
+        res.sendFile(readmePath);
+    } else {
+        res.status(404).send("README.md not found.");
+    }
+});
+
 let overrideVideoId = null;
 let currentService = null;
 let currentVideo = null;
