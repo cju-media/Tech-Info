@@ -6,18 +6,37 @@ const path = require("path");
 const fetch = require("node-fetch");
 const fs = require("fs");
 const { google } = require("googleapis");
+const child_process = require("child_process");
 
 const OSC_IP = "0.0.0.0";
 const WEB_PORT = 3671;
 const CONFIG_FILE = path.join(__dirname, "osc_config.json");
 const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
-const CHAPTERS_URL = "https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/main/Youtube%20Descriptions/chapters.txt";
+
+function getChaptersUrl() {
+    let branch = "main";
+    try {
+        branch = child_process.execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8" }).trim();
+    } catch (e) {
+        console.warn("Could not determine git branch, defaulting to main.");
+    }
+    return `https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/${branch}/Youtube%20Descriptions/chapters.txt`;
+}
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get('/api/readme', (req, res) => {
+    const readmePath = path.join(__dirname, "README.md");
+    if (fs.existsSync(readmePath)) {
+        res.sendFile(readmePath);
+    } else {
+        res.status(404).send("README.md not found.");
+    }
+});
 
 let overrideVideoId = null;
 let currentService = null;
@@ -30,6 +49,11 @@ let isStateInitialized = false;
 
 // We track start time, allowing the YT API to seed it if possible
 let activeStartTime = null;
+
+// Track stream lifecycle
+let currentStreamId = null;
+let hasGoneLive = false;
+let hasPushedThisStream = false;
 
 let isMockMode = false;
 let mockTitle = "Worship Service (Pending Start)";
@@ -68,6 +92,9 @@ function checkAndAutoReset() {
         overrideVideoId = null;
         isStateInitialized = false;
         activeStartTime = null;
+        currentStreamId = null;
+        hasGoneLive = false;
+        hasPushedThisStream = false;
         lastResetWeek = currentWeekKey;
 
         // This will fetch fresh chapters and default stream
@@ -207,7 +234,7 @@ function processChapters(rawChapters) {
         initialPast.push(`00:00 ${item}`);
     }
 
-    // We want Organ Prelude-Concert, to be in initialPast, but without a timestamp
+    // Auto-shift the prelude out of upcoming so the arrow never rests on it
     let preludeIndex = initialUpcoming.findIndex(c => c.startsWith("Organ Prelude-Concert,"));
     if (preludeIndex !== -1) {
         const item = initialUpcoming.splice(preludeIndex, 1)[0];
@@ -224,10 +251,12 @@ async function fetchChaptersFromGithub() {
 
         let headers = {};
         if (pat) {
-            headers["Authorization"] = `token ${pat}`;
+            headers["Authorization"] = `Bearer ${pat}`;
         }
 
-        const response = await fetch(CHAPTERS_URL, { headers: headers });
+        const url = getChaptersUrl();
+        console.log(`Fetching chapters from: ${url}`);
+        const response = await fetch(url, { headers: headers });
         if (!response.ok) {
             console.error(`Failed to fetch chapters from GitHub: ${response.statusText} (Status: ${response.status})`);
             // Fallback to local chapters.txt for local testing on unmerged branches
@@ -273,16 +302,45 @@ async function fetchAndBroadcastState() {
             if (currentVideo) {
                 broadcastTitle = currentVideo.snippet?.title || "Untitled Stream";
 
+                // Keep track of the specific stream so we can reset cleanly when testing different ones
+                if (currentStreamId !== currentVideo.id) {
+                    console.log(`Tracking new stream: ${currentVideo.id}`);
+                    currentStreamId = currentVideo.id;
+                    hasGoneLive = false;
+                    hasPushedThisStream = false;
+                    // Note: we do not wipe `isStateInitialized` here, because we want to preserve the pre-loaded chapters
+                }
+
                 const ytActualStart = currentVideo.liveStreamingDetails?.actualStartTime;
                 const ytActualEnd = currentVideo.liveStreamingDetails?.actualEndTime;
                 const isStreamEnded = currentVideo.snippet?.liveBroadcastContent === 'none' && ytActualEnd;
 
+                // Sync live state
+                if (ytActualStart && !ytActualEnd && currentVideo.snippet?.liveBroadcastContent === 'live') {
+                    if (!hasGoneLive) {
+                        console.log(`Stream has just gone live! Auto-resetting timings to the top.`);
+                        hasGoneLive = true;
+
+                        // Force a clean reset of chapters so it's fresh for the live stream
+                        isStateInitialized = false;
+                        const rawChapters = await fetchChaptersFromGithub();
+                        if (rawChapters.length > 0) {
+                            const processed = processChapters(rawChapters);
+                            upcoming = processed.upcoming;
+                            past = processed.past;
+                            isStateInitialized = true;
+                        }
+                    }
+                }
+
                 if (isStreamEnded) {
                     broadcastTitle = "[Ended] " + broadcastTitle;
 
-                    if (activeStartTime) {
+                    if (hasGoneLive && !hasPushedThisStream) {
                         console.log(`Detected stream end. Stopping timer and initiating auto-push.`);
                         activeStartTime = null; // Pause timer
+                        hasPushedThisStream = true;
+
                         io.emit('stateUpdate', {
                             title: broadcastTitle,
                             actualStartTime: null,
@@ -466,13 +524,15 @@ setInterval(() => {
 }, 60000);
 
 async function handleNextTiming() {
+    if (!isMockMode && !hasGoneLive) {
+        console.log("Stream is not live yet. Cannot iterate timings.");
+        return;
+    }
+
     if (!activeStartTime) {
-        // If YouTube hasn't provided a start time yet, the first trigger forces it locally.
+        // Fallback safety: If we somehow don't have a start time, force it locally.
         activeStartTime = new Date().toISOString();
         console.log(`Stream timer locally started at: ${activeStartTime}`);
-
-        // We still want to timestamp the current item if there is one!
-        // (Don't just return here without stamping the item if user triggered it)
     }
 
     const startTime = new Date(activeStartTime).getTime();
@@ -494,14 +554,15 @@ async function handleNextTiming() {
 
     if (upcoming.length > 0) {
         const nextItem = upcoming.shift();
+        const timestampedItem = `${elapsedStr} ${nextItem}`;
+        past.push(timestampedItem);
+        console.log(`Added timestamp: ${timestampedItem}`);
 
-        if (nextItem.startsWith("Organ Prelude-Concert,")) {
-            past.push(nextItem);
-            console.log(`Skipped timestamping for: ${nextItem}`);
-        } else {
-            const timestampedItem = `${elapsedStr} ${nextItem}`;
-            past.push(timestampedItem);
-            console.log(`Added timestamp: ${timestampedItem}`);
+        // Peek ahead to auto-skip prelude if it somehow got back into upcoming
+        while (upcoming.length > 0 && upcoming[0].startsWith("Organ Prelude-Concert,")) {
+            const skipItem = upcoming.shift();
+            past.push(skipItem);
+            console.log(`Auto-skipped prelude: ${skipItem}`);
         }
 
         await fetchAndBroadcastState();
@@ -511,19 +572,33 @@ async function handleNextTiming() {
 }
 
 async function handlePrevTiming() {
-    if (past.length > 0) {
+    if (!isMockMode && !hasGoneLive) {
+        console.log("Stream is not live yet. Cannot iterate timings.");
+        return;
+    }
+
+    let revertedTimestamp = false;
+
+    while (past.length > 0 && !revertedTimestamp) {
         const lastItem = past.pop();
-        console.log(`Reverting timestamp: ${lastItem}`);
+        console.log(`Reverting item: ${lastItem}`);
 
         const match = lastItem.match(/^(\d{1,2}:)?\d{1,2}:\d{2}\s+/);
         if (match) {
             const timeStr = match[0];
             const cleanTitle = lastItem.substring(timeStr.length).trim();
             upcoming.unshift(cleanTitle);
+
+            // We successfully found and reverted a real timestamp, so stop looping
+            revertedTimestamp = true;
         } else {
+            // It's an untimestamped item (like Organ Prelude). Push it back to upcoming,
+            // but keep looping because we haven't actually reverted a *timing* yet.
             upcoming.unshift(lastItem);
         }
+    }
 
+    if (revertedTimestamp || past.length > 0) {
         await fetchAndBroadcastState();
     } else if (activeStartTime && past.length === 0) {
         console.log("Reverting timer start.");
@@ -535,8 +610,15 @@ async function handlePrevTiming() {
 }
 
 async function handleOscMessage(oscMsg) {
-    console.log(`Received OSC message at address: ${oscMsg.address}`);
-    await handleNextTiming();
+    if (oscMsg.address === "/timings/forward") {
+        console.log(`Received OSC forward command.`);
+        await handleNextTiming();
+    } else if (oscMsg.address === "/timings/back") {
+        console.log(`Received OSC back command.`);
+        await handlePrevTiming();
+    } else {
+        console.log(`Ignored unrelated OSC message at address: ${oscMsg.address}`);
+    }
 }
 
 function extractVideoId(urlStr) {
@@ -600,6 +682,9 @@ io.on("connection", (socket) => {
             overrideVideoId = vId;
             // Clear current service so we re-fetch with API
             currentService = null;
+            currentStreamId = null;
+            hasGoneLive = false;
+            hasPushedThisStream = false;
             fetchAndBroadcastState();
         }
     });
@@ -609,6 +694,9 @@ io.on("connection", (socket) => {
         isMockMode = false;
         overrideVideoId = null;
         currentService = null;
+        currentStreamId = null;
+        hasGoneLive = false;
+        hasPushedThisStream = false;
         fetchAndBroadcastState();
     });
 
@@ -622,6 +710,9 @@ io.on("connection", (socket) => {
         isMockMode = false;
         isStateInitialized = false;
         activeStartTime = null;
+        currentStreamId = null;
+        hasGoneLive = false;
+        hasPushedThisStream = false;
         await fetchAndBroadcastState();
     });
 

@@ -251,9 +251,43 @@
             color: white;
             margin-bottom: 15px !important;
         }
+
+        .modal-content.large {
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #readme-content {
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        #readme-content code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        #readme-content pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
     </style>
+    <!-- Include marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
+    <div class="modal-overlay" id="infoModal">
+        <div class="modal-content large">
+            <button class="modal-close" onclick="closeInfoModal()">&times;</button>
+            <div id="readme-content">Loading info...</div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="configModal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeConfigModal()">&times;</button>
@@ -282,6 +316,7 @@
     <div class="container">
         <button class="menu-btn" onclick="toggleMenu()">☰</button>
         <div class="menu-overlay" id="menuOverlay">
+            <button class="btn-config" onclick="openInfoModal()" style="background-color: #03a9f4; margin-bottom: 5px !important;">ℹ️ Info / Help</button>
             <button class="btn-config" onclick="openConfigModal()">⚙️ Settings</button>
 
             <h3>Actions</h3>
@@ -337,6 +372,37 @@
         function closeConfigModal() {
             document.getElementById('configModal').classList.remove('active');
         }
+
+        async function openInfoModal() {
+            document.getElementById('menuOverlay').classList.remove('active');
+            const readmeContainer = document.getElementById('readme-content');
+
+            try {
+                const response = await fetch('/api/readme');
+                if (response.ok) {
+                    const text = await response.text();
+                    readmeContainer.innerHTML = marked.parse(text);
+                } else {
+                    readmeContainer.innerHTML = "<p>Error loading README.</p>";
+                }
+            } catch (e) {
+                readmeContainer.innerHTML = "<p>Error loading README.</p>";
+            }
+
+            document.getElementById('infoModal').classList.add('active');
+        }
+
+        function closeInfoModal() {
+            document.getElementById('infoModal').classList.remove('active');
+        }
+
+        // Close modals on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                closeInfoModal();
+                closeConfigModal();
+            }
+        });
 
         function setOverride() {
             const link = document.getElementById('overrideLink').value;
