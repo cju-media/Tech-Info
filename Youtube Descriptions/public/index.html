@@ -99,6 +99,34 @@
             color: #1976d2;
             margin-right: 10px;
         }
+        .notification {
+            display: none;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .notification.info {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #90caf9;
+            display: block;
+        }
+        .notification.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+            display: block;
+        }
+        .notification.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            display: block;
+        }
         .menu-btn {
             position: absolute;
             top: 20px;
@@ -271,6 +299,7 @@
 
         <h1>Live Stream Timestamps</h1>
         <div id="stream-title">Loading stream details...</div>
+        <div id="notification-area" class="notification"></div>
 
         <div class="controls">
             <button class="btn-prev" onclick="prevTiming()">⬆ Previous Timing</button>
@@ -370,9 +399,16 @@
             socket.emit('prevTiming');
         }
 
+        let isStreamEnded = false;
+
         function updateTimer() {
+            if (isStreamEnded) {
+                // Keep the final value, don't reset to 0
+                return;
+            }
+
             if (!startTime) {
-                document.getElementById('timer').innerText = "00:00:00";
+                document.getElementById('timer').innerText = "Not Started";
                 return;
             }
 
@@ -412,6 +448,22 @@
             URL.revokeObjectURL(url);
         }
 
+        socket.on('pushStatus', (data) => {
+            console.log("Push status:", data);
+            const notifArea = document.getElementById('notification-area');
+            notifArea.className = 'notification ' + data.status;
+            notifArea.innerText = data.message;
+
+            // Auto hide success/info after 10 seconds, keep errors visible
+            if (data.status !== 'error') {
+                setTimeout(() => {
+                    if (notifArea.innerText === data.message) {
+                        notifArea.className = 'notification';
+                    }
+                }, 10000);
+            }
+        });
+
         socket.on('stateUpdate', (state) => {
             console.log("Received state:", state);
             if (state.past) {
@@ -443,13 +495,19 @@
                 document.getElementById('stream-title').innerText = state.title;
             }
 
+            if (state.title && state.title.startsWith("[Ended]")) {
+                isStreamEnded = true;
+            } else {
+                isStreamEnded = false;
+            }
+
             if (state.actualStartTime) {
                 startTime = new Date(state.actualStartTime).getTime();
                 if (!timerInterval) {
                     timerInterval = setInterval(updateTimer, 1000);
                 }
                 updateTimer();
-            } else {
+            } else if (!isStreamEnded) {
                 startTime = null;
                 document.getElementById('timer').innerText = "Not Started";
             }

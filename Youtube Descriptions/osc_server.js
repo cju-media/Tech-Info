@@ -161,19 +161,29 @@ async function getLiveStream(service) {
             id: videoIds.join(',')
         });
 
-        let foundUpcoming = null;
+        let foundLiveOrUpcoming = null;
+        let lastLiveEnded = null;
+
         for (const video of (videoResponse.data.items || [])) {
             const snippet = video.snippet || {};
+
+            // Check for actively live stream first
             if (snippet.liveBroadcastContent === 'live' && video.liveStreamingDetails) {
                 if (video.liveStreamingDetails.actualStartTime) {
                     return video;
                 }
-            } else if (snippet.liveBroadcastContent === 'upcoming' && !foundUpcoming) {
-                foundUpcoming = video;
+            } else if (snippet.liveBroadcastContent === 'upcoming' && !foundLiveOrUpcoming) {
+                foundLiveOrUpcoming = video;
+            } else if (snippet.liveBroadcastContent === 'none' && video.liveStreamingDetails && video.liveStreamingDetails.actualEndTime) {
+                // Keep track of the most recently ended stream in case we just transitioned from live -> none
+                if (!lastLiveEnded || new Date(video.liveStreamingDetails.actualEndTime) > new Date(lastLiveEnded.liveStreamingDetails.actualEndTime)) {
+                    lastLiveEnded = video;
+                }
             }
         }
 
-        return foundUpcoming;
+        // If we didn't find live or upcoming, return the recently ended stream so we can detect the transition
+        return foundLiveOrUpcoming || lastLiveEnded;
     } catch (e) {
         console.error(`An error occurred getting streams from playlist: ${e}`);
     }
@@ -227,9 +237,33 @@ async function fetchAndBroadcastState() {
             if (currentVideo) {
                 broadcastTitle = currentVideo.snippet?.title || "Untitled Stream";
 
-                // If YouTube says the stream has started, seed the timer!
                 const ytActualStart = currentVideo.liveStreamingDetails?.actualStartTime;
-                if (ytActualStart && !activeStartTime) {
+                const ytActualEnd = currentVideo.liveStreamingDetails?.actualEndTime;
+                const isStreamEnded = currentVideo.snippet?.liveBroadcastContent === 'none' && ytActualEnd;
+
+                if (isStreamEnded) {
+                    broadcastTitle = "[Ended] " + broadcastTitle;
+
+                    if (activeStartTime) {
+                        console.log(`Detected stream end. Stopping timer and initiating auto-push.`);
+                        activeStartTime = null; // Pause timer
+                        io.emit('stateUpdate', {
+                            title: broadcastTitle,
+                            actualStartTime: null,
+                            past: past,
+                            upcoming: upcoming,
+                            isMockMode: isMockMode,
+                            oscPort: oscPort,
+                            hasYoutubeApiKey: !!youtubeApiKey,
+                            hasGithubPat: !!githubPat,
+                            error: apiError
+                        });
+
+                        await pushTimingsToGithub();
+                        return; // stateUpdate already emitted above before push block
+                    }
+                } else if (ytActualStart && !activeStartTime) {
+                    // If YouTube says the stream has started, seed the timer!
                     console.log(`Seeded start time from YouTube API: ${ytActualStart}`);
                     activeStartTime = ytActualStart;
                 }
@@ -257,19 +291,23 @@ async function fetchAndBroadcastState() {
 async function pushTimingsToGithub() {
     if (isMockMode) {
         console.log("Mock Mode: Would push timings.txt to GitHub here.");
+        io.emit('pushStatus', { status: 'info', message: 'Mock mode: Push skipped.' });
         return;
     }
 
     console.log("Pushing final timings to GitHub...");
+    io.emit('pushStatus', { status: 'info', message: 'Stream ended. Pushing timings to GitHub...' });
 
     const pat = githubPat || process.env.GITHUB_PAT;
     if (!pat) {
         console.error("Error: GitHub PAT not configured. Cannot push to GitHub.");
+        io.emit('pushStatus', { status: 'error', message: 'Failed: GitHub PAT not configured.' });
         return;
     }
 
     if (past.length === 0) {
         console.log("No timings to push.");
+        io.emit('pushStatus', { status: 'info', message: 'No timings to push.' });
         return;
     }
 
@@ -315,13 +353,65 @@ async function pushTimingsToGithub() {
         if (!putRes.ok) {
             const errText = await putRes.text();
             console.error(`Failed to push timings to GitHub: ${putRes.status} - ${errText}`);
+            io.emit('pushStatus', { status: 'error', message: `Push failed: ${putRes.status}` });
         } else {
             console.log("Successfully pushed timings.txt to GitHub repository!");
+            io.emit('pushStatus', { status: 'info', message: 'Push successful! Waiting for GitHub Action to start...' });
+
+            // Poll for GitHub Action status
+            setTimeout(() => checkGitHubActionStatus(pat), 10000); // Start checking after 10 seconds
         }
 
     } catch (e) {
         console.error(`Failed to push to GitHub: ${e}`);
+        io.emit('pushStatus', { status: 'error', message: `Push failed: ${e.message}` });
     }
+}
+
+async function checkGitHubActionStatus(pat, attempts = 0) {
+    if (attempts > 30) { // Timeout after ~5 minutes
+        io.emit('pushStatus', { status: 'error', message: 'Timed out waiting for GitHub Action to finish.' });
+        return;
+    }
+
+    try {
+        const url = "https://api.github.com/repos/TheCathedralFCCLA/tech-schedule/actions/runs?event=push&per_page=5";
+        const res = await fetch(url, {
+            headers: {
+                "Authorization": `Bearer ${pat}`,
+                "Accept": "application/vnd.github.v3+json"
+            }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.workflow_runs && data.workflow_runs.length > 0) {
+                // Find the most recent run that matches our push
+                // Specifically looking for the "Update YouTube Stream" workflow
+                const run = data.workflow_runs.find(r => r.name.includes("Update YouTube Stream"));
+
+                if (run) {
+                    if (run.status === 'in_progress' || run.status === 'queued') {
+                        io.emit('pushStatus', { status: 'info', message: 'GitHub Action is updating YouTube description...' });
+                        setTimeout(() => checkGitHubActionStatus(pat, attempts + 1), 10000); // Check again in 10s
+                        return;
+                    } else if (run.status === 'completed') {
+                        if (run.conclusion === 'success') {
+                            io.emit('pushStatus', { status: 'success', message: 'Success! YouTube description has been updated.' });
+                        } else {
+                            io.emit('pushStatus', { status: 'error', message: `GitHub Action failed with conclusion: ${run.conclusion}` });
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Error checking action status:", e);
+    }
+
+    // If not found or error, retry
+    setTimeout(() => checkGitHubActionStatus(pat, attempts + 1), 10000);
 }
 
 // Ensure title updates periodically
