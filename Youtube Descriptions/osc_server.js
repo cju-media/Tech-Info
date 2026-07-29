@@ -6,12 +6,22 @@ const path = require("path");
 const fetch = require("node-fetch");
 const fs = require("fs");
 const { google } = require("googleapis");
+const child_process = require("child_process");
 
 const OSC_IP = "0.0.0.0";
 const WEB_PORT = 3671;
 const CONFIG_FILE = path.join(__dirname, "osc_config.json");
 const PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs";
-const CHAPTERS_URL = "https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/main/Youtube%20Descriptions/chapters.txt";
+
+function getChaptersUrl() {
+    let branch = "main";
+    try {
+        branch = child_process.execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8" }).trim();
+    } catch (e) {
+        console.warn("Could not determine git branch, defaulting to main.");
+    }
+    return `https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/${branch}/Youtube%20Descriptions/chapters.txt`;
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -233,10 +243,12 @@ async function fetchChaptersFromGithub() {
 
         let headers = {};
         if (pat) {
-            headers["Authorization"] = `token ${pat}`;
+            headers["Authorization"] = `Bearer ${pat}`;
         }
 
-        const response = await fetch(CHAPTERS_URL, { headers: headers });
+        const url = getChaptersUrl();
+        console.log(`Fetching chapters from: ${url}`);
+        const response = await fetch(url, { headers: headers });
         if (!response.ok) {
             console.error(`Failed to fetch chapters from GitHub: ${response.statusText} (Status: ${response.status})`);
             // Fallback to local chapters.txt for local testing on unmerged branches
@@ -544,8 +556,15 @@ async function handlePrevTiming() {
 }
 
 async function handleOscMessage(oscMsg) {
-    console.log(`Received OSC message at address: ${oscMsg.address}`);
-    await handleNextTiming();
+    if (oscMsg.address === "/timings/forward") {
+        console.log(`Received OSC forward command.`);
+        await handleNextTiming();
+    } else if (oscMsg.address === "/timings/back") {
+        console.log(`Received OSC back command.`);
+        await handlePrevTiming();
+    } else {
+        console.log(`Ignored unrelated OSC message at address: ${oscMsg.address}`);
+    }
 }
 
 function extractVideoId(urlStr) {

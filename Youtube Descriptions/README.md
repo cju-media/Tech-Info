@@ -34,7 +34,10 @@ These values are saved locally to your machine (`osc_config.json`) and will auto
 ## Adding Timestamps via OSC
 
 The server listens for incoming OSC messages on the port you configured (default `8000`).
-**Any valid OSC message sent to the server will trigger the next timing.** The server currently ignores the specific address or arguments of the OSC message; it simply advances the arrow to the next item and logs the timestamp whenever a packet is received.
+To prevent crosstalk with other local OSC integrations, the server **only** responds to the following specific OSC addresses:
+
+- `/timings/forward` : Adds a timestamp to the current item and advances the arrow forward.
+- `/timings/back` : Reverts the most recent timestamp and moves the arrow backward.
 
 You can also manually click the "Next Timing" or "Previous Timing" arrows on the Web UI if you missed a cue.
 
