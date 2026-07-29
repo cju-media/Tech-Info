@@ -278,11 +278,8 @@ def main():
             filename = f"{file_key}.txt"
             filepath = os.path.join(titles_dir, filename)
 
-            if os.path.exists(filepath):
-                with open(filepath, "w") as f:
-                    f.write(content.strip())
-            else:
-                print(f"Warning: File {filename} does not exist in {titles_dir}. Skipping.")
+            with open(filepath, "w") as f:
+                f.write(content.strip())
 
 
     # 16. Upload to Google Drive

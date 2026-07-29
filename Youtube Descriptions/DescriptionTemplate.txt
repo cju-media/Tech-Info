@@ -2,11 +2,11 @@ DescriptionBoiler.txt
 
 Announcements
 Organ Prelude-Concert, prelude-performer.txt
-prelude1.txt
-prelude2.txt
-prelude3.txt
-prelude4.txt
-prelude5.txt
+prelude1.txt - prelude-performer1.txt
+prelude2.txt - prelude-performer2.txt
+prelude3.txt - prelude-performer3.txt
+prelude4.txt - prelude-performer4.txt
+prelude5.txt - prelude-performer5.txt
 Welcome
 hymn-of-gathering.txt
 Prayers of Awareness
