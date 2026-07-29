@@ -20,5 +20,5 @@ Offertory, offertory-title-composer.txt, offertory-group.txt
 Life of The Church
 Choral Response, response-title-composer.txt - response-group.txt
 Hymn for the Journey, hymn-for-journey.txt
-Postlude, postlude-title-composer.txt - postlude-performer.txt
+Postlude, postlude-title.txt - postlude-performer.txt
 Postroll Chat
