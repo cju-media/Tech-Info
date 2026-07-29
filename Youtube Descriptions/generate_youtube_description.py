@@ -113,15 +113,63 @@ def main():
 
                 for line in template_lines:
                     txt_files = re.findall(r'[\w-]+\.txt', line)
+                    if not txt_files:
+                        chapter_lines.append(line)
+                        continue
+
+                    is_boiler = "DescriptionBoiler.txt" in txt_files
+
+                    if not is_boiler:
+                        max_index = 0
+                        has_numbered = False
+                        for txt_file in txt_files:
+                            base_name = txt_file[:-4]
+                            idx = 1
+                            while os.path.exists(os.path.join("../Worship Scripts/service-titles", f"{base_name}{idx}.txt")):
+                                idx += 1
+                            if idx > 1:
+                                max_index = max(max_index, idx - 1)
+                                has_numbered = True
+
+                        if has_numbered:
+                            for i in range(1, max_index + 1):
+                                line_valid = True
+                                modified_line = line
+                                for txt_file in txt_files:
+                                    base_name = txt_file[:-4]
+                                    num_filepath = os.path.join("../Worship Scripts/service-titles", f"{base_name}{i}.txt")
+                                    if not os.path.exists(num_filepath):
+                                        num_filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
+
+                                    if not os.path.exists(num_filepath):
+                                        line_valid = False
+                                        break
+
+                                    with open(num_filepath, 'r') as f:
+                                        content = f.read().strip()
+
+                                    if not content:
+                                        line_valid = False
+                                        break
+
+                                    mtime = get_mtime(num_filepath)
+                                    if mtime < previous_sunday_ts:
+                                        print(f"File {os.path.basename(num_filepath)} is older than previous Sunday. Skipping line.")
+                                        line_valid = False
+                                        break
+
+                                    modified_line = modified_line.replace(txt_file, content)
+
+                                if line_valid:
+                                    chapter_lines.append(modified_line)
+                            continue
 
                     line_valid = True
                     modified_line = line
-                    is_boiler = False
 
                     for txt_file in txt_files:
                         if txt_file == "DescriptionBoiler.txt":
                             filepath = txt_file
-                            is_boiler = True
                         else:
                             filepath = os.path.join("../Worship Scripts/service-titles", txt_file)
 
