@@ -126,12 +126,18 @@ def main():
                 if (datetime.now().timestamp() - mtime) < 3600:
                     recently_modified = True
 
-        if now_la.date() >= service_date and not (force_update or recently_modified):
-            print("  Today is the service day (or past). Skipping updates.")
+        # If it is past the service date, only allow updates if the service was literally today
+        # This prevents recently_modified from overwriting months of historical videos
+        if now_la.date() > service_date and not force_update:
+            print("  This stream is from a past date. Skipping updates to prevent overwriting history.")
             continue
-        elif now_la.date() >= service_date:
+
+        if now_la.date() == service_date and not (force_update or recently_modified):
+            print("  Today is the service day, but no manual force or recent modifications detected. Skipping updates.")
+            continue
+        elif now_la.date() == service_date:
             reason = "FORCE_UPDATE is enabled" if force_update else "files were modified recently"
-            print(f"  Today is the service day, but {reason}. Proceeding...")
+            print(f"  Today is the service day, and {reason}. Proceeding...")
 
         combined_desc = get_combined_description()
         if not combined_desc:
