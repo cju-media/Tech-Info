@@ -37,7 +37,7 @@ To push the timings file to the repository, you must configure a classic GitHub 
 2. Click **Generate new token (classic)**.
 3. Give it a descriptive note (e.g., "YouTube OSC Server").
 4. Select an expiration (or set it to 'No expiration').
-5. Check the `repo` scope (this grants full control of private repositories, which is required to push files to `tech-schedule`).
+5. Check the `repo` scope (this grants full control of private repositories, which is required to push files to `tech-info`).
 6. Generate the token, copy it, and paste it into the "GitHub PAT" field in the server's Configuration modal.
 
 ## Adding Timestamps via OSC
