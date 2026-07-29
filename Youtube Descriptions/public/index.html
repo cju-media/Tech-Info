@@ -316,8 +316,8 @@
     <div class="container">
         <button class="menu-btn" onclick="toggleMenu()">☰</button>
         <div class="menu-overlay" id="menuOverlay">
-            <button class="btn-config" onclick="openInfoModal()" style="background-color: #03a9f4; margin-bottom: 5px !important;">ℹ️ Info / Help</button>
-            <button class="btn-config" onclick="openConfigModal()">⚙️ Settings</button>
+            <button class="btn-config" onclick="openInfoModal()" style="background-color: #03a9f4; margin-bottom: 5px !important;">Info / Help</button>
+            <button class="btn-config" onclick="openConfigModal()">Settings</button>
 
             <h3>Actions</h3>
             <button class="btn-push" onclick="pushTimestamps()">Push Timings to GitHub</button>
@@ -513,6 +513,18 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
+
+        socket.on('oscIndicator', () => {
+            const notifArea = document.getElementById('notification-area');
+            notifArea.className = 'notification info';
+            notifArea.innerText = "OSC Command Received";
+
+            setTimeout(() => {
+                if (notifArea.innerText === "OSC Command Received") {
+                    notifArea.className = 'notification';
+                }
+            }, 3000);
+        });
 
         socket.on('pushStatus', (data) => {
             console.log("Push status:", data);

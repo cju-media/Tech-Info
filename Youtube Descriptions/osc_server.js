@@ -612,9 +612,11 @@ async function handlePrevTiming() {
 async function handleOscMessage(oscMsg) {
     if (oscMsg.address === "/timings/forward") {
         console.log(`Received OSC forward command.`);
+        io.emit('oscIndicator');
         await handleNextTiming();
     } else if (oscMsg.address === "/timings/back") {
         console.log(`Received OSC back command.`);
+        io.emit('oscIndicator');
         await handlePrevTiming();
     } else {
         console.log(`Ignored unrelated OSC message at address: ${oscMsg.address}`);
