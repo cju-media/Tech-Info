@@ -1276,12 +1276,12 @@
                     if (hashId === 'edit') hashId = '';
                     else if (hashId.startsWith('edit-')) hashId = hashId.substring(5);
 
-                    if (hashId === 'service') {
+                    if (hashId === 'service' || hashId === 'worship') {
                         const nextService = currentEvents.find(e => e.name && e.name.toLowerCase().includes('worship service'));
                         if (nextService) hashId = nextService.id;
                         else hashId = '';
                     } else if (hashId === 'today') {
-                        const todayEvent = currentEvents.find(e => e.dateObj.getTime() === today.getTime());
+                        const todayEvent = currentEvents.find(e => e.dateObj.getTime() === today.getTime()) || currentEvents[0];
                         if (todayEvent) hashId = todayEvent.id;
                         else hashId = '';
                     }
