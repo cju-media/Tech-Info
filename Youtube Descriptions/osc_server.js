@@ -54,7 +54,7 @@ let activeStartTime = null;
 let currentStreamId = null;
 let hasGoneLive = false;
 let hasPushedThisStream = false;
-let isRecording = false;
+let isStreaming = false;
 
 let isMockMode = false;
 let mockTitle = "Worship Service (Pending Start)";
@@ -98,7 +98,7 @@ function checkAndAutoReset() {
         currentStreamId = null;
         hasGoneLive = false;
         hasPushedThisStream = false;
-        isRecording = false;
+        isStreaming = false;
         lastResetWeek = currentWeekKey;
 
         // This will fetch fresh chapters and default stream
@@ -168,14 +168,14 @@ async function checkSermonRecordingState() {
     const currentItem = past[past.length - 1].toLowerCase();
     const isSermon = currentItem.includes("sermon");
 
-    if (isSermon && !isRecording) {
-        console.log("Entered Sermon section. Starting recording.");
-        isRecording = true;
-        await triggerWebhook(`http://${obsHost}:${obsPort}/start`);
-    } else if (!isSermon && isRecording) {
-        console.log("Left Sermon section. Stopping recording.");
-        isRecording = false;
-        await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
+    if (isSermon && !isStreaming) {
+        console.log("Entered Sermon section. Starting streaming.");
+        isStreaming = true;
+        await triggerWebhook(`http://${obsHost}:${obsPort}/start_streaming`);
+    } else if (!isSermon && isStreaming) {
+        console.log("Left Sermon section. Stopping streaming.");
+        isStreaming = false;
+        await triggerWebhook(`http://${obsHost}:${obsPort}/stop_streaming`);
     }
 }
 
@@ -385,10 +385,10 @@ async function fetchAndBroadcastState() {
                         activeStartTime = null; // Pause timer
                         hasPushedThisStream = true;
 
-                        if (isRecording) {
-                            console.log("Stream ended while recording sermon. Triggering stop webhook.");
-                            isRecording = false;
-                            await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
+                        if (isStreaming) {
+                            console.log("Stream ended while streaming sermon. Triggering stop webhook.");
+                            isStreaming = false;
+                            await triggerWebhook(`http://${obsHost}:${obsPort}/stop_streaming`);
                         }
 
                         io.emit('stateUpdate', {
@@ -840,12 +840,12 @@ io.on("connection", (socket) => {
 
     socket.on("testObsWebhookStart", async () => {
         console.log("Testing OBS Webhook Start URL...");
-        await triggerWebhook(`http://${obsHost}:${obsPort}/start`);
+        await triggerWebhook(`http://${obsHost}:${obsPort}/start_streaming`);
     });
 
     socket.on("testObsWebhookStop", async () => {
         console.log("Testing OBS Webhook Stop URL...");
-        await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
+        await triggerWebhook(`http://${obsHost}:${obsPort}/stop_streaming`);
     });
 
     socket.on("nextTiming", () => {
