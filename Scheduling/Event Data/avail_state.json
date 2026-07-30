@@ -17,12 +17,12 @@
     ],
     "sa-9-12-2026-west-hollywood-philharmonic": [],
     "th-9-10-2026-organ-concert-upend-la": [
-        "Marc",
-        "Jaffe"
+        "Jaffe",
+        "Marc"
     ],
     "su-9-6-2026-memorial-service": [
-        "Marc",
-        "Danny"
+        "Danny",
+        "Marc"
     ],
     "su-9-6-2026-worship-service": [
         "Jaffe",
@@ -30,42 +30,42 @@
     ],
     "sa-9-5-2026-classical-fantasia": [],
     "su-8-30-2026-worship-service": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "sa-8-29-2026-free-key-concert": [
         "Saad"
     ],
     "su-8-23-2026-worship-service": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "su-8-16-2026-wedding-ceremony": [
         "Danny"
     ],
     "su-8-16-2026-worship-service": [
-        "Saad",
-        "Marc",
         "Jaffe",
-        "Danny"
+        "Danny",
+        "Marc",
+        "Saad"
     ],
     "su-8-9-2026-pride-book-launch": [
-        "Marc",
-        "Danny"
+        "Danny",
+        "Marc"
     ],
     "su-8-9-2026-worship-service": [
-        "Saad",
-        "Marc",
-        "Jaffe"
-    ],
-    "su-8-2-2026-worship-service": [
-        "Saad",
         "Jaffe",
         "Marc",
-        "Danny"
+        "Saad"
+    ],
+    "su-8-2-2026-worship-service": [
+        "Jaffe",
+        "Danny",
+        "Marc",
+        "Saad"
     ],
     "fr-7-31-2026-neo-fest-concert-2": [
-        "Saad",
-        "Jaffe"
+        "Jaffe",
+        "Saad"
     ]
 }
