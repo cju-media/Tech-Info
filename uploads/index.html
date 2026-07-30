@@ -133,17 +133,17 @@
 
 <div class="container">
     <h1>Upload to Google Drive</h1>
-    <p>We cannot securely fetch folder names directly from Drive on the frontend without exposing credentials, so they have been labeled statically below. Feel free to edit the HTML to rename them appropriately.</p>
+    <p>Select the folder you want to upload your files to.</p>
 
     <div class="drop-zones-wrapper">
         <div class="drop-zone" data-folder="1MVeC2j0v4zTA1sVjhLz06bqEz3qbaYxs">
-            <h3>Folder 1</h3>
+            <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input">
         </div>
 
         <div class="drop-zone" data-folder="1ctYBJnFLNkdNhgoU4XLcgJc3QTz7MqwI">
-            <h3>Folder 2</h3>
+            <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input">
         </div>
@@ -159,6 +159,29 @@
     const patMenu = document.getElementById('pat-menu');
     const patInput = document.getElementById('pat-input');
     const dropZones = document.querySelectorAll('.drop-zone');
+
+    // Fetch folder names on init
+    fetch('folder_names.json')
+        .then(response => {
+            if (!response.ok) throw new Error("JSON not available");
+            return response.json();
+        })
+        .then(data => {
+            dropZones.forEach(zone => {
+                const folderId = zone.getAttribute('data-folder');
+                if (data[folderId]) {
+                    zone.querySelector('.folder-name').textContent = data[folderId];
+                } else {
+                    zone.querySelector('.folder-name').textContent = "Unknown Folder";
+                }
+            });
+        })
+        .catch(err => {
+            console.warn("Could not fetch folder names:", err);
+            dropZones.forEach(zone => {
+                zone.querySelector('.folder-name').textContent = "Google Drive Folder";
+            });
+        });
 
     // Load PAT on init
     const savedPat = localStorage.getItem('GITHUB_PAT');
