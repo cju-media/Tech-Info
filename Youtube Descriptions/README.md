@@ -31,16 +31,16 @@ This UI will show the active stream title, calculate the elapsed time, and show 
 
 These values are saved locally to your machine (`osc_config.json`) and will automatically reload every time you start the server.
 
-## OBS Webhook Integration
+## OBS WebSocket Integration
 
 The server can automatically trigger OBS to start and stop recording when the service enters the "Sermon" section of the service.
 To enable this feature:
-1. Ensure your local OBS Studio has a websocket/webhook integration active (e.g., using a plugin or middleware that exposes a local REST API endpoint on `/start_recording` and `/stop_recording` to control recording).
+1. Ensure your local OBS Studio has its built-in WebSocket server enabled (Tools > WebSocket Server Settings). Ensure authentication is disabled (passwordless).
 2. Open the **Settings** modal in the web UI.
 3. Enter the IP address or hostname of the computer running OBS in the **OBS Hostname/IP** field (e.g., `localhost` or `192.168.1.5`).
-4. Enter the corresponding port in the **OBS Port** field.
+4. Enter the corresponding WebSocket port in the **OBS Port** field (default is usually `4455`).
 
-The system checks the active stream segment on every timing iteration. If the item contains the word "Sermon", it automatically triggers a GET request to `http://<obs-host>:<obs-port>/start_recording`. When the next section begins, or if the stream ends, it triggers `http://<obs-host>:<obs-port>/stop_recording`. This automation only runs during an active live stream and is disabled when using Sample Mode.
+The system checks the active stream segment on every timing iteration. If the item contains the word "Sermon", it automatically connects to OBS via WebSocket and triggers `StartRecord`. When the next section begins, or if the stream ends, it connects and triggers `StopRecord`. This automation only runs during an active live stream and is disabled when using Sample Mode.
 
 ### Generating a GitHub PAT
 To push the timings file to the repository, you must configure a classic GitHub PAT (Personal Access Token).

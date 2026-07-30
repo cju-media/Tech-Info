@@ -7,7 +7,9 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 const { google } = require("googleapis");
 const child_process = require("child_process");
+const { OBSWebSocket } = require("obs-websocket-js");
 
+const obs = new OBSWebSocket();
 const OSC_IP = "0.0.0.0";
 const WEB_PORT = 3671;
 const CONFIG_FILE = path.join(__dirname, "osc_config.json");
@@ -147,16 +149,24 @@ function saveConfig() {
     }
 }
 
-async function triggerWebhook(url) {
-    if (!url) return;
+async function triggerObsAction(action) {
     try {
-        console.log(`Triggering webhook: ${url}`);
-        const response = await fetch(url, { method: 'GET' });
-        if (!response.ok) {
-            console.error(`Webhook trigger failed with status: ${response.status}`);
+        console.log(`Triggering OBS WebSocket Action: ${action} on ws://${obsHost}:${obsPort}`);
+        await obs.connect(`ws://${obsHost}:${obsPort}`);
+
+        if (action === 'start_recording') {
+            await obs.call('StartRecord');
+            console.log("OBS recording started successfully.");
+        } else if (action === 'stop_recording') {
+            await obs.call('StopRecord');
+            console.log("OBS recording stopped successfully.");
         }
+
+        await obs.disconnect();
     } catch (e) {
-        console.error(`Error triggering webhook: ${e.message}`);
+        console.error(`Error triggering OBS WebSocket action (${action}): ${e.message || e}`);
+        // Ensure we disconnect on failure if partially connected
+        try { await obs.disconnect(); } catch (err) {}
     }
 }
 
@@ -171,11 +181,11 @@ async function checkSermonRecordingState() {
     if (isSermon && !isRecording) {
         console.log("Entered Sermon section. Starting recording.");
         isRecording = true;
-        await triggerWebhook(`http://${obsHost}:${obsPort}/start_recording`);
+        await triggerObsAction('start_recording');
     } else if (!isSermon && isRecording) {
         console.log("Left Sermon section. Stopping recording.");
         isRecording = false;
-        await triggerWebhook(`http://${obsHost}:${obsPort}/stop_recording`);
+        await triggerObsAction('stop_recording');
     }
 }
 
@@ -386,9 +396,9 @@ async function fetchAndBroadcastState() {
                         hasPushedThisStream = true;
 
                         if (isRecording) {
-                            console.log("Stream ended while recording sermon. Triggering stop webhook.");
+                            console.log("Stream ended while recording sermon. Triggering stop OBS recording.");
                             isRecording = false;
-                            await triggerWebhook(`http://${obsHost}:${obsPort}/stop_recording`);
+                            await triggerObsAction('stop_recording');
                         }
 
                         io.emit('stateUpdate', {
@@ -839,13 +849,13 @@ io.on("connection", (socket) => {
     });
 
     socket.on("testObsWebhookStart", async () => {
-        console.log("Testing OBS Webhook Start URL...");
-        await triggerWebhook(`http://${obsHost}:${obsPort}/start_recording`);
+        console.log("Testing OBS WebSocket Start Record...");
+        await triggerObsAction('start_recording');
     });
 
     socket.on("testObsWebhookStop", async () => {
-        console.log("Testing OBS Webhook Stop URL...");
-        await triggerWebhook(`http://${obsHost}:${obsPort}/stop_recording`);
+        console.log("Testing OBS WebSocket Stop Record...");
+        await triggerObsAction('stop_recording');
     });
 
     socket.on("nextTiming", () => {
