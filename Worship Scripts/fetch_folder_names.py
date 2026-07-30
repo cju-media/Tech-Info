@@ -6,7 +6,7 @@ from google.oauth2.credentials import Credentials
 
 FOLDER_IDS = [
     '1MVeC2j0v4zTA1sVjhLz06bqEz3qbaYxs',
-    '1ctYBJnFLNkdNhgoU4XLcgJc3QTz7MqwI'
+    '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
 ]
 
 OUTPUT_JSON_PATH = 'uploads/folder_names.json'

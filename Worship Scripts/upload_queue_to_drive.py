@@ -9,7 +9,6 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaIoBaseUpload
 
 QUEUE_DIR = 'uploads_queue'
-THUMBNAILS_SOURCE_FOLDER_ID = '1ctYBJnFLNkdNhgoU4XLcgJc3QTz7MqwI'
 THUMBNAILS_DEST_PARENT_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
 
 def get_or_create_date_folder(service, parent_folder_id, date_str):
@@ -111,7 +110,7 @@ def main():
             folder_id = parts[1]
             original_filename = parts[2]
 
-            if folder_id == THUMBNAILS_SOURCE_FOLDER_ID and original_filename.lower().endswith(('.jpg', '.jpeg')):
+            if folder_id == THUMBNAILS_DEST_PARENT_FOLDER_ID and original_filename.lower().endswith(('.jpg', '.jpeg')):
                 date_pattern = re.compile(r'(\d{1,4}[-/]\d{1,2}[-/]\d{1,4})')
                 match = date_pattern.search(original_filename)
                 if match:
