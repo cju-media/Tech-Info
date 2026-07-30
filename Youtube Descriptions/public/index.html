@@ -310,6 +310,18 @@
                 <input type="password" id="githubPatInput" placeholder="ghp_..." />
                 <button class="btn-set" onclick="setGithubPat()">Save</button>
             </div>
+
+            <label class="config-label">OBS Webhook URL (Start Recording)</label>
+            <div class="input-row">
+                <input type="text" id="obsWebhookStartInput" placeholder="http://localhost:8080/..." />
+                <button class="btn-set" onclick="setObsWebhookStart()">Save</button>
+            </div>
+
+            <label class="config-label">OBS Webhook URL (Stop Recording)</label>
+            <div class="input-row">
+                <input type="text" id="obsWebhookStopInput" placeholder="http://localhost:8080/..." />
+                <button class="btn-set" onclick="setObsWebhookStop()">Save</button>
+            </div>
         </div>
     </div>
 
@@ -457,6 +469,18 @@
             closeConfigModal();
         }
 
+        function setObsWebhookStart() {
+            const url = document.getElementById('obsWebhookStartInput').value;
+            socket.emit('setObsWebhookStart', url);
+            closeConfigModal();
+        }
+
+        function setObsWebhookStop() {
+            const url = document.getElementById('obsWebhookStopInput').value;
+            socket.emit('setObsWebhookStop', url);
+            closeConfigModal();
+        }
+
         function nextTiming() {
             socket.emit('nextTiming');
         }
@@ -548,6 +572,12 @@
                 document.getElementById('githubPatInput').placeholder = "•••••••••••••••• (Set)";
             } else {
                 document.getElementById('githubPatInput').placeholder = "ghp_...";
+            }
+            if (state.obsWebhookStart !== undefined) {
+                document.getElementById('obsWebhookStartInput').value = state.obsWebhookStart;
+            }
+            if (state.obsWebhookStop !== undefined) {
+                document.getElementById('obsWebhookStopInput').value = state.obsWebhookStop;
             }
 
             if (state.error) {
