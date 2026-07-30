@@ -10,6 +10,21 @@ const child_process = require("child_process");
 const { OBSWebSocket } = require("obs-websocket-js");
 
 const obs = new OBSWebSocket();
+let obsConnected = false;
+
+obs.on('ConnectionOpened', () => {
+    console.log(`OBS WebSocket connected to ws://${obsHost}:${obsPort}`);
+    obsConnected = true;
+});
+obs.on('ConnectionClosed', () => {
+    console.log("OBS WebSocket connection closed.");
+    obsConnected = false;
+});
+obs.on('ConnectionError', (err) => {
+    console.error("OBS WebSocket error:", err.message);
+    obsConnected = false;
+});
+
 const OSC_IP = "0.0.0.0";
 const WEB_PORT = 3671;
 const CONFIG_FILE = path.join(__dirname, "osc_config.json");
@@ -56,8 +71,7 @@ let activeStartTime = null;
 let currentStreamId = null;
 let hasGoneLive = false;
 let hasPushedThisStream = false;
-let isRecording = false;
-let recordingStartTime = null;
+let hasTriggeredSermonRecord = false;
 
 let isMockMode = false;
 let mockTitle = "Worship Service (Pending Start)";
@@ -101,8 +115,7 @@ function checkAndAutoReset() {
         currentStreamId = null;
         hasGoneLive = false;
         hasPushedThisStream = false;
-        isRecording = false;
-        recordingStartTime = null;
+        hasTriggeredSermonRecord = false;
         lastResetWeek = currentWeekKey;
 
         // This will fetch fresh chapters and default stream
@@ -154,7 +167,9 @@ function saveConfig() {
 async function triggerObsAction(action) {
     try {
         console.log(`Triggering OBS WebSocket Action: ${action} on ws://${obsHost}:${obsPort}`);
-        await obs.connect(`ws://${obsHost}:${obsPort}`);
+        if (!obsConnected) {
+            await obs.connect(`ws://${obsHost}:${obsPort}`);
+        }
 
         if (action === 'start_recording') {
             await obs.call('StartRecord');
@@ -163,12 +178,8 @@ async function triggerObsAction(action) {
             await obs.call('StopRecord');
             console.log("OBS recording stopped successfully.");
         }
-
-        await obs.disconnect();
     } catch (e) {
         console.error(`Error triggering OBS WebSocket action (${action}): ${e.message || e}`);
-        // Ensure we disconnect on failure if partially connected
-        try { await obs.disconnect(); } catch (err) {}
     }
 }
 
@@ -180,15 +191,13 @@ async function checkSermonRecordingState() {
     const currentItem = past[past.length - 1].toLowerCase();
     const isSermon = currentItem.includes("sermon");
 
-    if (isSermon && !isRecording) {
-        console.log("Entered Sermon section. Starting recording.");
-        isRecording = true;
-        recordingStartTime = Date.now();
+    if (isSermon && !hasTriggeredSermonRecord) {
+        console.log("Entered Sermon section. Triggering OBS start recording.");
+        hasTriggeredSermonRecord = true;
         await triggerObsAction('start_recording');
-    } else if (!isSermon && isRecording) {
-        console.log("Left Sermon section. Stopping recording.");
-        isRecording = false;
-        recordingStartTime = null;
+    } else if (!isSermon && hasTriggeredSermonRecord) {
+        console.log("Left Sermon section. Triggering OBS stop recording.");
+        hasTriggeredSermonRecord = false;
         await triggerObsAction('stop_recording');
     }
 }
@@ -399,10 +408,9 @@ async function fetchAndBroadcastState() {
                         activeStartTime = null; // Pause timer
                         hasPushedThisStream = true;
 
-                        if (isRecording) {
-                            console.log("Stream ended while recording sermon. Triggering stop OBS recording.");
-                            isRecording = false;
-                            recordingStartTime = null;
+                        if (hasTriggeredSermonRecord) {
+                            console.log("Stream ended while triggering sermon record. Triggering stop OBS recording.");
+                            hasTriggeredSermonRecord = false;
                             await triggerObsAction('stop_recording');
                         }
 
@@ -417,8 +425,6 @@ async function fetchAndBroadcastState() {
                             hasGithubPat: !!githubPat,
                             obsHost: obsHost,
                             obsPort: obsPort,
-                            isRecording: isRecording,
-                            recordingStartTime: recordingStartTime,
                             error: apiError
                         });
 
@@ -449,8 +455,6 @@ async function fetchAndBroadcastState() {
         hasGithubPat: !!githubPat,
         obsHost: obsHost,
         obsPort: obsPort,
-        isRecording: isRecording,
-        recordingStartTime: recordingStartTime,
         error: apiError
     });
 }
@@ -840,19 +844,21 @@ io.on("connection", (socket) => {
         fetchAndBroadcastState();
     });
 
-    socket.on("setObsHost", (host) => {
+    socket.on("setObsHost", async (host) => {
         console.log(`Setting OBS Host`);
         obsHost = host;
         saveConfig();
+        try { await obs.disconnect(); } catch(e) {} // Force reconnect loop
         fetchAndBroadcastState();
     });
 
-    socket.on("setObsPort", (portStr) => {
+    socket.on("setObsPort", async (portStr) => {
         const port = parseInt(portStr);
         if (!isNaN(port) && port > 0 && port < 65536) {
             console.log(`Setting OBS port to ${port}`);
             obsPort = port;
             saveConfig();
+            try { await obs.disconnect(); } catch(e) {} // Force reconnect loop
             fetchAndBroadcastState();
         }
     });
@@ -879,6 +885,32 @@ io.on("connection", (socket) => {
 function main() {
     loadConfig();
     startOscServer(oscPort);
+
+    // Poll OBS recording status every second
+    setInterval(async () => {
+        if (!obsConnected) {
+            try {
+                await obs.connect(`ws://${obsHost}:${obsPort}`);
+            } catch (e) {
+                // Ignore connection errors during polling to prevent log spam
+                io.emit('obsState', { isRecording: false, timecode: "00:00" });
+            }
+        }
+
+        if (obsConnected) {
+            try {
+                const status = await obs.call('GetRecordStatus');
+                io.emit('obsState', {
+                    isRecording: status.outputActive,
+                    timecode: status.outputTimecode
+                });
+            } catch (e) {
+                console.error("Error polling OBS record status:", e.message);
+                io.emit('obsState', { isRecording: false, timecode: "00:00" });
+                try { await obs.disconnect(); } catch (err) {}
+            }
+        }
+    }, 1000);
 
     // Seed initial state
     fetchAndBroadcastState();
