@@ -57,6 +57,7 @@ let currentStreamId = null;
 let hasGoneLive = false;
 let hasPushedThisStream = false;
 let isRecording = false;
+let recordingStartTime = null;
 
 let isMockMode = false;
 let mockTitle = "Worship Service (Pending Start)";
@@ -101,6 +102,7 @@ function checkAndAutoReset() {
         hasGoneLive = false;
         hasPushedThisStream = false;
         isRecording = false;
+        recordingStartTime = null;
         lastResetWeek = currentWeekKey;
 
         // This will fetch fresh chapters and default stream
@@ -181,10 +183,12 @@ async function checkSermonRecordingState() {
     if (isSermon && !isRecording) {
         console.log("Entered Sermon section. Starting recording.");
         isRecording = true;
+        recordingStartTime = Date.now();
         await triggerObsAction('start_recording');
     } else if (!isSermon && isRecording) {
         console.log("Left Sermon section. Stopping recording.");
         isRecording = false;
+        recordingStartTime = null;
         await triggerObsAction('stop_recording');
     }
 }
@@ -398,6 +402,7 @@ async function fetchAndBroadcastState() {
                         if (isRecording) {
                             console.log("Stream ended while recording sermon. Triggering stop OBS recording.");
                             isRecording = false;
+                            recordingStartTime = null;
                             await triggerObsAction('stop_recording');
                         }
 
@@ -412,6 +417,8 @@ async function fetchAndBroadcastState() {
                             hasGithubPat: !!githubPat,
                             obsHost: obsHost,
                             obsPort: obsPort,
+                            isRecording: isRecording,
+                            recordingStartTime: recordingStartTime,
                             error: apiError
                         });
 
@@ -442,6 +449,8 @@ async function fetchAndBroadcastState() {
         hasGithubPat: !!githubPat,
         obsHost: obsHost,
         obsPort: obsPort,
+        isRecording: isRecording,
+        recordingStartTime: recordingStartTime,
         error: apiError
     });
 }
