@@ -118,6 +118,20 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+        .drive-btn {
+            display: inline-block;
+            background-color: #27ae60;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-top: 30px;
+            transition: background-color 0.3s;
+        }
+        .drive-btn:hover {
+            background-color: #219a52;
+        }
     </style>
 </head>
 <body>
@@ -150,6 +164,10 @@
     </div>
 
     <div id="status"></div>
+
+    <a href="https://drive.google.com/drive/folders/1y42Dh7ZSNXWRA9e-ffU9bqkQlF1T4g4x?usp=share_link" target="_blank" class="drive-btn">
+        Open in Google Drive
+    </a>
 </div>
 
 <script>
@@ -160,8 +178,8 @@
     const patInput = document.getElementById('pat-input');
     const dropZones = document.querySelectorAll('.drop-zone');
 
-    // Fetch folder names on init
-    fetch('folder_names.json')
+    // Fetch folder names on init with cache busting
+    fetch(`folder_names.json?t=${new Date().getTime()}`)
         .then(response => {
             if (!response.ok) throw new Error("JSON not available");
             return response.json();
