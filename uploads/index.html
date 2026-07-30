@@ -79,24 +79,57 @@
         .success { color: #2ecc71; }
         .info { color: #3498db; }
 
+        .menu-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #555;
+            z-index: 1000;
+        }
+
         .pat-container {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             font-size: 0.9em;
             color: #666;
+            z-index: 999;
+            width: 300px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .pat-container.show {
+            display: block;
         }
         #pat-input {
             padding: 8px;
-            width: 80%;
+            width: 100%;
             margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            max-width: 400px;
+            box-sizing: border-box;
         }
     </style>
 </head>
 <body>
+
+<button class="menu-btn" id="menu-btn" aria-label="Menu">☰</button>
+
+<div class="pat-container" id="pat-menu">
+    <h3 style="margin-top: 0; color: #333;">Configuration</h3>
+    <p style="margin-bottom: 15px;">Requires GitHub Personal Access Token (PAT) for backend processing.</p>
+    <input type="password" id="pat-input" placeholder="Enter GitHub PAT">
+    <button class="btn" style="width: 100%; font-size: 14px;" onclick="savePAT()">Save PAT</button>
+</div>
 
 <div class="container">
     <h1>Upload to Google Drive</h1>
@@ -117,18 +150,13 @@
     </div>
 
     <div id="status"></div>
-
-    <div class="pat-container">
-        <p>Requires GitHub Personal Access Token (PAT) for backend processing.</p>
-        <input type="password" id="pat-input" placeholder="Enter GitHub PAT (saved to localStorage)">
-        <br>
-        <button class="btn" style="font-size: 14px; padding: 6px 12px;" onclick="savePAT()">Save PAT</button>
-    </div>
 </div>
 
 <script>
     const REPO = 'cju-media/tech-info';
     const statusDiv = document.getElementById('status');
+    const menuBtn = document.getElementById('menu-btn');
+    const patMenu = document.getElementById('pat-menu');
     const patInput = document.getElementById('pat-input');
     const dropZones = document.querySelectorAll('.drop-zone');
 
@@ -138,14 +166,29 @@
         patInput.value = savedPat;
     }
 
+    // Menu toggle
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        patMenu.classList.toggle('show');
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!patMenu.contains(e.target) && e.target !== menuBtn) {
+            patMenu.classList.remove('show');
+        }
+    });
+
     function savePAT() {
         const pat = patInput.value.trim();
         if (pat) {
             localStorage.setItem('GITHUB_PAT', pat);
             setStatus('PAT saved successfully!', 'success');
+            patMenu.classList.remove('show');
         } else {
             localStorage.removeItem('GITHUB_PAT');
             setStatus('PAT removed.', 'info');
+            patMenu.classList.remove('show');
         }
     }
 
