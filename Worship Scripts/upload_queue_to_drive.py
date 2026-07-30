@@ -7,7 +7,6 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaIoBaseUpload
 
-DRIVE_FOLDER_ID = '1MVeC2j0v4zTA1sVjhLz06bqEz3qbaYxs'
 QUEUE_DIR = 'uploads_queue'
 
 def get_drive_service():
@@ -37,8 +36,8 @@ def get_drive_service():
     print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
     return None
 
-def upload_to_drive(service, file_path, original_filename):
-    print(f"Uploading {original_filename} to Google Drive...")
+def upload_to_drive(service, file_path, original_filename, folder_id):
+    print(f"Uploading {original_filename} to Google Drive folder {folder_id}...")
 
     try:
         # Determine mimetype automatically if possible, otherwise default
@@ -51,7 +50,7 @@ def upload_to_drive(service, file_path, original_filename):
 
         file_metadata = {
             'name': original_filename,
-            'parents': [DRIVE_FOLDER_ID]
+            'parents': [folder_id]
         }
 
         service.files().create(
@@ -87,17 +86,21 @@ def main():
     for filename in files_in_queue:
         file_path = os.path.join(QUEUE_DIR, filename)
 
-        # The frontend prepends a timestamp like "1678901234_filename.ext"
-        # We want to strip the timestamp for the actual drive upload name
-        parts = filename.split('_', 1)
-        original_filename = parts[1] if len(parts) > 1 and parts[0].isdigit() else filename
+        # The frontend prepends a timestamp and folder ID like "1678901234_FOLDERID_filename.ext"
+        parts = filename.split('_', 2)
 
-        if upload_to_drive(drive_service, file_path, original_filename):
-            # If successful, remove it so the GitHub Action can commit the deletion
-            os.remove(file_path)
-            print(f"Removed {filename} from queue.")
+        if len(parts) == 3 and parts[0].isdigit():
+            folder_id = parts[1]
+            original_filename = parts[2]
+
+            if upload_to_drive(drive_service, file_path, original_filename, folder_id):
+                # If successful, remove it so the GitHub Action can commit the deletion
+                os.remove(file_path)
+                print(f"Removed {filename} from queue.")
+            else:
+                print(f"Failed to process {filename}, leaving in queue.")
         else:
-            print(f"Failed to process {filename}, leaving in queue.")
+            print(f"File {filename} does not match expected format TIMESTAMP_FOLDERID_FILENAME. Skipping.")
 
 if __name__ == "__main__":
     main()
