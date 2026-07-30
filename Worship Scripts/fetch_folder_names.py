@@ -16,8 +16,8 @@ def get_drive_service():
     if oauth_json:
         try:
             creds_dict = json.loads(oauth_json)
-            # Use readonly scope since we are only fetching metadata
-            creds = Credentials.from_authorized_user_info(creds_dict, scopes=['https://www.googleapis.com/auth/drive.readonly'])
+            # Use standard drive scope to match the generated token
+            creds = Credentials.from_authorized_user_info(creds_dict, scopes=['https://www.googleapis.com/auth/drive'])
             print("Using GDRIVE_OAUTH_JSON for authentication.")
             return build('drive', 'v3', credentials=creds)
         except Exception as e:
@@ -28,7 +28,7 @@ def get_drive_service():
         try:
             creds_dict = json.loads(service_account_json)
             creds = service_account.Credentials.from_service_account_info(
-                creds_dict, scopes=['https://www.googleapis.com/auth/drive.readonly']
+                creds_dict, scopes=['https://www.googleapis.com/auth/drive']
             )
             print("Using GDRIVE_SERVICE_ACCOUNT_JSON for authentication.")
             return build('drive', 'v3', credentials=creds)
