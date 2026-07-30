@@ -31,6 +31,17 @@ This UI will show the active stream title, calculate the elapsed time, and show 
 
 These values are saved locally to your machine (`osc_config.json`) and will automatically reload every time you start the server.
 
+## OBS Webhook Integration
+
+The server can automatically trigger OBS to start and stop recording when the service enters the "Sermon" section of the service.
+To enable this feature:
+1. Ensure your local OBS Studio has a websocket/webhook integration active (e.g., using a plugin or middleware that exposes a local REST API endpoint to control recording).
+2. Open the **Settings** modal in the web UI.
+3. Enter the webhook URL to start recording in the **OBS Webhook URL (Start Recording)** field (e.g., `http://localhost:8080/start`).
+4. Enter the webhook URL to stop recording in the **OBS Webhook URL (Stop Recording)** field (e.g., `http://localhost:8080/stop`).
+
+The system checks the active stream segment on every timing iteration. If the item contains the word "Sermon", it triggers the start webhook. When the next section begins, or if the stream ends, it triggers the stop webhook. This automation only runs during an active live stream and is disabled when using Sample Mode.
+
 ### Generating a GitHub PAT
 To push the timings file to the repository, you must configure a classic GitHub PAT (Personal Access Token).
 1. Go to your GitHub account settings > **Developer settings** > **Personal access tokens** > **Tokens (classic)**.
