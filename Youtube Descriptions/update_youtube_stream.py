@@ -163,6 +163,8 @@ def main():
                     }
                 ).execute()
                 print("  Successfully updated YouTube description.")
+                print("  Stopping further updates to prevent modifying multiple streams.")
+                break
             except HttpError as e:
                 print(f"  Failed to update description: {e}")
 
