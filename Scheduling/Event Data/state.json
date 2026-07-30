@@ -1,8 +1,6 @@
 {
     "assignments": {
-        "Cameron": [
-            "we-7-29-2026-neo-fest-reflecting-forward-concert"
-        ],
+        "Cameron": [],
         "Danny": [
             "su-8-2-2026-worship-service"
         ],
@@ -11,14 +9,102 @@
             "su-8-2-2026-worship-service"
         ],
         "Kaspar": [],
-        "Marc": [
-            "we-7-29-2026-neo-fest-reflecting-forward-concert"
-        ],
+        "Marc": [],
         "Saad": [
             "fr-7-31-2026-neo-fest-concert-2"
         ]
     },
     "event_details": {
+        "su-9-27-2026-resonance-collective": {
+            "date": "2026-09-27",
+            "name": "Resonance Collective",
+            "call_time": "4:00pm-9:00pm"
+        },
+        "su-9-27-2026-worship-service": {
+            "date": "2026-09-27",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "fr-9-25-2026-organ-concert": {
+            "date": "2026-09-25",
+            "name": "Organ Concert",
+            "call_time": "5:00pm-9:00pm"
+        },
+        "su-9-20-2026-worship-service": {
+            "date": "2026-09-20",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "sa-9-19-2026-gala-choruses-showcase": {
+            "date": "2026-09-19",
+            "name": "GALA Choruses Showcase",
+            "call_time": "12:00pm-9:00pm"
+        },
+        "su-9-13-2026-worship-service": {
+            "date": "2026-09-13",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "sa-9-12-2026-west-hollywood-philharmonic": {
+            "date": "2026-09-12",
+            "name": "West Hollywood Philharmonic",
+            "call_time": "4:00pm-9:00pm"
+        },
+        "th-9-10-2026-organ-concert-upend-la": {
+            "date": "2026-09-10",
+            "name": "Organ Concert: Upend LA",
+            "call_time": "5:00pm-9:00pm"
+        },
+        "su-9-6-2026-memorial-service": {
+            "date": "2026-09-06",
+            "name": "Memorial Service",
+            "call_time": "2:00pm-7:00pm"
+        },
+        "su-9-6-2026-worship-service": {
+            "date": "2026-09-06",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "sa-9-5-2026-classical-fantasia": {
+            "date": "2026-09-05",
+            "name": "Classical Fantasia",
+            "call_time": "2:00pm-10:00pm"
+        },
+        "su-8-30-2026-worship-service": {
+            "date": "2026-08-30",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "sa-8-29-2026-free-key-concert": {
+            "date": "2026-08-29",
+            "name": "Free Key Concert",
+            "call_time": "3:00pm-10:00pm"
+        },
+        "su-8-23-2026-worship-service": {
+            "date": "2026-08-23",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "su-8-16-2026-wedding-ceremony": {
+            "date": "2026-08-16",
+            "name": "Wedding Ceremony",
+            "call_time": "2:30pm-5:30pm"
+        },
+        "su-8-16-2026-worship-service": {
+            "date": "2026-08-16",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "su-8-9-2026-pride-book-launch": {
+            "date": "2026-08-09",
+            "name": "Pride Book Launch",
+            "call_time": "12:30pm-3:30pm"
+        },
+        "su-8-9-2026-worship-service": {
+            "date": "2026-08-09",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
         "su-8-2-2026-worship-service": {
             "date": "2026-08-02",
             "name": "Worship Service",
@@ -28,11 +114,6 @@
             "date": "2026-07-31",
             "name": "NEO FEST Concert 2",
             "call_time": "12:30pm-9:00pm"
-        },
-        "we-7-29-2026-neo-fest-reflecting-forward-concert": {
-            "date": "2026-07-29",
-            "name": "NEO FEST: Reflecting Forward Concert",
-            "call_time": "5:00pm-10:00pm"
         }
     }
 }
