@@ -137,12 +137,59 @@
             background-color: white;
             cursor: pointer;
         }
+        /* Toggle Switch CSS */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            margin-left: 15px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2ecc71;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        input:disabled + .slider {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
     <div class="header-container">
         <a href="https://www.fccla.org/tech-info" class="back-btn">&#x2039; Back</a>
         <h1>Tech-Info Automated Workflows</h1>
+        <div style="position: absolute; right: 10px; font-size: 14px;">
+            <input type="password" id="pat-input" placeholder="GitHub PAT" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            <button onclick="savePAT()" style="padding: 5px 10px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; background: white;">Save PAT</button>
+            <span id="pat-status" style="margin-left: 5px; font-size: 12px;"></span>
+        </div>
     </div>
 
     <div class="dashboard-container">
@@ -205,6 +252,64 @@
     <script>
         const REPO = 'cju-media/Tech-Info';
 
+        // Load PAT on init
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedPat = localStorage.getItem('GITHUB_PAT');
+            if (savedPat) {
+                document.getElementById('pat-input').value = savedPat;
+            }
+        });
+
+        function savePAT() {
+            const pat = document.getElementById('pat-input').value.trim();
+            const statusSpan = document.getElementById('pat-status');
+            if (pat) {
+                localStorage.setItem('GITHUB_PAT', pat);
+                statusSpan.textContent = "Saved!";
+                statusSpan.style.color = "green";
+            } else {
+                localStorage.removeItem('GITHUB_PAT');
+                statusSpan.textContent = "Removed!";
+                statusSpan.style.color = "gray";
+            }
+            setTimeout(() => { statusSpan.textContent = ""; }, 2000);
+        }
+
+        async function toggleWorkflow(workflowId, inputElement) {
+            const pat = localStorage.getItem('GITHUB_PAT');
+            if (!pat) {
+                alert("Please save a GitHub PAT at the top first to control workflows.");
+                inputElement.checked = !inputElement.checked; // revert
+                return;
+            }
+
+            const action = inputElement.checked ? 'enable' : 'disable';
+            const originalTitle = inputElement.parentElement.title;
+            inputElement.disabled = true; // disable while fetching
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${workflowId}/${action}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${pat}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    inputElement.parentElement.title = inputElement.checked ? 'Disable workflow' : 'Enable workflow';
+                } else {
+                    throw new Error(`Failed to ${action} workflow`);
+                }
+            } catch (e) {
+                console.error(e);
+                alert(`Error: Could not ${action} workflow. Check PAT permissions (needs repo access).`);
+                inputElement.checked = !inputElement.checked; // revert
+            } finally {
+                inputElement.disabled = false;
+            }
+        }
+
         function setupFlowchartHovers() {
             const descBox = document.getElementById('flowchart-desc');
             const defaultText = "Hover over a workflow node to view its description.";
@@ -258,9 +363,16 @@
             return "";
         }
 
+        function getFetchHeaders() {
+            const pat = localStorage.getItem('GITHUB_PAT');
+            return pat ? { 'Authorization': `token ${pat}` } : {};
+        }
+
         async function fetchRecentCommits() {
             try {
-                const response = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=50`);
+                const response = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=50`, {
+                    headers: getFetchHeaders()
+                });
                 if (response.ok) {
                     return await response.json();
                 }
@@ -270,7 +382,9 @@
 
         async function fetchCommitFiles(commitUrl) {
             try {
-                const res = await fetch(commitUrl);
+                const res = await fetch(commitUrl, {
+                    headers: getFetchHeaders()
+                });
                 if (res.ok) {
                     const data = await res.json();
                     return data.files ? data.files.map(f => ({
@@ -322,7 +436,9 @@ if (sortMode === 'last-run') {
                 const dashboard = document.getElementById('dashboard');
 
                 // Fetch workflows
-                const wfResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows`);
+                const wfResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows`, {
+                    headers: getFetchHeaders()
+                });
                 const wfData = await wfResponse.json();
                 const excludedWorkflows = ["Deploy to GitHub Pages", "Send Admin Schedules (Manual)"];
                 const workflows = wfData.workflows.filter(wf =>
@@ -331,7 +447,9 @@ if (sortMode === 'last-run') {
                 );
 
                 // Fetch recent runs
-                const runsResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100`);
+                const runsResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100`, {
+                    headers: getFetchHeaders()
+                });
                 const runsData = await runsResponse.json();
 
                 const latestRuns = {};
@@ -414,13 +532,43 @@ if (sortMode === 'last-run') {
                     const wfFileName = wf.path.split('/').pop();
                     card.id = wfFileName.replace('.yml', ''); // Add ID for scrolling
 
+                    const headerDiv = document.createElement('div');
+                    headerDiv.style.display = 'flex';
+                    headerDiv.style.justifyContent = 'space-between';
+                    headerDiv.style.alignItems = 'center';
+                    headerDiv.style.borderBottom = '1px solid #eee';
+                    headerDiv.style.paddingBottom = '10px';
+                    headerDiv.style.marginBottom = '10px';
+
                     const title = document.createElement('h3');
+                    title.style.borderBottom = 'none';
+                    title.style.margin = '0';
+                    title.style.paddingBottom = '0';
+
                     const titleLink = document.createElement('a');
                     titleLink.href = run ? run.html_url : `https://github.com/${REPO}/actions/workflows/${wfFileName}`;
                     titleLink.target = '_blank';
                     titleLink.textContent = wf.name;
                     title.appendChild(titleLink);
-                    card.appendChild(title);
+                    headerDiv.appendChild(title);
+
+                    // Toggle Switch
+                    const toggleLabel = document.createElement('label');
+                    toggleLabel.className = 'switch';
+                    toggleLabel.title = wf.state === 'active' ? 'Disable workflow' : 'Enable workflow';
+                    const toggleInput = document.createElement('input');
+                    toggleInput.type = 'checkbox';
+                    toggleInput.checked = wf.state === 'active';
+                    toggleInput.addEventListener('change', (e) => toggleWorkflow(wf.id, e.target));
+
+                    const toggleSlider = document.createElement('span');
+                    toggleSlider.className = 'slider';
+
+                    toggleLabel.appendChild(toggleInput);
+                    toggleLabel.appendChild(toggleSlider);
+                    headerDiv.appendChild(toggleLabel);
+
+                    card.appendChild(headerDiv);
 
                     const details = document.createElement('div');
                     details.className = 'workflow-details';
