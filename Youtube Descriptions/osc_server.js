@@ -171,11 +171,11 @@ async function checkSermonRecordingState() {
     if (isSermon && !isRecording) {
         console.log("Entered Sermon section. Starting recording.");
         isRecording = true;
-        await triggerWebhook(`http://${obsHost}:${obsPort}/start`);
+        await triggerWebhook(`http://${obsHost}:${obsPort}/start_recording`);
     } else if (!isSermon && isRecording) {
         console.log("Left Sermon section. Stopping recording.");
         isRecording = false;
-        await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
+        await triggerWebhook(`http://${obsHost}:${obsPort}/stop_recording`);
     }
 }
 
@@ -388,7 +388,7 @@ async function fetchAndBroadcastState() {
                         if (isRecording) {
                             console.log("Stream ended while recording sermon. Triggering stop webhook.");
                             isRecording = false;
-                            await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
+                            await triggerWebhook(`http://${obsHost}:${obsPort}/stop_recording`);
                         }
 
                         io.emit('stateUpdate', {
@@ -840,12 +840,12 @@ io.on("connection", (socket) => {
 
     socket.on("testObsWebhookStart", async () => {
         console.log("Testing OBS Webhook Start URL...");
-        await triggerWebhook(`http://${obsHost}:${obsPort}/start`);
+        await triggerWebhook(`http://${obsHost}:${obsPort}/start_recording`);
     });
 
     socket.on("testObsWebhookStop", async () => {
         console.log("Testing OBS Webhook Stop URL...");
-        await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
+        await triggerWebhook(`http://${obsHost}:${obsPort}/stop_recording`);
     });
 
     socket.on("nextTiming", () => {
