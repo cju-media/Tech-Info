@@ -64,6 +64,7 @@ let youtubeApiKey = "";
 let githubPat = "";
 let obsWebhookStart = "";
 let obsWebhookStop = "";
+let obsPort = 4455;
 let udpPortInstance = null;
 let lastResetWeek = null;
 
@@ -126,6 +127,9 @@ function loadConfig() {
             if (config.obsWebhookStop) {
                 obsWebhookStop = config.obsWebhookStop;
             }
+            if (config.obsPort && !isNaN(config.obsPort)) {
+                obsPort = parseInt(config.obsPort);
+            }
         }
     } catch (e) {
         console.error("Error reading config:", e);
@@ -139,7 +143,8 @@ function saveConfig() {
             youtubeApiKey: youtubeApiKey,
             githubPat: githubPat,
             obsWebhookStart: obsWebhookStart,
-            obsWebhookStop: obsWebhookStop
+            obsWebhookStop: obsWebhookStop,
+            obsPort: obsPort
         };
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
     } catch (e) {
@@ -150,8 +155,12 @@ function saveConfig() {
 async function triggerWebhook(url) {
     if (!url) return;
     try {
-        console.log(`Triggering webhook: ${url}`);
-        const response = await fetch(url, { method: 'GET' });
+        let finalUrl = url;
+        if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+            finalUrl = `http://localhost:${obsPort}${finalUrl.startsWith('/') ? '' : '/'}${finalUrl}`;
+        }
+        console.log(`Triggering webhook: ${finalUrl}`);
+        const response = await fetch(finalUrl, { method: 'GET' });
         if (!response.ok) {
             console.error(`Webhook trigger failed with status: ${response.status}`);
         }
@@ -406,6 +415,7 @@ async function fetchAndBroadcastState() {
                             hasGithubPat: !!githubPat,
                             obsWebhookStart: obsWebhookStart,
                             obsWebhookStop: obsWebhookStop,
+                            obsPort: obsPort,
                             error: apiError
                         });
 
@@ -436,6 +446,7 @@ async function fetchAndBroadcastState() {
         hasGithubPat: !!githubPat,
         obsWebhookStart: obsWebhookStart,
         obsWebhookStop: obsWebhookStop,
+        obsPort: obsPort,
         error: apiError
     });
 }
@@ -837,6 +848,30 @@ io.on("connection", (socket) => {
         obsWebhookStop = url;
         saveConfig();
         fetchAndBroadcastState();
+    });
+
+    socket.on("setObsPort", (portStr) => {
+        const port = parseInt(portStr);
+        if (!isNaN(port) && port > 0 && port < 65536) {
+            console.log(`Setting OBS port to ${port}`);
+            obsPort = port;
+            saveConfig();
+            fetchAndBroadcastState();
+        }
+    });
+
+    socket.on("testObsWebhookStart", async () => {
+        if (obsWebhookStart) {
+            console.log("Testing OBS Webhook Start URL...");
+            await triggerWebhook(obsWebhookStart);
+        }
+    });
+
+    socket.on("testObsWebhookStop", async () => {
+        if (obsWebhookStop) {
+            console.log("Testing OBS Webhook Stop URL...");
+            await triggerWebhook(obsWebhookStop);
+        }
     });
 
     socket.on("nextTiming", () => {

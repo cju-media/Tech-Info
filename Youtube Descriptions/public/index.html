@@ -311,16 +311,24 @@
                 <button class="btn-set" onclick="setGithubPat()">Save</button>
             </div>
 
+            <label class="config-label">OBS Port</label>
+            <div class="input-row">
+                <input type="number" id="obsPortInput" placeholder="4455" min="1" max="65535" />
+                <button class="btn-set" onclick="setObsPort()">Save</button>
+            </div>
+
             <label class="config-label">OBS Webhook URL (Start Recording)</label>
             <div class="input-row">
-                <input type="text" id="obsWebhookStartInput" placeholder="http://localhost:8080/..." />
+                <input type="text" id="obsWebhookStartInput" placeholder="/start" />
                 <button class="btn-set" onclick="setObsWebhookStart()">Save</button>
+                <button class="btn-danger" onclick="testObsWebhookStart()">Test</button>
             </div>
 
             <label class="config-label">OBS Webhook URL (Stop Recording)</label>
             <div class="input-row">
-                <input type="text" id="obsWebhookStopInput" placeholder="http://localhost:8080/..." />
+                <input type="text" id="obsWebhookStopInput" placeholder="/stop" />
                 <button class="btn-set" onclick="setObsWebhookStop()">Save</button>
+                <button class="btn-danger" onclick="testObsWebhookStop()">Test</button>
             </div>
         </div>
     </div>
@@ -481,6 +489,22 @@
             closeConfigModal();
         }
 
+        function setObsPort() {
+            const port = document.getElementById('obsPortInput').value;
+            if (port) {
+                socket.emit('setObsPort', port);
+                closeConfigModal();
+            }
+        }
+
+        function testObsWebhookStart() {
+            socket.emit('testObsWebhookStart');
+        }
+
+        function testObsWebhookStop() {
+            socket.emit('testObsWebhookStop');
+        }
+
         function nextTiming() {
             socket.emit('nextTiming');
         }
@@ -572,6 +596,9 @@
                 document.getElementById('githubPatInput').placeholder = "•••••••••••••••• (Set)";
             } else {
                 document.getElementById('githubPatInput').placeholder = "ghp_...";
+            }
+            if (state.obsPort) {
+                document.getElementById('obsPortInput').value = state.obsPort;
             }
             if (state.obsWebhookStart !== undefined) {
                 document.getElementById('obsWebhookStartInput').value = state.obsWebhookStart;
