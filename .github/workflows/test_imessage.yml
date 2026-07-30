@@ -14,6 +14,9 @@ jobs:
     runs-on: [self-hosted, macOS]
 
     steps:
+      - name: Clean workspace
+        run: rm -rf .git || true
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
