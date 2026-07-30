@@ -95,6 +95,10 @@
             color: #d32f2f;
             font-weight: bold;
         }
+        .next-target {
+            color: #1976d2;
+            font-weight: bold;
+        }
         .timestamp {
             color: #1976d2;
             margin-right: 10px;
@@ -635,18 +639,32 @@
             }
 
             if (state.past && state.past.length > 0) {
-                state.past.forEach(item => {
+                state.past.forEach((item, index) => {
                     const li = document.createElement('li');
-                    li.className = 'past-item';
+                    const isLast = (index === state.past.length - 1);
+
+                    if (isLast) {
+                        li.className = 'active-target';
+                    } else {
+                        li.className = 'past-item';
+                    }
 
                     const match = item.match(/^(\d{1,2}:)?\d{1,2}:\d{2}/);
+
+                    let content = '';
+                    if (isLast) {
+                        content += `<span style="margin-right:8px;">&rarr;</span>`;
+                    }
+
                     if (match) {
                         const timeStr = match[0];
                         const rest = item.substring(timeStr.length);
-                        li.innerHTML = `<span class="timestamp">${timeStr}</span>${rest}`;
+                        content += `<span class="timestamp">${timeStr}</span>${rest}`;
                     } else {
-                        li.innerText = item;
+                        content += item;
                     }
+
+                    li.innerHTML = content;
                     unifiedList.appendChild(li);
                 });
             }
@@ -656,8 +674,8 @@
                     const li = document.createElement('li');
 
                     if (index === 0) {
-                        li.className = 'active-target';
-                        li.innerHTML = `<span style="margin-right:8px;">&rarr;</span>${item}`;
+                        li.className = 'next-target';
+                        li.innerHTML = `<span style="margin-right:8px;">NEXT:</span>${item}`;
                     } else {
                         li.className = 'future-item';
                         li.innerText = item;
