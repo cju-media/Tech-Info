@@ -96,7 +96,7 @@
             font-weight: bold;
         }
         .next-target {
-            color: #1976d2;
+            color: #4CAF50;
             font-weight: bold;
         }
         .timestamp {
@@ -364,6 +364,9 @@
         </div>
 
         <div class="timer" id="timer">00:00:00</div>
+        <div id="recording-indicator" style="display:none; text-align:center; color:red; font-size:1.2em; font-weight:bold; margin-bottom:15px; margin-top:-10px;">
+            &#x23FA; REC <span id="recording-timer">00:00</span>
+        </div>
 
         <div class="section">
             <ul id="unified-list">
@@ -381,6 +384,8 @@
         let startTime = null;
         let timerInterval = null;
         let currentPastState = [];
+        let isRecording = false;
+        let recordingStartTime = null;
 
         function toggleMenu() {
             document.getElementById('menuOverlay').classList.toggle('active');
@@ -538,6 +543,28 @@
             const sStr = seconds.toString().padStart(2, '0');
 
             document.getElementById('timer').innerText = `${hStr}:${mStr}:${sStr}`;
+
+            if (isRecording && recordingStartTime) {
+                document.getElementById('recording-indicator').style.display = 'block';
+                let recSeconds = Math.floor((now - recordingStartTime) / 1000);
+                if (recSeconds < 0) recSeconds = 0;
+
+                const recMin = Math.floor(recSeconds / 60);
+                const recSec = recSeconds % 60;
+
+                let recStr = `${recMin.toString().padStart(2, '0')}:${recSec.toString().padStart(2, '0')}`;
+
+                // If it goes over an hour
+                const recHr = Math.floor(recSeconds / 3600);
+                if (recHr > 0) {
+                    const remMin = Math.floor((recSeconds % 3600) / 60);
+                    recStr = `${recHr.toString().padStart(2, '0')}:${remMin.toString().padStart(2, '0')}:${recSec.toString().padStart(2, '0')}`;
+                }
+
+                document.getElementById('recording-timer').innerText = recStr;
+            } else {
+                document.getElementById('recording-indicator').style.display = 'none';
+            }
         }
 
         function downloadTimings() {
@@ -580,6 +607,11 @@
             console.log("Received state:", state);
             if (state.past) {
                 currentPastState = state.past;
+            }
+
+            if (state.isRecording !== undefined) {
+                isRecording = state.isRecording;
+                recordingStartTime = state.recordingStartTime;
             }
 
             if (state.oscPort) {
