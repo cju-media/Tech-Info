@@ -128,7 +128,7 @@ def main():
 
         # If it is past the service date, only allow updates if the service was literally today
         # This prevents recently_modified from overwriting months of historical videos
-        if now_la.date() > service_date and not force_update:
+        if now_la.date() > service_date:
             print("  This stream is from a past date. Skipping updates to prevent overwriting history.")
             continue
 
