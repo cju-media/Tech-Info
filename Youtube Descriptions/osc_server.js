@@ -54,6 +54,7 @@ let activeStartTime = null;
 let currentStreamId = null;
 let hasGoneLive = false;
 let hasPushedThisStream = false;
+let isRecording = false;
 
 let isMockMode = false;
 let mockTitle = "Worship Service (Pending Start)";
@@ -61,6 +62,8 @@ let mockTitle = "Worship Service (Pending Start)";
 let oscPort = 8000;
 let youtubeApiKey = "";
 let githubPat = "";
+let obsWebhookStart = "";
+let obsWebhookStop = "";
 let udpPortInstance = null;
 let lastResetWeek = null;
 
@@ -95,6 +98,7 @@ function checkAndAutoReset() {
         currentStreamId = null;
         hasGoneLive = false;
         hasPushedThisStream = false;
+        isRecording = false;
         lastResetWeek = currentWeekKey;
 
         // This will fetch fresh chapters and default stream
@@ -116,6 +120,12 @@ function loadConfig() {
             if (config.githubPat) {
                 githubPat = config.githubPat;
             }
+            if (config.obsWebhookStart) {
+                obsWebhookStart = config.obsWebhookStart;
+            }
+            if (config.obsWebhookStop) {
+                obsWebhookStop = config.obsWebhookStop;
+            }
         }
     } catch (e) {
         console.error("Error reading config:", e);
@@ -127,11 +137,49 @@ function saveConfig() {
         const config = {
             oscPort: oscPort,
             youtubeApiKey: youtubeApiKey,
-            githubPat: githubPat
+            githubPat: githubPat,
+            obsWebhookStart: obsWebhookStart,
+            obsWebhookStop: obsWebhookStop
         };
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
     } catch (e) {
         console.error("Error writing config:", e);
+    }
+}
+
+async function triggerWebhook(url) {
+    if (!url) return;
+    try {
+        console.log(`Triggering webhook: ${url}`);
+        const response = await fetch(url, { method: 'GET' });
+        if (!response.ok) {
+            console.error(`Webhook trigger failed with status: ${response.status}`);
+        }
+    } catch (e) {
+        console.error(`Error triggering webhook: ${e.message}`);
+    }
+}
+
+async function checkSermonRecordingState() {
+    if (isMockMode || !hasGoneLive) return;
+
+    if (past.length === 0) return;
+
+    const currentItem = past[past.length - 1].toLowerCase();
+    const isSermon = currentItem.includes("sermon");
+
+    if (isSermon && !isRecording) {
+        console.log("Entered Sermon section. Starting recording.");
+        isRecording = true;
+        if (obsWebhookStart) {
+            await triggerWebhook(obsWebhookStart);
+        }
+    } else if (!isSermon && isRecording) {
+        console.log("Left Sermon section. Stopping recording.");
+        isRecording = false;
+        if (obsWebhookStop) {
+            await triggerWebhook(obsWebhookStop);
+        }
     }
 }
 
@@ -341,6 +389,12 @@ async function fetchAndBroadcastState() {
                         activeStartTime = null; // Pause timer
                         hasPushedThisStream = true;
 
+                        if (isRecording) {
+                            console.log("Stream ended while recording sermon. Triggering stop webhook.");
+                            isRecording = false;
+                            if (obsWebhookStop) await triggerWebhook(obsWebhookStop);
+                        }
+
                         io.emit('stateUpdate', {
                             title: broadcastTitle,
                             actualStartTime: null,
@@ -350,6 +404,8 @@ async function fetchAndBroadcastState() {
                             oscPort: oscPort,
                             hasYoutubeApiKey: !!youtubeApiKey,
                             hasGithubPat: !!githubPat,
+                            obsWebhookStart: obsWebhookStart,
+                            obsWebhookStop: obsWebhookStop,
                             error: apiError
                         });
 
@@ -378,6 +434,8 @@ async function fetchAndBroadcastState() {
         oscPort: oscPort,
         hasYoutubeApiKey: !!youtubeApiKey,
         hasGithubPat: !!githubPat,
+        obsWebhookStart: obsWebhookStart,
+        obsWebhookStop: obsWebhookStop,
         error: apiError
     });
 }
@@ -565,6 +623,7 @@ async function handleNextTiming() {
             console.log(`Auto-skipped prelude: ${skipItem}`);
         }
 
+        await checkSermonRecordingState();
         await fetchAndBroadcastState();
     } else {
         console.log("No upcoming sections left to timestamp.");
@@ -599,6 +658,7 @@ async function handlePrevTiming() {
     }
 
     if (revertedTimestamp || past.length > 0) {
+        await checkSermonRecordingState();
         await fetchAndBroadcastState();
     } else if (activeStartTime && past.length === 0) {
         console.log("Reverting timer start.");
@@ -761,6 +821,20 @@ io.on("connection", (socket) => {
     socket.on("setGithubPat", (key) => {
         console.log(`Setting GitHub PAT`);
         githubPat = key;
+        saveConfig();
+        fetchAndBroadcastState();
+    });
+
+    socket.on("setObsWebhookStart", (url) => {
+        console.log(`Setting OBS Webhook Start URL`);
+        obsWebhookStart = url;
+        saveConfig();
+        fetchAndBroadcastState();
+    });
+
+    socket.on("setObsWebhookStop", (url) => {
+        console.log(`Setting OBS Webhook Stop URL`);
+        obsWebhookStop = url;
         saveConfig();
         fetchAndBroadcastState();
     });
