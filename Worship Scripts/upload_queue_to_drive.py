@@ -2,12 +2,30 @@ import os
 import json
 import io
 import shutil
+import re
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaIoBaseUpload
 
 QUEUE_DIR = 'uploads_queue'
+THUMBNAILS_SOURCE_FOLDER_ID = '1ctYBJnFLNkdNhgoU4XLcgJc3QTz7MqwI'
+THUMBNAILS_DEST_PARENT_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
+
+def get_or_create_date_folder(service, parent_folder_id, date_str):
+    query = f"name='{date_str}' and '{parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+    results = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+    items = results.get('files', [])
+    if items:
+        return items[0]['id']
+    else:
+        file_metadata = {
+            'name': date_str,
+            'parents': [parent_folder_id],
+            'mimeType': 'application/vnd.google-apps.folder'
+        }
+        folder = service.files().create(body=file_metadata, fields='id', supportsAllDrives=True).execute()
+        return folder.get('id')
 
 def get_drive_service():
     oauth_json = os.environ.get('GDRIVE_OAUTH_JSON')
@@ -92,6 +110,19 @@ def main():
         if len(parts) == 3 and parts[0].isdigit():
             folder_id = parts[1]
             original_filename = parts[2]
+
+            if folder_id == THUMBNAILS_SOURCE_FOLDER_ID and original_filename.lower().endswith(('.jpg', '.jpeg')):
+                date_pattern = re.compile(r'(\d{1,4}[-/]\d{1,2}[-/]\d{1,4})')
+                match = date_pattern.search(original_filename)
+                if match:
+                    date_str = match.group(1)
+                    print(f"Found date {date_str} in {original_filename}, redirecting to subfolder of {THUMBNAILS_DEST_PARENT_FOLDER_ID}")
+                    try:
+                        new_folder_id = get_or_create_date_folder(drive_service, THUMBNAILS_DEST_PARENT_FOLDER_ID, date_str)
+                        if new_folder_id:
+                            folder_id = new_folder_id
+                    except Exception as e:
+                        print(f"Error redirecting folder for {original_filename}: {e}")
 
             if upload_to_drive(drive_service, file_path, original_filename, folder_id):
                 # If successful, remove it so the GitHub Action can commit the deletion
