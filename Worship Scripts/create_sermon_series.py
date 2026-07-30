@@ -7,8 +7,62 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaIoBaseUpload
+import dateutil.parser
 
 PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
+YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs'
+
+def get_youtube_service():
+    creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
+    if not creds_json:
+        print("Warning: YOUTUBE_CREDENTIALS_JSON environment variable not found.")
+        return None
+
+    try:
+        creds_info = json.loads(creds_json)
+        creds = Credentials.from_authorized_user_info(creds_info)
+        service = build('youtube', 'v3', credentials=creds)
+        print("Using YOUTUBE_CREDENTIALS_JSON for YouTube authentication.")
+        return service
+    except Exception as e:
+        print(f"Error authenticating with YouTube: {e}")
+        return None
+
+def get_upcoming_stream_url(service, target_date):
+    if not service:
+        return None
+
+    try:
+        playlist_response = service.playlistItems().list(
+            part='snippet',
+            playlistId=YOUTUBE_PLAYLIST_ID,
+            maxResults=50
+        ).execute()
+
+        video_ids = [item['snippet']['resourceId']['videoId'] for item in playlist_response.get('items', [])]
+        if not video_ids:
+            return None
+
+        video_response = service.videos().list(
+            part='snippet,liveStreamingDetails',
+            id=','.join(video_ids)
+        ).execute()
+
+        la_tz = zoneinfo.ZoneInfo('America/Los_Angeles')
+
+        for video in video_response.get('items', []):
+            if 'liveStreamingDetails' in video:
+                scheduled_start_time = video['liveStreamingDetails'].get('scheduledStartTime')
+                if scheduled_start_time:
+                    start_time_utc = dateutil.parser.parse(scheduled_start_time)
+                    start_time_la = start_time_utc.astimezone(la_tz)
+                    if start_time_la.date() == target_date:
+                        return f"https://youtube.com/watch?v={video['id']}"
+
+    except Exception as e:
+        print(f"Error fetching upcoming streams from YouTube: {e}")
+
+    return None
 
 def get_drive_service():
     oauth_json = os.environ.get('GDRIVE_OAUTH_JSON')
@@ -143,12 +197,45 @@ def main():
     output_filename = f"Sermon Series Title {date_str}.txt"
     output_path = os.path.join(output_dir, output_filename)
 
-    # 4. Write to local file
+    # 4. Process description
+    desc_template_path = os.path.join("Sermon-Series", "Sermon-Series-Description.txt")
+    desc_output_filename = f"SS Description-{date_str}.txt"
+    desc_output_path = os.path.join(output_dir, desc_output_filename)
+
+    desc_text = None
+    try:
+        with open(desc_template_path, "r") as f:
+            desc_template = f.read()
+
+        yt_service = get_youtube_service()
+        youtube_link = get_upcoming_stream_url(yt_service, sunday.date())
+        if not youtube_link:
+             youtube_link = "YOUTUBE SERVICE LINK" # Fallback if not found
+             print(f"Warning: Could not find upcoming stream for {date_str} in playlist.")
+
+        # Calculate OW Link
+        # e.g. 8-2-26 -> month-day-year (no leading zeros, 2 digit year)
+        m = sunday.month
+        d = sunday.day
+        y = sunday.strftime("%y")
+        ow_link = f"https://www.fccla.org/ows/{m}-{d}-{y}"
+
+        desc_text = desc_template.replace("YOUTUBE SERVICE LINK", youtube_link).replace("OW LINK", ow_link)
+
+    except FileNotFoundError:
+        print(f"Warning: Could not find description template at {desc_template_path}")
+
+    # 5. Write to local files
     with open(output_path, "w") as f:
         f.write(formatted_text)
     print(f"Successfully wrote local file: {output_path}")
 
-    # 5. Upload to Drive
+    if desc_text is not None:
+        with open(desc_output_path, "w") as f:
+            f.write(desc_text)
+        print(f"Successfully wrote local description file: {desc_output_path}")
+
+    # 6. Upload to Drive
     drive_service = get_drive_service()
     if not drive_service:
         print("Skipping Google Drive upload due to missing credentials.")
@@ -156,6 +243,9 @@ def main():
 
     target_folder_id = get_or_create_folder(drive_service, date_str, PARENT_FOLDER_ID)
     upload_to_drive(drive_service, output_path, output_filename, target_folder_id)
+
+    if desc_text is not None:
+         upload_to_drive(drive_service, desc_output_path, desc_output_filename, target_folder_id)
 
 if __name__ == "__main__":
     main()
