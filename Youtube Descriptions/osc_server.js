@@ -62,8 +62,7 @@ let mockTitle = "Worship Service (Pending Start)";
 let oscPort = 8000;
 let youtubeApiKey = "";
 let githubPat = "";
-let obsWebhookStart = "";
-let obsWebhookStop = "";
+let obsHost = "localhost";
 let obsPort = 4455;
 let udpPortInstance = null;
 let lastResetWeek = null;
@@ -121,11 +120,8 @@ function loadConfig() {
             if (config.githubPat) {
                 githubPat = config.githubPat;
             }
-            if (config.obsWebhookStart) {
-                obsWebhookStart = config.obsWebhookStart;
-            }
-            if (config.obsWebhookStop) {
-                obsWebhookStop = config.obsWebhookStop;
+            if (config.obsHost) {
+                obsHost = config.obsHost;
             }
             if (config.obsPort && !isNaN(config.obsPort)) {
                 obsPort = parseInt(config.obsPort);
@@ -142,8 +138,7 @@ function saveConfig() {
             oscPort: oscPort,
             youtubeApiKey: youtubeApiKey,
             githubPat: githubPat,
-            obsWebhookStart: obsWebhookStart,
-            obsWebhookStop: obsWebhookStop,
+            obsHost: obsHost,
             obsPort: obsPort
         };
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
@@ -155,12 +150,8 @@ function saveConfig() {
 async function triggerWebhook(url) {
     if (!url) return;
     try {
-        let finalUrl = url;
-        if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
-            finalUrl = `http://localhost:${obsPort}${finalUrl.startsWith('/') ? '' : '/'}${finalUrl}`;
-        }
-        console.log(`Triggering webhook: ${finalUrl}`);
-        const response = await fetch(finalUrl, { method: 'GET' });
+        console.log(`Triggering webhook: ${url}`);
+        const response = await fetch(url, { method: 'GET' });
         if (!response.ok) {
             console.error(`Webhook trigger failed with status: ${response.status}`);
         }
@@ -180,15 +171,11 @@ async function checkSermonRecordingState() {
     if (isSermon && !isRecording) {
         console.log("Entered Sermon section. Starting recording.");
         isRecording = true;
-        if (obsWebhookStart) {
-            await triggerWebhook(obsWebhookStart);
-        }
+        await triggerWebhook(`http://${obsHost}:${obsPort}/start`);
     } else if (!isSermon && isRecording) {
         console.log("Left Sermon section. Stopping recording.");
         isRecording = false;
-        if (obsWebhookStop) {
-            await triggerWebhook(obsWebhookStop);
-        }
+        await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
     }
 }
 
@@ -401,7 +388,7 @@ async function fetchAndBroadcastState() {
                         if (isRecording) {
                             console.log("Stream ended while recording sermon. Triggering stop webhook.");
                             isRecording = false;
-                            if (obsWebhookStop) await triggerWebhook(obsWebhookStop);
+                            await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
                         }
 
                         io.emit('stateUpdate', {
@@ -413,8 +400,7 @@ async function fetchAndBroadcastState() {
                             oscPort: oscPort,
                             hasYoutubeApiKey: !!youtubeApiKey,
                             hasGithubPat: !!githubPat,
-                            obsWebhookStart: obsWebhookStart,
-                            obsWebhookStop: obsWebhookStop,
+                            obsHost: obsHost,
                             obsPort: obsPort,
                             error: apiError
                         });
@@ -444,8 +430,7 @@ async function fetchAndBroadcastState() {
         oscPort: oscPort,
         hasYoutubeApiKey: !!youtubeApiKey,
         hasGithubPat: !!githubPat,
-        obsWebhookStart: obsWebhookStart,
-        obsWebhookStop: obsWebhookStop,
+        obsHost: obsHost,
         obsPort: obsPort,
         error: apiError
     });
@@ -836,16 +821,9 @@ io.on("connection", (socket) => {
         fetchAndBroadcastState();
     });
 
-    socket.on("setObsWebhookStart", (url) => {
-        console.log(`Setting OBS Webhook Start URL`);
-        obsWebhookStart = url;
-        saveConfig();
-        fetchAndBroadcastState();
-    });
-
-    socket.on("setObsWebhookStop", (url) => {
-        console.log(`Setting OBS Webhook Stop URL`);
-        obsWebhookStop = url;
+    socket.on("setObsHost", (host) => {
+        console.log(`Setting OBS Host`);
+        obsHost = host;
         saveConfig();
         fetchAndBroadcastState();
     });
@@ -861,17 +839,13 @@ io.on("connection", (socket) => {
     });
 
     socket.on("testObsWebhookStart", async () => {
-        if (obsWebhookStart) {
-            console.log("Testing OBS Webhook Start URL...");
-            await triggerWebhook(obsWebhookStart);
-        }
+        console.log("Testing OBS Webhook Start URL...");
+        await triggerWebhook(`http://${obsHost}:${obsPort}/start`);
     });
 
     socket.on("testObsWebhookStop", async () => {
-        if (obsWebhookStop) {
-            console.log("Testing OBS Webhook Stop URL...");
-            await triggerWebhook(obsWebhookStop);
-        }
+        console.log("Testing OBS Webhook Stop URL...");
+        await triggerWebhook(`http://${obsHost}:${obsPort}/stop`);
     });
 
     socket.on("nextTiming", () => {
