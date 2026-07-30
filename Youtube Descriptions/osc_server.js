@@ -888,12 +888,14 @@ function main() {
 
     // Poll OBS recording status every second
     setInterval(async () => {
+        const isSermonSection = (past.length > 0 && past[past.length - 1].toLowerCase().includes("sermon"));
+
         if (!obsConnected) {
             try {
                 await obs.connect(`ws://${obsHost}:${obsPort}`);
             } catch (e) {
                 // Ignore connection errors during polling to prevent log spam
-                io.emit('obsState', { isRecording: false, timecode: "00:00" });
+                io.emit('obsState', { isRecording: false, timecode: "00:00", isConnected: false, isSermonSection: isSermonSection });
             }
         }
 
@@ -902,11 +904,13 @@ function main() {
                 const status = await obs.call('GetRecordStatus');
                 io.emit('obsState', {
                     isRecording: status.outputActive,
-                    timecode: status.outputTimecode
+                    timecode: status.outputTimecode,
+                    isConnected: true,
+                    isSermonSection: isSermonSection
                 });
             } catch (e) {
                 console.error("Error polling OBS record status:", e.message);
-                io.emit('obsState', { isRecording: false, timecode: "00:00" });
+                io.emit('obsState', { isRecording: false, timecode: "00:00", isConnected: false, isSermonSection: isSermonSection });
                 try { await obs.disconnect(); } catch (err) {}
             }
         }

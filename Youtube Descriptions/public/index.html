@@ -580,13 +580,29 @@
         });
 
         socket.on('obsState', (data) => {
+            const indicator = document.getElementById('recording-indicator');
+
+            if (!data.isConnected) {
+                indicator.style.display = 'block';
+                indicator.style.color = '#ff9800'; // Orange warning
+                indicator.innerHTML = `&#x26A0; OBS Disconnected`;
+                return;
+            }
+
             if (data.isRecording) {
-                document.getElementById('recording-indicator').style.display = 'block';
+                indicator.style.display = 'block';
+                indicator.style.color = 'red';
                 // Remove milliseconds from timecode if present (e.g. 00:00:15.123 -> 00:00:15)
                 const timecode = data.timecode ? data.timecode.split('.')[0] : "00:00";
-                document.getElementById('recording-timer').innerText = timecode;
+                indicator.innerHTML = `&#x23FA; REC <span id="recording-timer">${timecode}</span>`;
             } else {
-                document.getElementById('recording-indicator').style.display = 'none';
+                if (data.isSermonSection) {
+                    indicator.style.display = 'block';
+                    indicator.style.color = 'red';
+                    indicator.innerHTML = `&#x26A0; NOT RECORDING`;
+                } else {
+                    indicator.style.display = 'none';
+                }
             }
         });
 
