@@ -37,7 +37,7 @@ function getChaptersUrl() {
     } catch (e) {
         console.warn("Could not determine git branch, defaulting to main.");
     }
-    return `https://raw.githubusercontent.com/TheCathedralFCCLA/tech-schedule/${branch}/Youtube%20Descriptions/chapters.txt`;
+    return `https://raw.githubusercontent.com/cju-media/tech-info/${branch}/Youtube%20Descriptions/chapters.txt`;
 }
 
 const app = express();
@@ -495,7 +495,7 @@ async function pushTimingsToGithub() {
     const timingsText = past.join('\n');
     const b64Content = Buffer.from(timingsText).toString('base64');
 
-    const apiUrl = "https://api.github.com/repos/TheCathedralFCCLA/tech-schedule/contents/Youtube%20Descriptions/timings.txt";
+    const apiUrl = "https://api.github.com/repos/cju-media/tech-info/contents/Youtube%20Descriptions/timings.txt";
 
     try {
         let sha = null;
@@ -556,7 +556,7 @@ async function checkGitHubActionStatus(pat, attempts = 0) {
     }
 
     try {
-        const url = "https://api.github.com/repos/TheCathedralFCCLA/tech-schedule/actions/runs?event=push&per_page=5";
+        const url = "https://api.github.com/repos/cju-media/tech-info/actions/runs?event=push&per_page=5";
         const res = await fetch(url, {
             headers: {
                 "Authorization": `Bearer ${pat}`,
