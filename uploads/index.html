@@ -312,8 +312,9 @@
 
         // Use a timestamp to ensure uniqueness and prevent conflicts
         const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-        // Format: TIMESTAMP_FOLDERID_FILENAME
-        const path = `uploads_queue/${Date.now()}_${targetFolder}_${safeFilename}`;
+        // Format: TIMESTAMP---FOLDERID---FILENAME
+        // We use --- instead of _ because Google Drive folder IDs can contain underscores.
+        const path = `uploads_queue/${Date.now()}---${targetFolder}---${safeFilename}`;
 
         const payload = {
             message: `Upload ${filename} to Drive via web UI`,

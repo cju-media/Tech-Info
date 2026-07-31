@@ -104,10 +104,26 @@ def main():
     for filename in files_in_queue:
         file_path = os.path.join(QUEUE_DIR, filename)
 
-        # The frontend prepends a timestamp and folder ID like "1678901234_FOLDERID_filename.ext"
-        parts = filename.split('_', 2)
+        # Handle both the new `---` delimiter and the legacy `_` delimiter which breaks on IDs with underscores
+        if '---' in filename:
+            parts = filename.split('---', 2)
+        else:
+            # Fallback for old queued files: search for known folder IDs first to prevent splitting mid-ID
+            known_ids = [THUMBNAILS_DEST_PARENT_FOLDER_ID, SERMON_DEST_PARENT_FOLDER_ID, '1MVeC2j0v4zTA1sVjhLz06bqEz3qbaYxs', '1ctYBJnFLNkdNhgoU4XLcgJc3QTz7MqwI']
+            parts = None
+            for known_id in known_ids:
+                if f"_{known_id}_" in filename:
+                    # Example: 1785467269621_1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f_filename.jpg
+                    ts_part, rest = filename.split(f"_{known_id}_", 1)
+                    if ts_part.isdigit():
+                        parts = [ts_part, known_id, rest]
+                        break
 
-        if len(parts) == 3 and parts[0].isdigit():
+            # If no known ID was found, fallback to the simple underscore split (might still break if ID has an underscore)
+            if not parts:
+                parts = filename.split('_', 2)
+
+        if parts and len(parts) == 3 and parts[0].isdigit():
             folder_id = parts[1]
             original_filename = parts[2]
 
@@ -131,7 +147,7 @@ def main():
             else:
                 print(f"Failed to process {filename}, leaving in queue.")
         else:
-            print(f"File {filename} does not match expected format TIMESTAMP_FOLDERID_FILENAME. Skipping.")
+            print(f"File {filename} does not match expected format. Skipping.")
 
 if __name__ == "__main__":
     main()
