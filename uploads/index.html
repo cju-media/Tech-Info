@@ -190,14 +190,15 @@
                 if (data[folderId]) {
                     zone.querySelector('.folder-name').textContent = data[folderId];
                 } else {
-                    zone.querySelector('.folder-name').textContent = "Unknown Folder";
+                    zone.querySelector('.folder-name').textContent = folderId === '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f' ? "Worship Service Thumbnail Upload" : "Unknown Folder";
                 }
             });
         })
         .catch(err => {
             console.warn("Could not fetch folder names:", err);
             dropZones.forEach(zone => {
-                zone.querySelector('.folder-name').textContent = "Google Drive Folder";
+                const folderId = zone.getAttribute('data-folder');
+                zone.querySelector('.folder-name').textContent = folderId === '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f' ? "Worship Service Thumbnail Upload" : "Google Drive Folder";
             });
         });
 

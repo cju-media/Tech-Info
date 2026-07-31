@@ -56,6 +56,11 @@ def main():
             ).execute()
 
             name = folder.get('name')
+
+            # Override specific folder names for the UI as requested by user
+            if folder_id == '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f':
+                name = "Worship Service Thumbnail Upload"
+
             print(f"Fetched name for {folder_id}: {name}")
             folder_mapping[folder_id] = name
         except Exception as e:
