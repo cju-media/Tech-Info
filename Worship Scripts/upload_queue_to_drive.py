@@ -10,6 +10,7 @@ from googleapiclient.http import MediaIoBaseUpload
 
 QUEUE_DIR = 'uploads_queue'
 THUMBNAILS_DEST_PARENT_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
+SERMON_DEST_PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 
 def get_or_create_date_folder(service, parent_folder_id, date_str):
     query = f"name='{date_str}' and '{parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
@@ -103,21 +104,37 @@ def main():
     for filename in files_in_queue:
         file_path = os.path.join(QUEUE_DIR, filename)
 
-        # The frontend prepends a timestamp and folder ID like "1678901234_FOLDERID_filename.ext"
-        parts = filename.split('_', 2)
+        # Handle both the new `---` delimiter and the legacy `_` delimiter which breaks on IDs with underscores
+        if '---' in filename:
+            parts = filename.split('---', 2)
+        else:
+            # Fallback for old queued files: search for known folder IDs first to prevent splitting mid-ID
+            known_ids = [THUMBNAILS_DEST_PARENT_FOLDER_ID, SERMON_DEST_PARENT_FOLDER_ID, '1MVeC2j0v4zTA1sVjhLz06bqEz3qbaYxs', '1ctYBJnFLNkdNhgoU4XLcgJc3QTz7MqwI']
+            parts = None
+            for known_id in known_ids:
+                if f"_{known_id}_" in filename:
+                    # Example: 1785467269621_1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f_filename.jpg
+                    ts_part, rest = filename.split(f"_{known_id}_", 1)
+                    if ts_part.isdigit():
+                        parts = [ts_part, known_id, rest]
+                        break
 
-        if len(parts) == 3 and parts[0].isdigit():
+            # If no known ID was found, fallback to the simple underscore split (might still break if ID has an underscore)
+            if not parts:
+                parts = filename.split('_', 2)
+
+        if parts and len(parts) == 3 and parts[0].isdigit():
             folder_id = parts[1]
             original_filename = parts[2]
 
-            if folder_id == THUMBNAILS_DEST_PARENT_FOLDER_ID and original_filename.lower().endswith(('.jpg', '.jpeg')):
+            if folder_id in [THUMBNAILS_DEST_PARENT_FOLDER_ID, SERMON_DEST_PARENT_FOLDER_ID] and original_filename.lower().endswith(('.jpg', '.jpeg')):
                 date_pattern = re.compile(r'(\d{1,4}[-/]\d{1,2}[-/]\d{1,4})')
                 match = date_pattern.search(original_filename)
                 if match:
                     date_str = match.group(1)
-                    print(f"Found date {date_str} in {original_filename}, redirecting to subfolder of {THUMBNAILS_DEST_PARENT_FOLDER_ID}")
+                    print(f"Found date {date_str} in {original_filename}, redirecting to subfolder of {folder_id}")
                     try:
-                        new_folder_id = get_or_create_date_folder(drive_service, THUMBNAILS_DEST_PARENT_FOLDER_ID, date_str)
+                        new_folder_id = get_or_create_date_folder(drive_service, folder_id, date_str)
                         if new_folder_id:
                             folder_id = new_folder_id
                     except Exception as e:
@@ -130,7 +147,7 @@ def main():
             else:
                 print(f"Failed to process {filename}, leaving in queue.")
         else:
-            print(f"File {filename} does not match expected format TIMESTAMP_FOLDERID_FILENAME. Skipping.")
+            print(f"File {filename} does not match expected format. Skipping.")
 
 if __name__ == "__main__":
     main()

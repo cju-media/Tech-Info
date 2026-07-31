@@ -5,7 +5,7 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 
 FOLDER_IDS = [
-    '1MVeC2j0v4zTA1sVjhLz06bqEz3qbaYxs',
+    '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4',
     '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
 ]
 
@@ -60,6 +60,8 @@ def main():
             # Override specific folder names for the UI as requested by user
             if folder_id == '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f':
                 name = "Worship Service Thumbnail Upload"
+            elif folder_id == '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4':
+                name = "Sermon Series Thumbnail Upload"
 
             print(f"Fetched name for {folder_id}: {name}")
             folder_mapping[folder_id] = name
