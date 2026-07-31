@@ -2,16 +2,28 @@
     "assignments": {
         "Cameron": [],
         "Danny": [
-            "su-8-2-2026-worship-service"
+            "su-8-2-2026-worship-service",
+            "su-8-9-2026-pride-book-launch",
+            "su-8-16-2026-wedding-ceremony",
+            "su-8-16-2026-worship-service"
         ],
         "Jaffe": [
             "fr-7-31-2026-neo-fest-concert-2",
-            "su-8-2-2026-worship-service"
+            "su-8-2-2026-worship-service",
+            "su-8-16-2026-worship-service"
         ],
         "Kaspar": [],
-        "Marc": [],
+        "Marc": [
+            "su-8-9-2026-worship-service",
+            "su-8-23-2026-worship-service",
+            "su-8-30-2026-worship-service"
+        ],
         "Saad": [
-            "fr-7-31-2026-neo-fest-concert-2"
+            "fr-7-31-2026-neo-fest-concert-2",
+            "su-8-9-2026-worship-service",
+            "su-8-23-2026-worship-service",
+            "sa-8-29-2026-free-key-concert",
+            "su-8-30-2026-worship-service"
         ]
     },
     "event_details": {
