@@ -3,6 +3,8 @@ import json
 import io
 import shutil
 import re
+import datetime
+import zoneinfo
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
@@ -11,6 +13,15 @@ from googleapiclient.http import MediaIoBaseUpload
 QUEUE_DIR = 'uploads_queue'
 THUMBNAILS_DEST_PARENT_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
 SERMON_DEST_PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
+
+def get_upcoming_sunday():
+    tz = zoneinfo.ZoneInfo("America/Los_Angeles")
+    now_pt = datetime.datetime.now(tz)
+    days_ahead = 6 - now_pt.weekday()
+    if days_ahead <= 0:
+        days_ahead += 7
+    sunday = now_pt + datetime.timedelta(days=days_ahead)
+    return sunday.strftime("%m-%d-%Y")
 
 def get_or_create_date_folder(service, parent_folder_id, date_str):
     query = f"name='{date_str}' and '{parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
@@ -128,11 +139,22 @@ def main():
             original_filename = parts[2]
 
             if folder_id in [THUMBNAILS_DEST_PARENT_FOLDER_ID, SERMON_DEST_PARENT_FOLDER_ID] and original_filename.lower().endswith(('.jpg', '.jpeg')):
-                date_pattern = re.compile(r'(\d{1,4}[-/]\d{1,2}[-/]\d{1,4})')
-                match = date_pattern.search(original_filename)
-                if match:
-                    date_str = match.group(1)
-                    print(f"Found date {date_str} in {original_filename}, redirecting to subfolder of {folder_id}")
+                date_str = None
+
+                if folder_id == SERMON_DEST_PARENT_FOLDER_ID:
+                    # Sermon series thumbnails always target the upcoming Sunday folder
+                    date_str = get_upcoming_sunday()
+                    print(f"Sermon Series Thumbnail detected. Using upcoming Sunday date: {date_str}")
+                else:
+                    # Worship service thumbnails extract the date from the filename
+                    date_pattern = re.compile(r'(\d{1,4}[-/]\d{1,2}[-/]\d{1,4})')
+                    match = date_pattern.search(original_filename)
+                    if match:
+                        date_str = match.group(1)
+                        print(f"Found date {date_str} in {original_filename}")
+
+                if date_str:
+                    print(f"Redirecting {original_filename} to subfolder '{date_str}' of {folder_id}")
                     try:
                         new_folder_id = get_or_create_date_folder(drive_service, folder_id, date_str)
                         if new_folder_id:
