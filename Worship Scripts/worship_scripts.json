@@ -1,4 +1,11 @@
 {
+  "2026-08-02": {
+    "path": "service-scripts/2026-08-02.pdf",
+    "modifiedTime": "2026-07-31T18:55:44.846Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Janette Tovar",
+    "youtubeDescriptionModifiedTime": "2026-07-14T23:49:06.072Z"
+  },
   "2026-08-09": {
     "path": "service-scripts/2026-08-09.pdf",
     "modifiedTime": "2026-07-31T06:30:53.863Z",
@@ -12,13 +19,6 @@
     "isCommunion": false,
     "speakerInfo": "<strong>Speakers - 1 Lavs total</strong>\nLAV1: Laura (LVF)",
     "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
-  },
-  "2026-08-02": {
-    "path": "service-scripts/2026-08-02.pdf",
-    "modifiedTime": "2026-07-30T19:25:07.653Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Janette Tovar",
-    "youtubeDescriptionModifiedTime": "2026-07-14T23:49:06.072Z"
   },
   "2026-08-30": {
     "path": "service-scripts/2026-08-30.pdf",
