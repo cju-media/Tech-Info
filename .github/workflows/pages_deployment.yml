@@ -33,6 +33,14 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v4
+
+      - name: Inject Downloader Config
+        env:
+          GDRIVE_API_KEY: ${{ secrets.GDRIVE_API_KEY }}
+        run: |
+          mkdir -p downloader
+          echo "{\"GDRIVE_API_KEY\": \"$GDRIVE_API_KEY\"}" > downloader/config.json
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

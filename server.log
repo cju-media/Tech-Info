@@ -1,6 +1,0 @@
-127.0.0.1 - - [31/Jul/2026 15:10:49] "GET /downloader/index.html HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 15:10:49] "GET /downloader/app.js HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 15:10:49] "GET /downloader/styles.css HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 15:11:36] "GET /downloader/index.html HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 15:11:36] "GET /downloader/styles.css HTTP/1.1" 200 -
-127.0.0.1 - - [31/Jul/2026 15:11:37] "GET /downloader/app.js HTTP/1.1" 200 -

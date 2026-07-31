@@ -1,6 +1,3 @@
-const menuBtn = document.getElementById('menu-btn');
-const apiKeyMenu = document.getElementById('api-key-menu');
-const apiKeyInput = document.getElementById('api-key-input');
 const statusDiv = document.getElementById('status');
 const folderUrlInput = document.getElementById('folder-url-input');
 const loadFolderBtn = document.getElementById('load-folder-btn');
@@ -14,39 +11,33 @@ const progressContainer = document.getElementById('download-progress');
 const progressBarFill = document.getElementById('progress-bar-fill');
 const progressText = document.getElementById('progress-text');
 
-let apiKey = localStorage.getItem('GDRIVE_API_KEY') || '';
-if (apiKey) apiKeyInput.value = apiKey;
+let apiKey = '';
+
+// Load config
+fetch(`config.json?t=${new Date().getTime()}`)
+    .then(response => {
+        if (!response.ok) throw new Error("Config not found");
+        return response.json();
+    })
+    .then(data => {
+        if (data.GDRIVE_API_KEY) {
+            apiKey = data.GDRIVE_API_KEY;
+            loadFolderBtn.disabled = false;
+        } else {
+            console.warn("API key not found in config.json");
+            setStatus('Error: Missing API Key Configuration', 'error');
+        }
+    })
+    .catch(err => {
+        console.warn("Could not fetch config.json:", err);
+        setStatus('Error: Could not load configuration', 'error');
+    });
 
 // State
 let currentFolderId = null;
 let currentPath = []; // Array of { id, name }
 let currentItems = []; // Items in the current folder
 let cart = new Map(); // id -> item
-
-// UI Events
-menuBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    apiKeyMenu.classList.toggle('show');
-});
-
-document.addEventListener('click', (e) => {
-    if (!apiKeyMenu.contains(e.target) && e.target !== menuBtn) {
-        apiKeyMenu.classList.remove('show');
-    }
-});
-
-function saveApiKey() {
-    apiKey = apiKeyInput.value.trim();
-    if (apiKey) {
-        localStorage.setItem('GDRIVE_API_KEY', apiKey);
-        setStatus('API Key saved!', 'success');
-        apiKeyMenu.classList.remove('show');
-    } else {
-        localStorage.removeItem('GDRIVE_API_KEY');
-        setStatus('API Key removed.', 'info');
-        apiKeyMenu.classList.remove('show');
-    }
-}
 
 function setStatus(msg, type) {
     statusDiv.textContent = msg;
@@ -103,14 +94,26 @@ async function loadFolderContents(folderId) {
     renderBreadcrumbs();
 
     try {
-        const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType,size)&orderBy=folder,name&key=${apiKey}`;
-        const res = await fetch(url);
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error.message || 'Failed to fetch contents');
-        }
-        const data = await res.json();
-        currentItems = data.files || [];
+        let pageToken = null;
+        let fetchedItems = [];
+
+        do {
+            let url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=nextPageToken,files(id,name,mimeType,size)&orderBy=folder,name&key=${apiKey}`;
+            if (pageToken) {
+                url += `&pageToken=${pageToken}`;
+            }
+
+            const res = await fetch(url);
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error.message || 'Failed to fetch contents');
+            }
+            const data = await res.json();
+            fetchedItems = fetchedItems.concat(data.files || []);
+            pageToken = data.nextPageToken;
+        } while (pageToken);
+
+        currentItems = fetchedItems;
 
         if (currentItems.length === 0) {
             fileList.innerHTML = '<li class="empty-msg">Folder is empty</li>';
