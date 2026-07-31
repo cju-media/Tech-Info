@@ -762,6 +762,7 @@ io.on("connection", (socket) => {
             // Clear current service so we re-fetch with API
             currentService = null;
             currentStreamId = null;
+            activeStartTime = null;
             hasGoneLive = false;
             hasPushedThisStream = false;
             fetchAndBroadcastState();
@@ -774,6 +775,7 @@ io.on("connection", (socket) => {
         overrideVideoId = null;
         currentService = null;
         currentStreamId = null;
+        activeStartTime = null;
         hasGoneLive = false;
         hasPushedThisStream = false;
         fetchAndBroadcastState();
