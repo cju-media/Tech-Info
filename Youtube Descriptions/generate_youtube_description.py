@@ -204,6 +204,9 @@ def main():
                                     line_valid = False
                                     break
 
+                                if section_title and content.lower().startswith(f"{section_title.lower()} - "):
+                                    content = content[len(f"{section_title} - "):].strip()
+
                                 resolved_rest = resolved_rest.replace(txt_file, content)
 
                             if line_valid:
@@ -232,6 +235,9 @@ def main():
                             if not content:
                                 line_valid = False
                                 break
+
+                            if section_title and content.lower().startswith(f"{section_title.lower()} - "):
+                                content = content[len(f"{section_title} - "):].strip()
 
                             resolved_rest = resolved_rest.replace(txt_file, content)
 
