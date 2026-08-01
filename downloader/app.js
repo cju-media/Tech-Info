@@ -23,6 +23,7 @@ fetch(`config.json?t=${new Date().getTime()}`)
         if (data.GDRIVE_API_KEY) {
             apiKey = data.GDRIVE_API_KEY;
             loadFolderBtn.disabled = false;
+            checkUrlForFolder();
         } else {
             console.warn("API key not found in config.json");
             setStatus('Error: Missing API Key Configuration', 'error');
@@ -32,6 +33,15 @@ fetch(`config.json?t=${new Date().getTime()}`)
         console.warn("Could not fetch config.json:", err);
         setStatus('Error: Could not load configuration', 'error');
     });
+
+function checkUrlForFolder() {
+    const params = new URLSearchParams(window.location.search);
+    const folderId = params.get('folderId');
+    if (folderId) {
+        folderUrlInput.value = `https://drive.google.com/drive/folders/${folderId}`;
+        loadFolderBtn.click();
+    }
+}
 
 // State
 let currentFolderId = null;

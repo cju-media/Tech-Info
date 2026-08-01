@@ -1,0 +1,9 @@
+127.0.0.1 - - [01/Aug/2026 16:49:41] "GET /events/index.html HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 16:49:41] "GET /events/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 16:49:41] "GET /events/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 16:49:41] "GET /events/events_data.json?t=1785602981139 HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 16:49:45] "GET /downloader/index.html?folderId=mockId1 HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 16:49:45] "GET /downloader/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 16:49:45] "GET /downloader/app.js HTTP/1.1" 200 -
+127.0.0.1 - - [01/Aug/2026 16:49:45] code 404, message File not found
+127.0.0.1 - - [01/Aug/2026 16:49:45] "GET /downloader/config.json?t=1785602985291 HTTP/1.1" 404 -
