@@ -1,17 +1,17 @@
 {
-  "2026-08-09": {
-    "path": "service-scripts/2026-08-09.pdf",
-    "modifiedTime": "2026-08-01T17:41:03.779Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat",
-    "youtubeDescriptionModifiedTime": "2026-06-11T23:45:47.869Z"
-  },
   "2026-08-02": {
     "path": "service-scripts/2026-08-02.pdf",
-    "modifiedTime": "2026-07-31T18:55:44.846Z",
+    "modifiedTime": "2026-08-01T19:02:43.305Z",
     "isCommunion": false,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Janette Tovar",
     "youtubeDescriptionModifiedTime": "2026-07-14T23:49:06.072Z"
+  },
+  "2026-08-09": {
+    "path": "service-scripts/2026-08-09.pdf",
+    "modifiedTime": "2026-08-01T18:59:52.810Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat",
+    "youtubeDescriptionModifiedTime": "2026-06-11T23:45:47.869Z"
   },
   "2026-08-16": {
     "path": "service-scripts/2026-08-16.pdf",
