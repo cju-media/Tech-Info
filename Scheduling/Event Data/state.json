@@ -8,7 +8,6 @@
             "su-8-16-2026-worship-service"
         ],
         "Jaffe": [
-            "fr-7-31-2026-neo-fest-concert-2",
             "su-8-2-2026-worship-service",
             "su-8-16-2026-worship-service"
         ],
@@ -19,7 +18,6 @@
             "su-8-30-2026-worship-service"
         ],
         "Saad": [
-            "fr-7-31-2026-neo-fest-concert-2",
             "su-8-9-2026-worship-service",
             "su-8-23-2026-worship-service",
             "sa-8-29-2026-free-key-concert",
@@ -121,11 +119,6 @@
             "date": "2026-08-02",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "fr-7-31-2026-neo-fest-concert-2": {
-            "date": "2026-07-31",
-            "name": "NEO FEST Concert 2",
-            "call_time": "12:30pm-9:00pm"
         }
     }
 }
