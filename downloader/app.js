@@ -129,11 +129,42 @@ async function loadFolderContents(folderId) {
             fileList.innerHTML = '<li class="empty-msg">Folder is empty</li>';
         } else {
             renderFileList();
+            checkUrlHashForFileSelection();
         }
         setStatus('', 'info');
     } catch (err) {
         console.error(err);
         setStatus(`Error: ${err.message}`, 'error');
+    }
+}
+
+function checkUrlHashForFileSelection() {
+    if (window.location.hash) {
+        const targetId = window.location.hash.substring(1);
+        const targetItem = currentItems.find(i => i.id === targetId);
+
+        if (targetItem && !cart.has(targetId)) {
+            toggleCart(targetItem, true);
+
+            // Check the box in the UI
+            const itemIndex = currentItems.findIndex(i => i.id === targetId);
+            if (itemIndex !== -1) {
+                const checkboxes = document.querySelectorAll('.item-checkbox');
+                if (checkboxes[itemIndex]) checkboxes[itemIndex].checked = true;
+            }
+
+            // Scroll to the item
+            const listItems = fileList.querySelectorAll('li.file-item');
+            if (listItems[itemIndex]) {
+                listItems[itemIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Briefly highlight it
+                const originalBg = listItems[itemIndex].style.backgroundColor;
+                listItems[itemIndex].style.backgroundColor = '#e1f0fa';
+                setTimeout(() => {
+                    listItems[itemIndex].style.backgroundColor = originalBg;
+                }, 2000);
+            }
+        }
     }
 }
 
