@@ -695,6 +695,12 @@ async function handleOscMessage(oscMsg) {
     } else if (oscMsg.address === "/timings/back") {
         console.log(`Received OSC back command.`);
         await handlePrevTiming();
+    } else if (oscMsg.address === "/record/stop") {
+        console.log(`Received OSC record stop command.`);
+        // Override local tracking state so it doesn't automatically turn back on if we're still in the sermon section.
+        // It must be TRUE so the auto-loop thinks the "start" trigger already fired and ignores it.
+        hasTriggeredSermonRecord = true;
+        await triggerObsAction('stop_recording');
     } else {
         console.log(`Ignored unrelated OSC message at address: ${oscMsg.address}`);
     }
