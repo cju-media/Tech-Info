@@ -5,7 +5,16 @@ on:
     # Run every Monday at 9:00 AM Pacific Time (16:00 UTC, or 17:00 UTC depending on DST)
     # Using 17:00 UTC to safely align around Monday morning PT.
     - cron: '0 17 * * 1'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      privacy_status:
+        description: 'YouTube Video Privacy Status'
+        required: true
+        default: 'private'
+        type: choice
+        options:
+          - private
+          - public
 
 jobs:
   migrate_video:
@@ -28,5 +37,6 @@ jobs:
         env:
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
+          YOUTUBE_PRIVACY_STATUS: ${{ github.event.inputs.privacy_status || 'private' }}
         run: |
           python "Video Migration/migrate_videos.py"
