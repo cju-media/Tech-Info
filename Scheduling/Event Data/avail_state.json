@@ -17,12 +17,12 @@
     ],
     "sa-9-12-2026-west-hollywood-philharmonic": [],
     "th-9-10-2026-organ-concert-upend-la": [
-        "Jaffe",
-        "Marc"
+        "Marc",
+        "Jaffe"
     ],
     "su-9-6-2026-memorial-service": [
-        "Danny",
-        "Marc"
+        "Marc",
+        "Danny"
     ],
     "su-9-6-2026-worship-service": [
         "Danny",
@@ -44,24 +44,24 @@
         "Danny"
     ],
     "su-8-16-2026-worship-service": [
-        "Danny",
-        "Jaffe",
         "Marc",
-        "Saad"
+        "Saad",
+        "Danny",
+        "Jaffe"
     ],
     "su-8-9-2026-pride-book-launch": [
-        "Danny",
-        "Marc"
+        "Marc",
+        "Danny"
     ],
     "su-8-9-2026-worship-service": [
         "Saad",
-        "Jaffe",
-        "Marc"
+        "Marc",
+        "Jaffe"
     ],
     "su-8-2-2026-worship-service": [
-        "Saad",
-        "Jaffe",
         "Marc",
-        "Danny"
+        "Saad",
+        "Danny",
+        "Jaffe"
     ]
 }
