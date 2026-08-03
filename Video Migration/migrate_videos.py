@@ -375,7 +375,6 @@ def main():
 
             # Upload modified text to the Drive subfolder
             from googleapiclient.http import MediaIoBaseUpload
-            import io
 
             new_filename = f"Sermon-Series-Description-{sunday_str_formatted}.txt"
 
