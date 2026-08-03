@@ -1,0 +1,45 @@
+name: Archive Service Files
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Archive files
+        run: |
+          DATE_STR=$(TZ="America/Los_Angeles" date -d "last sunday" +%Y-%m-%d)
+          if [ "$(TZ="America/Los_Angeles" date +%u)" -eq 7 ]; then
+            DATE_STR=$(TZ="America/Los_Angeles" date +%Y-%m-%d)
+          fi
+
+          ARCHIVE_DIR="Archives/$DATE_STR"
+          mkdir -p "$ARCHIVE_DIR"
+
+          if [ -f "Youtube Descriptions/chapters.txt" ]; then
+            cp "Youtube Descriptions/chapters.txt" "$ARCHIVE_DIR/chapters.txt"
+          fi
+
+          if [ -f "Youtube Descriptions/description.txt" ]; then
+            cp "Youtube Descriptions/description.txt" "$ARCHIVE_DIR/description.txt"
+          elif [ -f "Youtube Descriptions/Description.txt" ]; then
+            cp "Youtube Descriptions/Description.txt" "$ARCHIVE_DIR/description.txt"
+          fi
+
+          if [ -f "Worship Scripts/service-titles/title.txt" ]; then
+            cp "Worship Scripts/service-titles/title.txt" "$ARCHIVE_DIR/title.txt"
+          fi
+
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add "Archives/"
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Archive service files for $DATE_STR" && git pull --rebase origin ${{ github.ref_name }} && git push)
