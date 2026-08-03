@@ -28,6 +28,9 @@ jobs:
           if [ -f "Youtube Descriptions/chapters.txt" ]; then
             cp "Youtube Descriptions/chapters.txt" "$ARCHIVE_DIR/chapters.txt"
           fi
+          if [ -f "Youtube Descriptions/timings.txt" ]; then
+            cp "Youtube Descriptions/timings.txt" "$ARCHIVE_DIR/timings.txt"
+          fi
 
           if [ -f "Youtube Descriptions/description.txt" ]; then
             cp "Youtube Descriptions/description.txt" "$ARCHIVE_DIR/description.txt"
