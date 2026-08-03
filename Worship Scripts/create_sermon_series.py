@@ -184,7 +184,7 @@ def main():
     if title.lower().startswith("sermon - "):
         title = title[9:].strip()
 
-    formatted_text = f"{title} || {minister}"
+    formatted_text = f"{title} - {minister} || FCCLA Sermon"
 
     # 3. Calculate date and output filename
     sunday = get_upcoming_sunday()
