@@ -217,6 +217,8 @@
                 G3[rf_coordination]
                 G4[sermon_series]
                 H1[process_uploads]
+                I1[update_folder_names]
+                I2[update_events_directory]
 
                 %% Click Events
                 click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
@@ -227,10 +229,12 @@
                 click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via macOS runner (osascript)"
                 click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream"
                 click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications"
-                click G2 href "#video_migration" "Weekly job that organizes the VOD in Google Drive and updates playlist links"
+                click G2 href "#video_migration" "Weekly job that copies VOD in Google Drive and uploads it to YouTube podcast playlist"
                 click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails"
                 click G4 href "#sermon_series" "Combines sermon title and minister into a text file and syncs to Drive"
                 click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive"
+                click I1 href "#update_folder_names" "Serverless script that queries Google Drive API and exports static mappings to uploads/folder_names.json"
+                click I2 href "#update_events_directory" "Fetches public subfolders from the private Google Drive Events folder for /events"
 
             </div>
             <div id="flowchart-desc" class="flowchart-description">Hover over a workflow node to view its description.</div>
