@@ -320,6 +320,51 @@ def main():
                     ).execute()
                     print("Video added to playlist successfully.")
 
+                    # Upload Thumbnail
+                    print("Searching for thumbnail image in destination subfolder...")
+                    query_image_files = f"'{dest_subfolder_id}' in parents and mimeType contains 'image/' and trashed = false"
+                    image_results = service.files().list(
+                        q=query_image_files,
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
+                        fields="files(id, name, mimeType)"
+                    ).execute()
+                    image_files = image_results.get('files', [])
+
+                    if image_files:
+                        thumbnail_file = image_files[0]
+                        print(f"Found thumbnail image: {thumbnail_file['name']}")
+                        local_thumbnail_path = f"/tmp/{thumbnail_file['name']}"
+
+                        # Download the image
+                        request = service.files().get_media(fileId=thumbnail_file['id'])
+                        fh = io.FileIO(local_thumbnail_path, 'wb')
+                        downloader = MediaIoBaseDownload(fh, request)
+                        done = False
+                        while done is False:
+                            status, done = downloader.next_chunk()
+                            if status:
+                                print(f"Thumbnail download {int(status.progress() * 100)}%.")
+
+                        # Upload to YouTube
+                        print("Uploading thumbnail to YouTube...")
+                        try:
+                            media = MediaFileUpload(local_thumbnail_path, mimetype=thumbnail_file.get('mimeType', 'image/jpeg'), resumable=True)
+                            youtube_service.thumbnails().set(
+                                videoId=uploaded_video_id,
+                                media_body=media
+                            ).execute()
+                            print("Successfully set thumbnail.")
+                        except Exception as e:
+                            print(f"Error uploading thumbnail to YouTube: {e}")
+
+                        # Cleanup local thumbnail
+                        if os.path.exists(local_thumbnail_path):
+                            os.remove(local_thumbnail_path)
+                            print(f"Deleted local thumbnail file {local_thumbnail_path}.")
+                    else:
+                        print("No thumbnail image found in destination subfolder.")
+
                 except Exception as e:
                     print(f"Error during YouTube upload/playlist insertion: {e}")
 
