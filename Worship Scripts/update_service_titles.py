@@ -275,6 +275,14 @@ def main():
             file_key = parts[0]
             content = parts[1] if len(parts) > 1 else ""
 
+            # Ensure trailing colons don't break file names (e.g. "title:" or "prelude1:")
+            if file_key.endswith(":"):
+                file_key = file_key[:-1]
+
+            # Specifically handle case-insensitive "title" formatting if Gemini capitalizes it
+            if file_key.lower() == "title":
+                file_key = "title"
+
             filename = f"{file_key}.txt"
             filepath = os.path.join(titles_dir, filename)
 
