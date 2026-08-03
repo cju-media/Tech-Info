@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '0 * * * *'  # Runs every hour, relies on python script to filter
   repository_dispatch:
-    types: [drive_upload_complete]
+    types: [drive_upload_complete, youtube_stream_created]
   workflow_dispatch:
     inputs:
       run_mode:
@@ -86,6 +86,43 @@ jobs:
                   exit(1)
 
               message = "New worship scripts and script titles have been uploaded to Google Drive."
+
+              print(f"Sending via osascript to {cameron_phone}...")
+              escaped_message = message.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\"")
+              applescript = f"""
+              tell application "Messages"
+                  set targetService to 1st service whose service type = iMessage
+                  set targetBuddy to buddy "{cameron_phone}" of targetService
+                  send "{escaped_message}" to targetBuddy
+              end tell
+              """
+              subprocess.run(["osascript", "-e", applescript], check=True, capture_output=True, text=True)
+              print("Successfully sent iMessage via osascript.")
+          except Exception as e:
+              print(f"Error preparing iMessage: {e}")
+              exit(1)
+          '
+
+      - name: Send YouTube Stream Created Notification
+        if: github.event_name == 'repository_dispatch' && github.event.action == 'youtube_stream_created'
+        run: |
+          python3 -c '
+          import os, json, subprocess
+          try:
+              phones_path = os.path.join("Scheduling", "Team Data", "team_phones.json")
+              with open(phones_path, "r") as f:
+                  phones = json.load(f)
+              cameron_phone = phones.get("Cameron")
+              if not cameron_phone:
+                  print("Could not find Cameron phone number.")
+                  exit(1)
+
+              client_payload = """${{ toJSON(github.event.client_payload) }}"""
+              payload_data = json.loads(client_payload)
+              stream_url = payload_data.get("stream_url", "Unknown URL")
+              date = payload_data.get("date", "Unknown Date")
+
+              message = f"The YouTube live stream for {date} has been scheduled and is available to view online at {stream_url}"
 
               print(f"Sending via osascript to {cameron_phone}...")
               escaped_message = message.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\"")

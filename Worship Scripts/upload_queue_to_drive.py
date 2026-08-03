@@ -163,6 +163,24 @@ def main():
                         print(f"Error redirecting folder for {original_filename}: {e}")
 
             if upload_to_drive(drive_service, file_path, original_filename, folder_id):
+                if folder_id in [THUMBNAILS_DEST_PARENT_FOLDER_ID] or (date_str and "Worship Service Thumbnail" in str(folder_id)):
+                    # The folder_id variable might have been reassigned to a new subfolder ID, so we check original logic
+                    pass
+
+                # If successful, check if it's a worship service thumbnail to create stream
+                if parts[1] == THUMBNAILS_DEST_PARENT_FOLDER_ID and date_str:
+                    print(f"Worship Service Thumbnail detected. Launching create_youtube_stream.py for {date_str}...")
+                    import subprocess
+                    script_path = os.path.join("Youtube Descriptions", "create_youtube_stream.py")
+                    if os.path.exists(script_path):
+                        try:
+                            # We keep the file around so create_youtube_stream can upload it as thumbnail
+                            subprocess.run(["python", script_path, date_str, file_path], check=True)
+                        except Exception as e:
+                            print(f"Error running create_youtube_stream.py: {e}")
+                    else:
+                        print(f"Could not find script at {script_path}")
+
                 # If successful, remove it so the GitHub Action can commit the deletion
                 os.remove(file_path)
                 print(f"Removed {filename} from queue.")
