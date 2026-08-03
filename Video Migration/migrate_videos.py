@@ -320,6 +320,46 @@ def main():
                     ).execute()
                     print("Video added to playlist successfully.")
 
+                    # Search for thumbnail image in destination subfolder
+                    print("Searching for thumbnail image to upload...")
+                    query_image_files = f"'{dest_subfolder_id}' in parents and (mimeType = 'image/jpeg' or mimeType = 'image/png' or mimeType = 'image/jpg' or mimeType = 'image/webp') and trashed = false"
+                    image_results = service.files().list(
+                        q=query_image_files,
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
+                        fields="files(id, name)"
+                    ).execute()
+
+                    images = image_results.get('files', [])
+                    if images:
+                        thumb_file = images[0]
+                        print(f"Found thumbnail image: {thumb_file['name']}")
+                        local_thumb_path = f"/tmp/{thumb_file['name']}"
+
+                        # Download thumbnail
+                        request = service.files().get_media(fileId=thumb_file['id'])
+                        fh = io.FileIO(local_thumb_path, 'wb')
+                        downloader = MediaIoBaseDownload(fh, request)
+                        done = False
+                        while done is False:
+                            status, done = downloader.next_chunk()
+
+                        # Upload thumbnail
+                        print("Uploading custom thumbnail to YouTube...")
+                        media_thumb = MediaFileUpload(local_thumb_path)
+                        youtube_service.thumbnails().set(
+                            videoId=uploaded_video_id,
+                            media_body=media_thumb
+                        ).execute()
+                        print("Thumbnail uploaded successfully!")
+
+                        # Cleanup local thumbnail file
+                        if os.path.exists(local_thumb_path):
+                            os.remove(local_thumb_path)
+                            print(f"Deleted local file {local_thumb_path}.")
+                    else:
+                        print("No image file found in the destination folder to use as a thumbnail.")
+
                 except Exception as e:
                     print(f"Error during YouTube upload/playlist insertion: {e}")
 
@@ -329,94 +369,6 @@ def main():
                     print(f"Deleted local file {local_video_path}.")
         else:
             print("Could not find both Title and Description text files in the destination subfolder. Skipping YouTube upload.")
-
-    # Process Sermon-Series-Description.txt
-    sermon_desc_path = "Worship Scripts/Sermon-Series/Sermon-Series-Description.txt"
-    if os.path.exists(sermon_desc_path):
-        print(f"Found {sermon_desc_path}. Processing...")
-        try:
-
-            # Get the most recent video from the YouTube playlist
-            youtube_service = get_youtube_service()
-            youtube_link = ""
-            if youtube_service:
-                try:
-                    playlist_response = youtube_service.playlistItems().list(
-                        part='snippet',
-                        playlistId='PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs',
-                        maxResults=1
-                    ).execute()
-
-                    items = playlist_response.get('items', [])
-                    if items:
-                        video_id = items[0]['snippet']['resourceId']['videoId']
-                        youtube_link = f"https://youtube.com/watch?v={video_id}"
-                        print(f"Found recent YouTube video: {youtube_link}")
-                    else:
-                        print("No videos found in YouTube playlist.")
-                except Exception as e:
-                    print(f"Error querying YouTube playlist: {e}")
-            else:
-                print("Skipping YouTube link replacement because YouTube service could not be initialized.")
-
-            with open(sermon_desc_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-
-            # Format M-DD-YY (no leading zero for month, 2-digit year)
-            m_dd_yy = f"{sunday_date.month}-{sunday_date.strftime('%d-%y')}"
-            ow_link = f"https://www.fccla.org/ows/{m_dd_yy}"
-
-            # Replace placeholders
-            modified_content = content.replace("OW LINK", ow_link)
-            if youtube_link:
-                import re
-                modified_content = re.sub(r'(?i)youtube service link', youtube_link, modified_content)
-
-
-            # Upload modified text to the Drive subfolder
-            from googleapiclient.http import MediaIoBaseUpload
-
-            new_filename = f"Sermon-Series-Description-{sunday_str_formatted}.txt"
-
-            # Check if file already exists
-            query_desc = f"'{dest_subfolder_id}' in parents and name = '{new_filename}' and trashed = false"
-            desc_results = service.files().list(
-                q=query_desc,
-                supportsAllDrives=True,
-                includeItemsFromAllDrives=True,
-                fields="files(id)"
-            ).execute()
-
-            existing_files = desc_results.get('files', [])
-            media = MediaIoBaseUpload(io.BytesIO(modified_content.encode('utf-8')), mimetype='text/plain', resumable=True)
-
-            if existing_files:
-                file_id = existing_files[0]['id']
-                print(f"Updating existing {new_filename} (ID: {file_id}) in Drive subfolder...")
-                service.files().update(
-                    fileId=file_id,
-                    media_body=media,
-                    supportsAllDrives=True
-                ).execute()
-                print(f"Successfully updated {new_filename}!")
-            else:
-                print(f"Uploading new {new_filename} to Drive subfolder...")
-                file_metadata = {
-                    'name': new_filename,
-                    'parents': [dest_subfolder_id]
-                }
-                service.files().create(
-                    body=file_metadata,
-                    media_body=media,
-                    supportsAllDrives=True
-                ).execute()
-                print(f"Successfully uploaded {new_filename}!")
-
-        except Exception as e:
-            print(f"Error processing {sermon_desc_path}: {e}")
-    else:
-        print(f"{sermon_desc_path} not found locally. Skipping description upload.")
-
 
 if __name__ == "__main__":
     main()
