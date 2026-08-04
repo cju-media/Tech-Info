@@ -169,8 +169,52 @@ def main():
 
                 # If successful, check if it's a worship service thumbnail to create stream
                 if parts[1] == THUMBNAILS_DEST_PARENT_FOLDER_ID and date_str:
-                    print(f"Worship Service Thumbnail detected. Launching create_youtube_stream.py for {date_str}...")
+                    title_path = os.path.join("Worship Scripts", "service-titles", "title.txt")
+                    desc_path = os.path.join("Youtube Descriptions", "Description.txt")
+
+                    if not (os.path.exists(title_path) and os.path.exists(desc_path)):
+                        print(f"Worship Service Thumbnail detected but title/description missing. Executing text generation scripts for {date_str}...")
+                        import subprocess
+
+                        env_copy = os.environ.copy()
+                        env_copy['FORCE_UPDATE'] = 'true'
+
+                        update_titles_script = os.path.join("Worship Scripts", "update_service_titles.py")
+                        if os.path.exists(update_titles_script):
+                            try:
+                                print(f"Running {update_titles_script}...")
+                                subprocess.run(["python", "update_service_titles.py"], check=True, cwd="Worship Scripts", env=env_copy)
+                            except Exception as e:
+                                print(f"Error running update_service_titles.py: {e}")
+                        else:
+                            print(f"Could not find script at {update_titles_script}")
+
+                        generate_desc_script = os.path.join("Youtube Descriptions", "generate_youtube_description.py")
+                        if os.path.exists(generate_desc_script):
+                            try:
+                                print(f"Running {generate_desc_script}...")
+                                subprocess.run(["python", "generate_youtube_description.py"], check=True, cwd="Youtube Descriptions", env=env_copy)
+                            except Exception as e:
+                                print(f"Error running generate_youtube_description.py: {e}")
+                        else:
+                            print(f"Could not find script at {generate_desc_script}")
+                    else:
+                        print(f"Worship Service Thumbnail detected and title/description already exist for {date_str}.")
+
+                    print(f"Uploading title and description to Drive...")
                     import subprocess
+
+                    if os.path.exists(title_path):
+                        upload_to_drive(drive_service, title_path, "title.txt", folder_id)
+                    else:
+                        print(f"Title file not found at {title_path}")
+
+                    if os.path.exists(desc_path):
+                        upload_to_drive(drive_service, desc_path, "Description.txt", folder_id)
+                    else:
+                        print(f"Description file not found at {desc_path}")
+
+                    print(f"Launching create_youtube_stream.py for {date_str}...")
                     script_path = os.path.join("Youtube Descriptions", "create_youtube_stream.py")
                     if os.path.exists(script_path):
                         try:
