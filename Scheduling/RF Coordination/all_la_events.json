@@ -14,23 +14,16 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
+    "name": "MUTINY",
+    "date": "2026-08-07",
+    "location": "Hollywood and Vine",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
     "name": "2026 ASLA CONFERENCE",
     "date": "2026-09-16",
     "location": "1201 FIGUEROA",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "EAST LA MEETS NAPA",
-    "date": "2026-07-31",
-    "location": "Inside the ticket office",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "NALC RECEPTION",
-    "date": "2026-08-02",
-    "location": "Gilbert Lindsey plaza",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
@@ -56,30 +49,9 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "SUMMER ORIENTATION",
-    "date": "2026-07-30",
-    "location": "3518 Trousdale Parkway",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "MOTHER CENTER",
-    "date": "2026-08-02",
-    "location": "On the grass areas",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "MUSEIQUE",
     "date": "2026-08-30",
     "location": "Herscher Hall at Skirball Cultural Center",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "RAMS TRAINING CAMP",
-    "date": "2026-08-01",
-    "location": "Parking Lot B next to Gersten Pavilion",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
