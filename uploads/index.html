@@ -162,6 +162,12 @@
             <input type="file" class="file-input">
         </div>
 
+        <div class="drop-zone" data-folder="17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz">
+            <h3 class="folder-name">Loading folder name...</h3>
+            <p>Drop file here or click to browse</p>
+            <input type="file" class="file-input">
+        </div>
+
         <div class="drop-zone" data-folder="OW">
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
@@ -202,6 +208,8 @@
                         zone.querySelector('.folder-name').textContent = "Sermon Series Thumbnail Upload";
                     } else if (folderId === 'OW') {
                         zone.querySelector('.folder-name').textContent = "Order of Worship (OW) Upload";
+                    } else if (folderId === '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz') {
+                        zone.querySelector('.folder-name').textContent = "Events Ad Upload";
                     } else {
                         zone.querySelector('.folder-name').textContent = "Unknown Folder";
                     }
@@ -218,6 +226,8 @@
                     zone.querySelector('.folder-name').textContent = "Sermon Series Thumbnail Upload";
                 } else if (folderId === 'OW') {
                     zone.querySelector('.folder-name').textContent = "Order of Worship (OW) Upload";
+                } else if (folderId === '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz') {
+                    zone.querySelector('.folder-name').textContent = "Events Ad Upload";
                 } else {
                     zone.querySelector('.folder-name').textContent = "Google Drive Folder";
                 }
