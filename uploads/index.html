@@ -118,6 +118,13 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
         .drive-btn {
             display: inline-block;
             background-color: #27ae60;
@@ -126,7 +133,6 @@
             padding: 12px 24px;
             border-radius: 5px;
             font-size: 16px;
-            margin-top: 30px;
             transition: background-color 0.3s;
         }
         .drive-btn:hover {
@@ -177,9 +183,20 @@
 
     <div id="status"></div>
 
-    <a href="https://drive.google.com/drive/folders/1y42Dh7ZSNXWRA9e-ffU9bqkQlF1T4g4x?usp=share_link" target="_blank" class="drive-btn">
-        Open in Google Drive
-    </a>
+    <div class="button-group">
+        <a href="https://drive.google.com/drive/folders/1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f?usp=share_link" target="_blank" class="drive-btn">
+            Open Worship Service
+        </a>
+        <a href="https://drive.google.com/drive/folders/1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4?usp=share_link" target="_blank" class="drive-btn">
+            Open Sermon Series
+        </a>
+        <a href="https://github.com/TheCathedralFCCLA/OW/tree/main/OWs" target="_blank" class="drive-btn">
+            Open OWs
+        </a>
+        <a href="https://drive.google.com/drive/folders/17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz?usp=share_link" target="_blank" class="drive-btn">
+            Open Events Ads
+        </a>
+    </div>
 </div>
 
 <script>
