@@ -82,7 +82,7 @@ def main():
             # Send to Gemini
             try:
                 gemini_response = client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-3.5-flash',
                     contents=[
                         prompt_text,
                         types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
