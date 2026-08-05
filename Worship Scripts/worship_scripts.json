@@ -1,7 +1,14 @@
 {
+  "2026-08-16": {
+    "path": "service-scripts/2026-08-16.pdf",
+    "modifiedTime": "2026-08-05T22:59:07.057Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 1 Lavs total</strong>\nLAV1: Laura Valenzuela Fowler",
+    "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
+  },
   "2026-08-09": {
     "path": "service-scripts/2026-08-09.pdf",
-    "modifiedTime": "2026-08-05T21:15:23.584Z",
+    "modifiedTime": "2026-08-05T21:17:55.455Z",
     "isCommunion": false,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat",
     "youtubeDescriptionModifiedTime": "2026-06-11T23:45:47.869Z"
@@ -19,12 +26,5 @@
     "isCommunion": false,
     "speakerInfo": "<strong>Speakers - 1 Lavs total</strong>\nLAV1: Laura Valley-Flier",
     "youtubeDescriptionModifiedTime": "2026-07-03T22:42:54.770Z"
-  },
-  "2026-08-16": {
-    "path": "service-scripts/2026-08-16.pdf",
-    "modifiedTime": "2026-08-05T17:42:39.840Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 1 Lavs total</strong>\nLAV1: Laura Force",
-    "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
   }
 }
