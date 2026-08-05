@@ -161,6 +161,12 @@
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input">
         </div>
+
+        <div class="drop-zone" data-folder="OW">
+            <h3 class="folder-name">Loading folder name...</h3>
+            <p>Drop file here or click to browse</p>
+            <input type="file" class="file-input" accept="application/pdf, .pdf">
+        </div>
     </div>
 
     <div id="status"></div>
@@ -194,6 +200,8 @@
                         zone.querySelector('.folder-name').textContent = "Worship Service Thumbnail Upload";
                     } else if (folderId === '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4') {
                         zone.querySelector('.folder-name').textContent = "Sermon Series Thumbnail Upload";
+                    } else if (folderId === 'OW') {
+                        zone.querySelector('.folder-name').textContent = "Order of Worship (OW) Upload";
                     } else {
                         zone.querySelector('.folder-name').textContent = "Unknown Folder";
                     }
@@ -208,6 +216,8 @@
                     zone.querySelector('.folder-name').textContent = "Worship Service Thumbnail Upload";
                 } else if (folderId === '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4') {
                     zone.querySelector('.folder-name').textContent = "Sermon Series Thumbnail Upload";
+                } else if (folderId === 'OW') {
+                    zone.querySelector('.folder-name').textContent = "Order of Worship (OW) Upload";
                 } else {
                     zone.querySelector('.folder-name').textContent = "Google Drive Folder";
                 }
@@ -294,6 +304,11 @@
             return;
         }
 
+        if (targetFolder === 'OW' && !file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+            setStatus('Error: Only PDF files are allowed for OW uploads.', 'error');
+            return;
+        }
+
         setStatus(`Reading ${file.name}...`, 'info');
 
         const reader = new FileReader();
@@ -312,17 +327,26 @@
 
         // Use a timestamp to ensure uniqueness and prevent conflicts
         const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-        // Format: TIMESTAMP---FOLDERID---FILENAME
-        // We use --- instead of _ because Google Drive folder IDs can contain underscores.
-        const path = `uploads_queue/${Date.now()}---${targetFolder}---${safeFilename}`;
 
+        let targetRepo, path;
         const payload = {
-            message: `Upload ${filename} to Drive via web UI`,
             content: base64Content
         };
 
+        if (targetFolder === 'OW') {
+            targetRepo = 'TheCathedralFCCLA/OW';
+            path = `OWs/${safeFilename}`;
+            payload.message = `Upload ${filename} to OW repo via web UI`;
+        } else {
+            targetRepo = REPO;
+            // Format: TIMESTAMP---FOLDERID---FILENAME
+            // We use --- instead of _ because Google Drive folder IDs can contain underscores.
+            path = `uploads_queue/${Date.now()}---${targetFolder}---${safeFilename}`;
+            payload.message = `Upload ${filename} to Drive via web UI`;
+        }
+
         try {
-            const response = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+            const response = await fetch(`https://api.github.com/repos/${targetRepo}/contents/${path}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `token ${pat}`,
@@ -337,7 +361,11 @@
                 throw new Error(errData.message || response.statusText);
             }
 
-            setStatus('File queued successfully! It will appear in Google Drive shortly.', 'success');
+            if (targetFolder === 'OW') {
+                setStatus('File uploaded successfully to OW repository!', 'success');
+            } else {
+                setStatus('File queued successfully! It will appear in Google Drive shortly.', 'success');
+            }
             inputElement.value = ''; // Reset input
         } catch (error) {
             console.error(error);
