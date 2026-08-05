@@ -19,45 +19,46 @@
         "Jaffe"
     ],
     "th-9-10-2026-organ-concert-upend-la": [
-        "Jaffe",
         "Marc"
     ],
     "su-9-6-2026-memorial-service": [
-        "Danny",
-        "Marc"
+        "Marc",
+        "Danny"
     ],
     "su-9-6-2026-worship-service": [
         "Jaffe",
         "Danny"
     ],
-    "sa-9-5-2026-classical-fantasia": [],
+    "sa-9-5-2026-classical-fantasia": [
+        "Saad"
+    ],
     "su-8-30-2026-worship-service": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "sa-8-29-2026-free-key-concert": [
         "Saad"
     ],
     "su-8-23-2026-worship-service": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "su-8-16-2026-wedding-ceremony": [
         "Danny"
     ],
     "su-8-16-2026-worship-service": [
         "Jaffe",
-        "Saad",
+        "Marc",
         "Danny",
-        "Marc"
+        "Saad"
     ],
     "su-8-9-2026-pride-book-launch": [
-        "Danny",
-        "Marc"
+        "Marc",
+        "Danny"
     ],
     "su-8-9-2026-worship-service": [
         "Jaffe",
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ]
 }
