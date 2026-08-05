@@ -128,13 +128,19 @@ def main():
             if len(parts[0]) == 4:
                 target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             else:
-                target_date = datetime.strptime(date_str, "%m-%d-%Y").date()
+                if len(parts[2]) == 2:
+                    target_date = datetime.strptime(date_str, "%m-%d-%y").date()
+                else:
+                    target_date = datetime.strptime(date_str, "%m-%d-%Y").date()
         elif '/' in date_str:
             parts = date_str.split('/')
             if len(parts[0]) == 4:
                 target_date = datetime.strptime(date_str, "%Y/%m/%d").date()
             else:
-                target_date = datetime.strptime(date_str, "%m/%d/%Y").date()
+                if len(parts[2]) == 2:
+                    target_date = datetime.strptime(date_str, "%m/%d/%y").date()
+                else:
+                    target_date = datetime.strptime(date_str, "%m/%d/%Y").date()
         else:
             print(f"Could not parse date string: {date_str}")
             return
