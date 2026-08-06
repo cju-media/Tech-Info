@@ -114,7 +114,7 @@ def main():
     print(f"Looking for PDF starting with: {target_prefix}")
 
     # 5. Fetch GitHub API for OWs
-    api_url = "https://api.github.com/repos/TheCathedralFCCLA/OW/contents/OWs"
+    api_url = "https://api.github.com/repos/cju-media/OW/contents/OWs"
 
     headers = {}
     github_token = os.environ.get("GITHUB_TOKEN")

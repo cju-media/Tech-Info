@@ -47,7 +47,7 @@ def main():
 
     try:
         import requests
-        ow_index_resp = requests.get('https://raw.githubusercontent.com/TheCathedralFCCLA/OW/refs/heads/main/OWs/index.json')
+        ow_index_resp = requests.get('https://raw.githubusercontent.com/cju-media/OW/refs/heads/main/OWs/index.json')
         ow_index = ow_index_resp.json()
     except Exception as e:
         print(f"Error fetching OW index: {e}")
@@ -94,7 +94,7 @@ def main():
                 ow_url = ow_info['url']
                 filename = ow_url.split("/")[-1]
 
-                api_url = f"https://api.github.com/repos/TheCathedralFCCLA/OW/contents/OWs/{filename}"
+                api_url = f"https://api.github.com/repos/cju-media/OW/contents/OWs/{filename}"
                 try:
                     api_response = requests.get(api_url, headers=headers)
                     if api_response.status_code == 200:
