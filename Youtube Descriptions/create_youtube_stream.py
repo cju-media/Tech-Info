@@ -184,8 +184,8 @@ def main():
                     "monitorStream": {
                         "enableMonitorStream": True
                     },
-                    "enableAutoStart": True,
-                    "enableAutoStop": True,
+                    "enableAutoStart": False,
+                    "enableAutoStop": False,
                     "enableDvr": True
                 }
             }
@@ -194,31 +194,19 @@ def main():
         broadcast_id = broadcast_insert_response["id"]
         print(f"Successfully created broadcast with ID: {broadcast_id}")
 
-        # Create stream
-        stream_insert_response = service.liveStreams().insert(
-            part="snippet,cdn",
+        # Update category
+        video_update_response = service.videos().update(
+            part="snippet",
             body={
+                "id": broadcast_id,
                 "snippet": {
-                    "title": f"Stream for {title}"
-                },
-                "cdn": {
-                    "frameRate": "variable",
-                    "ingestionType": "rtmp",
-                    "resolution": "variable"
+                    "title": title,
+                    "description": description,
+                    "categoryId": "29"
                 }
             }
         ).execute()
-
-        stream_id = stream_insert_response["id"]
-        print(f"Successfully created stream with ID: {stream_id}")
-
-        # Bind broadcast and stream
-        bind_response = service.liveBroadcasts().bind(
-            part="id,contentDetails",
-            id=broadcast_id,
-            streamId=stream_id
-        ).execute()
-        print(f"Successfully bound broadcast and stream")
+        print(f"Successfully set category to Activism and Non Profit.")
 
         # Add to playlist
         playlist_insert_response = service.playlistItems().insert(
