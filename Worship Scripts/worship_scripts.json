@@ -1,23 +1,23 @@
 {
+  "2026-08-16": {
+    "path": "service-scripts/2026-08-16.pdf",
+    "modifiedTime": "2026-08-09T17:47:29.372Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael",
+    "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
+  },
+  "2026-08-23": {
+    "path": "service-scripts/2026-08-23.pdf",
+    "modifiedTime": "2026-08-09T16:51:51.624Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV2: Michael\nLAV3: Chad (CTP)",
+    "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z"
+  },
   "2026-08-09": {
     "path": "service-scripts/2026-08-09.pdf",
     "modifiedTime": "2026-08-09T15:57:36.042Z",
     "isCommunion": false,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura (LVF)\nLAV2: Michael (ML)\nLAV3: Cynthia Siadat",
     "youtubeDescriptionModifiedTime": "2026-06-11T23:45:47.869Z"
-  },
-  "2026-08-23": {
-    "path": "service-scripts/2026-08-23.pdf",
-    "modifiedTime": "2026-08-08T18:45:43.843Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV2: Michael\nLAV3: Chad Pratt",
-    "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z"
-  },
-  "2026-08-16": {
-    "path": "service-scripts/2026-08-16.pdf",
-    "modifiedTime": "2026-08-08T18:09:29.994Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura Fregin\nLAV2: Michael Lehman",
-    "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
   }
 }
