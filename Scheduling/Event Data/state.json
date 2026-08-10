@@ -5,7 +5,6 @@
             "su-9-27-2026-resonance-collective"
         ],
         "Danny": [
-            "su-8-9-2026-pride-book-launch",
             "su-8-16-2026-wedding-ceremony",
             "su-8-16-2026-worship-service",
             "su-9-6-2026-memorial-service",
@@ -21,7 +20,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "su-8-9-2026-worship-service",
             "su-8-23-2026-worship-service",
             "su-8-30-2026-worship-service",
             "th-9-10-2026-organ-concert-upend-la",
@@ -29,7 +27,6 @@
             "su-9-27-2026-worship-service"
         ],
         "Saad": [
-            "su-8-9-2026-worship-service",
             "su-8-23-2026-worship-service",
             "sa-8-29-2026-free-key-concert",
             "su-8-30-2026-worship-service",
@@ -120,16 +117,6 @@
             "date": "2026-08-16",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "su-8-9-2026-pride-book-launch": {
-            "date": "2026-08-09",
-            "name": "Pride Book Launch",
-            "call_time": "12:30pm-3:30pm"
-        },
-        "su-8-9-2026-worship-service": {
-            "date": "2026-08-09",
-            "name": "Worship Service",
-            "call_time": "8:30am-12:30pm"
         }
     }
 }
