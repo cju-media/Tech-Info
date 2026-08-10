@@ -31,12 +31,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install google-api-python-client google-auth google-auth-oauthlib pytz
+          pip install google-api-python-client google-auth google-auth-oauthlib pytz requests
 
       - name: Run video migration script
         env:
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
           YOUTUBE_PRIVACY_STATUS: ${{ github.event.inputs.privacy_status || 'private' }}
+          PAT: ${{ secrets.PAT }}
         run: |
           python "Video Migration/migrate_videos.py"

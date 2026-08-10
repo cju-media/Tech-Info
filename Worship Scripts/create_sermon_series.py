@@ -2,6 +2,7 @@ import os
 import json
 import io
 import re
+import requests
 import datetime
 import zoneinfo
 from googleapiclient.discovery import build
@@ -12,6 +13,32 @@ import dateutil.parser
 
 PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs'
+
+
+def dispatch_event(event_type, client_payload):
+    """Fire a repository_dispatch event so imessage_notifications.yml (or
+    anything else) can react. Mirrors Youtube Descriptions/create_youtube_stream.py."""
+    pat = os.environ.get('PAT')
+    if not pat:
+        print("Warning: PAT environment variable not set, cannot dispatch GitHub event.")
+        return
+
+    repo = "cju-media/tech-info"
+    url = f"https://api.github.com/repos/{repo}/dispatches"
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "Authorization": f"token {pat}"
+    }
+    payload = {"event_type": event_type, "client_payload": client_payload}
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 204:
+            print(f"Successfully dispatched '{event_type}' github event.")
+        else:
+            print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
+    except Exception as e:
+        print(f"Error dispatching '{event_type}' github event: {e}")
 
 def get_youtube_service():
     creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
@@ -269,6 +296,12 @@ def main():
 
     if desc_text is not None:
          upload_to_drive(drive_service, desc_output_path, desc_output_filename, target_folder_id)
+
+    dispatch_event('sermon_series_title_description_uploaded', {
+        'date': date_str,
+        'title': formatted_text,
+        'has_description': desc_text is not None
+    })
 
 if __name__ == "__main__":
     main()

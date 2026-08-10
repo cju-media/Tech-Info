@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from datetime import datetime, timedelta
 import pytz
 from googleapiclient.discovery import build
@@ -11,6 +12,32 @@ import io
 SOURCE_FOLDER_ID = '1wntwzav8sqcBOROpsr_Lm3MzAPyfGUUh'
 DEST_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc9v95hvMCERRUvWBXJJsGrP'
+
+
+def dispatch_event(event_type, client_payload):
+    """Fire a repository_dispatch event so imessage_notifications.yml (or
+    anything else) can react. Mirrors Youtube Descriptions/create_youtube_stream.py."""
+    pat = os.environ.get('PAT')
+    if not pat:
+        print("Warning: PAT environment variable not set, cannot dispatch GitHub event.")
+        return
+
+    repo = "cju-media/tech-info"
+    url = f"https://api.github.com/repos/{repo}/dispatches"
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "Authorization": f"token {pat}"
+    }
+    payload = {"event_type": event_type, "client_payload": client_payload}
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 204:
+            print(f"Successfully dispatched '{event_type}' github event.")
+        else:
+            print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
+    except Exception as e:
+        print(f"Error dispatching '{event_type}' github event: {e}")
 
 def get_drive_service():
     oauth_json = os.environ.get('GDRIVE_OAUTH_JSON')
@@ -319,6 +346,12 @@ def main():
                         }
                     ).execute()
                     print("Video added to playlist successfully.")
+
+                    dispatch_event('sermon_series_video_uploaded', {
+                        'video_title': video_title,
+                        'video_url': f"https://youtube.com/watch?v={uploaded_video_id}",
+                        'privacy_status': privacy_status
+                    })
 
                     # Search for thumbnail image in destination subfolder
                     print("Searching for thumbnail image to upload...")

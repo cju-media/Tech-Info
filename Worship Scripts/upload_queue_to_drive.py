@@ -3,6 +3,7 @@ import json
 import io
 import shutil
 import re
+import requests
 import datetime
 import zoneinfo
 from googleapiclient.discovery import build
@@ -13,6 +14,32 @@ from googleapiclient.http import MediaIoBaseUpload
 QUEUE_DIR = 'uploads_queue'
 THUMBNAILS_DEST_PARENT_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
 SERMON_DEST_PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
+
+
+def dispatch_event(event_type, client_payload):
+    """Fire a repository_dispatch event so imessage_notifications.yml (or
+    anything else) can react. Mirrors Youtube Descriptions/create_youtube_stream.py."""
+    pat = os.environ.get('PAT')
+    if not pat:
+        print("Warning: PAT environment variable not set, cannot dispatch GitHub event.")
+        return
+
+    repo = "cju-media/tech-info"
+    url = f"https://api.github.com/repos/{repo}/dispatches"
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "Authorization": f"token {pat}"
+    }
+    payload = {"event_type": event_type, "client_payload": client_payload}
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 204:
+            print(f"Successfully dispatched '{event_type}' github event.")
+        else:
+            print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
+    except Exception as e:
+        print(f"Error dispatching '{event_type}' github event: {e}")
 
 def get_upcoming_sunday():
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
@@ -204,15 +231,32 @@ def main():
                     print(f"Uploading title and description to Drive...")
                     import subprocess
 
+                    title_uploaded = False
+                    desc_uploaded = False
+                    worship_title_text = None
+
                     if os.path.exists(title_path):
                         upload_to_drive(drive_service, title_path, "title.txt", folder_id)
+                        title_uploaded = True
+                        try:
+                            with open(title_path, "r") as f:
+                                worship_title_text = f.read().strip()
+                        except Exception:
+                            pass
                     else:
                         print(f"Title file not found at {title_path}")
 
                     if os.path.exists(desc_path):
                         upload_to_drive(drive_service, desc_path, "Description.txt", folder_id)
+                        desc_uploaded = True
                     else:
                         print(f"Description file not found at {desc_path}")
+
+                    if title_uploaded and desc_uploaded:
+                        dispatch_event('worship_title_description_uploaded', {
+                            'date': date_str,
+                            'title': worship_title_text
+                        })
 
                     print(f"Launching create_youtube_stream.py for {date_str}...")
                     script_path = os.path.join("Youtube Descriptions", "create_youtube_stream.py")
