@@ -23,13 +23,26 @@ not part of the regular automation pipeline.
 """
 
 import os
+import io
 import json
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2.credentials import Credentials
 
 SERMON_SERIES_PARENT_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 SOURCE_FOLDER_ID = '15tZbMeMuDDVbPKsntLK3_F5kHsqdC7l5'  # had the Description .txt
 TARGET_FOLDER_ID = '1W2gpCIZ9zXOFonDwVrl3CrzSHuxEIHgp'  # has the video + thumbnail
+
+# The Title file (Sermon Series Title 08-09-2026.txt) was uploaded to Drive on
+# Aug 3 per the sermon_series.yml run log, but is now missing from Drive
+# entirely (not in the source folder, not in trash, not findable anywhere by
+# name). Its content is still preserved in git history untouched since Aug 3,
+# so we restore it directly from the repo rather than guessing at what
+# happened to the Drive copy.
+LOCAL_TITLE_FILE = os.path.join(
+    os.path.dirname(__file__), '..', 'Worship Scripts', 'Sermon-Series', 'Sermon Series Title 08-09-2026.txt'
+)
+TITLE_FILENAME = 'Sermon Series Title 08-09-2026.txt'
 
 
 def get_drive_service():
@@ -117,9 +130,28 @@ def main():
 
     print("\nAFTER:")
     list_folder(service, SOURCE_FOLDER_ID, "source (title/description) folder")
-    list_folder(service, TARGET_FOLDER_ID, "target (video/thumbnail) folder")
+    target_after = list_folder(service, TARGET_FOLDER_ID, "target (video/thumbnail) folder")
 
     diagnose_missing_title(service)
+
+    have_title = any(f['name'] == TITLE_FILENAME for f in target_after)
+    if have_title:
+        print(f"\n'{TITLE_FILENAME}' already present in target folder. Nothing to restore.")
+    elif os.path.exists(LOCAL_TITLE_FILE):
+        with open(LOCAL_TITLE_FILE, 'r') as fh:
+            content = fh.read()
+        print(f"\nRestoring '{TITLE_FILENAME}' into target folder from git (content: {content!r})...")
+        media = MediaIoBaseUpload(io.BytesIO(content.encode('utf-8')), mimetype='text/plain', resumable=True)
+        file_metadata = {'name': TITLE_FILENAME, 'parents': [TARGET_FOLDER_ID]}
+        created = service.files().create(
+            body=file_metadata, media_body=media, supportsAllDrives=True, fields='id'
+        ).execute()
+        print(f"Created '{TITLE_FILENAME}' in target folder, id={created.get('id')}")
+
+        print("\nFINAL target folder contents:")
+        list_folder(service, TARGET_FOLDER_ID, "target (video/thumbnail) folder")
+    else:
+        print(f"\nCould not find local file at {LOCAL_TITLE_FILE} to restore from.")
 
 
 if __name__ == "__main__":
