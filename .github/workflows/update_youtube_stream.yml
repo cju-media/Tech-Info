@@ -1,8 +1,9 @@
 name: Update YouTube Stream Description
 
 on:
-  schedule:
-    - cron: '0 * * * *' # Run every hour
+  # No standalone hourly cron here: "Generate YouTube Description" already runs
+  # hourly via its own chain off "Check Worship Scripts", so the workflow_run
+  # trigger below already fires this job roughly every hour without a separate poll.
   workflow_run:
     workflows: ["Generate YouTube Description"]
     types:

@@ -16,6 +16,10 @@ on:
           - auto_imessage
           - imessage_reminder
           - imessage_test
+      test_message:
+        description: 'Optional: send this exact text as a one-off test iMessage instead of running run_mode'
+        required: false
+        type: string
 
 jobs:
   run-imessages:
@@ -31,17 +35,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Send Custom Test iMessage
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != ''
+        run: python3 "Scheduling/Event Data/send_imessage.py" "${{ github.event.inputs.test_message }}"
+
       - name: Install system dependencies for WeasyPrint
+        if: "!(github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != '')"
         run: |
           brew install pango || true
 
       - name: Install dependencies
+        if: "!(github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != '')"
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install pandas weasyprint
 
       - name: Run iMessage schedule script
-        if: github.event_name != 'repository_dispatch'
+        if: github.event_name != 'repository_dispatch' && !(github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != '')
         env:
           SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
@@ -52,13 +62,13 @@ jobs:
         run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py
 
       - name: Check disabled workflows
-        if: github.event_name != 'repository_dispatch'
+        if: github.event_name != 'repository_dispatch' && !(github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != '')
         env:
           GITHUB_PAT: ${{ secrets.PAT }}
         run: cd "Scheduling/Event Data" && python3 check_disabled_workflows.py
 
       - name: Commit and push state changes
-        if: github.event_name != 'repository_dispatch'
+        if: github.event_name != 'repository_dispatch' && !(github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != '')
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -73,69 +83,11 @@ jobs:
 
       - name: Send Drive Upload Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'drive_upload_complete'
-        run: |
-          python3 -c '
-          import os, json, subprocess
-          try:
-              phones_path = os.path.join("Scheduling", "Team Data", "team_phones.json")
-              with open(phones_path, "r") as f:
-                  phones = json.load(f)
-              cameron_phone = phones.get("Cameron")
-              if not cameron_phone:
-                  print("Could not find Cameron phone number.")
-                  exit(1)
-
-              message = "New worship scripts and script titles have been uploaded to Google Drive."
-
-              print(f"Sending via osascript to {cameron_phone}...")
-              escaped_message = message.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\"")
-              applescript = f"""
-              tell application "Messages"
-                  set targetService to 1st service whose service type = iMessage
-                  set targetBuddy to buddy "{cameron_phone}" of targetService
-                  send "{escaped_message}" to targetBuddy
-              end tell
-              """
-              subprocess.run(["osascript", "-e", applescript], check=True, capture_output=True, text=True)
-              print("Successfully sent iMessage via osascript.")
-          except Exception as e:
-              print(f"Error preparing iMessage: {e}")
-              exit(1)
-          '
+        run: python3 "Scheduling/Event Data/send_imessage.py" "New worship scripts and script titles have been uploaded to Google Drive."
 
       - name: Send YouTube Stream Created Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'youtube_stream_created'
-        run: |
-          python3 -c '
-          import os, json, subprocess
-          try:
-              phones_path = os.path.join("Scheduling", "Team Data", "team_phones.json")
-              with open(phones_path, "r") as f:
-                  phones = json.load(f)
-              cameron_phone = phones.get("Cameron")
-              if not cameron_phone:
-                  print("Could not find Cameron phone number.")
-                  exit(1)
-
-              client_payload = """${{ toJSON(github.event.client_payload) }}"""
-              payload_data = json.loads(client_payload)
-              stream_url = payload_data.get("stream_url", "Unknown URL")
-              date = payload_data.get("date", "Unknown Date")
-
-              message = f"The YouTube live stream for {date} has been scheduled and is available to view online at {stream_url}"
-
-              print(f"Sending via osascript to {cameron_phone}...")
-              escaped_message = message.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\"")
-              applescript = f"""
-              tell application "Messages"
-                  set targetService to 1st service whose service type = iMessage
-                  set targetBuddy to buddy "{cameron_phone}" of targetService
-                  send "{escaped_message}" to targetBuddy
-              end tell
-              """
-              subprocess.run(["osascript", "-e", applescript], check=True, capture_output=True, text=True)
-              print("Successfully sent iMessage via osascript.")
-          except Exception as e:
-              print(f"Error preparing iMessage: {e}")
-              exit(1)
-          '
+        env:
+          STREAM_URL: ${{ github.event.client_payload.stream_url }}
+          STREAM_DATE: ${{ github.event.client_payload.date }}
+        run: python3 "Scheduling/Event Data/send_imessage.py" "The YouTube live stream for ${STREAM_DATE:-Unknown Date} has been scheduled and is available to view online at ${STREAM_URL:-Unknown URL}"

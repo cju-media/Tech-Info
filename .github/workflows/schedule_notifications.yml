@@ -17,9 +17,10 @@ on:
           - update
           - avail_check
           - daily_reminder
-          - imessage_reminder
-          - imessage_test
           - test
+        # Note: imessage_reminder/imessage_test are intentionally not offered here.
+        # This workflow runs on ubuntu-latest, which has no Messages app/osascript;
+        # those modes only work in "iMessage Notifications" (self-hosted macOS).
 
 jobs:
   run-schedule:

@@ -219,22 +219,26 @@
                 H1[process_uploads]
                 I1[update_folder_names]
                 I2[update_events_directory]
+                J1[archive_service_files]
+                J2[process_events]
 
                 %% Click Events
                 click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
                 click B1 href "#youtube_description" "Compiles extracted titles from service_titles_checker into Description.txt and chapters.txt"
-                click B2 href "#pages_deployment" "Deploys the static tech-info dashboard to GitHub Pages"
+                click B2 href "#pages_deployment" "Deploys the static tech-info dashboard to GitHub Pages. Triggered via workflow_run (not push) because worship_scripts_checker commits with the default GITHUB_TOKEN, which does not fire push events"
                 click C1 href "#service_titles_checker" "Extracts service components from upcoming OW PDF via Gemini and syncs to Drive"
                 click C2 href "#sync_service_titles" "Syncs manual edits of service title text files to Google Drive"
-                click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via macOS runner (osascript)"
-                click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream"
-                click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications"
+                click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+                click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream. No standalone cron: already runs ~hourly via the youtube_description chain, so a separate poll would just duplicate the run"
+                click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications. Manual dispatch also covers the test run mode that the former standalone manual_test workflow duplicated"
                 click G2 href "#video_migration" "Weekly job that copies VOD in Google Drive and uploads it to YouTube podcast playlist"
                 click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails"
                 click G4 href "#sermon_series" "Combines sermon title and minister into a text file and syncs to Drive"
                 click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive"
                 click I1 href "#update_folder_names" "Serverless script that queries Google Drive API and exports static mappings to uploads/folder_names.json"
-                click I2 href "#update_events_directory" "Fetches public subfolders from the private Google Drive Events folder for /events"
+                click I2 href "#update_events_directory" "Hourly fetch of public subfolders from the private Google Drive Events folder for /events"
+                click J1 href "#archive_service_files" "Weekly Monday snapshot that copies the past week's chapters/timings/description/title files into Archives/"
+                click J2 href "#process_events" "Daily fetch of upcoming event dates from Google Drive via Gemini, saved to events/events-processing/event-dates.json"
 
             </div>
             <div id="flowchart-desc" class="flowchart-description">Hover over a workflow node to view its description.</div>
