@@ -110,6 +110,8 @@
         .mermaid {
             display: flex;
             justify-content: center;
+            overflow-x: auto;
+            max-width: 100%;
         }
 .mermaidTooltip {
             display: none !important; /* Hide default tooltips completely */
@@ -195,32 +197,117 @@
     <div class="dashboard-container">
         <div class="flowchart-card">
             <h2>Workflow Automation Architecture</h2>
+            <p style="text-align:center; font-size:13px; color:#888; margin-top:-10px;">Solid arrows = data/trigger flow between GitHub Actions workflows. Dashed arrows = one workflow calling another's script inline (not via Actions triggers). Orange dashed nodes = likely dead/orphaned.</p>
             <div class="mermaid">
                 graph TD
-                %% Worship Scripts Flow
-                A1[worship_scripts_checker] -->|Completes| B2[pages_deployment]
+                %% ===== External data sources =====
+                subgraph SOURCES["External Data Sources"]
+                    S1(["GitHub cju-media/OW<br/>weekly OW PDF + index.json"])
+                    S2(["Google Drive<br/>Worship Service Docs"])
+                    S3(["/uploads frontend<br/>&#8594; uploads_queue/"])
+                    S4(["Google Sheet<br/>Team Schedule"])
+                    S5(["LA Open Data API<br/>Public Events"])
+                end
 
-                %% Service Titles Flow
-                C1[service_titles_checker] -->|Success| D1[drive_upload_complete Dispatch]
-                C1 -->|Output Used By| B1[youtube_description]
-                A1 -->|Triggers| B1
-                C2[sync_service_titles] -->|Success| D1
-                D1 -->|Triggers| E1[imessage_notifications]
+                %% ===== Pipeline 1: OW PDF -> Service Titles =====
+                subgraph PIPE1["OW PDF &#8594; Service Titles (Gemini)"]
+                    C1[service_titles_checker]
+                    T1[("service-titles/*.txt")]
+                    C2[sync_service_titles]
+                    G4[sermon_series]
+                end
 
-                %% YouTube Descriptions Flow
-                B1 -->|Completes| F1[update_youtube_stream]
-                F2[Push to timings.txt] -->|Triggers| F1
+                %% ===== Pipeline 2: Worship Docs -> Scripts =====
+                subgraph PIPE2["Worship Docs &#8594; Scripts (Gemini)"]
+                    A1[worship_scripts_checker]
+                    T2[("worship_scripts.json +<br/>service-scripts/*.pdf")]
+                end
+                B2[pages_deployment]
 
-                %% Independent Workflows
-                G1[schedule_notifications]
-                G2[video_migration]
-                G3[rf_coordination]
-                G4[sermon_series]
+                %% ===== Pipeline 3: YouTube description + livestream =====
+                subgraph PIPE3["YouTube Description &#8594; Livestream"]
+                    B1[youtube_description]
+                    T3[("Description.txt +<br/>chapters.txt")]
+                    F1[update_youtube_stream]
+                    F2[Push to timings.txt]
+                    J1[archive_service_files]
+                end
+
+                %% ===== Pipeline 4: Uploads -> livestream creation =====
                 H1[process_uploads]
+
+                %% ===== Pipeline 5: Team schedule & notices =====
+                subgraph PIPE5["Team Schedule &amp; Notices"]
+                    G1[schedule_notifications]
+                    E1[imessage_notifications]
+                    G3[rf_coordination]
+                end
+
+                D1{drive_upload_complete}
+                D2{youtube_stream_created}
+                EXT1([YouTube Data API])
+                EXT2([Google Drive<br/>sync targets])
+
+                %% ---- Pipeline 1 edges ----
+                S1 -->|Fetch weekly OW PDF| C1
+                C1 -->|Gemini extracts titles| T1
+                T1 -->|Uploads| EXT2
+                C1 -->|Success| D1
+                T1 -->|Push triggers on manual edit| C2
+                C2 -->|Re-syncs| EXT2
+                C2 -->|Success| D1
+                T1 -->|Push triggers,<br/>sermon files only| G4
+                G4 -->|Looks up stream link| EXT1
+                G4 -->|Uploads Sermon-Series file| EXT2
+
+                %% ---- Pipeline 2 edges ----
+                S2 -->|Fetch dated service doc| A1
+                A1 -->|Gemini extracts mic assignments| T2
+                A1 -->|"Triggers via workflow_run<br/>(push uses GITHUB_TOKEN, no push event)"| B2
+                A1 -->|Triggers via workflow_run| B1
+
+                %% ---- Pipeline 3 edges ----
+                S1 -->|index.json + PDF SHA gate| B1
+                T1 -->|Reads titles| B1
+                T2 -->|Reads date map| B1
+                B1 --> T3
+                B1 -->|Completes| F1
+                F2 -->|Triggers| F1
+                T3 -->|Reads| F1
+                F1 -->|Updates live description| EXT1
+                T3 -->|Weekly snapshot| J1
+
+                %% ---- Pipeline 4 edges ----
+                S3 --> H1
+                H1 -->|Uploads thumbnail| EXT2
+                H1 -.->|"If titles missing for date:<br/>runs update_service_titles.py inline"| C1
+                H1 -.->|"If titles missing for date:<br/>runs generate_youtube_description.py inline"| B1
+                H1 -->|Creates broadcast, sets thumbnail| EXT1
+                H1 -->|Fires| D2
+
+                %% ---- Dispatch destinations ----
+                D1 -->|Triggers| E1
+                D2 -->|Triggers| E1
+
+                %% ---- Pipeline 5 edges ----
+                S4 --> G1
+                S4 --> E1
+                S4 --> G3
+                S5 --> G3
+
+                %% ===== Independent / orphaned workflows =====
+                G2[video_migration]
                 I1[update_folder_names]
                 I2[update_events_directory]
-                J1[archive_service_files]
                 J2[process_events]
+                ORPHAN1(["events/app.js &#8594; downloader/index.html<br/>not linked from live site"])
+
+                S2 -.->|Drive VOD folder| G2
+                G2 -->|Uploads to podcast playlist| EXT1
+                I2 -->|events_data.json| ORPHAN1
+
+                class I1,I2,J2,ORPHAN1 warn;
+                classDef warn stroke:#e67e22,stroke-width:2px,stroke-dasharray: 5 5;
 
                 %% Click Events
                 click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
@@ -232,11 +319,11 @@
                 click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream. No standalone cron: already runs ~hourly via the youtube_description chain, so a separate poll would just duplicate the run"
                 click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications. Manual dispatch also covers the test run mode that the former standalone manual_test workflow duplicated"
                 click G2 href "#video_migration" "Weekly job that copies VOD in Google Drive and uploads it to YouTube podcast playlist"
-                click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails"
-                click G4 href "#sermon_series" "Combines sermon title and minister into a text file and syncs to Drive"
-                click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive"
-                click I1 href "#update_folder_names" "Serverless script that queries Google Drive API and exports static mappings to uploads/folder_names.json"
-                click I2 href "#update_events_directory" "Hourly fetch of public subfolders from the private Google Drive Events folder for /events"
+                click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails, sourced from the same Team Schedule sheet plus LA Open Data"
+                click G4 href "#sermon_series" "Combines sermon title and minister into a text file, looks up the live stream link via the YouTube API, and syncs to Drive"
+                click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive. When a worship-service thumbnail lands and titles/description are missing, it runs the service-titles and youtube-description scripts inline, then creates the YouTube livestream itself"
+                click I1 href "#update_folder_names" "Likely dead weight: queries Drive for 2 hardcoded folder IDs, but immediately overrides both names with hardcoded strings anyway, so its weekly output never changes. uploads/folder_names.json itself is still read by /uploads, but this job isn't needed to keep it correct"
+                click I2 href "#update_events_directory" "Likely orphaned: feeds events/app.js, whose only real feature is linking each row into downloader/index.html (a Google Drive Downloader tool). Neither /events nor /downloader is linked from the live site nav (index.html)"
                 click J1 href "#archive_service_files" "Weekly Monday snapshot that copies the past week's chapters/timings/description/title files into Archives/"
                 click J2 href "#process_events" "Daily fetch of upcoming event dates from Google Drive via Gemini, saved to events/events-processing/event-dates.json"
 
