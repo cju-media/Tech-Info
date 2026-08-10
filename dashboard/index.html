@@ -107,14 +107,57 @@
             color: #333;
             text-align: center;
         }
+        .mermaid-viewport {
+            overflow: auto;
+            max-height: 78vh;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            background: #fcfcfd;
+        }
         .mermaid {
-            display: flex;
-            justify-content: center;
-            overflow-x: auto;
-            max-width: 100%;
+            display: inline-block;
+            transform-origin: top left;
+            transition: transform 0.15s ease;
         }
 .mermaidTooltip {
             display: none !important; /* Hide default tooltips completely */
+        }
+        .zoom-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .zoom-controls button {
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .zoom-controls button:hover {
+            background: #f0f0f0;
+        }
+        .zoom-controls span {
+            font-size: 13px;
+            color: #666;
+            min-width: 42px;
+            text-align: center;
+        }
+        /* Hover highlighting for connected arrows/nodes */
+        .mermaid path.hl-edge {
+            stroke: #ff5722 !important;
+            stroke-width: 3px !important;
+        }
+        .mermaid .node.hl-node rect,
+        .mermaid .node.hl-node polygon,
+        .mermaid .node.hl-node circle,
+        .mermaid .node.hl-node ellipse,
+        .mermaid .node.hl-node path {
+            stroke: #ff5722 !important;
+            stroke-width: 3px !important;
         }
         .flowchart-description {
             text-align: center;
@@ -197,7 +240,14 @@
     <div class="dashboard-container">
         <div class="flowchart-card">
             <h2>Workflow Automation Architecture</h2>
-            <p style="text-align:center; font-size:13px; color:#888; margin-top:-10px;">Solid arrows = data/trigger flow between GitHub Actions workflows. Dashed arrows = one workflow calling another's script inline (not via Actions triggers). Orange dashed nodes = likely dead/orphaned.</p>
+            <p style="text-align:center; font-size:13px; color:#888; margin-top:-10px;">Solid arrows = data/trigger flow between GitHub Actions workflows. Dashed arrows = one workflow calling another's script inline (not via Actions triggers). Hover a node to trace its connections; scroll/drag to pan, use the zoom controls to resize.</p>
+            <div class="zoom-controls">
+                <button onclick="adjustZoom(-0.15)">&minus; Zoom Out</button>
+                <span id="zoom-level">100%</span>
+                <button onclick="adjustZoom(0.15)">+ Zoom In</button>
+                <button onclick="resetZoom()">Reset</button>
+            </div>
+            <div class="mermaid-viewport">
             <div class="mermaid">
                 graph TD
                 %% ===== External data sources =====
@@ -295,19 +345,11 @@
                 S4 --> G3
                 S5 --> G3
 
-                %% ===== Independent / orphaned workflows =====
+                %% ===== Independent workflows =====
                 G2[video_migration]
-                I1[update_folder_names]
-                I2[update_events_directory]
-                J2[process_events]
-                ORPHAN1(["events/app.js &#8594; downloader/index.html<br/>not linked from live site"])
 
                 S2 -.->|Drive VOD folder| G2
                 G2 -->|Uploads to podcast playlist| EXT1
-                I2 -->|events_data.json| ORPHAN1
-
-                class I1,I2,J2,ORPHAN1 warn;
-                classDef warn stroke:#e67e22,stroke-width:2px,stroke-dasharray: 5 5;
 
                 %% Click Events
                 click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
@@ -322,11 +364,9 @@
                 click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails, sourced from the same Team Schedule sheet plus LA Open Data"
                 click G4 href "#sermon_series" "Combines sermon title and minister into a text file, looks up the live stream link via the YouTube API, and syncs to Drive"
                 click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive. When a worship-service thumbnail lands and titles/description are missing, it runs the service-titles and youtube-description scripts inline, then creates the YouTube livestream itself"
-                click I1 href "#update_folder_names" "Likely dead weight: queries Drive for 2 hardcoded folder IDs, but immediately overrides both names with hardcoded strings anyway, so its weekly output never changes. uploads/folder_names.json itself is still read by /uploads, but this job isn't needed to keep it correct"
-                click I2 href "#update_events_directory" "Likely orphaned: feeds events/app.js, whose only real feature is linking each row into downloader/index.html (a Google Drive Downloader tool). Neither /events nor /downloader is linked from the live site nav (index.html)"
                 click J1 href "#archive_service_files" "Weekly Monday snapshot that copies the past week's chapters/timings/description/title files into Archives/"
-                click J2 href "#process_events" "Daily fetch of upcoming event dates from Google Drive via Gemini, saved to events/events-processing/event-dates.json"
 
+            </div>
             </div>
             <div id="flowchart-desc" class="flowchart-description">Hover over a workflow node to view its description.</div>
         </div>
@@ -407,13 +447,28 @@
             }
         }
 
+        // Mermaid renders node ids like "flowchart-C1-42" (flowchart-<logicalId>-<counter>).
+        // Edge paths carry classes "LS-<sourceId>" / "LE-<targetId>" (link-start/link-end),
+        // which is what lets us find "everything touching this node" without re-parsing the graph.
+        function getLogicalNodeId(el) {
+            return el.id.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+        }
+
+        function clearFlowchartHighlights(svg) {
+            svg.querySelectorAll('.hl-node').forEach(el => el.classList.remove('hl-node'));
+            svg.querySelectorAll('.hl-edge').forEach(el => el.classList.remove('hl-edge'));
+        }
+
         function setupFlowchartHovers() {
             const descBox = document.getElementById('flowchart-desc');
             const defaultText = "Hover over a workflow node to view its description.";
 
             // Use MutationObserver or fallback to setTimeout
             setTimeout(() => {
-                const nodes = document.querySelectorAll('.mermaid g.node');
+                const svg = document.querySelector('.mermaid svg');
+                if (!svg) return;
+
+                const nodes = svg.querySelectorAll('g.node');
                 nodes.forEach(node => {
                     // In Mermaid 9+, titles are often rendered as attributes on the node
                     // or as child <title> elements. We'll check both.
@@ -421,29 +476,68 @@
                     const titleEl = node.querySelector('title');
 
                     const description = titleAttr || (titleEl ? titleEl.textContent : null);
+                    const logicalId = getLogicalNodeId(node);
 
-                    if (description) {
-                        node.addEventListener('mouseenter', () => {
+                    node.addEventListener('mouseenter', () => {
+                        if (description) {
                             descBox.textContent = description;
                             descBox.style.color = '#333';
                             descBox.style.fontWeight = 'bold';
-                        });
-                        node.addEventListener('mouseleave', () => {
-                            descBox.textContent = defaultText;
-                            descBox.style.color = '#555';
-                            descBox.style.fontWeight = 'normal';
-                        });
+                        }
 
-                        // We also need to remove the native tooltip so it doesn't double-show
-                        if (titleAttr) {
-                            node.removeAttribute('title');
-                        }
-                        if (titleEl) {
-                            titleEl.remove();
-                        }
+                        // Highlight this node, every edge touching it, and the node on the
+                        // other end of each of those edges.
+                        clearFlowchartHighlights(svg);
+                        node.classList.add('hl-node');
+
+                        const touchingEdges = svg.querySelectorAll(`.LS-${logicalId}, .LE-${logicalId}`);
+                        touchingEdges.forEach(edge => {
+                            edge.classList.add('hl-edge');
+                            edge.classList.forEach(cls => {
+                                let otherId = null;
+                                if (cls.startsWith('LS-') && cls !== `LS-${logicalId}`) otherId = cls.slice(3);
+                                if (cls.startsWith('LE-') && cls !== `LE-${logicalId}`) otherId = cls.slice(3);
+                                if (otherId) {
+                                    const otherNode = svg.querySelector(`[id^="flowchart-${otherId}-"]`);
+                                    if (otherNode) otherNode.classList.add('hl-node');
+                                }
+                            });
+                        });
+                    });
+
+                    node.addEventListener('mouseleave', () => {
+                        descBox.textContent = defaultText;
+                        descBox.style.color = '#555';
+                        descBox.style.fontWeight = 'normal';
+                        clearFlowchartHighlights(svg);
+                    });
+
+                    // We also need to remove the native tooltip so it doesn't double-show
+                    if (titleAttr) {
+                        node.removeAttribute('title');
+                    }
+                    if (titleEl) {
+                        titleEl.remove();
                     }
                 });
             }, 1000); // Give mermaid a moment
+        }
+
+        // ---- Zoom controls ----
+        let flowchartZoom = 1;
+        function applyZoom() {
+            const mermaidDiv = document.querySelector('.mermaid');
+            if (!mermaidDiv) return;
+            mermaidDiv.style.transform = `scale(${flowchartZoom})`;
+            document.getElementById('zoom-level').textContent = `${Math.round(flowchartZoom * 100)}%`;
+        }
+        function adjustZoom(delta) {
+            flowchartZoom = Math.min(3, Math.max(0.4, flowchartZoom + delta));
+            applyZoom();
+        }
+        function resetZoom() {
+            flowchartZoom = 1.5;
+            applyZoom();
         }
 
 
@@ -722,8 +816,16 @@ if (sortMode === 'last-run') {
         loadDashboard().then((success) => {
             if (success !== false) renderSortedWorkflows('default');
         });
-        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            // Render the diagram at its natural size instead of shrinking it to fit the
+            // card width - that shrink-to-fit is why the chart used to read as tiny text.
+            flowchart: { useMaxWidth: false, htmlLabels: true },
+            themeVariables: { fontSize: '16px' }
+        });
         setupFlowchartHovers();
+        setTimeout(resetZoom, 1000); // Start at a readable zoom once mermaid has rendered
     </script>
 </body>
 </html>
