@@ -1,1 +1,0 @@
-Given this image, tell me only the date it occurs in MM/DD/YY format. No other text

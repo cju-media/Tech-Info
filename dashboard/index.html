@@ -107,12 +107,57 @@
             color: #333;
             text-align: center;
         }
+        .mermaid-viewport {
+            overflow: auto;
+            max-height: 78vh;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            background: #fcfcfd;
+        }
         .mermaid {
-            display: flex;
-            justify-content: center;
+            display: inline-block;
+            transform-origin: top left;
+            transition: transform 0.15s ease;
         }
 .mermaidTooltip {
             display: none !important; /* Hide default tooltips completely */
+        }
+        .zoom-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .zoom-controls button {
+            padding: 4px 12px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .zoom-controls button:hover {
+            background: #f0f0f0;
+        }
+        .zoom-controls span {
+            font-size: 13px;
+            color: #666;
+            min-width: 42px;
+            text-align: center;
+        }
+        /* Hover highlighting for connected arrows/nodes */
+        .mermaid path.hl-edge {
+            stroke: #ff5722 !important;
+            stroke-width: 3px !important;
+        }
+        .mermaid .node.hl-node rect,
+        .mermaid .node.hl-node polygon,
+        .mermaid .node.hl-node circle,
+        .mermaid .node.hl-node ellipse,
+        .mermaid .node.hl-node path {
+            stroke: #ff5722 !important;
+            stroke-width: 3px !important;
         }
         .flowchart-description {
             text-align: center;
@@ -195,47 +240,133 @@
     <div class="dashboard-container">
         <div class="flowchart-card">
             <h2>Workflow Automation Architecture</h2>
+            <p style="text-align:center; font-size:13px; color:#888; margin-top:-10px;">Solid arrows = data/trigger flow between GitHub Actions workflows. Dashed arrows = one workflow calling another's script inline (not via Actions triggers). Hover a node to trace its connections; scroll/drag to pan, use the zoom controls to resize.</p>
+            <div class="zoom-controls">
+                <button onclick="adjustZoom(-0.15)">&minus; Zoom Out</button>
+                <span id="zoom-level">100%</span>
+                <button onclick="adjustZoom(0.15)">+ Zoom In</button>
+                <button onclick="resetZoom()">Reset</button>
+            </div>
+            <div class="mermaid-viewport">
             <div class="mermaid">
                 graph TD
-                %% Worship Scripts Flow
-                A1[worship_scripts_checker] -->|Completes| B2[pages_deployment]
+                %% ===== External data sources =====
+                subgraph SOURCES["External Data Sources"]
+                    S1(["GitHub cju-media/OW<br/>weekly OW PDF + index.json"])
+                    S2(["Google Drive<br/>Worship Service Docs"])
+                    S3(["/uploads frontend<br/>&#8594; uploads_queue/"])
+                    S4(["Google Sheet<br/>Team Schedule"])
+                    S5(["LA Open Data API<br/>Public Events"])
+                end
 
-                %% Service Titles Flow
-                C1[service_titles_checker] -->|Success| D1[drive_upload_complete Dispatch]
-                C1 -->|Output Used By| B1[youtube_description]
-                A1 -->|Triggers| B1
-                C2[sync_service_titles] -->|Success| D1
-                D1 -->|Triggers| E1[imessage_notifications]
+                %% ===== Pipeline 1: OW PDF -> Service Titles =====
+                subgraph PIPE1["OW PDF &#8594; Service Titles (Gemini)"]
+                    C1[service_titles_checker]
+                    T1[("service-titles/*.txt")]
+                    C2[sync_service_titles]
+                    G4[sermon_series]
+                end
 
-                %% YouTube Descriptions Flow
-                B1 -->|Completes| F1[update_youtube_stream]
-                F2[Push to timings.txt] -->|Triggers| F1
+                %% ===== Pipeline 2: Worship Docs -> Scripts =====
+                subgraph PIPE2["Worship Docs &#8594; Scripts (Gemini)"]
+                    A1[worship_scripts_checker]
+                    T2[("worship_scripts.json +<br/>service-scripts/*.pdf")]
+                end
+                B2[pages_deployment]
 
-                %% Independent Workflows
-                G1[schedule_notifications]
-                G2[video_migration]
-                G3[rf_coordination]
-                G4[sermon_series]
+                %% ===== Pipeline 3: YouTube description + livestream =====
+                subgraph PIPE3["YouTube Description &#8594; Livestream"]
+                    B1[youtube_description]
+                    T3[("Description.txt +<br/>chapters.txt")]
+                    F1[update_youtube_stream]
+                    F2[Push to timings.txt]
+                    J1[archive_service_files]
+                end
+
+                %% ===== Pipeline 4: Uploads -> livestream creation =====
                 H1[process_uploads]
-                I1[update_folder_names]
-                I2[update_events_directory]
+
+                %% ===== Pipeline 5: Team schedule & notices =====
+                subgraph PIPE5["Team Schedule &amp; Notices"]
+                    G1[schedule_notifications]
+                    E1[imessage_notifications]
+                    G3[rf_coordination]
+                end
+
+                D1{drive_upload_complete}
+                D2{youtube_stream_created}
+                EXT1([YouTube Data API])
+                EXT2([Google Drive<br/>sync targets])
+
+                %% ---- Pipeline 1 edges ----
+                S1 -->|Fetch weekly OW PDF| C1
+                C1 -->|Gemini extracts titles| T1
+                T1 -->|Uploads| EXT2
+                C1 -->|Success| D1
+                T1 -->|Push triggers on manual edit| C2
+                C2 -->|Re-syncs| EXT2
+                C2 -->|Success| D1
+                T1 -->|Push triggers,<br/>sermon files only| G4
+                G4 -->|Looks up stream link| EXT1
+                G4 -->|Uploads Sermon-Series file| EXT2
+
+                %% ---- Pipeline 2 edges ----
+                S2 -->|Fetch dated service doc| A1
+                A1 -->|Gemini extracts mic assignments| T2
+                A1 -->|"Triggers via workflow_run<br/>(push uses GITHUB_TOKEN, no push event)"| B2
+                A1 -->|Triggers via workflow_run| B1
+
+                %% ---- Pipeline 3 edges ----
+                S1 -->|index.json + PDF SHA gate| B1
+                T1 -->|Reads titles| B1
+                T2 -->|Reads date map| B1
+                B1 --> T3
+                B1 -->|Completes| F1
+                F2 -->|Triggers| F1
+                T3 -->|Reads| F1
+                F1 -->|Updates live description| EXT1
+                T3 -->|Weekly snapshot| J1
+
+                %% ---- Pipeline 4 edges ----
+                S3 --> H1
+                H1 -->|Uploads thumbnail| EXT2
+                H1 -.->|"If titles missing for date:<br/>runs update_service_titles.py inline"| C1
+                H1 -.->|"If titles missing for date:<br/>runs generate_youtube_description.py inline"| B1
+                H1 -->|Creates broadcast, sets thumbnail| EXT1
+                H1 -->|Fires| D2
+
+                %% ---- Dispatch destinations ----
+                D1 -->|Triggers| E1
+                D2 -->|Triggers| E1
+
+                %% ---- Pipeline 5 edges ----
+                S4 --> G1
+                S4 --> E1
+                S4 --> G3
+                S5 --> G3
+
+                %% ===== Independent workflows =====
+                G2[video_migration]
+
+                S2 -.->|Drive VOD folder| G2
+                G2 -->|Uploads to podcast playlist| EXT1
 
                 %% Click Events
                 click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
                 click B1 href "#youtube_description" "Compiles extracted titles from service_titles_checker into Description.txt and chapters.txt"
-                click B2 href "#pages_deployment" "Deploys the static tech-info dashboard to GitHub Pages"
+                click B2 href "#pages_deployment" "Deploys the static tech-info dashboard to GitHub Pages. Triggered via workflow_run (not push) because worship_scripts_checker commits with the default GITHUB_TOKEN, which does not fire push events"
                 click C1 href "#service_titles_checker" "Extracts service components from upcoming OW PDF via Gemini and syncs to Drive"
                 click C2 href "#sync_service_titles" "Syncs manual edits of service title text files to Google Drive"
-                click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via macOS runner (osascript)"
-                click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream"
-                click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications"
+                click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+                click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream. No standalone cron: already runs ~hourly via the youtube_description chain, so a separate poll would just duplicate the run"
+                click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications. Manual dispatch also covers the test run mode that the former standalone manual_test workflow duplicated"
                 click G2 href "#video_migration" "Weekly job that copies VOD in Google Drive and uploads it to YouTube podcast playlist"
-                click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails"
-                click G4 href "#sermon_series" "Combines sermon title and minister into a text file and syncs to Drive"
-                click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive"
-                click I1 href "#update_folder_names" "Serverless script that queries Google Drive API and exports static mappings to uploads/folder_names.json"
-                click I2 href "#update_events_directory" "Fetches public subfolders from the private Google Drive Events folder for /events"
+                click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails, sourced from the same Team Schedule sheet plus LA Open Data"
+                click G4 href "#sermon_series" "Combines sermon title and minister into a text file, looks up the live stream link via the YouTube API, and syncs to Drive"
+                click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive. When a worship-service thumbnail lands and titles/description are missing, it runs the service-titles and youtube-description scripts inline, then creates the YouTube livestream itself"
+                click J1 href "#archive_service_files" "Weekly Monday snapshot that copies the past week's chapters/timings/description/title files into Archives/"
 
+            </div>
             </div>
             <div id="flowchart-desc" class="flowchart-description">Hover over a workflow node to view its description.</div>
         </div>
@@ -316,13 +447,28 @@
             }
         }
 
+        // Mermaid renders node ids like "flowchart-C1-42" (flowchart-<logicalId>-<counter>).
+        // Edge paths carry classes "LS-<sourceId>" / "LE-<targetId>" (link-start/link-end),
+        // which is what lets us find "everything touching this node" without re-parsing the graph.
+        function getLogicalNodeId(el) {
+            return el.id.replace(/^flowchart-/, '').replace(/-\d+$/, '');
+        }
+
+        function clearFlowchartHighlights(svg) {
+            svg.querySelectorAll('.hl-node').forEach(el => el.classList.remove('hl-node'));
+            svg.querySelectorAll('.hl-edge').forEach(el => el.classList.remove('hl-edge'));
+        }
+
         function setupFlowchartHovers() {
             const descBox = document.getElementById('flowchart-desc');
             const defaultText = "Hover over a workflow node to view its description.";
 
             // Use MutationObserver or fallback to setTimeout
             setTimeout(() => {
-                const nodes = document.querySelectorAll('.mermaid g.node');
+                const svg = document.querySelector('.mermaid svg');
+                if (!svg) return;
+
+                const nodes = svg.querySelectorAll('g.node');
                 nodes.forEach(node => {
                     // In Mermaid 9+, titles are often rendered as attributes on the node
                     // or as child <title> elements. We'll check both.
@@ -330,29 +476,68 @@
                     const titleEl = node.querySelector('title');
 
                     const description = titleAttr || (titleEl ? titleEl.textContent : null);
+                    const logicalId = getLogicalNodeId(node);
 
-                    if (description) {
-                        node.addEventListener('mouseenter', () => {
+                    node.addEventListener('mouseenter', () => {
+                        if (description) {
                             descBox.textContent = description;
                             descBox.style.color = '#333';
                             descBox.style.fontWeight = 'bold';
-                        });
-                        node.addEventListener('mouseleave', () => {
-                            descBox.textContent = defaultText;
-                            descBox.style.color = '#555';
-                            descBox.style.fontWeight = 'normal';
-                        });
+                        }
 
-                        // We also need to remove the native tooltip so it doesn't double-show
-                        if (titleAttr) {
-                            node.removeAttribute('title');
-                        }
-                        if (titleEl) {
-                            titleEl.remove();
-                        }
+                        // Highlight this node, every edge touching it, and the node on the
+                        // other end of each of those edges.
+                        clearFlowchartHighlights(svg);
+                        node.classList.add('hl-node');
+
+                        const touchingEdges = svg.querySelectorAll(`.LS-${logicalId}, .LE-${logicalId}`);
+                        touchingEdges.forEach(edge => {
+                            edge.classList.add('hl-edge');
+                            edge.classList.forEach(cls => {
+                                let otherId = null;
+                                if (cls.startsWith('LS-') && cls !== `LS-${logicalId}`) otherId = cls.slice(3);
+                                if (cls.startsWith('LE-') && cls !== `LE-${logicalId}`) otherId = cls.slice(3);
+                                if (otherId) {
+                                    const otherNode = svg.querySelector(`[id^="flowchart-${otherId}-"]`);
+                                    if (otherNode) otherNode.classList.add('hl-node');
+                                }
+                            });
+                        });
+                    });
+
+                    node.addEventListener('mouseleave', () => {
+                        descBox.textContent = defaultText;
+                        descBox.style.color = '#555';
+                        descBox.style.fontWeight = 'normal';
+                        clearFlowchartHighlights(svg);
+                    });
+
+                    // We also need to remove the native tooltip so it doesn't double-show
+                    if (titleAttr) {
+                        node.removeAttribute('title');
+                    }
+                    if (titleEl) {
+                        titleEl.remove();
                     }
                 });
             }, 1000); // Give mermaid a moment
+        }
+
+        // ---- Zoom controls ----
+        let flowchartZoom = 1;
+        function applyZoom() {
+            const mermaidDiv = document.querySelector('.mermaid');
+            if (!mermaidDiv) return;
+            mermaidDiv.style.transform = `scale(${flowchartZoom})`;
+            document.getElementById('zoom-level').textContent = `${Math.round(flowchartZoom * 100)}%`;
+        }
+        function adjustZoom(delta) {
+            flowchartZoom = Math.min(3, Math.max(0.4, flowchartZoom + delta));
+            applyZoom();
+        }
+        function resetZoom() {
+            flowchartZoom = 1.5;
+            applyZoom();
         }
 
 
@@ -631,8 +816,16 @@ if (sortMode === 'last-run') {
         loadDashboard().then((success) => {
             if (success !== false) renderSortedWorkflows('default');
         });
-        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            // Render the diagram at its natural size instead of shrinking it to fit the
+            // card width - that shrink-to-fit is why the chart used to read as tiny text.
+            flowchart: { useMaxWidth: false, htmlLabels: true },
+            themeVariables: { fontSize: '16px' }
+        });
         setupFlowchartHovers();
+        setTimeout(resetZoom, 1000); // Start at a readable zoom once mermaid has rendered
     </script>
 </body>
 </html>
