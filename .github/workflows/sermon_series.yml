@@ -37,7 +37,7 @@ jobs:
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
           PAT: ${{ secrets.PAT }}
-        run: cd "Worship Scripts" && python create_sermon_series.py
+        run: cd "Worship Scripts" && python "worship workflows/create_sermon_series.py"
 
       - name: Commit and push changes
         run: |

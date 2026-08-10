@@ -3,7 +3,7 @@ name: Process Uploads Queue
 on:
   push:
     paths:
-      - 'uploads_queue/**'
+      - 'Utilities/uploads_queue/**'
   workflow_dispatch:
 
 permissions:
@@ -34,13 +34,13 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python "Worship Scripts/upload_queue_to_drive.py"
+          python "Worship Scripts/worship workflows/upload_queue_to_drive.py"
 
       - name: Commit cleanup
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add uploads_queue/
+          git add Utilities/uploads_queue/
           # Only commit if there are changes (files deleted)
           git diff --quiet && git diff --staged --quiet || git commit -m "Cleanup processed uploads"
           git pull --rebase origin ${{ github.ref_name }}

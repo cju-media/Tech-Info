@@ -9,7 +9,7 @@ If you are running the `osc_server.js` script on your local machine (like your M
 1. **Install Node.js**: Ensure you have Node installed on your system.
 2. **Install Dependencies**: Open your terminal, navigate to this directory, and run `npm install` to download all the necessary modules (like `osc`, `express`, etc.):
    ```bash
-   cd "Youtube Descriptions"
+   cd "Youtube Processing"
    npm install
    ```
 3. **Run the server**: You no longer need to pass environment variables in your terminal. You can simply run:

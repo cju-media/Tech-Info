@@ -5,9 +5,9 @@ self-hosted macOS Actions runner.
 Extracted from what used to be three near-identical inline Python blocks
 spread across imessage_notifications.yml and test_imessage.yml. Usage:
 
-    python3 "Scheduling/Event Data/send_imessage.py" "message text"
+    python3 "Utilities/Scheduling/Event Data/send_imessage.py" "message text"
 
-Must be run from the repository root (it reads Scheduling/Team Data/team_phones.json).
+Must be run from the repository root (it reads Utilities/Scheduling/Team Data/team_phones.json).
 """
 import os
 import sys
@@ -16,7 +16,7 @@ import subprocess
 
 
 def send_imessage(message):
-    phones_path = os.path.join("Scheduling", "Team Data", "team_phones.json")
+    phones_path = os.path.join("Utilities", "Scheduling", "Team Data", "team_phones.json")
     with open(phones_path, "r") as f:
         phones = json.load(f)
 

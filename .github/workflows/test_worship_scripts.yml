@@ -27,7 +27,7 @@ jobs:
         env:
           GDRIVE_API_KEY: ${{ secrets.GDRIVE_API_KEY }}
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
-        run: cd "Worship Scripts" && python test_worship_scripts.py
+        run: cd "Worship Scripts" && python "worship workflows/test_worship_scripts.py"
 
       - name: Commit and push changes
         run: |

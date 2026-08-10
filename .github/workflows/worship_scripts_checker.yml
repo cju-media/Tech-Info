@@ -34,7 +34,7 @@ jobs:
           GDRIVE_API_KEY: ${{ secrets.GDRIVE_API_KEY }}
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: cd "Worship Scripts" && python update_worship_scripts.py
+        run: cd "Worship Scripts" && python "worship workflows/update_worship_scripts.py"
 
       - name: Commit and push changes
         run: |

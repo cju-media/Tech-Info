@@ -42,11 +42,11 @@ jobs:
       - name: Run script
         env:
           FORCE_UPDATE: ${{ github.event.inputs.force_update }}
-        run: cd "Youtube Descriptions" && python generate_youtube_description.py
+        run: cd "Youtube Processing" && python generate_youtube_description.py
 
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add -A "Worship Scripts/worship_scripts.json" "Youtube Descriptions/Description.txt" "Youtube Descriptions/chapters.txt"
+          git add -A "Worship Scripts/worship_scripts.json" "Youtube Processing/Description.txt" "Youtube Processing/chapters.txt"
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Generate YouTube description text files" && git pull --rebase origin ${{ github.event.workflow_run.head_branch || github.ref_name }} && git push)

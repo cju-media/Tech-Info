@@ -49,7 +49,7 @@ jobs:
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update }}
-        run: cd "Worship Scripts" && python update_service_titles.py
+        run: cd "Worship Scripts" && python "worship workflows/update_service_titles.py"
 
       - name: Trigger Notification
         if: success()

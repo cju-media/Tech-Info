@@ -10,7 +10,7 @@ on:
       - completed
   push:
     paths:
-      - 'Youtube Descriptions/timings.txt'
+      - 'Youtube Processing/timings.txt'
   workflow_dispatch:
     inputs:
       force_update:
@@ -45,4 +45,4 @@ jobs:
         env:
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update }}
-        run: cd "Youtube Descriptions" && python update_youtube_stream.py
+        run: cd "Youtube Processing" && python update_youtube_stream.py

@@ -22,20 +22,20 @@ jobs:
             DATE_STR=$(TZ="America/Los_Angeles" date +%Y-%m-%d)
           fi
 
-          ARCHIVE_DIR="Archives/$DATE_STR"
+          ARCHIVE_DIR="Utilities/Archives/$DATE_STR"
           mkdir -p "$ARCHIVE_DIR"
 
-          if [ -f "Youtube Descriptions/chapters.txt" ]; then
-            cp "Youtube Descriptions/chapters.txt" "$ARCHIVE_DIR/chapters.txt"
+          if [ -f "Youtube Processing/chapters.txt" ]; then
+            cp "Youtube Processing/chapters.txt" "$ARCHIVE_DIR/chapters.txt"
           fi
-          if [ -f "Youtube Descriptions/timings.txt" ]; then
-            cp "Youtube Descriptions/timings.txt" "$ARCHIVE_DIR/timings.txt"
+          if [ -f "Youtube Processing/timings.txt" ]; then
+            cp "Youtube Processing/timings.txt" "$ARCHIVE_DIR/timings.txt"
           fi
 
-          if [ -f "Youtube Descriptions/description.txt" ]; then
-            cp "Youtube Descriptions/description.txt" "$ARCHIVE_DIR/description.txt"
-          elif [ -f "Youtube Descriptions/Description.txt" ]; then
-            cp "Youtube Descriptions/Description.txt" "$ARCHIVE_DIR/description.txt"
+          if [ -f "Youtube Processing/description.txt" ]; then
+            cp "Youtube Processing/description.txt" "$ARCHIVE_DIR/description.txt"
+          elif [ -f "Youtube Processing/Description.txt" ]; then
+            cp "Youtube Processing/Description.txt" "$ARCHIVE_DIR/description.txt"
           fi
 
           if [ -f "Worship Scripts/service-titles/title.txt" ]; then
@@ -44,5 +44,5 @@ jobs:
 
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add "Archives/"
+          git add "Utilities/Archives/"
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Archive service files for $DATE_STR" && git pull --rebase origin ${{ github.ref_name }} && git push)

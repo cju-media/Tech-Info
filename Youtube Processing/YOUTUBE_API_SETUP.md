@@ -35,7 +35,7 @@ Because GitHub Actions runs in a headless environment, it cannot perform the int
    ```bash
    pip install google-auth-oauthlib
    ```
-3. Place the `client_secrets.json` you downloaded in the same directory as the `get_youtube_credentials.py` script provided in this repository (`Youtube Descriptions/get_youtube_credentials.py`).
+3. Place the `client_secrets.json` you downloaded in the same directory as the `get_youtube_credentials.py` script provided in this repository (`Youtube Processing/get_youtube_credentials.py`).
 4. Run the script:
    ```bash
    python get_youtube_credentials.py

@@ -3,7 +3,7 @@ const { chromium } = require('playwright');
 (async () => {
     const browser = await chromium.launch();
     const page = await browser.newPage();
-    await page.goto('file://' + __dirname + '/dashboard/index.html');
+    await page.goto('file://' + __dirname + '/Utilities/dashboard/index.html');
 
     await page.waitForTimeout(2000); // wait for mermaid
 

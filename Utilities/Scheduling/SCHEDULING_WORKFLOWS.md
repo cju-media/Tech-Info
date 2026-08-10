@@ -6,7 +6,7 @@ The scheduling and notification system has been consolidated into two main GitHu
 
 Both workflows run every hour at minute 0 (using the cron `0 * * * *`).
 
-The logic for determining which notifications and processes run is handled by the unified script `Scheduling/Event Data/send_weekly_schedule.py`. The standard workflow runs in `RUN_MODE=auto`, and the iMessage workflow runs in `RUN_MODE=auto_imessage`. When executing, the script evaluates the current UTC time and triggers specific processing blocks.
+The logic for determining which notifications and processes run is handled by the unified script `Utilities/Scheduling/Event Data/send_weekly_schedule.py`. The standard workflow runs in `RUN_MODE=auto`, and the iMessage workflow runs in `RUN_MODE=auto_imessage`. When executing, the script evaluates the current UTC time and triggers specific processing blocks.
 
 ## Schedule Overview
 

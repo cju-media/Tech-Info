@@ -28,7 +28,7 @@ def get_youtube_service():
         return None
 
 def get_combined_description():
-    desc_path = os.path.join("Youtube Descriptions", "Description.txt")
+    desc_path = os.path.join("Youtube Processing", "Description.txt")
     if not os.path.exists(desc_path):
         print(f"Generated description boilerplate not found at {desc_path}")
         return "Join us for our Sunday Service!"

@@ -40,4 +40,4 @@ jobs:
           YOUTUBE_PRIVACY_STATUS: ${{ github.event.inputs.privacy_status || 'private' }}
           PAT: ${{ secrets.PAT }}
         run: |
-          python "Video Migration/migrate_videos.py"
+          python "Utilities/Video Migration/migrate_videos.py"

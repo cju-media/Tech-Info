@@ -1,7 +1,7 @@
 name: Backfill Sermon Series Stream Link
 
 # create_youtube_stream.py dispatches this event the moment a worship
-# livestream is created/scheduled (see Youtube Descriptions/create_youtube_stream.py).
+# livestream is created/scheduled (see Youtube Processing/create_youtube_stream.py).
 # The Sermon Series description is often generated before that stream
 # exists (it's driven by a separate, earlier trigger: the sermon title
 # syncing), so it ends up with a "YOUTUBE SERVICE LINK" placeholder instead
@@ -48,7 +48,7 @@ jobs:
           STREAM_DATE: ${{ github.event.client_payload.date || github.event.inputs.date }}
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
-        run: cd "Worship Scripts" && python backfill_sermon_series_link.py
+        run: cd "Worship Scripts" && python "worship workflows/backfill_sermon_series_link.py"
 
       - name: Commit and push changes
         run: |

@@ -383,7 +383,7 @@
             targetRepo = REPO;
             // Format: TIMESTAMP---FOLDERID---FILENAME
             // We use --- instead of _ because Google Drive folder IDs can contain underscores.
-            path = `uploads_queue/${Date.now()}---${targetFolder}---${safeFilename}`;
+            path = `Utilities/uploads_queue/${Date.now()}---${targetFolder}---${safeFilename}`;
             payload.message = `Upload ${filename} to Drive via web UI`;
         }
 

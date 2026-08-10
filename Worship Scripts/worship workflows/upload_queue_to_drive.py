@@ -11,14 +11,14 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaIoBaseUpload
 
-QUEUE_DIR = 'uploads_queue'
+QUEUE_DIR = 'Utilities/uploads_queue'
 THUMBNAILS_DEST_PARENT_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
 SERMON_DEST_PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 
 
 def dispatch_event(event_type, client_payload):
     """Fire a repository_dispatch event so imessage_notifications.yml (or
-    anything else) can react. Mirrors Youtube Descriptions/create_youtube_stream.py."""
+    anything else) can react. Mirrors Youtube Processing/create_youtube_stream.py."""
     pat = os.environ.get('PAT')
     if not pat:
         print("Warning: PAT environment variable not set, cannot dispatch GitHub event.")
@@ -197,7 +197,7 @@ def main():
                 # If successful, check if it's a worship service thumbnail to create stream
                 if parts[1] == THUMBNAILS_DEST_PARENT_FOLDER_ID and date_str:
                     title_path = os.path.join("Worship Scripts", "service-titles", "title.txt")
-                    desc_path = os.path.join("Youtube Descriptions", "Description.txt")
+                    desc_path = os.path.join("Youtube Processing", "Description.txt")
 
                     if not (os.path.exists(title_path) and os.path.exists(desc_path)):
                         print(f"Worship Service Thumbnail detected but title/description missing. Executing text generation scripts for {date_str}...")
@@ -206,21 +206,21 @@ def main():
                         env_copy = os.environ.copy()
                         env_copy['FORCE_UPDATE'] = 'true'
 
-                        update_titles_script = os.path.join("Worship Scripts", "update_service_titles.py")
+                        update_titles_script = os.path.join("Worship Scripts", "worship workflows", "update_service_titles.py")
                         if os.path.exists(update_titles_script):
                             try:
                                 print(f"Running {update_titles_script}...")
-                                subprocess.run(["python", "update_service_titles.py"], check=True, cwd="Worship Scripts", env=env_copy)
+                                subprocess.run(["python", "worship workflows/update_service_titles.py"], check=True, cwd="Worship Scripts", env=env_copy)
                             except Exception as e:
                                 print(f"Error running update_service_titles.py: {e}")
                         else:
                             print(f"Could not find script at {update_titles_script}")
 
-                        generate_desc_script = os.path.join("Youtube Descriptions", "generate_youtube_description.py")
+                        generate_desc_script = os.path.join("Youtube Processing", "generate_youtube_description.py")
                         if os.path.exists(generate_desc_script):
                             try:
                                 print(f"Running {generate_desc_script}...")
-                                subprocess.run(["python", "generate_youtube_description.py"], check=True, cwd="Youtube Descriptions", env=env_copy)
+                                subprocess.run(["python", "generate_youtube_description.py"], check=True, cwd="Youtube Processing", env=env_copy)
                             except Exception as e:
                                 print(f"Error running generate_youtube_description.py: {e}")
                         else:
@@ -259,7 +259,7 @@ def main():
                         })
 
                     print(f"Launching create_youtube_stream.py for {date_str}...")
-                    script_path = os.path.join("Youtube Descriptions", "create_youtube_stream.py")
+                    script_path = os.path.join("Youtube Processing", "create_youtube_stream.py")
                     if os.path.exists(script_path):
                         try:
                             # We keep the file around so create_youtube_stream can upload it as thumbnail

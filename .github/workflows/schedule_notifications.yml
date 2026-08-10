@@ -56,7 +56,7 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
           RUN_MODE: ${{ github.event.inputs.run_mode || 'auto' }}
-        run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py
+        run: cd "Utilities/Scheduling/Event Data" && python3 send_weekly_schedule.py
 
       - name: Commit and push state changes
         run: |
@@ -64,8 +64,8 @@ jobs:
           git config --local user.name "GitHub Action"
 
           # Add any state files that may have changed
-          git add "Scheduling/Event Data/state.json" || true
-          git add "Scheduling/Event Data/avail_state.json" || true
+          git add "Utilities/Scheduling/Event Data/state.json" || true
+          git add "Utilities/Scheduling/Event Data/avail_state.json" || true
 
           # Only commit and push if state files have changed
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update schedule states" && git pull --rebase origin ${{ github.ref_name }} && git push)

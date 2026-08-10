@@ -37,7 +37,7 @@ jobs:
 
       - name: Send Custom Test iMessage
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != ''
-        run: python3 "Scheduling/Event Data/send_imessage.py" "${{ github.event.inputs.test_message }}"
+        run: python3 "Utilities/Scheduling/Event Data/send_imessage.py" "${{ github.event.inputs.test_message }}"
 
       - name: Install system dependencies for WeasyPrint
         if: "!(github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != '')"
@@ -59,13 +59,13 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           DRY_RUN: '0'
           RUN_MODE: ${{ github.event.inputs.run_mode || 'auto_imessage' }}
-        run: cd "Scheduling/Event Data" && python3 send_weekly_schedule.py
+        run: cd "Utilities/Scheduling/Event Data" && python3 send_weekly_schedule.py
 
       - name: Check disabled workflows
         if: github.event_name != 'repository_dispatch' && !(github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != '')
         env:
           GITHUB_PAT: ${{ secrets.PAT }}
-        run: cd "Scheduling/Event Data" && python3 check_disabled_workflows.py
+        run: cd "Utilities/Scheduling/Event Data" && python3 check_disabled_workflows.py
 
       - name: Commit and push state changes
         if: github.event_name != 'repository_dispatch' && !(github.event_name == 'workflow_dispatch' && github.event.inputs.test_message != '')
@@ -74,23 +74,23 @@ jobs:
           git config --local user.name "GitHub Action"
 
           # Add any state files that may have changed
-          git add "Scheduling/Event Data/state.json" || true
-          git add "Scheduling/Event Data/avail_state.json" || true
-          git add "Scheduling/Event Data/disabled_workflows_state.json" || true
+          git add "Utilities/Scheduling/Event Data/state.json" || true
+          git add "Utilities/Scheduling/Event Data/avail_state.json" || true
+          git add "Utilities/Scheduling/Event Data/disabled_workflows_state.json" || true
 
           # Only commit and push if state files have changed
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update schedule states" && git pull --rebase origin ${{ github.ref_name }} && git push)
 
       - name: Send Drive Upload Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'drive_upload_complete'
-        run: python3 "Scheduling/Event Data/send_imessage.py" "New worship scripts and script titles have been uploaded to Google Drive."
+        run: python3 "Utilities/Scheduling/Event Data/send_imessage.py" "New worship scripts and script titles have been uploaded to Google Drive."
 
       - name: Send YouTube Stream Created Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'youtube_stream_created'
         env:
           STREAM_URL: ${{ github.event.client_payload.stream_url }}
           STREAM_DATE: ${{ github.event.client_payload.date }}
-        run: python3 "Scheduling/Event Data/send_imessage.py" "The YouTube live stream for ${STREAM_DATE:-Unknown Date} has been scheduled and is available to view online at ${STREAM_URL:-Unknown URL}"
+        run: python3 "Utilities/Scheduling/Event Data/send_imessage.py" "The YouTube live stream for ${STREAM_DATE:-Unknown Date} has been scheduled and is available to view online at ${STREAM_URL:-Unknown URL}"
 
       - name: Send Sermon Series Video Uploaded Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'sermon_series_video_uploaded'
@@ -99,7 +99,7 @@ jobs:
           VIDEO_URL: ${{ github.event.client_payload.video_url }}
           PRIVACY_STATUS: ${{ github.event.client_payload.privacy_status }}
         run: |
-          python3 "Scheduling/Event Data/send_imessage.py" "The Sermon Series video '${VIDEO_TITLE:-Unknown Title}' has been uploaded to YouTube (${PRIVACY_STATUS:-unknown privacy}) - ${VIDEO_URL:-Unknown URL}"
+          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "The Sermon Series video '${VIDEO_TITLE:-Unknown Title}' has been uploaded to YouTube (${PRIVACY_STATUS:-unknown privacy}) - ${VIDEO_URL:-Unknown URL}"
 
       - name: Send Sermon Series Title/Description Uploaded Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'sermon_series_title_description_uploaded'
@@ -107,7 +107,7 @@ jobs:
           SS_DATE: ${{ github.event.client_payload.date }}
           SS_TITLE: ${{ github.event.client_payload.title }}
         run: |
-          python3 "Scheduling/Event Data/send_imessage.py" "Sermon Series title and description for ${SS_DATE:-Unknown Date} have been generated and uploaded to Drive - '${SS_TITLE:-Unknown Title}'"
+          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "Sermon Series title and description for ${SS_DATE:-Unknown Date} have been generated and uploaded to Drive - '${SS_TITLE:-Unknown Title}'"
 
       - name: Send Worship Service Title/Description Uploaded Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'worship_title_description_uploaded'
@@ -115,4 +115,4 @@ jobs:
           WS_DATE: ${{ github.event.client_payload.date }}
           WS_TITLE: ${{ github.event.client_payload.title }}
         run: |
-          python3 "Scheduling/Event Data/send_imessage.py" "Worship Service title and description for ${WS_DATE:-Unknown Date} have been generated and uploaded to Drive - '${WS_TITLE:-Unknown Title}'"
+          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "Worship Service title and description for ${WS_DATE:-Unknown Date} have been generated and uploaded to Drive - '${WS_TITLE:-Unknown Title}'"

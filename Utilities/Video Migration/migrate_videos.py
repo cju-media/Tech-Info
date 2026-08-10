@@ -16,7 +16,7 @@ YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc9v95hvMCERRUvWBXJJsGrP'
 
 def dispatch_event(event_type, client_payload):
     """Fire a repository_dispatch event so imessage_notifications.yml (or
-    anything else) can react. Mirrors Youtube Descriptions/create_youtube_stream.py."""
+    anything else) can react. Mirrors Youtube Processing/create_youtube_stream.py."""
     pat = os.environ.get('PAT')
     if not pat:
         print("Warning: PAT environment variable not set, cannot dispatch GitHub event.")
