@@ -1,0 +1,58 @@
+name: Backfill Sermon Series Stream Link
+
+# create_youtube_stream.py dispatches this event the moment a worship
+# livestream is created/scheduled (see Youtube Descriptions/create_youtube_stream.py).
+# The Sermon Series description is often generated before that stream
+# exists (it's driven by a separate, earlier trigger: the sermon title
+# syncing), so it ends up with a "YOUTUBE SERVICE LINK" placeholder instead
+# of a real URL. This patches that placeholder in as soon as we know it.
+on:
+  repository_dispatch:
+    types: [youtube_stream_created]
+  workflow_dispatch:
+    inputs:
+      stream_url:
+        description: 'YouTube stream URL'
+        required: true
+      date:
+        description: 'Date in MM-DD-YYYY format'
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth google-auth-oauthlib
+
+      - name: Run backfill script
+        env:
+          STREAM_URL: ${{ github.event.client_payload.stream_url || github.event.inputs.stream_url }}
+          STREAM_DATE: ${{ github.event.client_payload.date || github.event.inputs.date }}
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: cd "Worship Scripts" && python backfill_sermon_series_link.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add "Worship Scripts/Sermon-Series/"
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Backfill Sermon Series stream link" && git pull --rebase origin ${{ github.ref_name }} && git push)

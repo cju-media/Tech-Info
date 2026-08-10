@@ -1,6 +1,7 @@
 import os
 import json
 import io
+import re
 import datetime
 import zoneinfo
 from googleapiclient.discovery import build
@@ -210,8 +211,30 @@ def main():
         yt_service = get_youtube_service()
         youtube_link = get_upcoming_stream_url(yt_service, sunday.date())
         if not youtube_link:
-             youtube_link = "YOUTUBE SERVICE LINK" # Fallback if not found
-             print(f"Warning: Could not find upcoming stream for {date_str} in playlist.")
+            # This script can regenerate the same week's description more than
+            # once (e.g. a later sermon-title correction re-triggers it)
+            # before create_youtube_stream.py has scheduled the livestream
+            # yet. Don't stomp an already-correct link from a prior run with
+            # the placeholder just because the stream isn't found *this* time
+            # - backfill_sermon_series_link.py is what actually fills this in
+            # once the stream exists if we don't find it here.
+            existing_link = None
+            if os.path.exists(desc_output_path):
+                try:
+                    with open(desc_output_path, "r") as f:
+                        existing_desc = f.read()
+                    link_match = re.search(r"^Watch the Service: (.+)$", existing_desc, re.MULTILINE)
+                    if link_match and link_match.group(1).strip() != "YOUTUBE SERVICE LINK":
+                        existing_link = link_match.group(1).strip()
+                except Exception as e:
+                    print(f"Warning: could not check existing description for a link: {e}")
+
+            if existing_link:
+                youtube_link = existing_link
+                print(f"Reusing previously-found stream link from existing description: {youtube_link}")
+            else:
+                youtube_link = "YOUTUBE SERVICE LINK"  # Fallback if not found
+                print(f"Warning: Could not find upcoming stream for {date_str} in playlist.")
 
         # Calculate OW Link
         # e.g. 8-2-26 -> month-day-year (no leading zeros, 2 digit year)
