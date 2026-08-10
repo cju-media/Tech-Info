@@ -9,7 +9,7 @@ SECTION & FORMATTING RULES:
    * If a piece names a specific performer, attribute that name. If a piece does NOT specify a new performer, carry over and repeat the top-line credited prelude performer.
  * Prelude pieces should be labeled prelude1, prelude2, prelude3, etc., and formatted: PIECE NAME - COMPOSER.
  * Sections labeled "X-title-composer" should be formatted: TITLE OF PIECE - COMPOSER OF PIECE.
- * Sections labeled "X-group" should be labeled the group performing the work.
+ * Sections labeled "X-group" should be labeled the group performing the work. This also includes individual performer/conductor credit lines shown under a piece (e.g., "Name, Conductor, Name, Organ"), not only named ensembles like a choir name. Never leave "X-group" blank if any performer, conductor, or accompanist is credited under that piece in the PDF.
  * Sermon should be labeled Sermon - TITLE OF SERMON.
  * Hymns should only attribute the name of the hymn, not the author.
  * Reading-name attributes the name of the reader of the verse.
