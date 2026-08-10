@@ -27,7 +27,8 @@ import json
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
-SOURCE_FOLDER_ID = '15tZbMeMuDDVbPKsntLK3_F5kHsqdC7l5'  # has Title/Description .txt
+SERMON_SERIES_PARENT_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
+SOURCE_FOLDER_ID = '15tZbMeMuDDVbPKsntLK3_F5kHsqdC7l5'  # had the Description .txt
 TARGET_FOLDER_ID = '1W2gpCIZ9zXOFonDwVrl3CrzSHuxEIHgp'  # has the video + thumbnail
 
 
@@ -57,6 +58,37 @@ def list_folder(service, folder_id, label):
     return files
 
 
+def diagnose_missing_title(service):
+    print("\n=== DIAGNOSTIC: locating 'Sermon Series Title 08-09-2026.txt' ===")
+
+    # 1. Any other folders under the Sermon Series parent also named 08-09-2026?
+    q = (f"'{SERMON_SERIES_PARENT_ID}' in parents and name = '08-09-2026' "
+         f"and mimeType = 'application/vnd.google-apps.folder' and trashed = false")
+    results = service.files().list(
+        q=q, supportsAllDrives=True, includeItemsFromAllDrives=True,
+        fields="files(id, name)"
+    ).execute()
+    folders = results.get('files', [])
+    print(f"\nAll folders named '08-09-2026' under Sermon Series parent ({SERMON_SERIES_PARENT_ID}):")
+    for fdr in folders:
+        print(f"  {fdr['name']}  id={fdr['id']}")
+        list_folder(service, fdr['id'], f"  subfolder {fdr['id']}")
+
+    # 2. Global search by name, including trashed, regardless of parent.
+    q2 = "name contains 'Sermon Series Title 08-09-2026'"
+    results2 = service.files().list(
+        q=q2, supportsAllDrives=True, includeItemsFromAllDrives=True,
+        corpora='allDrives',
+        fields="files(id, name, parents, trashed, mimeType, modifiedTime)"
+    ).execute()
+    matches = results2.get('files', [])
+    print(f"\nGlobal search for name containing 'Sermon Series Title 08-09-2026' (any parent, any trashed state):")
+    if not matches:
+        print("  No matches found anywhere in Drive.")
+    for m in matches:
+        print(f"  {m['name']}  id={m['id']}  parents={m.get('parents')}  trashed={m.get('trashed')}  modified={m.get('modifiedTime')}")
+
+
 def main():
     service = get_drive_service()
     if not service:
@@ -69,24 +101,25 @@ def main():
     to_move = [f for f in source_files if f['mimeType'] == 'text/plain']
 
     if not to_move:
-        print("\nNo text/plain files found in the source folder to move. Nothing to do.")
-        return
-
-    print(f"\nMoving {len(to_move)} file(s) from source to target folder...")
-    for f in to_move:
-        print(f"  Moving '{f['name']}' ({f['id']})...")
-        service.files().update(
-            fileId=f['id'],
-            addParents=TARGET_FOLDER_ID,
-            removeParents=SOURCE_FOLDER_ID,
-            supportsAllDrives=True,
-            fields='id, parents'
-        ).execute()
-    print("Move complete.")
+        print("\nNo text/plain files found in the source folder to move.")
+    else:
+        print(f"\nMoving {len(to_move)} file(s) from source to target folder...")
+        for f in to_move:
+            print(f"  Moving '{f['name']}' ({f['id']})...")
+            service.files().update(
+                fileId=f['id'],
+                addParents=TARGET_FOLDER_ID,
+                removeParents=SOURCE_FOLDER_ID,
+                supportsAllDrives=True,
+                fields='id, parents'
+            ).execute()
+        print("Move complete.")
 
     print("\nAFTER:")
     list_folder(service, SOURCE_FOLDER_ID, "source (title/description) folder")
     list_folder(service, TARGET_FOLDER_ID, "target (video/thumbnail) folder")
+
+    diagnose_missing_title(service)
 
 
 if __name__ == "__main__":
