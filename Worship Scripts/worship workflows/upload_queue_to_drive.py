@@ -12,8 +12,31 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaIoBaseUpload
 
 QUEUE_DIR = 'Utilities/uploads_queue'
+FAILED_QUEUE_DIR = os.path.join(QUEUE_DIR, '_failed')
 THUMBNAILS_DEST_PARENT_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f'
 SERMON_DEST_PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
+
+# Real Google Drive file/folder IDs are long alphanumeric (+ -/_) strings
+# (every known ID in this repo is 33 chars). Used to catch filenames that
+# parse "successfully" but produce garbage that was never a Drive ID -
+# without this, such a file just fails the upload every run forever and
+# sits stuck in the queue (see: 1785433685454_Service_Title_2026-8-2-26.jpg,
+# where the legacy underscore-split fallback below extracted folder_id =
+# "Service" from a filename that didn't actually contain any known ID).
+DRIVE_ID_PATTERN = re.compile(r'^[A-Za-z0-9_-]{20,}$')
+
+
+def quarantine_file(file_path, filename, reason):
+    """Move an unprocessable queue file out of the active queue so it stops
+    being retried (and failing the same way) on every future run, while
+    keeping it around (committed, inspectable) instead of silently
+    disappearing."""
+    print(f"Quarantining '{filename}': {reason}")
+    os.makedirs(FAILED_QUEUE_DIR, exist_ok=True)
+    try:
+        shutil.move(file_path, os.path.join(FAILED_QUEUE_DIR, filename))
+    except Exception as e:
+        print(f"Error quarantining '{filename}': {e}")
 
 
 def dispatch_event(event_type, client_payload):
@@ -165,6 +188,12 @@ def main():
             folder_id = parts[1]
             original_filename = parts[2]
 
+            if not DRIVE_ID_PATTERN.match(folder_id):
+                quarantine_file(file_path, filename,
+                                 f"parsed folder_id '{folder_id}' doesn't look like a real Drive ID "
+                                 f"(this would just fail the upload and get stuck retrying every run)")
+                continue
+
             if folder_id in [THUMBNAILS_DEST_PARENT_FOLDER_ID, SERMON_DEST_PARENT_FOLDER_ID] and original_filename.lower().endswith(('.jpg', '.jpeg')):
                 date_str = None
 
@@ -273,9 +302,14 @@ def main():
                 os.remove(file_path)
                 print(f"Removed {filename} from queue.")
             else:
+                # upload_to_drive() failure is usually transient (network,
+                # auth, API hiccup) - worth retrying next run, so leave it.
                 print(f"Failed to process {filename}, leaving in queue.")
         else:
-            print(f"File {filename} does not match expected format. Skipping.")
+            # Filename structure itself doesn't parse (not just a bad ID) -
+            # retrying won't ever fix that, so quarantine instead of
+            # leaving it to fail silently forever.
+            quarantine_file(file_path, filename, "does not match the expected TIMESTAMP---FOLDERID---FILENAME format")
 
 if __name__ == "__main__":
     main()
