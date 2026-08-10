@@ -91,10 +91,12 @@ def extract_date(text):
 
 
 def get_speaker_info(text, date_str):
+    """Returns (is_communion, speaker_info_html). is_communion is None if Gemini
+    couldn't be reached, so the caller can fall back to the keyword heuristic."""
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         print("No GEMINI_API_KEY found, skipping speaker info extraction.")
-        return None
+        return None, None
 
     # 1. Calculate a dynamic delay to stay under the 250,000 TPM limit
     # (Approx. 4 characters = 1 token). We calculate how much of our TPM bucket
@@ -117,15 +119,28 @@ def get_speaker_info(text, date_str):
     model_name = 'gemini-3.5-flash'
 
     prompt = f"""
-    Extract the names of the people doing the "Worship Leading" (or Worship Leader) and the "Sermon" (or Preaching) from the following text.
-    Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
+    You are analyzing the full script for one Sunday worship service. Do two things:
 
-    Instead of just listing the names, you need to assign them to microphones based on these rules:
-    - If Laura is speaking, she is always LAV1.
-    - If Michael is speaking, he is always LAV2.
-    - Any additional speakers should be numbered sequentially in any order (LAV3, LAV4, etc.).
+    1. Determine whether this service includes Communion (also called the Eucharist,
+       the Lord's Supper, or the Lord's Table). Look at the *content* of the order of
+       service, not just whether the literal word "Communion" appears - this church's
+       script sometimes labels the section "The Eucharist and Blessings", "Sharing of
+       the Bread and the Cup", or similar sacramental language instead of the word
+       "Communion" itself. If the service includes any such element, treat it as
+       Communion.
 
-    Format the output exactly like this, on multiple lines:
+    2. Extract the names of the people doing the "Worship Leading" (or Worship Leader)
+       and the "Sermon" (or Preaching) from the text below.
+       Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
+
+       Instead of just listing the names, you need to assign them to microphones based on these rules:
+       - If Laura is speaking, she is always LAV1.
+       - If Michael is speaking, he is always LAV2.
+       - Any additional speakers should be numbered sequentially in any order (LAV3, LAV4, etc.).
+
+    Format the output EXACTLY like this, on multiple lines, with nothing before the
+    first line and nothing after the last:
+    Communion: [Yes or No]
     <strong>Speakers - [X] Lavs total</strong>
     LAV1: [Name]
     LAV2: [Name]
@@ -146,14 +161,23 @@ def get_speaker_info(text, date_str):
         if response and response.text:
             result = response.text.strip()
             print(f"[Gemini] Successfully parsed: {result}")
-            return result
+
+            is_communion = None
+            lines = result.split('\n', 1)
+            first_line = lines[0].strip()
+            if first_line.lower().startswith('communion:'):
+                is_communion = 'yes' in first_line.lower()
+                # Strip the Communion line out so it doesn't show up in the LAV display
+                result = lines[1].strip() if len(lines) > 1 else ''
+
+            return is_communion, result
 
     except Exception as e:
         error_msg = str(e)
         print(f"[Gemini] API error: {error_msg}")
 
     print(f"[Gemini] Failed to process {date_str}.")
-    return None
+    return None, None
 
 def extract_pdf_info(pdf_path, date_str):
     is_communion = False
@@ -161,18 +185,26 @@ def extract_pdf_info(pdf_path, date_str):
     try:
         reader = pypdf.PdfReader(pdf_path)
         if len(reader.pages) > 0:
-            first_page_text = reader.pages[0].extract_text()
-            if first_page_text and "Communion" in first_page_text:
-                is_communion = True
-
             full_text = ""
             for page in reader.pages:
                 page_text = page.extract_text()
                 if page_text:
                     full_text += page_text + "\n"
 
+            gemini_is_communion = None
             if full_text:
-                speaker_info = get_speaker_info(full_text, date_str)
+                gemini_is_communion, speaker_info = get_speaker_info(full_text, date_str)
+
+            if gemini_is_communion is not None:
+                is_communion = gemini_is_communion
+            else:
+                # Gemini wasn't available (missing key or API error) - fall back to a
+                # broader, case-insensitive keyword scan of the whole document instead
+                # of just the cover page, covering the phrasings this church actually uses.
+                COMMUNION_KEYWORDS = ['communion', 'eucharist', "lord's supper", "lord's table"]
+                lower_text = full_text.lower()
+                is_communion = any(keyword in lower_text for keyword in COMMUNION_KEYWORDS)
+                print(f"[Fallback] Gemini unavailable for {date_str}; keyword heuristic set isCommunion={is_communion}")
     except Exception as e:
         print(f"Error reading PDF {pdf_path}: {e}")
     return is_communion, speaker_info
