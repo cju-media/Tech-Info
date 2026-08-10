@@ -716,6 +716,12 @@
             renderEvents(currentEvents, filterValue);
         };
 
+        // Sheet-sourced multi-line fields (like Tech) arrive as plain text with
+        // literal newlines; convert those to <br> the same way speakerInfo already is.
+        function formatMultiline(text) {
+            return (text || '').toString().replace(/\r\n|\n/g, '<br>');
+        }
+
         window.openModal = function(eventId) {
             const event = allEvents.find(e => e.id === eventId);
             if (!event) return;
@@ -732,13 +738,15 @@
                 { label: 'Call Time', value: event.times },
                 { label: 'Event', value: event.name },
                 { label: 'Venue', value: event.spaces },
-                { label: 'Schedule', value: event.schedule },
-                { label: 'Tech', value: event.tech }
+                { label: 'Schedule', value: event.schedule }
+                // Tech is intentionally not in this plain-row list - it renders further
+                // down as its own boxed section, positioned under Mic Assignment when
+                // that section exists (see event-modal-tech below).
             ];
 
             rowData.forEach(item => {
-                if ((item.label === 'Schedule' || item.label === 'Tech') && (!item.value || item.value.toString().trim() === '')) {
-                    return; // Skip rendering empty Schedule or Tech cells
+                if (item.label === 'Schedule' && (!item.value || item.value.toString().trim() === '')) {
+                    return; // Skip rendering empty Schedule cells
                 }
 
                 const row = document.createElement('div');
@@ -776,6 +784,9 @@
 
             const existingNotes = document.getElementById('event-modal-notes');
             if (existingNotes) existingNotes.remove();
+
+            const existingTech = document.getElementById('event-modal-tech');
+            if (existingTech) existingTech.remove();
 
             const isWorshipService = event.name && event.name.toLowerCase().includes('worship service');
             let dateKey = null;
@@ -829,6 +840,8 @@
                 notesSection.style.fontSize = '14px';
                 notesSection.style.textAlign = 'center';
 
+                const hasTech = event.tech && event.tech.toString().trim() !== '';
+
                 if (isEditMode) {
                     notesSection.innerHTML = `
                         <strong>Edit Overrides for ${dateKey}</strong><br><br>
@@ -841,6 +854,11 @@
 
                         <label style="display:block;text-align:left;font-weight:bold;">Speaker Info (HTML allowed):</label>
                         <textarea id="edit-speaker-info" style="width:100%;height:100px;margin-bottom:10px;">${speakerInfo || ''}</textarea>
+
+                        ${hasTech ? `
+                        <label style="display:block;text-align:left;font-weight:bold;">Tech (from schedule sheet, read-only):</label>
+                        <div style="width:100%;margin-bottom:10px;padding:6px;background:#fff;border:1px solid #ccc;border-radius:4px;text-align:left;box-sizing:border-box;">${formatMultiline(event.tech)}</div>
+                        ` : ''}
 
                         <button onclick="saveOverrides(event, '${dateKey}', true)" class="event-modal-sheet-button" style="background-color:#dc3545;width:100%;">Save Overrides</button>
                     `;
@@ -865,6 +883,11 @@
                         // Convert newlines to breaks
                         const formattedSpeakerInfo = speakerInfo.replace(/\n/g, '<br>');
                         notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">' + formattedSpeakerInfo;
+                    }
+
+                    // Tech goes last, directly under Mic Assignment (the speakerInfo block above)
+                    if (hasTech) {
+                        notesHtml += '<hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;"><strong>Tech:</strong><br>' + formatMultiline(event.tech);
                     }
 
                     notesSection.innerHTML = notesHtml;
@@ -912,6 +935,23 @@
                     owBr.id = 'event-modal-ow-br';
                     buttonContainer.insertBefore(owBr, modalLink);
                 }
+            }
+
+            // Non-worship-service events have no Mic Assignment section to sit under,
+            // so Tech gets its own box (same styling as the Notes/Mic Assignment box)
+            // instead of just disappearing.
+            if (!isWorshipService && event.tech && event.tech.toString().trim() !== '') {
+                const techSection = document.createElement('div');
+                techSection.id = 'event-modal-tech';
+                techSection.style.marginBottom = '15px';
+                techSection.style.padding = '10px';
+                techSection.style.backgroundColor = '#f8f9fa';
+                techSection.style.border = '1px solid #dee2e6';
+                techSection.style.borderRadius = '5px';
+                techSection.style.fontSize = '14px';
+                techSection.style.textAlign = 'center';
+                techSection.innerHTML = '<strong>Tech:</strong><br>' + formatMultiline(event.tech);
+                buttonContainer.insertBefore(techSection, buttonContainer.firstChild);
             }
 
 
