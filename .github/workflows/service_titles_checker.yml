@@ -24,6 +24,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Commits made with the default GITHUB_TOKEN do not trigger other
+          # workflows' `push` events (GitHub's built-in recursion guard).
+          # sermon_series.yml and sync_service_titles.yml both trigger on
+          # pushes to Worship Scripts/service-titles/**, which this job
+          # commits to below, so a PAT is required here for those to fire.
+          token: ${{ secrets.PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
