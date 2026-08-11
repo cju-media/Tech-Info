@@ -309,6 +309,14 @@ def main():
 
     # Update state file
     state_data["last_processed_sha"] = current_sha
+    # Record which Sunday this batch of service-titles content is actually
+    # for, so downstream consumers (create_sermon_series.py) can tell fresh
+    # content from stale leftovers instead of assuming "whatever's in
+    # sermon-title.txt right now must be for the next calendar Sunday" -
+    # that assumption is what mislabeled the 08-16-2026 Sermon Series title
+    # with the still-unprocessed-for-08-16 "Kin-dom Economics" text left
+    # over from 08-09-2026's run.
+    state_data["target_date"] = sunday.date().isoformat()
     try:
         with open(state_file, "w") as f:
             json.dump(state_data, f)

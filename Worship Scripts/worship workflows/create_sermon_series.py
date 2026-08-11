@@ -127,6 +127,26 @@ def get_upcoming_sunday():
         days_ahead += 7
     return now_pt + datetime.timedelta(days=days_ahead)
 
+def get_sermon_title_target_date():
+    """The Sunday update_service_titles.py actually generated the current
+    sermon-title.txt/sermon-minister.txt content for, per the stamp it
+    writes to service_titles_state.json. Returns None if missing/unreadable
+    (e.g. an older state file from before this stamp existed) - callers
+    should treat that as "unknown, don't guess"."""
+    state_file = "service_titles_state.json"
+    if not os.path.exists(state_file):
+        return None
+    try:
+        with open(state_file, "r") as f:
+            state_data = json.load(f)
+        target_date_str = state_data.get("target_date")
+        if not target_date_str:
+            return None
+        return datetime.date.fromisoformat(target_date_str)
+    except Exception as e:
+        print(f"Warning: could not read target_date from {state_file}: {e}")
+        return None
+
 def get_or_create_folder(service, folder_name, parent_id):
     query = f"'{parent_id}' in parents and name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
     results = service.files().list(
@@ -216,6 +236,27 @@ def main():
 
     # 3. Calculate date and output filename
     sunday = get_upcoming_sunday()
+
+    # Guard against stamping stale sermon-title.txt content (left over from
+    # a previous week that never got refreshed, e.g. no new OW PDF uploaded
+    # yet) onto the next calendar Sunday. Only proceed if the content was
+    # actually generated for the Sunday we're about to label it with.
+    target_date = get_sermon_title_target_date()
+    if target_date is None:
+        print("service_titles_state.json has no recorded target_date for the "
+              "current sermon-title.txt content, so it can't be confirmed as "
+              f"fresh for the upcoming Sunday ({sunday.date()}). Skipping "
+              "rather than risk mislabeling stale content - re-run once "
+              "update_service_titles.py has processed a new OW PDF.")
+        return
+    if target_date != sunday.date():
+        print(f"sermon-title.txt was generated for {target_date}, but the "
+              f"next upcoming Sunday is {sunday.date()} - no fresh Order of "
+              "Worship has been processed for that week yet. Skipping "
+              f"instead of relabeling {target_date}'s content as "
+              f"{sunday.date()}'s.")
+        return
+
     date_str = sunday.strftime("%m-%d-%Y")
 
     output_dir = "Sermon-Series"
