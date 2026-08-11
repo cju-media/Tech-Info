@@ -1,12 +1,5 @@
 [
   {
-    "name": "LAPFCU 90TH ANNIVERSARY",
-    "date": "2026-10-10",
-    "location": "Los Angeles Police Academy Athletic Field",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "ASLA 2026 CONFERENCE ON LANDSCAPE ARCHIT",
     "date": "2026-09-15",
     "location": "South Level 1 Halls G/H/J",
@@ -14,44 +7,51 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
+    "name": "USC STUDENT CONVOCATION",
+    "date": "2026-08-20",
+    "location": "Doheny Library Steps",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
     "name": "MUTINY",
-    "date": "2026-08-07",
-    "location": "Hollywood and Vine",
+    "date": "2026-08-20",
+    "location": "Hollywood and vine",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "2026 ASLA CONFERENCE",
-    "date": "2026-09-16",
-    "location": "1201 FIGUEROA",
+    "name": "PALISADES VILLAGE OPENING",
+    "date": "2026-08-15",
+    "location": "On Monument lane",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "TEEN CANCER",
-    "date": "2026-08-09",
-    "location": "Back of Property",
+    "name": "PALISADES VILLAGE DR",
+    "date": "2026-08-15",
+    "location": "On Monument",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "ASLA 2026 CONFERENCE ON LANDSCAPE ARCHIT",
-    "date": "2026-09-16",
-    "location": "1201 FIGUEROA",
+    "name": "MUTINY",
+    "date": "2026-08-14",
+    "location": "Hollywood and VIne",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "USC SUITES",
-    "date": "2026-08-29",
-    "location": "Field and Gate 19",
+    "name": "DIVINE SAVIOUR CARNIVAL",
+    "date": "2026-08-14",
+    "location": "610 CYPRESS",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "MUSEIQUE",
-    "date": "2026-08-30",
-    "location": "Herscher Hall at Skirball Cultural Center",
+    "name": "RETINA SOCIETY MEETING",
+    "date": "2026-09-23",
+    "location": "Santa Monica Ballroom",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
