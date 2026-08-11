@@ -54,5 +54,5 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add "Worship Scripts/Sermon-Series/"
+          git add "Worship Scripts/Sermon-Series/" || true
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Backfill Sermon Series stream link" && git pull --rebase origin ${{ github.ref_name }} && git push)

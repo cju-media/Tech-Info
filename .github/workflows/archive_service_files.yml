@@ -44,5 +44,5 @@ jobs:
 
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add "Utilities/Archives/"
+          git add "Utilities/Archives/" || true
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Archive service files for $DATE_STR" && git pull --rebase origin ${{ github.ref_name }} && git push)

@@ -48,5 +48,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add -A "Worship Scripts/worship_scripts.json" "Youtube Processing/Description.txt" "Youtube Processing/chapters.txt"
+          git add -A "Worship Scripts/worship_scripts.json" || true
+          git add -A "Youtube Processing/Description.txt" || true
+          git add -A "Youtube Processing/chapters.txt" || true
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Generate YouTube description text files" && git pull --rebase origin ${{ github.event.workflow_run.head_branch || github.ref_name }} && git push)
