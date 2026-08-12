@@ -6,15 +6,15 @@ prelude2.txt - prelude-performer1.txt
 prelude3.txt - prelude-performer2.txt
 prelude4.txt - prelude-performer3.txt
 prelude5.txt - prelude-performer4.txt
-Welcome
+Welcome, welcome.txt
 Hymn of Gathering, hymn-of-gathering.txt
-Prayers of Awareness
+Prayers of Awareness, prayer-of-awareness.txt
 Introit, introit-title-composer.txt - introit-group.txt
 Prayers, Readings, Meditations
 Meditation Anthem, meditation-title-composer.txt - meditation-group.txt
 Sermon, sermon-title.txt - sermon-minister.txt
 Communion, communion.txt
-Offering Prayers
+Offering Prayers, offering-prayer.txt
 Offertory, offertory-title-composer.txt, offertory-group.txt
 Life of The Church
 Choral Response, response-title-composer.txt - response-group.txt
