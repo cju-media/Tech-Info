@@ -2,10 +2,14 @@
 Marks past-dated rows on the master Tech Schedule Google Sheet as done:
 strikethrough text + red font color, applied to the whole row.
 
-The header row (row 1) is never touched, no matter what. Section-header
-rows (e.g. "SEPTEMBER") have no parseable date in column A and are
-skipped automatically. Rows are only ever added to; nothing here reverts
-formatting on rows whose date is edited back into the future.
+The header row (row 1) is never touched, no matter what. Month-divider
+rows (e.g. "SEPTEMBER" — a single label with every other column blank)
+have no date of their own, so they're marked past based on the block of
+dated rows immediately below them: once that block's dates have all
+passed, the divider is marked too (matching the sheet's existing
+convention of crossing out month labels once the whole month is done).
+Rows are only ever added to; nothing here reverts formatting on rows
+whose date is edited back into the future.
 
 Auth: uses the existing GDRIVE_SERVICE_ACCOUNT_JSON secret (already used
 by the sermon series workflow) with the Sheets API. That service account
@@ -44,31 +48,73 @@ def fetch_rows():
     return payload['table']['rows']
 
 
+def parse_row_date(first_cell_value):
+    """Return the date parsed out of column A's value, or None if it
+    doesn't contain one (e.g. "SEPTEMBER", blank, or unparseable)."""
+    if not first_cell_value or not isinstance(first_cell_value, str):
+        return None
+
+    date_match = DATE_RE.search(first_cell_value)
+    if not date_match:
+        return None
+
+    try:
+        return dateutil_parser.parse(date_match.group(1)).date()
+    except (ValueError, OverflowError):
+        return None
+
+
+def is_divider_row(cells):
+    """A month-divider row: column A has a text label and every other
+    column is blank (e.g. "SEPTEMBER", "FEBRUARY")."""
+    if not cells:
+        return False
+
+    first = cells[0]['v'] if cells[0] else None
+    if not first or not isinstance(first, str) or DATE_RE.search(first):
+        return False
+
+    for cell in cells[1:]:
+        if cell and cell.get('v') not in (None, ''):
+            return False
+
+    return True
+
+
 def find_past_event_rows(rows, today):
-    """Return 0-based row indices (matching the Sheets API grid) whose
-    event date has already passed. Row 0 (the header) is never included."""
+    """Return 0-based row indices (matching the Sheets API grid) that
+    should be marked past. Row 0 (the header) is never included.
+
+    Dated rows are past if their date is before `today`. Month-divider
+    rows have no date of their own, so they're marked past based on the
+    nearest dated row below them (rows run newest-first within a month
+    block, so that's the block's latest date)."""
     past_rows = []
+    row_dates = {}
+    divider_indices = []
 
     for index, row in enumerate(rows):
         if index == 0:
             continue  # never touch the header row
 
         cells = row.get('c') or []
-        date_cell = cells[0]['v'] if cells and cells[0] else None
-        if not date_cell or not isinstance(date_cell, str):
-            continue
+        first_cell_value = cells[0]['v'] if cells and cells[0] else None
+        event_date = parse_row_date(first_cell_value)
 
-        date_match = DATE_RE.search(date_cell)
-        if not date_match:
-            continue  # e.g. section headers like "SEPTEMBER" - no date, skip
+        if event_date is not None:
+            row_dates[index] = event_date
+            if event_date < today:
+                past_rows.append(index)
+        elif is_divider_row(cells):
+            divider_indices.append(index)
 
-        try:
-            event_date = dateutil_parser.parse(date_match.group(1)).date()
-        except (ValueError, OverflowError):
-            continue
-
-        if event_date < today:
-            past_rows.append(index)
+    lookahead_limit = 5
+    for div_index in divider_indices:
+        for candidate in range(div_index + 1, min(div_index + 1 + lookahead_limit, len(rows))):
+            if candidate in row_dates:
+                if row_dates[candidate] < today:
+                    past_rows.append(div_index)
+                break
 
     return past_rows
 
