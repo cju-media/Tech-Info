@@ -1,16 +1,16 @@
 {
+  "2026-08-16": {
+    "path": "service-scripts/2026-08-16.pdf",
+    "modifiedTime": "2026-08-12T15:52:42.844Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Lauren Seely",
+    "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
+  },
   "2026-08-23": {
     "path": "service-scripts/2026-08-23.pdf",
     "modifiedTime": "2026-08-12T07:13:49.284Z",
     "isCommunion": true,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV2: Michael\nLAV3: Chad\nLAV4: Megan Mascena",
     "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z"
-  },
-  "2026-08-16": {
-    "path": "service-scripts/2026-08-16.pdf",
-    "modifiedTime": "2026-08-12T06:48:45.312Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\n    LAV1: Laura\n    LAV2: Michael\n    LAV3: Lauren Seely",
-    "youtubeDescriptionModifiedTime": "2026-06-11T23:49:53.656Z"
   }
 }
