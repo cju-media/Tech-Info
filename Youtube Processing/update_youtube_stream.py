@@ -93,6 +93,15 @@ def get_combined_description():
 
     return desc
 
+def get_current_title():
+    title_path = os.path.join("..", "Worship Scripts", "service-titles", "title.txt")
+    if os.path.exists(title_path):
+        with open(title_path, 'r') as f:
+            title = f.read().strip()
+            if title:
+                return title
+    return None
+
 def main():
     service = get_youtube_service()
     if not service:
@@ -120,7 +129,7 @@ def main():
 
         # If a timings.txt was pushed, we usually want to update even if it's the service day
         recently_modified = False
-        for p in ["Description.txt", "timings.txt"]:
+        for p in ["Description.txt", "timings.txt", os.path.join("..", "Worship Scripts", "service-titles", "title.txt")]:
             if os.path.exists(p):
                 mtime = os.path.getmtime(p)
                 if (datetime.now().timestamp() - mtime) < 3600:
@@ -144,10 +153,21 @@ def main():
             print("  Could not read description. Skipping.")
             continue
 
-        if stream['description'].strip() == combined_desc.strip():
-            print("  Description is already up to date.")
+        # Fall back to the existing YouTube title if title.txt is missing/empty
+        # (e.g. before the Service Titles Checker has processed this week's
+        # PDF) so we never blank out or overwrite a good title with nothing.
+        new_title = get_current_title() or stream['title']
+
+        desc_changed = stream['description'].strip() != combined_desc.strip()
+        title_changed = stream['title'].strip() != new_title.strip()
+
+        if not desc_changed and not title_changed:
+            print("  Title and description are already up to date.")
         else:
-            print("  Description does not match. Updating...")
+            if title_changed:
+                print(f"  Title does not match (was: {stream['title']!r}, now: {new_title!r}). Updating...")
+            if desc_changed:
+                print("  Description does not match. Updating...")
 
             try:
                 service.videos().update(
@@ -155,18 +175,18 @@ def main():
                     body={
                         'id': stream['id'],
                         'snippet': {
-                            'title': stream['title'],
+                            'title': new_title,
                             'description': combined_desc,
                             'categoryId': stream['categoryId'],
                             'tags': stream['tags']
                         }
                     }
                 ).execute()
-                print("  Successfully updated YouTube description.")
+                print("  Successfully updated YouTube title/description.")
                 print("  Stopping further updates to prevent modifying multiple streams.")
                 break
             except HttpError as e:
-                print(f"  Failed to update description: {e}")
+                print(f"  Failed to update title/description: {e}")
 
 if __name__ == '__main__':
     main()
