@@ -314,6 +314,24 @@ def main():
     else:
         print("Skipping Google Drive upload due to missing credentials.")
 
+    # We only reach this point when a genuinely new PDF was just processed
+    # (SHA changed, or a forced reprocess) - i.e. the moment we roll over to
+    # a new week. Any timings.txt sitting around at this point was pushed by
+    # osc_server.js at the end of *last* week's live stream, so it's now
+    # stale for the week we just started processing. Clear it so
+    # update_youtube_stream.py doesn't keep merging last week's timings into
+    # this week's not-yet-live stream description every hour - the operator's
+    # local timings server is the only thing that should repopulate it, once
+    # this week's service actually happens.
+    timings_path = "../Youtube Processing/timings.txt"
+    if os.path.exists(timings_path):
+        try:
+            with open(timings_path, "w") as f:
+                f.write("")
+            print("Cleared stale timings.txt for the new week.")
+        except Exception as e:
+            print(f"Error clearing timings.txt: {e}")
+
     # Update state file
     state_data["last_processed_sha"] = current_sha
     # Record which Sunday this batch of service-titles content is actually

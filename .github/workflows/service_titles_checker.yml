@@ -70,4 +70,5 @@ jobs:
           touch "Worship Scripts/service_titles_state.json"
           git add "Worship Scripts/service-titles/" || true
           git add "Worship Scripts/service_titles_state.json" || true
+          git add "Youtube Processing/timings.txt" || true
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update service titles" && git pull --rebase origin main && git push)
