@@ -1,0 +1,47 @@
+name: DEBUG Check Sheet Formatting
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install google-api-python-client google-auth
+
+      - name: Check formatting for rows 80-88
+        env:
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          python - <<'EOF'
+          import os, json
+          from googleapiclient.discovery import build
+          from google.oauth2 import service_account
+
+          creds_dict = json.loads(os.environ['GDRIVE_SERVICE_ACCOUNT_JSON'])
+          creds = service_account.Credentials.from_service_account_info(
+              creds_dict, scopes=['https://www.googleapis.com/auth/spreadsheets.readonly']
+          )
+          service = build('sheets', 'v4', credentials=creds)
+
+          resp = service.spreadsheets().get(
+              spreadsheetId='1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A',
+              ranges=['Tech Availability!A80:H88'],
+              fields='sheets(data(rowData(values(userEnteredFormat(textFormat),formattedValue))))',
+              includeGridData=True
+          ).execute()
+
+          row_data = resp['sheets'][0]['data'][0].get('rowData', [])
+          for i, row in enumerate(row_data):
+              sheet_row = 80 + i
+              values = row.get('values', [])
+              cellA = values[0] if values else {}
+              tf = cellA.get('userEnteredFormat', {}).get('textFormat', {})
+              print(sheet_row, repr(cellA.get('formattedValue')), 'strikethrough=', tf.get('strikethrough'), 'color=', tf.get('foregroundColor'))
+          EOF
