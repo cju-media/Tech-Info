@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import re
 import requests
 import datetime
 import zoneinfo
@@ -103,15 +104,21 @@ def main():
     days_ahead = 6 - now_pt.weekday()
     sunday = now_pt + datetime.timedelta(days=days_ahead)
 
-    # PDF naming convention is like "3.1.26 OW.pdf"
-    # So we construct possible filename prefixes
+    # PDF naming convention is like "3.1.26 OW.pdf", but uploaders are
+    # inconsistent about whether the date and "OW" are separated by a space
+    # or an underscore (e.g. "8.16.26_OW_Draft.pdf" vs "8.16.26 OW.pdf"), so
+    # match either separator instead of a literal startswith() prefix.
     month = sunday.month
     day = sunday.day
     year = sunday.year % 100
 
     target_prefix = f"{month}.{day}.{year} OW"
+    target_pattern = re.compile(
+        rf"^{re.escape(str(month))}\.{re.escape(str(day))}\.{re.escape(str(year))}[ _]OW",
+        re.IGNORECASE,
+    )
 
-    print(f"Looking for PDF starting with: {target_prefix}")
+    print(f"Looking for PDF matching: {target_pattern.pattern}")
 
     # 5. Fetch GitHub API for OWs
     api_url = "https://api.github.com/repos/cju-media/OW/contents/OWs"
@@ -132,7 +139,7 @@ def main():
     # 6. Find the target file
     target_file_info = None
     for item in ows_contents:
-        if item["name"].startswith(target_prefix) and item["name"].endswith(".pdf"):
+        if target_pattern.match(item["name"]) and item["name"].endswith(".pdf"):
             target_file_info = item
             break
 
