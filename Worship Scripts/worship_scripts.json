@@ -1,10 +1,40 @@
 {
+  "2026-09-20": {
+    "path": "service-scripts/2026-09-20.pdf",
+    "modifiedTime": "2026-08-13T03:39:28.791Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Janette"
+  },
+  "2026-09-06": {
+    "path": "service-scripts/2026-09-06.pdf",
+    "modifiedTime": "2026-08-13T03:39:00.716Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Janette"
+  },
+  "2026-09-27": {
+    "path": "service-scripts/2026-09-27.pdf",
+    "modifiedTime": "2026-08-13T03:38:38.873Z",
+    "isCommunion": true,
+    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Emma\nLAV4: Megan"
+  },
+  "2026-09-13": {
+    "path": "service-scripts/2026-09-13.pdf",
+    "modifiedTime": "2026-08-13T03:38:17.160Z",
+    "isCommunion": true,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: JPC"
+  },
   "2026-08-23": {
     "path": "service-scripts/2026-08-23.pdf",
-    "modifiedTime": "2026-08-12T22:33:55.262Z",
+    "modifiedTime": "2026-08-13T03:21:20.260Z",
     "isCommunion": true,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV2: Michael\nLAV3: Chad\nLAV4: Megan Mascena",
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\n    LAV1: Chad\n    LAV2: Michael\n    LAV3: Megan Mascena",
     "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z"
+  },
+  "2026-08-30": {
+    "path": "service-scripts/2026-08-30.pdf",
+    "modifiedTime": "2026-08-12T22:57:30.445Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
   },
   "2026-08-16": {
     "path": "service-scripts/2026-08-16.pdf",
