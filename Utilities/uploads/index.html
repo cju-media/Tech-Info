@@ -364,6 +364,83 @@
         });
     }
 
+    // OW filenames start with a "M.D.YY" date (e.g. "3.1.26 OW.pdf"),
+    // optionally followed by a time for multi-service days like Christmas
+    // ("12.24.25_5pm.pdf", "12.24.26 5pm OW.pdf"). The trailing "OW" label
+    // itself is often omitted on those multi-service files, and uploaders
+    // are inconsistent about using a space or underscore as the separator
+    // ("8.16.26_OW_Draft.pdf"). Extract a normalized "date|time" key so we
+    // can detect two uploads that are for the same service (same date, and
+    // same time if a time is present) even when the rest of the filename
+    // differs (e.g. "Draft" vs "Final").
+    function parseOWKey(name) {
+        const m = name.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2})(?:[ _]+(\d{1,2}(?::\d{2})?\s?(?:am|pm)))?(?:[ _]+ow)?/i);
+        if (!m) return null;
+        const dateKey = `${parseInt(m[1], 10)}.${parseInt(m[2], 10)}.${parseInt(m[3], 10)}`;
+        const timeKey = m[4] ? m[4].replace(/\s+/g, '').toLowerCase() : '';
+        return `${dateKey}|${timeKey}`;
+    }
+
+    // Find any existing OW PDFs that are for the same date (and same time,
+    // if the new file specifies one) and delete them so the new upload
+    // replaces them, regardless of naming differences like "Draft" vs "Final".
+    // (cju-media/OW also has its own GitHub Action that dedupes by date after
+    // every push, as a backstop -- this just makes the replacement immediate.)
+    async function replaceExistingOW(filename, pat) {
+        const newKey = parseOWKey(filename);
+        if (!newKey) {
+            // Doesn't match the expected naming convention; don't guess, just upload alongside.
+            return;
+        }
+
+        const listResp = await fetch('https://api.github.com/repos/cju-media/OW/contents/OWs', {
+            headers: {
+                'Authorization': `token ${pat}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        if (!listResp.ok) {
+            // Can't verify what's already there; skip replacement rather than guess.
+            console.error('Could not list existing OWs to check for replacement:', listResp.statusText);
+            return;
+        }
+        const listing = await listResp.json();
+
+        const matches = (Array.isArray(listing) ? listing : []).filter(item =>
+            item.type === 'file' &&
+            item.name.toLowerCase().endsWith('.pdf') &&
+            parseOWKey(item.name) === newKey
+        );
+
+        for (const match of matches) {
+            setStatus(`Replacing existing file for this date (${match.name})...`, 'info');
+            // match.path is the real, unescaped path (e.g. "OWs/3.1.26 OW.pdf") --
+            // it must be percent-encoded segment-by-segment before going in a URL,
+            // otherwise spaces/parentheses/etc. break the request.
+            const encodedPath = match.path.split('/').map(encodeURIComponent).join('/');
+            const delResp = await fetch(`https://api.github.com/repos/cju-media/OW/contents/${encodedPath}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `token ${pat}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify({
+                    message: `Replace ${match.name} with ${filename} (same OW date) via web UI`,
+                    sha: match.sha
+                })
+            });
+            if (!delResp.ok) {
+                let msg = delResp.statusText;
+                try { msg = (await delResp.json()).message || msg; } catch (_) {}
+                console.error(`Failed to remove old file ${match.name}:`, msg);
+                // Don't abort the upload over this -- the sha-lookup below still
+                // covers an exact-name collision, and the repo's own dedup Action
+                // will clean up any leftover duplicate shortly after the push.
+            }
+        }
+    }
+
     async function uploadToGithub(filename, base64Content, pat, targetFolder, inputElement) {
         setStatus(`Uploading ${filename} to processing queue...`, 'info');
 
@@ -379,6 +456,34 @@
             targetRepo = 'cju-media/OW';
             path = `OWs/${safeFilename}`;
             payload.message = `Upload ${filename} to OW repo via web UI`;
+
+            // Replace any existing OW for the same date (and time, if given) --
+            // best-effort: if this check fails, fall through and still attempt
+            // the upload below rather than blocking it.
+            try {
+                await replaceExistingOW(filename, pat);
+            } catch (e) {
+                console.error('Could not check/replace existing OW for this date:', e);
+            }
+
+            // GitHub's Contents API requires the current file's `sha` when a file
+            // already exists at this exact path (e.g. re-uploading the same
+            // filename) -- otherwise the PUT below fails with "sha wasn't
+            // supplied". Look it up first; a 404 just means it's a new file.
+            try {
+                const existingResp = await fetch(`https://api.github.com/repos/${targetRepo}/contents/${path}`, {
+                    headers: {
+                        'Authorization': `token ${pat}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                if (existingResp.ok) {
+                    const existing = await existingResp.json();
+                    payload.sha = existing.sha;
+                }
+            } catch (e) {
+                console.error('Could not check for an existing OW file at this path (will attempt upload as new):', e);
+            }
         } else {
             targetRepo = REPO;
             // Format: TIMESTAMP---FOLDERID---FILENAME
