@@ -36,6 +36,7 @@
             margin: 20px 0;
         }
         .drop-zone {
+            position: relative;
             flex: 1;
             min-width: 250px;
             border: 2px dashed #3498db;
@@ -48,6 +49,110 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+        }
+        .zone-settings-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            color: #555;
+            z-index: 2;
+        }
+        .zone-settings-btn:hover {
+            background: white;
+            color: #2980b9;
+            border-color: #3498db;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-box {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .modal-box h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 20px;
+        }
+        .modal-box p.hint {
+            color: #777;
+            font-size: 13px;
+            margin-top: -8px;
+            margin-bottom: 18px;
+        }
+        .form-row {
+            margin-bottom: 16px;
+        }
+        .form-row label {
+            display: block;
+            font-weight: bold;
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 6px;
+        }
+        .form-row input[type="date"],
+        .form-row input[type="time"],
+        .form-row input[type="text"],
+        .form-row textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .form-row textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+        .form-row-pair {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row-pair .form-row {
+            flex: 1;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-actions .btn-secondary {
+            background: #eee;
+            color: #333;
+        }
+        .modal-actions .btn-secondary:hover {
+            background: #ddd;
         }
         .drop-zone.dragover {
             background-color: #e1f0fa;
@@ -163,6 +268,7 @@
         </div>
 
         <div class="drop-zone" data-folder="1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f">
+            <button type="button" class="zone-settings-btn" id="worship-settings-btn" title="Livestream settings" aria-label="Livestream settings">&#9881;</button>
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input">
@@ -199,6 +305,39 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="worship-settings-modal">
+    <div class="modal-box">
+        <h2>Livestream Settings</h2>
+        <p class="hint">Controls the date, time, title, and description used when this thumbnail creates the YouTube livestream. Defaults to this coming Sunday at 10:30 AM and the currently generated title/description &mdash; edit any field before uploading.</p>
+
+        <div class="form-row-pair">
+            <div class="form-row">
+                <label for="stream-date">Date</label>
+                <input type="date" id="stream-date">
+            </div>
+            <div class="form-row">
+                <label for="stream-time">Time</label>
+                <input type="time" id="stream-time">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label for="stream-title">Title</label>
+            <input type="text" id="stream-title" placeholder="Loading generated title...">
+        </div>
+
+        <div class="form-row">
+            <label for="stream-description">Description</label>
+            <textarea id="stream-description" placeholder="Loading generated description..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="worship-settings-reset">Reset to defaults</button>
+            <button type="button" class="btn" id="worship-settings-done">Done</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const REPO = 'cju-media/tech-info';
     const statusDiv = document.getElementById('status');
@@ -206,6 +345,134 @@
     const patMenu = document.getElementById('pat-menu');
     const patInput = document.getElementById('pat-input');
     const dropZones = document.querySelectorAll('.drop-zone');
+
+    // ---- Worship Service Thumbnail: livestream settings (date/time/title/description) ----
+    const WORSHIP_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f';
+
+    const settingsBtn = document.getElementById('worship-settings-btn');
+    const settingsModal = document.getElementById('worship-settings-modal');
+    const streamDateInput = document.getElementById('stream-date');
+    const streamTimeInput = document.getElementById('stream-time');
+    const streamTitleInput = document.getElementById('stream-title');
+    const streamDescriptionInput = document.getElementById('stream-description');
+
+    let fetchedDefaultTitle = '';
+    let fetchedDefaultDescription = '';
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+
+    // The coming Sunday -- if today is a Sunday, that means *next* Sunday,
+    // matching get_upcoming_sunday() in upload_queue_to_drive.py. Uses the
+    // browser's local clock; close enough for a default the user can edit.
+    function getUpcomingSunday() {
+        const now = new Date();
+        let daysAhead = 7 - now.getDay(); // getDay(): Sunday = 0
+        if (daysAhead <= 0) daysAhead += 7;
+        const sunday = new Date(now);
+        sunday.setDate(now.getDate() + daysAhead);
+        return sunday;
+    }
+
+    function toDateInputValue(d) {
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+
+    // <input type="date"> gives YYYY-MM-DD; the backend pipeline already
+    // expects MM-DD-YYYY for this (it's what it uses as the Drive subfolder name).
+    function toBackendDate(value) {
+        const [y, m, d] = value.split('-');
+        return `${m}-${d}-${y}`;
+    }
+
+    function applyDefaultDateTime() {
+        streamDateInput.value = toDateInputValue(getUpcomingSunday());
+        streamTimeInput.value = '10:30';
+    }
+
+    function applyDefaultTitleDescription() {
+        streamTitleInput.value = fetchedDefaultTitle;
+        streamDescriptionInput.value = fetchedDefaultDescription;
+    }
+
+    function resetStreamSettings() {
+        applyDefaultDateTime();
+        applyDefaultTitleDescription();
+    }
+
+    // Best-effort pre-fill with whatever title/description the pipeline has
+    // most recently generated. If this fails (offline, nothing generated
+    // yet, etc.) the fields just stay blank, and the backend falls back to
+    // its normal auto-generation for the date when nothing is provided.
+    async function loadGeneratedDefaults() {
+        try {
+            const [titleRes, descRes] = await Promise.all([
+                fetch(`https://raw.githubusercontent.com/${REPO}/main/Worship%20Scripts/service-titles/title.txt?t=${Date.now()}`),
+                fetch(`https://raw.githubusercontent.com/${REPO}/main/Youtube%20Processing/Description.txt?t=${Date.now()}`)
+            ]);
+            if (titleRes.ok) fetchedDefaultTitle = (await titleRes.text()).trim();
+            if (descRes.ok) fetchedDefaultDescription = (await descRes.text()).trim();
+        } catch (e) {
+            console.warn('Could not load generated title/description defaults:', e);
+        }
+        streamTitleInput.placeholder = fetchedDefaultTitle ? '' : 'Will be auto-generated';
+        streamDescriptionInput.placeholder = fetchedDefaultDescription ? '' : 'Will be auto-generated';
+        // Only fill in fields the user hasn't already typed into -- this load
+        // is async and the modal may already be open by the time it resolves.
+        if (!streamTitleInput.value) streamTitleInput.value = fetchedDefaultTitle;
+        if (!streamDescriptionInput.value) streamDescriptionInput.value = fetchedDefaultDescription;
+    }
+
+    applyDefaultDateTime();
+    loadGeneratedDefaults();
+
+    settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // don't let the click bubble to the drop-zone's file picker
+        settingsModal.classList.add('show');
+    });
+
+    function closeStreamSettings() {
+        settingsModal.classList.remove('show');
+    }
+
+    document.getElementById('worship-settings-done').addEventListener('click', closeStreamSettings);
+    document.getElementById('worship-settings-reset').addEventListener('click', resetStreamSettings);
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) closeStreamSettings();
+    });
+
+    // Saves the current livestream settings as a sidecar JSON file alongside
+    // the thumbnail in the uploads queue, uploaded *before* the thumbnail
+    // itself so the backend is guaranteed to see it (rather than racing the
+    // push that triggers queue processing). See upload_queue_to_drive.py.
+    async function uploadStreamMetadataSidecar(timestamp, safeFilename, pat) {
+        const meta = {
+            date: toBackendDate(streamDateInput.value || toDateInputValue(getUpcomingSunday())),
+            time: streamTimeInput.value || '10:30',
+            title: streamTitleInput.value.trim(),
+            description: streamDescriptionInput.value.trim()
+        };
+
+        const path = `Utilities/uploads_queue/${timestamp}---${WORSHIP_FOLDER_ID}---${safeFilename}.meta.json`;
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(meta, null, 2))));
+
+        const response = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${pat}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify({
+                content: content,
+                message: `Upload livestream settings for ${safeFilename} via web UI`
+            })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.message || response.statusText);
+        }
+    }
 
     // Fetch folder names on init with cache busting
     fetch(`folder_names.json?t=${new Date().getTime()}`)
@@ -486,10 +753,21 @@
             }
         } else {
             targetRepo = REPO;
+            const timestamp = Date.now();
             // Format: TIMESTAMP---FOLDERID---FILENAME
             // We use --- instead of _ because Google Drive folder IDs can contain underscores.
-            path = `Utilities/uploads_queue/${Date.now()}---${targetFolder}---${safeFilename}`;
+            path = `Utilities/uploads_queue/${timestamp}---${targetFolder}---${safeFilename}`;
             payload.message = `Upload ${filename} to Drive via web UI`;
+
+            if (targetFolder === WORSHIP_FOLDER_ID) {
+                try {
+                    setStatus(`Saving livestream settings for ${filename}...`, 'info');
+                    await uploadStreamMetadataSidecar(timestamp, safeFilename, pat);
+                } catch (e) {
+                    console.error('Could not save livestream settings, continuing with upload:', e);
+                    setStatus(`Warning: could not save livestream settings (${e.message}). Continuing with upload...`, 'info');
+                }
+            }
         }
 
         try {

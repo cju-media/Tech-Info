@@ -163,6 +163,12 @@ def main():
     print(f"Found {len(files_in_queue)} file(s) to process.")
 
     for filename in files_in_queue:
+        if filename.endswith('.meta.json'):
+            # Sidecar metadata for a Worship Service Thumbnail upload (written by
+            # the upload dashboard's settings panel) -- consumed as a side effect
+            # of processing its paired image below, never uploaded on its own.
+            continue
+
         file_path = os.path.join(QUEUE_DIR, filename)
 
         # Handle both the new `---` delimiter and the legacy `_` delimiter which breaks on IDs with underscores
@@ -187,6 +193,12 @@ def main():
         if parts and len(parts) == 3 and parts[0].isdigit():
             folder_id = parts[1]
             original_filename = parts[2]
+            # Defined here (not just inside the branch below) so later checks
+            # can safely reference them for every folder type, not only
+            # worship-service-thumbnail/sermon-series jpgs.
+            date_str = None
+            worship_meta_path = None
+            stream_meta = None
 
             if not DRIVE_ID_PATTERN.match(folder_id):
                 quarantine_file(file_path, filename,
@@ -196,18 +208,36 @@ def main():
 
             if folder_id in [THUMBNAILS_DEST_PARENT_FOLDER_ID, SERMON_DEST_PARENT_FOLDER_ID] and original_filename.lower().endswith(('.jpg', '.jpeg')):
                 date_str = None
+                stream_meta = None
+                worship_meta_path = None
 
                 if folder_id == SERMON_DEST_PARENT_FOLDER_ID:
                     # Sermon series thumbnails always target the upcoming Sunday folder
                     date_str = get_upcoming_sunday()
                     print(f"Sermon Series Thumbnail detected. Using upcoming Sunday date: {date_str}")
                 else:
-                    # Worship service thumbnails extract the date from the filename
-                    date_pattern = re.compile(r'(\d{1,4}[-/]\d{1,2}[-/]\d{1,4})')
-                    match = date_pattern.search(original_filename)
-                    if match:
-                        date_str = match.group(1)
-                        print(f"Found date {date_str} in {original_filename}")
+                    # Worship service thumbnails: prefer an explicit date (and
+                    # optional time/title/description) from a sidecar metadata
+                    # file written by the upload dashboard's settings panel over
+                    # guessing the date from the filename.
+                    worship_meta_path = file_path + '.meta.json'
+                    if os.path.exists(worship_meta_path):
+                        try:
+                            with open(worship_meta_path, 'r') as mf:
+                                stream_meta = json.load(mf)
+                        except Exception as e:
+                            print(f"Could not parse upload settings for {filename}: {e}")
+                            stream_meta = None
+
+                    if stream_meta and stream_meta.get('date'):
+                        date_str = stream_meta['date']
+                        print(f"Using date from upload settings: {date_str}")
+                    else:
+                        date_pattern = re.compile(r'(\d{1,4}[-/]\d{1,2}[-/]\d{1,4})')
+                        match = date_pattern.search(original_filename)
+                        if match:
+                            date_str = match.group(1)
+                            print(f"Found date {date_str} in {original_filename}")
 
                 if date_str:
                     print(f"Redirecting {original_filename} to subfolder '{date_str}' of {folder_id}")
@@ -228,34 +258,56 @@ def main():
                     title_path = os.path.join("Worship Scripts", "service-titles", "title.txt")
                     desc_path = os.path.join("Youtube Processing", "Description.txt")
 
-                    if not (os.path.exists(title_path) and os.path.exists(desc_path)):
+                    # An explicit title/description from the upload settings panel
+                    # always wins over whatever's already on disk.
+                    meta_title = stream_meta.get('title', '').strip() if stream_meta else ''
+                    meta_desc = stream_meta.get('description', '').strip() if stream_meta else ''
+
+                    if meta_title:
+                        print(f"Using title from upload settings for {date_str}: {meta_title}")
+                        os.makedirs(os.path.dirname(title_path), exist_ok=True)
+                        with open(title_path, "w") as f:
+                            f.write(meta_title)
+
+                    if meta_desc:
+                        print(f"Using description from upload settings for {date_str}.")
+                        os.makedirs(os.path.dirname(desc_path), exist_ok=True)
+                        with open(desc_path, "w") as f:
+                            f.write(meta_desc)
+
+                    need_title = not meta_title and not os.path.exists(title_path)
+                    need_desc = not meta_desc and not os.path.exists(desc_path)
+
+                    if need_title or need_desc:
                         print(f"Worship Service Thumbnail detected but title/description missing. Executing text generation scripts for {date_str}...")
                         import subprocess
 
                         env_copy = os.environ.copy()
                         env_copy['FORCE_UPDATE'] = 'true'
 
-                        update_titles_script = os.path.join("Worship Scripts", "worship workflows", "update_service_titles.py")
-                        if os.path.exists(update_titles_script):
-                            try:
-                                print(f"Running {update_titles_script}...")
-                                subprocess.run(["python", "worship workflows/update_service_titles.py"], check=True, cwd="Worship Scripts", env=env_copy)
-                            except Exception as e:
-                                print(f"Error running update_service_titles.py: {e}")
-                        else:
-                            print(f"Could not find script at {update_titles_script}")
+                        if need_title:
+                            update_titles_script = os.path.join("Worship Scripts", "worship workflows", "update_service_titles.py")
+                            if os.path.exists(update_titles_script):
+                                try:
+                                    print(f"Running {update_titles_script}...")
+                                    subprocess.run(["python", "worship workflows/update_service_titles.py"], check=True, cwd="Worship Scripts", env=env_copy)
+                                except Exception as e:
+                                    print(f"Error running update_service_titles.py: {e}")
+                            else:
+                                print(f"Could not find script at {update_titles_script}")
 
-                        generate_desc_script = os.path.join("Youtube Processing", "generate_youtube_description.py")
-                        if os.path.exists(generate_desc_script):
-                            try:
-                                print(f"Running {generate_desc_script}...")
-                                subprocess.run(["python", "generate_youtube_description.py"], check=True, cwd="Youtube Processing", env=env_copy)
-                            except Exception as e:
-                                print(f"Error running generate_youtube_description.py: {e}")
-                        else:
-                            print(f"Could not find script at {generate_desc_script}")
+                        if need_desc:
+                            generate_desc_script = os.path.join("Youtube Processing", "generate_youtube_description.py")
+                            if os.path.exists(generate_desc_script):
+                                try:
+                                    print(f"Running {generate_desc_script}...")
+                                    subprocess.run(["python", "generate_youtube_description.py"], check=True, cwd="Youtube Processing", env=env_copy)
+                                except Exception as e:
+                                    print(f"Error running generate_youtube_description.py: {e}")
+                            else:
+                                print(f"Could not find script at {generate_desc_script}")
                     else:
-                        print(f"Worship Service Thumbnail detected and title/description already exist for {date_str}.")
+                        print(f"Worship Service Thumbnail detected: using existing/provided title and description for {date_str}.")
 
                     print(f"Uploading title and description to Drive...")
                     import subprocess
@@ -287,12 +339,13 @@ def main():
                             'title': worship_title_text
                         })
 
-                    print(f"Launching create_youtube_stream.py for {date_str}...")
+                    stream_time = (stream_meta.get('time', '').strip() if stream_meta else '') or '10:30'
+                    print(f"Launching create_youtube_stream.py for {date_str} at {stream_time}...")
                     script_path = os.path.join("Youtube Processing", "create_youtube_stream.py")
                     if os.path.exists(script_path):
                         try:
                             # We keep the file around so create_youtube_stream can upload it as thumbnail
-                            subprocess.run(["python", script_path, date_str, file_path], check=True)
+                            subprocess.run(["python", script_path, date_str, file_path, stream_time], check=True)
                         except Exception as e:
                             print(f"Error running create_youtube_stream.py: {e}")
                     else:
@@ -301,6 +354,9 @@ def main():
                 # If successful, remove it so the GitHub Action can commit the deletion
                 os.remove(file_path)
                 print(f"Removed {filename} from queue.")
+                if worship_meta_path and os.path.exists(worship_meta_path):
+                    os.remove(worship_meta_path)
+                    print(f"Removed {os.path.basename(worship_meta_path)} from queue.")
             else:
                 # upload_to_drive() failure is usually transient (network,
                 # auth, API hiccup) - worth retrying next run, so leave it.

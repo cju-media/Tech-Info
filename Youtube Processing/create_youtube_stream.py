@@ -114,11 +114,12 @@ def dispatch_event(video_id, date_str):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python create_youtube_stream.py <MM-DD-YYYY> <thumbnail_path>")
+        print("Usage: python create_youtube_stream.py <MM-DD-YYYY> <thumbnail_path> [HH:MM]")
         return
 
     date_str = sys.argv[1]
     thumbnail_path = sys.argv[2]
+    time_str = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3].strip() else "10:30"
 
     la_tz = pytz.timezone('America/Los_Angeles')
 
@@ -159,8 +160,14 @@ def main():
     title = get_title()
     description = get_combined_description()
 
-    # Target date at 10:30 AM LA time
-    scheduled_start = la_tz.localize(datetime.combine(target_date, datetime.strptime("10:30", "%H:%M").time()))
+    try:
+        scheduled_time = datetime.strptime(time_str, "%H:%M").time()
+    except ValueError:
+        print(f"Could not parse time '{time_str}', falling back to 10:30.")
+        scheduled_time = datetime.strptime("10:30", "%H:%M").time()
+
+    # Target date at the requested (default 10:30 AM) LA time
+    scheduled_start = la_tz.localize(datetime.combine(target_date, scheduled_time))
     # Convert to RFC 3339 format for API
     scheduled_start_iso = scheduled_start.isoformat()
 
