@@ -13,17 +13,30 @@ Files are TRASHED, never permanently deleted -- Drive keeps trashed items
 for ~30 days, so a misread is recoverable. Anything Gemini can't confidently
 find a date on (an evergreen graphic, an unusual layout) is left alone.
 
-Auth: same pattern as upload_queue_to_drive.py -- prefers GDRIVE_OAUTH_JSON
-(a real user's quota; needed for uploads elsewhere in that script) but a
-service account (GDRIVE_SERVICE_ACCOUNT_JSON) works fine here since we're
-only listing/reading/trashing, not creating files.
+Google Drive only lets a personal (non-Shared-Drive) file's OWNER trash or
+delete it -- Editor/writer access, however it's granted, does not include
+canTrash/canDelete (confirmed via the API's own reported capabilities after
+a real grant still 403'd). So flyers uploaded straight into Drive by a
+person (rather than through the dashboard pipeline, which uploads as this
+script's own Drive account and therefore owns what it uploads) can never be
+auto-trashed. For those, this notifies Cameron once via iMessage + email
+with the filename and a link so he can delete it by hand, then remembers
+that file's ID (events_cleanup_notified_ids.json) so it doesn't nag every
+day the file remains stuck.
+
+Auth: same pattern as upload_queue_to_drive.py -- prefers the service
+account (GDRIVE_SERVICE_ACCOUNT_JSON), which has been explicitly granted
+edit access on this folder, over GDRIVE_OAUTH_JSON.
 """
 
 import os
 import re
 import json
+import smtplib
 import datetime
 import zoneinfo
+import requests
+from email.message import EmailMessage
 
 from google import genai
 from google.genai import types
@@ -33,6 +46,7 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 
 EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
+NOTIFIED_STATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'events_cleanup_notified_ids.json')
 
 DATE_PROMPT = """This image is a promotional flyer for a church event, posted to a Google Drive folder that a human periodically clears out once the event has passed.
 
@@ -130,6 +144,99 @@ def extract_event_date(client, image_bytes, mime_type):
         return None
 
 
+def load_notified_state():
+    if os.path.exists(NOTIFIED_STATE_PATH):
+        try:
+            with open(NOTIFIED_STATE_PATH, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Could not read notified-state file, starting fresh: {e}")
+    return {}
+
+
+def save_notified_state(state):
+    with open(NOTIFIED_STATE_PATH, 'w') as f:
+        json.dump(state, f, indent=2, sort_keys=True)
+
+
+def dispatch_event(event_type, client_payload):
+    """Fire a repository_dispatch event so imessage_notifications.yml can
+    send an iMessage from the self-hosted macOS runner (this job runs on
+    ubuntu, which can't). Mirrors upload_queue_to_drive.py."""
+    pat = os.environ.get('PAT')
+    if not pat:
+        print("Warning: PAT environment variable not set, cannot dispatch GitHub event.")
+        return
+
+    repo = "cju-media/tech-info"
+    url = f"https://api.github.com/repos/{repo}/dispatches"
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "Authorization": f"token {pat}"
+    }
+    payload = {"event_type": event_type, "client_payload": client_payload}
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 204:
+            print(f"Successfully dispatched '{event_type}' github event.")
+        else:
+            print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
+    except Exception as e:
+        print(f"Error dispatching '{event_type}' github event: {e}")
+
+
+def get_smtp_credentials():
+    return {
+        'email': os.environ.get('SMTP_EMAIL'),
+        'password': os.environ.get('SMTP_PASSWORD'),
+        'server': os.environ.get('SMTP_SERVER', 'smtp.gmail.com'),
+        'port': int(os.environ.get('SMTP_PORT', 587)),
+    }
+
+
+def send_manual_deletion_email(file_name, file_url):
+    creds = get_smtp_credentials()
+    to_email = "cameron@cju.media"
+    cc_email = "cjohnston@fccla.org"
+
+    subject = f"Action needed: delete '{file_name}' from Events_Ads"
+    body = (
+        f"Hi Cameron,\n\n"
+        f"The Events_Ads cleanup automation found a passed event flyer it can't delete itself "
+        f"(Google Drive only lets a personal file's owner trash it, even with Editor access):\n\n"
+        f"  {file_name}\n  {file_url}\n\n"
+        f"Please delete it manually.\n\nBest,\nCam-Bot"
+    )
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = creds['email'] or "dry-run@example.com"
+    msg['To'] = to_email
+    msg['Cc'] = cc_email
+    msg.set_content(body)
+
+    if not creds['email'] or not creds['password']:
+        print(f"DRY RUN (no SMTP creds): Would send manual-deletion email to {to_email} (CC: {cc_email})")
+        print(f"Subject: {subject}\nBody:\n{body}")
+        return
+
+    try:
+        with smtplib.SMTP(creds['server'], creds['port']) as server:
+            server.starttls()
+            server.login(creds['email'], creds['password'])
+            server.send_message(msg, to_addrs=[to_email, cc_email])
+        print(f"Successfully sent manual-deletion email to {to_email} (CC: {cc_email}).")
+    except Exception as e:
+        print(f"Failed to send manual-deletion email: {e}")
+
+
+def notify_manual_deletion_needed(file_name, file_id):
+    file_url = f"https://drive.google.com/file/d/{file_id}/view"
+    dispatch_event('events_folder_manual_deletion_needed', {'file_name': file_name, 'file_url': file_url})
+    send_manual_deletion_email(file_name, file_url)
+
+
 def main():
     is_dry_run = os.environ.get('DRY_RUN', '1') == '1'
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
@@ -152,8 +259,11 @@ def main():
 
     print(f"Checking Events_Ads folder for passed events as of {today} (America/Los_Angeles)...")
     files = list_image_files(service, EVENTS_FOLDER_ID)
+    notified_state = load_notified_state()
+
     if not files:
         print("No image files found in the folder.")
+        save_notified_state({})  # nothing left in the folder, so nothing to remember
         return
 
     print(f"Found {len(files)} image file(s) to check.")
@@ -199,6 +309,20 @@ def main():
                 print(f"  Diagnostic - capabilities: {meta.get('capabilities')}")
             except HttpError as diag_e:
                 print(f"  Diagnostic fetch also failed: {diag_e}")
+
+            if f['id'] in notified_state:
+                print(f"  Already notified about '{f['name']}' on {notified_state[f['id']].get('notified_at')}; not re-notifying.")
+            else:
+                print(f"  Notifying Cameron that '{f['name']}' needs to be deleted manually...")
+                notify_manual_deletion_needed(f['name'], f['id'])
+                notified_state[f['id']] = {'name': f['name'], 'notified_at': today.isoformat()}
+
+    # Forget any file we'd previously flagged that's no longer in the folder
+    # (it got deleted, one way or another) so a reused Drive ID wouldn't be
+    # mistaken for the old one, and the state file doesn't grow forever.
+    current_ids = {f['id'] for f in files}
+    notified_state = {fid: info for fid, info in notified_state.items() if fid in current_ids}
+    save_notified_state(notified_state)
 
     print(f"Done. Trashed {trashed_count} file(s)." if not is_dry_run else "Done (dry run).")
 
