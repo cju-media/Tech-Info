@@ -186,6 +186,19 @@ def main():
             trashed_count += 1
         except HttpError as e:
             print(f"  Failed to trash '{f['name']}': {e}")
+            # Print exactly what Drive thinks our access looks like, instead
+            # of guessing blind at the cause of insufficientFilePermissions.
+            try:
+                meta = service.files().get(
+                    fileId=f['id'],
+                    fields='owners(emailAddress),permissions(emailAddress,role,type),capabilities(canTrash,canDelete,canEdit)',
+                    supportsAllDrives=True,
+                ).execute()
+                print(f"  Diagnostic - owners: {meta.get('owners')}")
+                print(f"  Diagnostic - permissions: {meta.get('permissions')}")
+                print(f"  Diagnostic - capabilities: {meta.get('capabilities')}")
+            except HttpError as diag_e:
+                print(f"  Diagnostic fetch also failed: {diag_e}")
 
     print(f"Done. Trashed {trashed_count} file(s)." if not is_dry_run else "Done (dry run).")
 
