@@ -8,6 +8,7 @@ SECTION & FORMATTING RULES:
    * For each prelude piece (prelude1, prelude2, etc.), output a corresponding numbered performer attribute (prelude-performer1, prelude-performer2, etc.).
    * If a piece names a specific performer, attribute that name. If a piece does NOT specify a new performer, carry over and repeat the top-line credited prelude performer.
  * Prelude pieces should be labeled prelude1, prelude2, prelude3, etc., and formatted: PIECE NAME - COMPOSER.
+ * The prelude section frequently contains more than three pieces (five, six, or more is common). Before writing your output, first count every distinct piece listed under the prelude in the PDF — including short pieces, pieces with no separately-named performer, and pieces that look similar to a neighboring piece — and make sure your final output contains exactly that many prelude-N / prelude-performer-N pairs. Never stop numbering just because the examples below stop at prelude3; that is a truncated example, not a limit.
  * Sections labeled "X-title-composer" should be formatted: TITLE OF PIECE - COMPOSER OF PIECE.
  * Sections labeled "X-group" should be labeled the group performing the work. This also includes individual performer/conductor credit lines shown under a piece (e.g., "Name, Conductor, Name, Organ"), not only named ensembles like a choir name. Never leave "X-group" blank if any performer, conductor, or accompanist is credited under that piece in the PDF.
  * Sermon should be labeled Sermon - TITLE OF SERMON.
@@ -16,8 +17,9 @@ SECTION & FORMATTING RULES:
  * Reader-verse attributes the verse being read.
  * "The Eucharist and Blessing" speaker should be credited as communion - NAMES OF SPEAKERS.
  * If an attribute is not present in the PDF (like communion), leave the text completely blank after the attribute name instead of writing 'No' or 'False'.
- * If multiple items exist under one section (for example, multiple pieces as part of the meditation anthem), credit each subsequent piece "meditation-title-composer1", "meditation-group1", "meditation-title-composer2", "meditation-group2", etc. Always output the first item of this category with no trailing number, and start with the number 1 on subsequent items in a single section.
+ * If multiple items exist under one section (for example, multiple pieces as part of the meditation anthem), credit each subsequent piece "meditation-title-composer1", "meditation-group1", "meditation-title-composer2", "meditation-group2", etc. Always output the first item of this category with no trailing number, and start with the number 1 on subsequent items in a single section. This numbering has no fixed maximum — count the actual number of distinct pieces present in the PDF for that section and output that many, even if it is more than any example shown in this prompt.
 * Make sure to include subtitles or bigger pieces from a credit. For example, include the full title '“You Are Music” from Symphony For Voices 3: Mycelial' as a title for a given piece, not just "You Are Music"
+* Before finalizing your response, re-read the PDF once more end-to-end and verify that every individually titled piece, reading, prayer, and credited performer/group appears somewhere in your output. If you find one that is missing, add it. Do not omit a piece merely because it is short, is uncredited, or closely resembles a neighboring piece.
 * Generate the title of the OW. Take the series name and sequence number (Pentecost 9 for example), add || and then take the service name found at the top of the name, for example "Another Kind of Freedom ~ Radical Love" so the title will look like "Pentecost 9 || Another Kind of Freedom ~ Radical Love". Preface the full title with the text "title"
 
 prelude-performer
@@ -27,7 +29,13 @@ prelude2
 prelude-performer2
 prelude3
 prelude-performer3
-(Continue for all prelude pieces)
+prelude4
+prelude-performer4
+prelude5
+prelude-performer5
+prelude6
+prelude-performer6
+(Continue numbering for as many prelude pieces as actually appear in the PDF — there is no fixed cap, and this list is only an example of the pattern, not the maximum count.)
 welcome
 words-of-gathering
 hymn-of-gathering
