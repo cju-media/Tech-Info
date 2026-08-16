@@ -45,6 +45,26 @@ Set "has_date" to false (and "last_date" to null) if the flyer has no explicit c
 
 
 def get_drive_service():
+    # Prefer the service account (drivereader@worship-scripts-fetcher) over
+    # GDRIVE_OAUTH_JSON here: it's been explicitly granted edit access on the
+    # Events_Ads folder specifically so this script can trash files it
+    # doesn't own (uploaded by a person directly, not through the pipeline) --
+    # something the OAuth account was denied with insufficientFilePermissions
+    # (see the Aug 2026 run). Other scripts in this repo (e.g.
+    # upload_queue_to_drive.py) still need GDRIVE_OAUTH_JSON's user quota for
+    # *creating* files, so this preference is local to this script.
+    service_account_json = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
+    if service_account_json:
+        try:
+            creds_dict = json.loads(service_account_json)
+            creds = service_account.Credentials.from_service_account_info(
+                creds_dict, scopes=['https://www.googleapis.com/auth/drive']
+            )
+            print(f"Using GDRIVE_SERVICE_ACCOUNT_JSON for authentication ({creds_dict.get('client_email')}).")
+            return build('drive', 'v3', credentials=creds)
+        except Exception as e:
+            print(f"Error parsing GDRIVE_SERVICE_ACCOUNT_JSON: {e}")
+
     oauth_json = os.environ.get('GDRIVE_OAUTH_JSON')
     if oauth_json:
         try:
@@ -54,21 +74,9 @@ def get_drive_service():
             return build('drive', 'v3', credentials=creds)
         except Exception as e:
             print(f"Error parsing GDRIVE_OAUTH_JSON: {e}")
-
-    service_account_json = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
-    if service_account_json:
-        try:
-            creds_dict = json.loads(service_account_json)
-            creds = service_account.Credentials.from_service_account_info(
-                creds_dict, scopes=['https://www.googleapis.com/auth/drive']
-            )
-            print("Using GDRIVE_SERVICE_ACCOUNT_JSON for authentication.")
-            return build('drive', 'v3', credentials=creds)
-        except Exception as e:
-            print(f"Error parsing GDRIVE_SERVICE_ACCOUNT_JSON: {e}")
             return None
 
-    print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
+    print("Warning: Neither GDRIVE_SERVICE_ACCOUNT_JSON nor GDRIVE_OAUTH_JSON is set.")
     return None
 
 
