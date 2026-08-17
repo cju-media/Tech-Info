@@ -327,6 +327,17 @@
                 <button class="btn-set" onclick="setObsPort()">Save</button>
             </div>
 
+            <label class="config-label">Timing Offset (seconds)</label>
+            <div class="input-row">
+                <input type="number" id="timingOffsetInput" placeholder="7" step="1" />
+                <button class="btn-set" onclick="setTimingOffset()">Save</button>
+            </div>
+            <p style="margin-top: -8px; margin-bottom: 16px; font-size: 12px; color: #888;">
+                Added to every computed elapsed time to compensate for the fixed lag between
+                placing a timing and it appearing in the recorded video. Increase if timings
+                land too early in the video, decrease (or use a negative value) if too late.
+            </p>
+
             <label class="config-label">Test OBS WebSocket</label>
             <div class="input-row">
                 <button class="btn-danger" style="flex:1;" onclick="testObsWebhookStart()">Test Start</button>
@@ -498,6 +509,14 @@
             }
         }
 
+        function setTimingOffset() {
+            const offset = document.getElementById('timingOffsetInput').value;
+            if (offset !== '') {
+                socket.emit('setTimingOffset', offset);
+                closeConfigModal();
+            }
+        }
+
         function testObsWebhookStart() {
             socket.emit('testObsWebhookStart');
         }
@@ -630,6 +649,9 @@
             }
             if (state.obsHost) {
                 document.getElementById('obsHostInput').value = state.obsHost;
+            }
+            if (state.timingOffsetSeconds !== undefined && state.timingOffsetSeconds !== null) {
+                document.getElementById('timingOffsetInput').value = state.timingOffsetSeconds;
             }
 
             if (state.error) {

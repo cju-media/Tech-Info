@@ -28,6 +28,7 @@ This UI will show the active stream title, calculate the elapsed time, and show 
 - **OSC Port:** The local UDP port to listen for OSC commands (defaults to 8000).
 - **YouTube API Key:** Used to securely read the public title and start time of the active YouTube live stream.
 - **GitHub PAT:** Used to push the final timestamps securely to GitHub when the stream concludes.
+- **Timing Offset (seconds):** Added to every computed elapsed time to compensate for the fixed lag between placing a timing and it actually appearing in the recorded/broadcast video (encoder + ingest + transcode latency). Defaults to `7`, calibrated empirically -- increase it if timings land too early in the video, decrease (or use a negative value) if they land too late.
 
 These values are saved locally to your machine (`osc_config.json`) and will automatically reload every time you start the server.
 

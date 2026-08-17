@@ -81,6 +81,12 @@ let youtubeApiKey = "";
 let githubPat = "";
 let obsHost = "localhost";
 let obsPort = 4455;
+// Fixed compensation added to every computed elapsed time, to correct for the
+// constant real-world lag between when an OSC timing is placed and when the
+// corresponding moment actually appears in the recorded/broadcast video
+// (encoder + ingest + transcode latency). Calibrated empirically -- retune
+// via the Configuration menu if it drifts (e.g. after an encoder change).
+let timingOffsetSeconds = 7;
 let udpPortInstance = null;
 let lastResetWeek = null;
 
@@ -143,6 +149,9 @@ function loadConfig() {
             if (config.obsPort && !isNaN(config.obsPort)) {
                 obsPort = parseInt(config.obsPort);
             }
+            if (config.timingOffsetSeconds !== undefined && !isNaN(config.timingOffsetSeconds)) {
+                timingOffsetSeconds = parseInt(config.timingOffsetSeconds);
+            }
         }
     } catch (e) {
         console.error("Error reading config:", e);
@@ -156,7 +165,8 @@ function saveConfig() {
             youtubeApiKey: youtubeApiKey,
             githubPat: githubPat,
             obsHost: obsHost,
-            obsPort: obsPort
+            obsPort: obsPort,
+            timingOffsetSeconds: timingOffsetSeconds
         };
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
     } catch (e) {
@@ -425,6 +435,7 @@ async function fetchAndBroadcastState() {
                             hasGithubPat: !!githubPat,
                             obsHost: obsHost,
                             obsPort: obsPort,
+                            timingOffsetSeconds: timingOffsetSeconds,
                             error: apiError
                         });
 
@@ -455,6 +466,7 @@ async function fetchAndBroadcastState() {
         hasGithubPat: !!githubPat,
         obsHost: obsHost,
         obsPort: obsPort,
+        timingOffsetSeconds: timingOffsetSeconds,
         error: apiError
     });
 }
@@ -615,6 +627,9 @@ async function handleNextTiming() {
     const startTime = new Date(activeStartTime).getTime();
     const now = Date.now();
     let totalSeconds = Math.floor((now - startTime) / 1000);
+    // Compensate for the constant lag between when this timing is placed and
+    // when that moment actually appears in the recorded/broadcast video.
+    totalSeconds += timingOffsetSeconds;
     if (totalSeconds < 0) totalSeconds = 0;
 
     const hours = Math.floor(totalSeconds / 3600);
@@ -867,6 +882,16 @@ io.on("connection", (socket) => {
             obsPort = port;
             saveConfig();
             try { await obs.disconnect(); } catch(e) {} // Force reconnect loop
+            fetchAndBroadcastState();
+        }
+    });
+
+    socket.on("setTimingOffset", (offsetStr) => {
+        const offset = parseInt(offsetStr);
+        if (!isNaN(offset)) {
+            console.log(`Setting timing offset to ${offset}s`);
+            timingOffsetSeconds = offset;
+            saveConfig();
             fetchAndBroadcastState();
         }
     });
