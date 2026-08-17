@@ -285,6 +285,13 @@
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input" accept="application/pdf, .pdf" multiple>
         </div>
+
+        <div class="drop-zone" data-folder="TIMINGS_TXT">
+            <h3 class="folder-name">Timings.txt Fallback Upload</h3>
+            <p>Drop file here or click to browse</p>
+            <p style="font-size: 12px; color: #888; margin-top: 4px;">.txt only &mdash; overwrites <code>Youtube Processing/timings.txt</code> in the repo. Use this only if the local server's automatic push fails.</p>
+            <input type="file" class="file-input" accept=".txt,text/plain">
+        </div>
     </div>
 
     <div id="status"></div>
@@ -301,6 +308,9 @@
         </a>
         <a href="https://drive.google.com/drive/folders/17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz?usp=share_link" target="_blank" class="drive-btn">
             Open Events Ads
+        </a>
+        <a href="https://github.com/cju-media/tech-info/blob/main/Youtube%20Processing/timings.txt" target="_blank" class="drive-btn">
+            View timings.txt
         </a>
     </div>
 </div>
@@ -483,6 +493,7 @@
         .then(data => {
             dropZones.forEach(zone => {
                 const folderId = zone.getAttribute('data-folder');
+                if (folderId === 'TIMINGS_TXT') return; // static label, not a Drive folder
                 if (data[folderId]) {
                     zone.querySelector('.folder-name').textContent = data[folderId];
                 } else {
@@ -504,6 +515,7 @@
             console.warn("Could not fetch folder names:", err);
             dropZones.forEach(zone => {
                 const folderId = zone.getAttribute('data-folder');
+                if (folderId === 'TIMINGS_TXT') return; // static label, not a Drive folder
                 if (folderId === '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f') {
                     zone.querySelector('.folder-name').textContent = "Worship Service Thumbnail Upload";
                 } else if (folderId === '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4') {
@@ -604,6 +616,11 @@
 
         if (targetFolder === 'OW' && !file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
             setStatus('Error: Only PDF files are allowed for OW uploads.', 'error');
+            return;
+        }
+
+        if (targetFolder === 'TIMINGS_TXT' && !file.name.toLowerCase().endsWith('.txt') && file.type !== 'text/plain') {
+            setStatus('Error: Only .txt files are allowed for the timings.txt fallback upload.', 'error');
             return;
         }
 
@@ -751,6 +768,31 @@
             } catch (e) {
                 console.error('Could not check for an existing OW file at this path (will attempt upload as new):', e);
             }
+        } else if (targetFolder === 'TIMINGS_TXT') {
+            targetRepo = REPO;
+            // Fixed path -- this overwrites the file directly instead of going
+            // through Utilities/uploads_queue, since it's a same-Sunday fallback
+            // for the local server's own push (see pushTimingsToGithub() in
+            // "Youtube Processing/osc_server.js", which writes to this same path).
+            path = 'Youtube%20Processing/timings.txt';
+            payload.message = `Update timings.txt via web UI fallback upload (${filename})`;
+
+            // GitHub's Contents API requires the current file's `sha` to update
+            // an existing file -- timings.txt already exists, so look it up first.
+            try {
+                const existingResp = await fetch(`https://api.github.com/repos/${targetRepo}/contents/${path}`, {
+                    headers: {
+                        'Authorization': `token ${pat}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                if (existingResp.ok) {
+                    const existing = await existingResp.json();
+                    payload.sha = existing.sha;
+                }
+            } catch (e) {
+                console.error('Could not look up current timings.txt sha (will attempt upload anyway):', e);
+            }
         } else {
             targetRepo = REPO;
             const timestamp = Date.now();
@@ -788,6 +830,8 @@
 
             if (targetFolder === 'OW') {
                 setStatus('File uploaded successfully to OW repository!', 'success');
+            } else if (targetFolder === 'TIMINGS_TXT') {
+                setStatus('timings.txt updated in the repo! The YouTube description update will run shortly.', 'success');
             } else {
                 setStatus('File queued successfully! It will appear in Google Drive shortly.', 'success');
             }
