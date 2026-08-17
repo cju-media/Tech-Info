@@ -25,18 +25,17 @@
   },
   "2026-08-23": {
     "path": "service-scripts/2026-08-23.pdf",
-    "modifiedTime": "2026-08-17T17:21:54.744Z",
+    "modifiedTime": "2026-08-17T18:36:00.754Z",
     "isCommunion": true,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV2: Michael\nLAV3: Chad (CTP)\nLAV4: Megan Mascena\nNo Laura",
-    "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z",
+    "manualOverride": true,
     "customNotes": "Communion Sunday",
-    "customRfWarning": "",
-    "manualOverride": true
+    "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z"
   },
   "2026-08-30": {
     "path": "service-scripts/2026-08-30.pdf",
-    "modifiedTime": "2026-08-16T02:31:00.775Z",
+    "modifiedTime": "2026-08-17T18:29:22.091Z",
     "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\n    LAV1: Laura\n    LAV2: Michael\n    LAV3: Ianthe Marini"
+    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
   }
 }
