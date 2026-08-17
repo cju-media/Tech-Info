@@ -27,8 +27,11 @@
     "path": "service-scripts/2026-08-23.pdf",
     "modifiedTime": "2026-08-17T17:21:54.744Z",
     "isCommunion": true,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV2: Michael\nLAV3: Chad (CTP)\nLAV4: Megan Mascena",
-    "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z"
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV2: Michael\nLAV3: Chad (CTP)\nLAV4: Megan Mascena\nNo Laura",
+    "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z",
+    "customNotes": "Communion Sunday",
+    "customRfWarning": "",
+    "manualOverride": true
   },
   "2026-08-30": {
     "path": "service-scripts/2026-08-30.pdf",
