@@ -5,14 +5,11 @@
             "su-9-27-2026-resonance-collective"
         ],
         "Danny": [
-            "su-8-16-2026-wedding-ceremony",
-            "su-8-16-2026-worship-service",
             "su-9-6-2026-memorial-service",
             "su-9-6-2026-worship-service",
             "su-9-27-2026-resonance-collective"
         ],
         "Jaffe": [
-            "su-8-16-2026-worship-service",
             "su-9-6-2026-worship-service",
             "sa-9-12-2026-west-hollywood-philharmonic",
             "su-9-13-2026-worship-service",
@@ -105,16 +102,6 @@
         },
         "su-8-23-2026-worship-service": {
             "date": "2026-08-23",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
-        },
-        "su-8-16-2026-wedding-ceremony": {
-            "date": "2026-08-16",
-            "name": "Wedding Ceremony",
-            "call_time": "2:30pm-5:30pm"
-        },
-        "su-8-16-2026-worship-service": {
-            "date": "2026-08-16",
             "name": "Worship Service",
             "call_time": "8:15am-12:30pm"
         }
