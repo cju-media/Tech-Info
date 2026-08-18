@@ -323,14 +323,14 @@ def main():
                         print(f"Download {int(status.progress() * 100)}%.")
 
                 print("Video downloaded successfully. Starting YouTube upload...")
-                privacy_status = os.environ.get('YOUTUBE_PRIVACY_STATUS', 'private')
+                privacy_status = os.environ.get('YOUTUBE_PRIVACY_STATUS', 'public')
 
                 try:
                     body = {
                         'snippet': {
                             'title': video_title,
                             'description': video_description,
-                            'categoryId': '22'
+                            'categoryId': '29'  # Nonprofits & Activism
                         },
                         'status': {
                             'privacyStatus': privacy_status,

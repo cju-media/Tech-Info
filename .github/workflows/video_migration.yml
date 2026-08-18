@@ -10,7 +10,7 @@ on:
       privacy_status:
         description: 'YouTube Video Privacy Status'
         required: true
-        default: 'private'
+        default: 'public'
         type: choice
         options:
           - private
@@ -37,7 +37,7 @@ jobs:
         env:
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
-          YOUTUBE_PRIVACY_STATUS: ${{ github.event.inputs.privacy_status || 'private' }}
+          YOUTUBE_PRIVACY_STATUS: ${{ github.event.inputs.privacy_status || 'public' }}
           PAT: ${{ secrets.PAT }}
         run: |
           python "Utilities/Video Migration/migrate_videos.py"
