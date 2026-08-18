@@ -48,6 +48,13 @@ jobs:
           if [ -d "Utilities/uploads_queue" ]; then
             git add Utilities/uploads_queue/
           fi
+          # A worship-service thumbnail uploaded before this week's OW gets
+          # stashed here instead of going straight to a stream -- see
+          # defer_stream_creation() in upload_queue_to_drive.py -- so pick
+          # that up too when present.
+          if [ -d "Youtube Processing/pending_stream" ]; then
+            git add "Youtube Processing/pending_stream/"
+          fi
           # Only commit if there are changes (files deleted)
           git diff --quiet && git diff --staged --quiet || git commit -m "Cleanup processed uploads"
           git pull --rebase origin ${{ github.ref_name }}

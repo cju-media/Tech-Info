@@ -292,6 +292,19 @@ def main():
                     f.write("\n".join(boilerplate_lines))
                 print(f"Saved boilerplate to {desc_output_path}")
 
+                # Record which date this Description.txt was actually
+                # generated for, mirroring service_titles_state.json's
+                # target_date for title.txt. Consumers (upload_queue_to_drive.py,
+                # create_pending_stream.py) use this to tell fresh content
+                # from a stale carry-over from a prior week, since this
+                # script can otherwise lag a step behind title.txt within
+                # the same hourly run.
+                try:
+                    with open("description_state.json", "w") as f:
+                        json.dump({"target_date": doc_dt_aware.date().isoformat()}, f)
+                except Exception as e:
+                    print(f"Error writing description state file: {e}")
+
                 # Save chapters.txt (sections only)
                 with open(chapters_output_path, 'w', encoding='utf-8') as f:
                     f.write("\n".join(chapter_lines))

@@ -1,0 +1,49 @@
+name: Create Pending YouTube Stream
+
+on:
+  # Chained the same way "Update YouTube Stream Description" is: "Generate
+  # YouTube Description" already runs hourly via its own chain off "Check
+  # Worship Scripts", so this fires roughly every hour without a separate
+  # poll, right after title.txt/Description.txt have had a chance to catch
+  # up for the week.
+  workflow_run:
+    workflows: ["Generate YouTube Description"]
+    types:
+      - completed
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create-pending-stream:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib python-dateutil pytz requests
+
+      - name: Run script
+        env:
+          YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
+        run: python "Youtube Processing/create_pending_stream.py"
+
+      - name: Commit and push cleanup
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A "Youtube Processing/pending_stream" || true
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Create deferred YouTube stream now that titles are ready" && git pull --rebase origin ${{ github.ref_name }} && git push)
