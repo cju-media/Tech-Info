@@ -159,6 +159,11 @@
             border-color: #2980b9;
             transform: scale(1.02);
         }
+        .last-upload {
+            font-size: 12px;
+            color: #888;
+            margin: 8px 0 0;
+        }
         .file-input {
             display: none;
         }
@@ -265,6 +270,7 @@
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input">
+            <p class="last-upload" data-folder="1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4">Last upload: checking&hellip;</p>
         </div>
 
         <div class="drop-zone" data-folder="1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f">
@@ -272,18 +278,21 @@
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input">
+            <p class="last-upload" data-folder="1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f">Last upload: checking&hellip;</p>
         </div>
 
         <div class="drop-zone" data-folder="17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz">
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input">
+            <p class="last-upload" data-folder="17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz">Last upload: checking&hellip;</p>
         </div>
 
         <div class="drop-zone" data-folder="OW">
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input" accept="application/pdf, .pdf" multiple>
+            <p class="last-upload" data-folder="OW">Last upload: checking&hellip;</p>
         </div>
 
         <div class="drop-zone" data-folder="TIMINGS_TXT">
@@ -291,6 +300,7 @@
             <p>Drop file here or click to browse</p>
             <p style="font-size: 12px; color: #888; margin-top: 4px;">.txt only &mdash; overwrites <code>Youtube Processing/timings.txt</code> in the repo. Use this only if the local server's automatic push fails.</p>
             <input type="file" class="file-input" accept=".txt,text/plain">
+            <p class="last-upload" data-folder="TIMINGS_TXT">Last upload: checking&hellip;</p>
         </div>
     </div>
 
@@ -311,6 +321,9 @@
         </a>
         <a href="https://github.com/cju-media/tech-info/blob/main/Youtube%20Processing/timings.txt" target="_blank" class="drive-btn">
             View timings.txt
+        </a>
+        <a href="/dashboard" class="drive-btn">
+            Open Dashboard
         </a>
     </div>
 </div>
@@ -529,6 +542,108 @@
                 }
             });
         });
+
+    // ---- Last-upload timestamps for each drop zone ----
+    // There's no separate upload log -- every upload is a commit (via the
+    // GitHub Contents API, see uploadToGithub() below), so "last uploaded"
+    // is read straight out of each target's commit history.
+    const OW_REPO = 'cju-media/OW';
+    const QUEUE_PATH = 'Utilities/uploads_queue';
+    const MAX_QUEUE_COMMIT_LOOKUPS = 25; // cap detail fetches to be gentle on API rate limits
+
+    function ghHeaders() {
+        const headers = { 'Accept': 'application/vnd.github.v3+json' };
+        const pat = localStorage.getItem('GITHUB_PAT');
+        if (pat) headers['Authorization'] = `token ${pat}`;
+        return headers;
+    }
+
+    function formatRelativeTime(isoDate) {
+        const date = new Date(isoDate);
+        const diffMin = Math.round((Date.now() - date.getTime()) / 60000);
+        if (diffMin < 1) return 'just now';
+        if (diffMin < 60) return `${diffMin} min ago`;
+        const diffHr = Math.round(diffMin / 60);
+        if (diffHr < 24) return `${diffHr} hr ago`;
+        const diffDay = Math.round(diffHr / 24);
+        if (diffDay < 30) return `${diffDay}d ago`;
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function setLastUpload(folderId, isoDate) {
+        const el = document.querySelector(`.last-upload[data-folder="${folderId}"]`);
+        if (!el) return;
+        if (isoDate) {
+            el.textContent = `Last upload: ${formatRelativeTime(isoDate)}`;
+            el.title = new Date(isoDate).toLocaleString();
+        } else {
+            el.textContent = 'Last upload: none found';
+        }
+    }
+
+    // For targets with their own fixed file/path (OW, timings.txt), the
+    // newest matching commit *is* the last upload -- one API call each.
+    async function loadSingleFileLastUpload(repo, path, folderId, messageFilter) {
+        try {
+            const url = `https://api.github.com/repos/${repo}/commits?path=${encodeURIComponent(path)}&per_page=30`;
+            const res = await fetch(url, { headers: ghHeaders() });
+            if (!res.ok) throw new Error(res.statusText);
+            const commits = await res.json();
+            const match = commits.find(c => !messageFilter || messageFilter.test(c.commit.message));
+            setLastUpload(folderId, match ? match.commit.author.date : null);
+        } catch (e) {
+            console.warn(`Could not load last upload for ${folderId}:`, e);
+            setLastUpload(folderId, null);
+        }
+    }
+
+    // Drive-folder targets all share the uploads_queue directory, so a
+    // commit's message alone doesn't say which zone it belongs to -- that's
+    // only encoded in the changed file's path (TIMESTAMP---FOLDERID---NAME).
+    // Walk history newest-first, pulling per-commit file details only for
+    // queue uploads, until every zone is resolved (or the lookup cap hits).
+    async function loadQueueLastUploads(folderIds) {
+        const pending = new Set(folderIds);
+        try {
+            const listUrl = `https://api.github.com/repos/${REPO}/commits?path=${encodeURIComponent(QUEUE_PATH)}&per_page=100`;
+            const listRes = await fetch(listUrl, { headers: ghHeaders() });
+            if (!listRes.ok) throw new Error(listRes.statusText);
+            const commits = await listRes.json();
+
+            let lookups = 0;
+            for (const c of commits) {
+                if (pending.size === 0 || lookups >= MAX_QUEUE_COMMIT_LOOKUPS) break;
+                if (!/^Upload .+ to Drive via web UI$/.test(c.commit.message)) continue;
+                lookups++;
+                try {
+                    const detailRes = await fetch(`https://api.github.com/repos/${REPO}/commits/${c.sha}`, { headers: ghHeaders() });
+                    if (!detailRes.ok) continue;
+                    const detail = await detailRes.json();
+                    const changedFile = (detail.files || [])[0];
+                    if (!changedFile) continue;
+                    // e.g. "Utilities/uploads_queue/1700000000000---FOLDERID---name.png"
+                    const fileFolderId = changedFile.filename.split('/').pop().split('---')[1];
+                    if (fileFolderId && pending.has(fileFolderId)) {
+                        setLastUpload(fileFolderId, c.commit.author.date);
+                        pending.delete(fileFolderId);
+                    }
+                } catch (e) {
+                    console.warn('Could not inspect queue commit', c.sha, e);
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load uploads_queue commit history:', e);
+        }
+        pending.forEach(id => setLastUpload(id, null));
+    }
+
+    function initLastUploadTimes() {
+        loadQueueLastUploads(['1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4', '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f', '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz']);
+        loadSingleFileLastUpload(OW_REPO, 'OWs', 'OW', /^Upload .+ to OW repo via web UI$/);
+        loadSingleFileLastUpload(REPO, 'Youtube Processing/timings.txt', 'TIMINGS_TXT', /via web UI fallback upload/);
+    }
+
+    initLastUploadTimes();
 
     // Load PAT on init
     const savedPat = localStorage.getItem('GITHUB_PAT');
