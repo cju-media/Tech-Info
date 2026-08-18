@@ -3,6 +3,7 @@ import json
 import io
 import re
 import requests
+import time
 import datetime
 import zoneinfo
 from googleapiclient.discovery import build
@@ -15,9 +16,13 @@ PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs'
 
 
-def dispatch_event(event_type, client_payload):
+def dispatch_event(event_type, client_payload, max_retries=4, backoff_seconds=3):
     """Fire a repository_dispatch event so imessage_notifications.yml (or
-    anything else) can react. Mirrors Youtube Processing/create_youtube_stream.py."""
+    anything else) can react. Mirrors Youtube Processing/create_youtube_stream.py.
+
+    Retries with exponential backoff on transient failures (network errors,
+    429 rate limiting, and 5xx GitHub API outages) so a momentary blip in
+    GitHub's API doesn't silently swallow the notification."""
     pat = os.environ.get('PAT')
     if not pat:
         print("Warning: PAT environment variable not set, cannot dispatch GitHub event.")
@@ -31,14 +36,32 @@ def dispatch_event(event_type, client_payload):
     }
     payload = {"event_type": event_type, "client_payload": client_payload}
 
-    try:
-        response = requests.post(url, headers=headers, json=payload)
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=15)
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries:
+                wait = backoff_seconds * (2 ** (attempt - 1))
+                print(f"Error dispatching '{event_type}' github event (attempt {attempt}/{max_retries}): {e}. Retrying in {wait}s...")
+                time.sleep(wait)
+                continue
+            print(f"Error dispatching '{event_type}' github event after {max_retries} attempts: {e}")
+            return
+
         if response.status_code == 204:
             print(f"Successfully dispatched '{event_type}' github event.")
-        else:
-            print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
-    except Exception as e:
-        print(f"Error dispatching '{event_type}' github event: {e}")
+            return
+
+        retryable = response.status_code == 429 or response.status_code >= 500
+        if retryable and attempt < max_retries:
+            wait = backoff_seconds * (2 ** (attempt - 1))
+            print(f"Failed to dispatch '{event_type}' github event (attempt {attempt}/{max_retries}): "
+                  f"{response.status_code} {response.text}. Retrying in {wait}s...")
+            time.sleep(wait)
+            continue
+
+        print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
+        return
 
 def get_youtube_service():
     creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
