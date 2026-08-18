@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import requests
+import time
 from datetime import datetime
 import dateutil.parser
 import pytz
@@ -81,7 +82,12 @@ def stream_exists_for_date(service, target_date, la_tz):
         print(f"An unexpected error occurred: {e}")
         return False
 
-def dispatch_event(video_id, date_str):
+def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
+    """Fire a repository_dispatch event so imessage_notifications.yml can react.
+
+    Retries with exponential backoff on transient failures (network errors,
+    429 rate limiting, and 5xx GitHub API outages) so a momentary blip in
+    GitHub's API doesn't silently swallow the notification."""
     pat = os.environ.get('PAT')
     if not pat:
         print("Warning: PAT environment variable not set, cannot dispatch GitHub event.")
@@ -103,14 +109,32 @@ def dispatch_event(video_id, date_str):
         }
     }
 
-    try:
-        response = requests.post(url, headers=headers, json=payload)
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=15)
+        except requests.exceptions.RequestException as e:
+            if attempt < max_retries:
+                wait = backoff_seconds * (2 ** (attempt - 1))
+                print(f"Error dispatching github event (attempt {attempt}/{max_retries}): {e}. Retrying in {wait}s...")
+                time.sleep(wait)
+                continue
+            print(f"Error dispatching github event after {max_retries} attempts: {e}")
+            return
+
         if response.status_code == 204:
             print("Successfully dispatched github event.")
-        else:
-            print(f"Failed to dispatch github event: {response.status_code} {response.text}")
-    except Exception as e:
-        print(f"Error dispatching github event: {e}")
+            return
+
+        retryable = response.status_code == 429 or response.status_code >= 500
+        if retryable and attempt < max_retries:
+            wait = backoff_seconds * (2 ** (attempt - 1))
+            print(f"Failed to dispatch github event (attempt {attempt}/{max_retries}): "
+                  f"{response.status_code} {response.text}. Retrying in {wait}s...")
+            time.sleep(wait)
+            continue
+
+        print(f"Failed to dispatch github event: {response.status_code} {response.text}")
+        return
 
 def main():
     if len(sys.argv) < 3:
