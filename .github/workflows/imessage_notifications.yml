@@ -130,11 +130,11 @@ jobs:
         env:
           WATCHDOG_MESSAGE: ${{ github.event.client_payload.message }}
         run: |
-          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "⚠️ ${WATCHDOG_MESSAGE:-A display's RTMP watchdog restarted its stream player.}"
+          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "⚠️ ${WATCHDOG_MESSAGE:-An RTMP display watchdog restarted its stream player.}"
 
       - name: Send RTMP Watchdog Restart Failed Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'rtmp_watchdog_restart_failed'
         env:
           WATCHDOG_MESSAGE: ${{ github.event.client_payload.message }}
         run: |
-          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "🚨 ${WATCHDOG_MESSAGE:-A display's RTMP watchdog tried to restart its stream player and failed.}"
+          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "🚨 ${WATCHDOG_MESSAGE:-An RTMP display watchdog tried to restart its stream player and failed.}"
