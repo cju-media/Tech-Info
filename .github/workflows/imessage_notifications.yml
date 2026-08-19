@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '0 * * * *'  # Runs every hour, relies on python script to filter
   repository_dispatch:
-    types: [drive_upload_complete, youtube_stream_created, sermon_series_video_uploaded, sermon_series_title_description_uploaded, worship_title_description_uploaded, events_folder_manual_deletion_needed]
+    types: [drive_upload_complete, youtube_stream_created, sermon_series_video_uploaded, sermon_series_title_description_uploaded, worship_title_description_uploaded, events_folder_manual_deletion_needed, rtmp_watchdog_restart, rtmp_watchdog_restart_failed]
   workflow_dispatch:
     inputs:
       run_mode:
@@ -124,3 +124,17 @@ jobs:
           EVENT_FILE_URL: ${{ github.event.client_payload.file_url }}
         run: |
           python3 "Utilities/Scheduling/Event Data/send_imessage.py" "A file in the Events_Ads Drive folder needs to be deleted manually (the automation doesn't own it): '${EVENT_FILE_NAME:-Unknown File}' - ${EVENT_FILE_URL:-Unknown URL}"
+
+      - name: Send RTMP Watchdog Restart Notification
+        if: github.event_name == 'repository_dispatch' && github.event.action == 'rtmp_watchdog_restart'
+        env:
+          WATCHDOG_MESSAGE: ${{ github.event.client_payload.message }}
+        run: |
+          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "⚠️ ${WATCHDOG_MESSAGE:-A display's RTMP watchdog restarted its stream player.}"
+
+      - name: Send RTMP Watchdog Restart Failed Notification
+        if: github.event_name == 'repository_dispatch' && github.event.action == 'rtmp_watchdog_restart_failed'
+        env:
+          WATCHDOG_MESSAGE: ${{ github.event.client_payload.message }}
+        run: |
+          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "🚨 ${WATCHDOG_MESSAGE:-A display's RTMP watchdog tried to restart its stream player and failed.}"
