@@ -23,19 +23,19 @@
     "isCommunion": true,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: JPC"
   },
+  "2026-08-30": {
+    "path": "service-scripts/2026-08-30.pdf",
+    "modifiedTime": "2026-08-19T17:09:19.987Z",
+    "isCommunion": false,
+    "speakerInfo": null
+  },
   "2026-08-23": {
     "path": "service-scripts/2026-08-23.pdf",
-    "modifiedTime": "2026-08-18T23:43:46.538Z",
+    "modifiedTime": "2026-08-19T17:08:46.185Z",
     "isCommunion": true,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV2: Michael\nLAV3: Chad (CTP)\nLAV4: Megan Mascena\nNo Laura",
     "manualOverride": true,
     "customNotes": "Communion Sunday",
     "youtubeDescriptionModifiedTime": "2026-06-11T23:50:24.840Z"
-  },
-  "2026-08-30": {
-    "path": "service-scripts/2026-08-30.pdf",
-    "modifiedTime": "2026-08-17T18:29:22.091Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
   }
 }
