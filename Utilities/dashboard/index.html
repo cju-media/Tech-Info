@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Automated Workflows Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/croner@8.0.0/dist/croner.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.min.js"></script>
+    <title>Tech Info Dashboard</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -19,14 +17,12 @@
             justify-content: center;
             position: relative;
             padding: 10px 0;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
-
         .header-container h1 {
             text-align: center;
             margin: 0;
         }
-
         .back-btn {
             position: absolute;
             left: 10px;
@@ -39,793 +35,300 @@
             text-decoration: none;
             font-weight: bold;
         }
-
-        .back-btn:hover {
-            color: #000;
-        }
+        .back-btn:hover { color: #000; }
         .dashboard-container {
             max-width: 1000px;
             margin: 0 auto;
         }
-        .workflow-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-top: 0;
             margin-bottom: 20px;
-            padding: 20px;
         }
-        .workflow-card h3 {
-            margin-top: 0;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            color: #007bff;
-        }
-        .workflow-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .detail-label {
-            font-weight: bold;
-            color: #555;
-        }
-        .success { color: green; font-weight: bold; }
-        .failure { color: red; font-weight: bold; }
-        .files-list {
-            grid-column: span 2;
-            margin-top: 10px;
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .loading {
-            text-align: center;
-            font-style: italic;
-            padding: 40px;
-        }
-        .flowchart-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            padding: 20px;
-        }
-        .flowchart-card h2 {
-            margin-top: 0;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            color: #333;
-            text-align: center;
-        }
-        .mermaid-viewport {
-            overflow: auto;
-            max-height: 78vh;
-            border: 1px solid #eee;
-            border-radius: 6px;
-            background: #fcfcfd;
-        }
-        .mermaid {
-            display: inline-block;
-            transform-origin: top left;
-            transition: transform 0.15s ease;
-        }
-.mermaidTooltip {
-            display: none !important; /* Hide default tooltips completely */
-        }
-        .zoom-controls {
+        .toolbar {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #666;
         }
-        .zoom-controls button {
-            padding: 4px 12px;
+        .toolbar button {
+            padding: 6px 14px;
             border-radius: 4px;
             border: 1px solid #ccc;
             background: white;
             cursor: pointer;
-            font-size: 14px;
-        }
-        .zoom-controls button:hover {
-            background: #f0f0f0;
-        }
-        .zoom-controls span {
             font-size: 13px;
-            color: #666;
-            min-width: 42px;
-            text-align: center;
         }
-        /* Hover highlighting for connected arrows/nodes */
-        .mermaid path.hl-edge {
-            stroke: #ff5722 !important;
-            stroke-width: 3px !important;
+        .toolbar button:hover { background: #f0f0f0; }
+        .server-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
         }
-        .mermaid .node.hl-node rect,
-        .mermaid .node.hl-node polygon,
-        .mermaid .node.hl-node circle,
-        .mermaid .node.hl-node ellipse,
-        .mermaid .node.hl-node path {
-            stroke: #ff5722 !important;
-            stroke-width: 3px !important;
-        }
-        .flowchart-description {
-            text-align: center;
-            min-height: 24px;
-            margin-top: 15px;
-            font-size: 15px;
-            color: #555;
-            font-style: italic;
-            transition: opacity 0.3s ease;
-        }
-        .controls-bar {
+        .server-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 18px;
             display: flex;
-            justify-content: flex-end;
-            margin-bottom: 20px;
-            align-items: center;
+            flex-direction: column;
+            gap: 8px;
         }
-        .sort-select {
-            padding: 8px 12px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-            background-color: white;
-            cursor: pointer;
+        .server-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
         }
-        /* Toggle Switch CSS */
-        .switch {
-            position: relative;
+        .server-card h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #222;
+        }
+        .server-desc {
+            color: #666;
+            font-size: 13px;
+            margin: 0;
+        }
+        .server-url {
+            font-family: monospace;
+            font-size: 12px;
+            color: #888;
+            word-break: break-all;
+            margin: 0;
+        }
+        .server-open {
+            margin-top: 4px;
             display: inline-block;
-            width: 40px;
-            height: 20px;
-            margin-left: 15px;
+            align-self: flex-start;
+            padding: 6px 14px;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
         }
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
+        .server-open:hover { background: #0062cc; }
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 20px;
+        .status-online   { background: #e6f4ea; color: #1e7e34; }
+        .status-offline  { background: #fdecea; color: #c0392b; }
+        .status-checking { background: #eef2f7; color: #666; }
+        .status-unknown  { background: #fff8e1; color: #8a6d00; cursor: help; }
+        .status-note {
+            background: #fff8e1;
+            border: 1px solid #f0e0a0;
+            color: #6b5900;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-bottom: 24px;
         }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+        .last-checked {
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 24px;
         }
-        input:checked + .slider {
-            background-color: #2ecc71;
+        .section-divider {
+            border-top: 1px solid #ddd;
+            margin: 24px 0;
         }
-        input:checked + .slider:before {
-            transform: translateX(20px);
+        .workflow-link-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
         }
-        input:disabled + .slider {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .workflow-link-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+        .workflow-link-card h3 {
+            margin: 0 0 4px 0;
+            color: #007bff;
+        }
+        .workflow-link-card p {
+            margin: 0;
+            color: #666;
+            font-size: 13px;
+        }
+        .chevron {
+            font-size: 24px;
+            color: #999;
         }
     </style>
 </head>
 <body>
     <div class="header-container">
         <a href="https://www.fccla.org/tech-info" class="back-btn">&#x2039; Back</a>
-        <h1>Tech-Info Automated Workflows</h1>
-        <div style="position: absolute; right: 10px; font-size: 14px;">
-            <input type="password" id="pat-input" placeholder="GitHub PAT" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
-            <button onclick="savePAT()" style="padding: 5px 10px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; background: white;">Save PAT</button>
-            <span id="pat-status" style="margin-left: 5px; font-size: 12px;"></span>
-        </div>
+        <h1>Tech Info Dashboard</h1>
     </div>
 
     <div class="dashboard-container">
-        <div class="flowchart-card">
-            <h2>Workflow Automation Architecture</h2>
-            <p style="text-align:center; font-size:13px; color:#888; margin-top:-10px;">Solid arrows = data/trigger flow between GitHub Actions workflows. Dashed arrows = one workflow calling another's script inline (not via Actions triggers). Hover a node to trace its connections; scroll/drag to pan, use the zoom controls to resize.</p>
-            <div class="zoom-controls">
-                <button onclick="adjustZoom(-0.15)">&minus; Zoom Out</button>
-                <span id="zoom-level">100%</span>
-                <button onclick="adjustZoom(0.15)">+ Zoom In</button>
-                <button onclick="resetZoom()">Reset</button>
-            </div>
-            <div class="mermaid-viewport">
-            <div class="mermaid">
-                graph TD
-                %% ===== External data sources =====
-                subgraph SOURCES["External Data Sources"]
-                    S1(["GitHub cju-media/OW<br/>weekly OW PDF + index.json"])
-                    S2(["Google Drive<br/>Worship Service Docs"])
-                    S3(["/uploads frontend<br/>&#8594; uploads_queue/"])
-                    S4(["Google Sheet<br/>Team Schedule"])
-                    S5(["LA Open Data API<br/>Public Events"])
-                end
+        <p class="subtitle">Quick links to the tech booth's servers and tools.</p>
 
-                %% ===== Pipeline 1: OW PDF -> Service Titles =====
-                subgraph PIPE1["OW PDF &#8594; Service Titles (Gemini)"]
-                    C1[service_titles_checker]
-                    T1[("service-titles/*.txt")]
-                    C2[sync_service_titles]
-                    G4[sermon_series]
-                end
-
-                %% ===== Pipeline 2: Worship Docs -> Scripts =====
-                subgraph PIPE2["Worship Docs &#8594; Scripts (Gemini)"]
-                    A1[worship_scripts_checker]
-                    T2[("worship_scripts.json +<br/>service-scripts/*.pdf")]
-                end
-                B2[pages_deployment]
-
-                %% ===== Pipeline 3: YouTube description + livestream =====
-                subgraph PIPE3["YouTube Description &#8594; Livestream"]
-                    B1[youtube_description]
-                    T3[("Description.txt +<br/>chapters.txt")]
-                    F1[update_youtube_stream]
-                    F2[Push to timings.txt]
-                    J1[archive_service_files]
-                end
-
-                %% ===== Pipeline 4: Uploads -> livestream creation =====
-                H1[process_uploads]
-
-                %% ===== Pipeline 5: Team schedule & notices =====
-                subgraph PIPE5["Team Schedule &amp; Notices"]
-                    G1[schedule_notifications]
-                    E1[imessage_notifications]
-                    G3[rf_coordination]
-                end
-
-                D1{drive_upload_complete}
-                D2{youtube_stream_created}
-                EXT1([YouTube Data API])
-                EXT2([Google Drive<br/>sync targets])
-
-                %% ---- Pipeline 1 edges ----
-                S1 -->|Fetch weekly OW PDF| C1
-                C1 -->|Gemini extracts titles| T1
-                T1 -->|Uploads| EXT2
-                C1 -->|Success| D1
-                T1 -->|Push triggers on manual edit| C2
-                C2 -->|Re-syncs| EXT2
-                C2 -->|Success| D1
-                T1 -->|Push triggers,<br/>sermon files only| G4
-                G4 -->|Looks up stream link| EXT1
-                G4 -->|Uploads Sermon-Series file| EXT2
-
-                %% ---- Pipeline 2 edges ----
-                S2 -->|Fetch dated service doc| A1
-                A1 -->|Gemini extracts mic assignments| T2
-                A1 -->|"Triggers via workflow_run<br/>(push uses GITHUB_TOKEN, no push event)"| B2
-                A1 -->|Triggers via workflow_run| B1
-
-                %% ---- Pipeline 3 edges ----
-                S1 -->|index.json + PDF SHA gate| B1
-                T1 -->|Reads titles| B1
-                T2 -->|Reads date map| B1
-                B1 --> T3
-                B1 -->|Completes| F1
-                F2 -->|Triggers| F1
-                T3 -->|Reads| F1
-                F1 -->|Updates live description| EXT1
-                T3 -->|Weekly snapshot| J1
-
-                %% ---- Pipeline 4 edges ----
-                S3 --> H1
-                H1 -->|Uploads thumbnail| EXT2
-                H1 -.->|"If titles missing for date:<br/>runs update_service_titles.py inline"| C1
-                H1 -.->|"If titles missing for date:<br/>runs generate_youtube_description.py inline"| B1
-                H1 -->|Creates broadcast, sets thumbnail| EXT1
-                H1 -->|Fires| D2
-
-                %% ---- Dispatch destinations ----
-                D1 -->|Triggers| E1
-                D2 -->|Triggers| E1
-
-                %% ---- Pipeline 5 edges ----
-                S4 --> G1
-                S4 --> E1
-                S4 --> G3
-                S5 --> G3
-
-                %% ===== Independent workflows =====
-                G2[video_migration]
-
-                S2 -.->|Drive VOD folder| G2
-                G2 -->|Uploads to podcast playlist| EXT1
-
-                %% Click Events
-                click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
-                click B1 href "#youtube_description" "Compiles extracted titles from service_titles_checker into Description.txt and chapters.txt"
-                click B2 href "#pages_deployment" "Deploys the static tech-info dashboard to GitHub Pages. Triggered via workflow_run (not push) because worship_scripts_checker commits with the default GITHUB_TOKEN, which does not fire push events"
-                click C1 href "#service_titles_checker" "Extracts service components from upcoming OW PDF via Gemini and syncs to Drive"
-                click C2 href "#sync_service_titles" "Syncs manual edits of service title text files to Google Drive"
-                click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
-                click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream. No standalone cron: already runs ~hourly via the youtube_description chain, so a separate poll would just duplicate the run"
-                click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications. Manual dispatch also covers the test run mode that the former standalone manual_test workflow duplicated"
-                click G2 href "#video_migration" "Weekly job that copies VOD in Google Drive and uploads it to YouTube podcast playlist"
-                click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails, sourced from the same Team Schedule sheet plus LA Open Data"
-                click G4 href "#sermon_series" "Combines sermon title and minister into a text file, looks up the live stream link via the YouTube API, and syncs to Drive"
-                click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive. When a worship-service thumbnail lands and titles/description are missing, it runs the service-titles and youtube-description scripts inline, then creates the YouTube livestream itself"
-                click J1 href "#archive_service_files" "Weekly Monday snapshot that copies the past week's chapters/timings/description/title files into Archives/"
-
-            </div>
-            </div>
-            <div id="flowchart-desc" class="flowchart-description">Hover over a workflow node to view its description.</div>
+        <div class="toolbar">
+            <span id="last-checked">Checking status&hellip;</span>
+            <button onclick="checkAll()">Recheck Now</button>
         </div>
 
-        <div class="controls-bar">
-            <label for="sort-workflows" style="margin-right: 10px; font-weight: bold; color: #555;">Sort by:</label>
-            <select id="sort-workflows" class="sort-select">
-                <option value="default">Default (Original)</option>
-                <option value="last-run">Last Run (Newest First)</option>
-                <option value="next-run">Next Run (Soonest First)</option>
-            </select>
+        <div id="server-grid" class="server-grid"></div>
+
+        <div class="status-note" id="status-note" style="display:none;">
+            &#9888; Some servers show <strong>Unknown</strong> because this page is loaded over HTTPS (GitHub Pages),
+            and browsers block secure pages from checking local, non-HTTPS servers. That's a browser security rule,
+            not a sign anything is down &mdash; open the link directly (on the venue network) to confirm.
         </div>
 
-        <div id="dashboard">
+        <div class="section-divider"></div>
 
-            <div class="loading">Loading workflow data...</div>
-        </div>
+        <a class="workflow-link-card" href="workflows.html">
+            <div>
+                <h3>Automated Workflows</h3>
+                <p>GitHub Actions pipeline architecture, run history, and enable/disable controls.</p>
+            </div>
+            <span class="chevron">&#8250;</span>
+        </a>
     </div>
 
     <script>
-        const REPO = 'cju-media/Tech-Info';
+        // Add/remove servers here — the grid and status checks are driven entirely by this list.
+        const SERVERS = [
+            { name: 'QR Server', desc: 'QR code control', url: 'http://studio-mini.local:3000' },
+            { name: 'Timestamp (OSC) Server', desc: 'Livestream timing / OBS control', url: 'http://studio-mini.local:3671' },
+            { name: 'Content Display Server', desc: 'On-screen content display', url: 'http://studio-mini.local:1031' },
+            { name: 'Uploads', desc: 'Upload thumbnails, OWs, and timings', url: 'https://cju-media.github.io/Tech-Info/Utilities/uploads/' },
+        ];
 
-        // Load PAT on init
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedPat = localStorage.getItem('GITHUB_PAT');
-            if (savedPat) {
-                document.getElementById('pat-input').value = savedPat;
-            }
-        });
-
-        function savePAT() {
-            const pat = document.getElementById('pat-input').value.trim();
-            const statusSpan = document.getElementById('pat-status');
-            if (pat) {
-                localStorage.setItem('GITHUB_PAT', pat);
-                statusSpan.textContent = "Saved!";
-                statusSpan.style.color = "green";
-            } else {
-                localStorage.removeItem('GITHUB_PAT');
-                statusSpan.textContent = "Removed!";
-                statusSpan.style.color = "gray";
-            }
-            setTimeout(() => { statusSpan.textContent = ""; }, 2000);
-        }
-
-        async function toggleWorkflow(workflowId, inputElement) {
-            const pat = localStorage.getItem('GITHUB_PAT');
-            if (!pat) {
-                alert("Please save a GitHub PAT at the top first to control workflows.");
-                inputElement.checked = !inputElement.checked; // revert
-                return;
-            }
-
-            const action = inputElement.checked ? 'enable' : 'disable';
-            const originalTitle = inputElement.parentElement.title;
-            inputElement.disabled = true; // disable while fetching
-
+        function isMixedContent(targetUrl) {
             try {
-                const response = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${workflowId}/${action}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${pat}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
-
-                if (response.ok) {
-                    inputElement.parentElement.title = inputElement.checked ? 'Disable workflow' : 'Enable workflow';
-                } else {
-                    throw new Error(`Failed to ${action} workflow`);
-                }
+                const target = new URL(targetUrl, location.href);
+                return location.protocol === 'https:' && target.protocol === 'http:';
             } catch (e) {
-                console.error(e);
-                alert(`Error: Could not ${action} workflow. Check PAT permissions (needs repo access).`);
-                inputElement.checked = !inputElement.checked; // revert
-            } finally {
-                inputElement.disabled = false;
+                return false;
             }
         }
 
-        // Mermaid renders node ids like "flowchart-C1-42" (flowchart-<logicalId>-<counter>).
-        // Edge paths carry classes "LS-<sourceId>" / "LE-<targetId>" (link-start/link-end),
-        // which is what lets us find "everything touching this node" without re-parsing the graph.
-        function getLogicalNodeId(el) {
-            return el.id.replace(/^flowchart-/, '').replace(/-\d+$/, '');
-        }
-
-        function clearFlowchartHighlights(svg) {
-            svg.querySelectorAll('.hl-node').forEach(el => el.classList.remove('hl-node'));
-            svg.querySelectorAll('.hl-edge').forEach(el => el.classList.remove('hl-edge'));
-        }
-
-        function setupFlowchartHovers() {
-            const descBox = document.getElementById('flowchart-desc');
-            const defaultText = "Hover over a workflow node to view its description.";
-
-            // Use MutationObserver or fallback to setTimeout
-            setTimeout(() => {
-                const svg = document.querySelector('.mermaid svg');
-                if (!svg) return;
-
-                const nodes = svg.querySelectorAll('g.node');
-                nodes.forEach(node => {
-                    // In Mermaid 9+, titles are often rendered as attributes on the node
-                    // or as child <title> elements. We'll check both.
-                    const titleAttr = node.getAttribute('title');
-                    const titleEl = node.querySelector('title');
-
-                    const description = titleAttr || (titleEl ? titleEl.textContent : null);
-                    const logicalId = getLogicalNodeId(node);
-
-                    node.addEventListener('mouseenter', () => {
-                        if (description) {
-                            descBox.textContent = description;
-                            descBox.style.color = '#333';
-                            descBox.style.fontWeight = 'bold';
-                        }
-
-                        // Highlight this node, every edge touching it, and the node on the
-                        // other end of each of those edges.
-                        clearFlowchartHighlights(svg);
-                        node.classList.add('hl-node');
-
-                        const touchingEdges = svg.querySelectorAll(`.LS-${logicalId}, .LE-${logicalId}`);
-                        touchingEdges.forEach(edge => {
-                            edge.classList.add('hl-edge');
-                            edge.classList.forEach(cls => {
-                                let otherId = null;
-                                if (cls.startsWith('LS-') && cls !== `LS-${logicalId}`) otherId = cls.slice(3);
-                                if (cls.startsWith('LE-') && cls !== `LE-${logicalId}`) otherId = cls.slice(3);
-                                if (otherId) {
-                                    const otherNode = svg.querySelector(`[id^="flowchart-${otherId}-"]`);
-                                    if (otherNode) otherNode.classList.add('hl-node');
-                                }
-                            });
-                        });
-                    });
-
-                    node.addEventListener('mouseleave', () => {
-                        descBox.textContent = defaultText;
-                        descBox.style.color = '#555';
-                        descBox.style.fontWeight = 'normal';
-                        clearFlowchartHighlights(svg);
-                    });
-
-                    // We also need to remove the native tooltip so it doesn't double-show
-                    if (titleAttr) {
-                        node.removeAttribute('title');
-                    }
-                    if (titleEl) {
-                        titleEl.remove();
-                    }
-                });
-            }, 1000); // Give mermaid a moment
-        }
-
-        // ---- Zoom controls ----
-        let flowchartZoom = 1;
-        function applyZoom() {
-            const mermaidDiv = document.querySelector('.mermaid');
-            if (!mermaidDiv) return;
-            mermaidDiv.style.transform = `scale(${flowchartZoom})`;
-            document.getElementById('zoom-level').textContent = `${Math.round(flowchartZoom * 100)}%`;
-        }
-        function adjustZoom(delta) {
-            flowchartZoom = Math.min(3, Math.max(0.4, flowchartZoom + delta));
-            applyZoom();
-        }
-        function resetZoom() {
-            flowchartZoom = 1.5;
-            applyZoom();
-        }
-
-
-        async function fetchYAML(path) {
-            try {
-                // Fetch from raw.githubusercontent.com or via API content
-                const res = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${path}`);
-                if (res.ok) {
-                    return await res.text();
-                }
-            } catch (e) {
-                console.error("Failed to fetch yaml:", path);
-            }
-            return "";
-        }
-
-        function getFetchHeaders() {
-            const pat = localStorage.getItem('GITHUB_PAT');
-            return pat ? { 'Authorization': `token ${pat}` } : {};
-        }
-
-        async function fetchRecentCommits() {
-            try {
-                const response = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=50`, {
-                    headers: getFetchHeaders()
-                });
-                if (response.ok) {
-                    return await response.json();
-                }
-            } catch(e) {}
-            return [];
-        }
-
-        async function fetchCommitFiles(commitUrl) {
-            try {
-                const res = await fetch(commitUrl, {
-                    headers: getFetchHeaders()
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    return data.files ? data.files.map(f => ({
-                        filename: f.filename,
-                        blob_url: f.blob_url
-                    })) : [];
-                }
-            } catch(e) {}
-            return [];
-        }
-
-
-        let allWorkflowCards = []; // Store parsed workflow objects
-
-        function renderSortedWorkflows(sortMode) {
-            const dashboard = document.getElementById('dashboard');
-            dashboard.innerHTML = '';
-
-            let sorted = [...allWorkflowCards];
-
-if (sortMode === 'last-run') {
-                sorted.sort((a, b) => {
-                    const timeA = a.lastRunDate ? a.lastRunDate.getTime() : 0;
-                    const timeB = b.lastRunDate ? b.lastRunDate.getTime() : 0;
-                    return timeB - timeA; // Descending (newest first)
-                });
-            } else if (sortMode === 'next-run') {
-                sorted.sort((a, b) => {
-                    // Put nulls at the end
-                    if (!a.nextRunDate && !b.nextRunDate) return 0;
-                    if (!a.nextRunDate) return 1;
-                    if (!b.nextRunDate) return -1;
-                    return a.nextRunDate.getTime() - b.nextRunDate.getTime(); // Ascending (soonest first)
-                });
-            }
-            // 'default' uses the original order from GitHub API
-
-            sorted.forEach(item => {
-                dashboard.appendChild(item.element);
+        // Uses a no-cors "ping" fetch: we can't read the response (opaque), but the promise
+        // only rejects on a real network failure (refused/unreachable/timeout), which is
+        // enough to tell "reachable" from "not reachable" without needing CORS headers.
+        function pingServer(url, timeoutMs = 4000) {
+            return new Promise((resolve) => {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), timeoutMs);
+                fetch(url, { mode: 'no-cors', cache: 'no-store', signal: controller.signal })
+                    .then(() => { clearTimeout(timer); resolve('online'); })
+                    .catch(() => { clearTimeout(timer); resolve('offline'); });
             });
         }
 
-        document.getElementById('sort-workflows').addEventListener('change', (e) => {
-            renderSortedWorkflows(e.target.value);
-        });
-
-        async function loadDashboard() {
-            try {
-                const dashboard = document.getElementById('dashboard');
-
-                // Fetch workflows
-                const wfResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows`, {
-                    headers: getFetchHeaders()
-                });
-                const wfData = await wfResponse.json();
-                const excludedWorkflows = ["Deploy to GitHub Pages", "Send Admin Schedules (Manual)"];
-                const workflows = wfData.workflows.filter(wf =>
-                    !wf.name.toLowerCase().includes('test') &&
-                    !excludedWorkflows.includes(wf.name)
-                );
-
-                // Fetch recent runs
-                const runsResponse = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100`, {
-                    headers: getFetchHeaders()
-                });
-                const runsData = await runsResponse.json();
-
-                const latestRuns = {};
-                for (const run of runsData.workflow_runs) {
-                    if (!latestRuns[run.workflow_id]) {
-                        latestRuns[run.workflow_id] = run;
-                    }
-                }
-
-                // Fetch commits
-                const recentCommits = await fetchRecentCommits();
-
-                dashboard.innerHTML = '';
-
-                for (const wf of workflows) {
-                    const run = latestRuns[wf.id];
-
-                    // Parse YAML to find schedule and expected commit message
-                    const yamlContent = await fetchYAML(wf.path);
-
-                    let nextRunText = 'N/A';
-                    let cronMatches = [];
-                    if (yamlContent) {
-                        const cronRegex = /cron:\s*['"]?([^'"\n\r]+)['"]?/g;
-                        let match;
-                        while ((match = cronRegex.exec(yamlContent)) !== null) {
-                            cronMatches.push(match[1].trim());
-                        }
-                    }
-
-                    let earliestNext = null;
-                    if (cronMatches.length > 0) {
-                        // Find the earliest next run among all crons
-
-
-                        for (const c of cronMatches) {
-                            try {
-                                const next = new Cron(c, { timezone: "UTC" }).nextRun();
-                                if (!earliestNext || next < earliestNext) {
-                                    earliestNext = next;
-                                }
-                            } catch(e) { console.error("Cron parse error", c, e); }
-                        }
-                        if (earliestNext) {
-                            nextRunText = earliestNext.toLocaleString();
-                        }
-                    } else if (run && run.event === 'workflow_run') {
-                         nextRunText = "Triggered by other workflow";
-                    } else if (run && run.event === 'repository_dispatch') {
-                         nextRunText = "Triggered by repository event";
-                    } else if (run && run.event === 'push') {
-                         nextRunText = "Triggered by push";
-                    }
-
-                    // Find if it edited files based on commit message match
-                    let editedFilesHtml = null;
-                    let expectedCommitMsg = null;
-                    const commitMatch = yamlContent ? yamlContent.match(/git commit -m "([^"]+)"/) : null;
-
-                    if (commitMatch) {
-                        expectedCommitMsg = commitMatch[1];
-                        // Find the most recent commit that matches this message (ignoring prefix like chore:)
-                        const matchingCommit = recentCommits.find(c => c.commit.message.includes(expectedCommitMsg));
-                        if (matchingCommit) {
-                            const files = await fetchCommitFiles(matchingCommit.url);
-                            if (files.length > 0) {
-                                editedFilesHtml = files.map(f => {
-                                    if (f.blob_url) {
-                                        return `<a href="${f.blob_url}" target="_blank" rel="noopener noreferrer">${f.filename}</a>`;
-                                    }
-                                    return f.filename;
-                                }).join('<br>');
-                            }
-                        }
-                    }
-
-                    // Construct Card
-                    const card = document.createElement('div');
-                    card.className = 'workflow-card';
-                    const wfFileName = wf.path.split('/').pop();
-                    card.id = wfFileName.replace('.yml', ''); // Add ID for scrolling
-
-                    const headerDiv = document.createElement('div');
-                    headerDiv.style.display = 'flex';
-                    headerDiv.style.justifyContent = 'space-between';
-                    headerDiv.style.alignItems = 'center';
-                    headerDiv.style.borderBottom = '1px solid #eee';
-                    headerDiv.style.paddingBottom = '10px';
-                    headerDiv.style.marginBottom = '10px';
-
-                    const title = document.createElement('h3');
-                    title.style.borderBottom = 'none';
-                    title.style.margin = '0';
-                    title.style.paddingBottom = '0';
-
-                    const titleLink = document.createElement('a');
-                    titleLink.href = run ? run.html_url : `https://github.com/${REPO}/actions/workflows/${wfFileName}`;
-                    titleLink.target = '_blank';
-                    titleLink.textContent = wf.name;
-                    title.appendChild(titleLink);
-                    headerDiv.appendChild(title);
-
-                    // Toggle Switch
-                    const toggleLabel = document.createElement('label');
-                    toggleLabel.className = 'switch';
-                    toggleLabel.title = wf.state === 'active' ? 'Disable workflow' : 'Enable workflow';
-                    const toggleInput = document.createElement('input');
-                    toggleInput.type = 'checkbox';
-                    toggleInput.checked = wf.state === 'active';
-                    toggleInput.addEventListener('change', (e) => toggleWorkflow(wf.id, e.target));
-
-                    const toggleSlider = document.createElement('span');
-                    toggleSlider.className = 'slider';
-
-                    toggleLabel.appendChild(toggleInput);
-                    toggleLabel.appendChild(toggleSlider);
-                    headerDiv.appendChild(toggleLabel);
-
-                    card.appendChild(headerDiv);
-
-                    const details = document.createElement('div');
-                    details.className = 'workflow-details';
-
-                    // Last Run
-                    const lastRunDiv = document.createElement('div');
-                    lastRunDiv.innerHTML = `<span class="detail-label">Last Run Time:</span> ${run ? new Date(run.updated_at).toLocaleString() : 'N/A'}`;
-                    details.appendChild(lastRunDiv);
-
-                    // Status
-                    const statusDiv = document.createElement('div');
-                    let statusHtml = 'N/A';
-                    if (run) {
-                        const status = run.conclusion || run.status;
-                        const statusText = status.charAt(0).toUpperCase() + status.slice(1);
-                        const statusClass = run.conclusion === 'success' ? 'success' : (run.conclusion === 'failure' ? 'failure' : '');
-                        statusHtml = `<span class="${statusClass}">${statusText}</span>`;
-                    }
-                    statusDiv.innerHTML = `<span class="detail-label">Status:</span> ${statusHtml}`;
-                    details.appendChild(statusDiv);
-
-                    // Next Run
-                    const nextRunDiv = document.createElement('div');
-                    nextRunDiv.innerHTML = `<span class="detail-label">Next Run Time:</span> ${nextRunText}`;
-                    details.appendChild(nextRunDiv);
-
-                    // Empty div to fill the grid row
-                    details.appendChild(document.createElement('div'));
-
-                    // Files Edited
-                    if (editedFilesHtml) {
-                        const filesDiv = document.createElement('div');
-                        filesDiv.className = 'files-list';
-                        filesDiv.innerHTML = `<div class="detail-label" style="margin-bottom: 5px;">Files Edited:</div>${editedFilesHtml}`;
-                        details.appendChild(filesDiv);
-                    }
-
-                    card.appendChild(details);
-
-                    allWorkflowCards.push({
-                        element: card,
-                        lastRunDate: run && run.updated_at ? new Date(run.updated_at) : null,
-                        nextRunDate: earliestNext ? new Date(earliestNext) : null
-                    });
-                }
-            } catch (err) {
-                console.error(err);
-                document.getElementById('dashboard').innerHTML = '<div class="failure" style="text-align:center;">Error loading workflow data. (Wait a moment or check network/rate limits).</div>';
-                return false;
+        function setPill(pillEl, status) {
+            pillEl.classList.remove('status-online', 'status-offline', 'status-checking', 'status-unknown');
+            if (status === 'online') {
+                pillEl.textContent = 'Online';
+                pillEl.classList.add('status-online');
+                pillEl.title = '';
+            } else if (status === 'offline') {
+                pillEl.textContent = 'Offline';
+                pillEl.classList.add('status-offline');
+                pillEl.title = '';
+            } else if (status === 'unknown') {
+                pillEl.textContent = 'Unknown';
+                pillEl.classList.add('status-unknown');
+                pillEl.title = 'Loaded over HTTPS — browsers block status checks to local HTTP servers. Open the link to confirm.';
+            } else {
+                pillEl.textContent = 'Checking…';
+                pillEl.classList.add('status-checking');
+                pillEl.title = '';
             }
-            return true;
         }
 
-        loadDashboard().then((success) => {
-            if (success !== false) renderSortedWorkflows('default');
-        });
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: 'default',
-            // Render the diagram at its natural size instead of shrinking it to fit the
-            // card width - that shrink-to-fit is why the chart used to read as tiny text.
-            flowchart: { useMaxWidth: false, htmlLabels: true },
-            themeVariables: { fontSize: '16px' }
-        });
-        setupFlowchartHovers();
-        setTimeout(resetZoom, 1000); // Start at a readable zoom once mermaid has rendered
+        const cards = [];
+
+        function renderGrid() {
+            const grid = document.getElementById('server-grid');
+            grid.innerHTML = '';
+            SERVERS.forEach((server) => {
+                const card = document.createElement('div');
+                card.className = 'server-card';
+
+                const top = document.createElement('div');
+                top.className = 'server-card-top';
+
+                const h3 = document.createElement('h3');
+                h3.textContent = server.name;
+                top.appendChild(h3);
+
+                const pill = document.createElement('span');
+                pill.className = 'status-pill';
+                setPill(pill, 'checking');
+                top.appendChild(pill);
+
+                card.appendChild(top);
+
+                const desc = document.createElement('p');
+                desc.className = 'server-desc';
+                desc.textContent = server.desc;
+                card.appendChild(desc);
+
+                const urlP = document.createElement('p');
+                urlP.className = 'server-url';
+                urlP.textContent = server.url;
+                card.appendChild(urlP);
+
+                const open = document.createElement('a');
+                open.className = 'server-open';
+                open.href = server.url;
+                open.target = '_blank';
+                open.rel = 'noopener noreferrer';
+                open.textContent = 'Open ↗';
+                card.appendChild(open);
+
+                grid.appendChild(card);
+                cards.push({ server, pill });
+            });
+        }
+
+        async function checkAll() {
+            document.getElementById('last-checked').textContent = 'Checking status…';
+            let anyUnknown = false;
+
+            await Promise.all(cards.map(async ({ server, pill }) => {
+                if (isMixedContent(server.url)) {
+                    anyUnknown = true;
+                    setPill(pill, 'unknown');
+                    return;
+                }
+                setPill(pill, 'checking');
+                const status = await pingServer(server.url);
+                setPill(pill, status);
+            }));
+
+            document.getElementById('status-note').style.display = anyUnknown ? 'block' : 'none';
+            document.getElementById('last-checked').textContent =
+                'Last checked: ' + new Date().toLocaleTimeString();
+        }
+
+        renderGrid();
+        checkAll();
+        setInterval(checkAll, 30000);
     </script>
 </body>
 </html>
