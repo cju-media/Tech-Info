@@ -1,31 +1,31 @@
 {
-  "2026-09-20": {
-    "path": "service-scripts/2026-09-20.pdf",
-    "modifiedTime": "2026-08-13T03:39:28.791Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Janette"
-  },
-  "2026-09-06": {
-    "path": "service-scripts/2026-09-06.pdf",
-    "modifiedTime": "2026-08-13T03:39:00.716Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Janette"
-  },
   "2026-09-27": {
     "path": "service-scripts/2026-09-27.pdf",
-    "modifiedTime": "2026-08-13T03:38:38.873Z",
+    "modifiedTime": "2026-08-23T21:56:54.662Z",
     "isCommunion": true,
-    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Emma\nLAV4: Megan"
+    "speakerInfo": null
+  },
+  "2026-09-20": {
+    "path": "service-scripts/2026-09-20.pdf",
+    "modifiedTime": "2026-08-23T21:55:40.776Z",
+    "isCommunion": false,
+    "speakerInfo": null
   },
   "2026-09-13": {
     "path": "service-scripts/2026-09-13.pdf",
-    "modifiedTime": "2026-08-13T03:38:17.160Z",
+    "modifiedTime": "2026-08-23T21:53:35.809Z",
     "isCommunion": true,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: JPC"
+    "speakerInfo": null
+  },
+  "2026-09-06": {
+    "path": "service-scripts/2026-09-06.pdf",
+    "modifiedTime": "2026-08-23T21:52:36.444Z",
+    "isCommunion": false,
+    "speakerInfo": null
   },
   "2026-08-30": {
     "path": "service-scripts/2026-08-30.pdf",
-    "modifiedTime": "2026-08-23T20:36:47.415Z",
+    "modifiedTime": "2026-08-23T21:50:06.175Z",
     "isCommunion": false,
     "speakerInfo": null
   },
