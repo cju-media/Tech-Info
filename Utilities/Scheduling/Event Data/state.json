@@ -17,14 +17,12 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "su-8-23-2026-worship-service",
             "su-8-30-2026-worship-service",
             "th-9-10-2026-organ-concert-upend-la",
             "su-9-20-2026-worship-service",
             "su-9-27-2026-worship-service"
         ],
         "Saad": [
-            "su-8-23-2026-worship-service",
             "sa-8-29-2026-free-key-concert",
             "su-8-30-2026-worship-service",
             "sa-9-5-2026-classical-fantasia",
@@ -100,11 +98,6 @@
             "date": "2026-08-29",
             "name": "Free Key Concert",
             "call_time": "3:00pm-10:00pm"
-        },
-        "su-8-23-2026-worship-service": {
-            "date": "2026-08-23",
-            "name": "Worship Service",
-            "call_time": "8:15am-12:30pm"
         }
     }
 }
