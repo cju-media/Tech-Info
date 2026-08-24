@@ -1,6 +1,7 @@
 import os
 import json
 import sys
+import hashlib
 import dateutil.parser
 from datetime import datetime
 import pytz
@@ -11,6 +12,7 @@ from googleapiclient.errors import HttpError
 from google.auth.exceptions import RefreshError
 
 PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs"
+PUSH_STATE_FILE = "description_push_state.json"
 
 def get_youtube_service():
     creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
@@ -93,6 +95,35 @@ def get_combined_description():
 
     return desc
 
+def load_push_state():
+    """Tracks, per video ID, the hash of the last combined description we
+    actually applied to that stream on YouTube. This lets us push a given
+    timings.txt/Description.txt content exactly once per stream: once the
+    hash matches, later runs (the hourly chain, or a same-day retrigger)
+    leave the live description alone even if it now differs from
+    combined_desc -- that difference is presumably a manual fix made
+    directly on YouTube (e.g. correcting a mistimed chapter), and we must
+    not stomp on it. A new push of timings.txt changes the hash and clears
+    us to update again.
+    """
+    if os.path.exists(PUSH_STATE_FILE):
+        try:
+            with open(PUSH_STATE_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error reading {PUSH_STATE_FILE}: {e}")
+    return {}
+
+def save_push_state(state):
+    try:
+        with open(PUSH_STATE_FILE, 'w') as f:
+            json.dump(state, f)
+    except Exception as e:
+        print(f"Error writing {PUSH_STATE_FILE}: {e}")
+
+def content_hash(text):
+    return hashlib.sha256(text.strip().encode('utf-8')).hexdigest()
+
 def get_current_title():
     title_path = os.path.join("..", "Worship Scripts", "service-titles", "title.txt")
     if os.path.exists(title_path):
@@ -111,6 +142,15 @@ def main():
     if not upcoming_streams:
         print("No eligible streams found in the playlist.")
         return
+
+    push_state = load_push_state()
+    # Prune entries for videos no longer in the playlist window so the file
+    # doesn't grow forever.
+    current_ids = {s['id'] for s in upcoming_streams}
+    pruned_state = {k: v for k, v in push_state.items() if k in current_ids}
+    if pruned_state != push_state:
+        push_state = pruned_state
+        save_push_state(push_state)
 
     la_tz = pytz.timezone('America/Los_Angeles')
     now_la = datetime.now(la_tz)
@@ -153,16 +193,35 @@ def main():
             print("  Could not read description. Skipping.")
             continue
 
+        desc_hash = content_hash(combined_desc)
+        already_pushed = push_state.get(stream['id']) == desc_hash
+
+        if already_pushed:
+            # This exact generated content was already applied to this
+            # stream once. Don't touch the description again -- if it now
+            # differs from combined_desc, that's a manual edit and it stays.
+            description_to_send = stream['description']
+            desc_changed = False
+            print("  This description content was already pushed once for this stream. Leaving the live description untouched (preserving any manual edits).")
+        else:
+            description_to_send = combined_desc
+            desc_changed = stream['description'].strip() != combined_desc.strip()
+
         # Fall back to the existing YouTube title if title.txt is missing/empty
         # (e.g. before the Service Titles Checker has processed this week's
         # PDF) so we never blank out or overwrite a good title with nothing.
         new_title = get_current_title() or stream['title']
-
-        desc_changed = stream['description'].strip() != combined_desc.strip()
         title_changed = stream['title'].strip() != new_title.strip()
 
         if not desc_changed and not title_changed:
             print("  Title and description are already up to date.")
+            if not already_pushed and stream['description'].strip() == combined_desc.strip():
+                # Nothing needed pushing, but the live description already
+                # matches this generated content (e.g. it was set at stream
+                # creation time). Record it now so a future manual edit is
+                # recognized as such instead of being clobbered as "stale".
+                push_state[stream['id']] = desc_hash
+                save_push_state(push_state)
         else:
             if title_changed:
                 print(f"  Title does not match (was: {stream['title']!r}, now: {new_title!r}). Updating...")
@@ -176,13 +235,16 @@ def main():
                         'id': stream['id'],
                         'snippet': {
                             'title': new_title,
-                            'description': combined_desc,
+                            'description': description_to_send,
                             'categoryId': stream['categoryId'],
                             'tags': stream['tags']
                         }
                     }
                 ).execute()
                 print("  Successfully updated YouTube title/description.")
+                if not already_pushed:
+                    push_state[stream['id']] = desc_hash
+                    save_push_state(push_state)
                 print("  Stopping further updates to prevent modifying multiple streams.")
                 break
             except HttpError as e:
