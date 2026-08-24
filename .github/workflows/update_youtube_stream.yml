@@ -26,6 +26,8 @@ concurrency:
 jobs:
   update-youtube:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -46,3 +48,10 @@ jobs:
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update }}
         run: cd "Youtube Processing" && python update_youtube_stream.py
+
+      - name: Commit and push description push-state
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A "Youtube Processing/description_push_state.json" || true
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update YouTube description push state" && git pull --rebase origin ${{ github.ref_name }} && git push)

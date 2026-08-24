@@ -69,3 +69,7 @@ To ensure a clean slate every week and prevent accidental testing pushes from ov
 - It will then automatically fetch the fresh `chapters.txt` for the upcoming Sunday service from GitHub.
 
 Additionally, the server constantly queries the YouTube API. When it detects that the live stream has ended, it will automatically stop the timer and use your configured GitHub PAT to push the `timings.txt` file back to the repository. Note that pushes to GitHub are strictly permitted **only on Sundays** to safeguard the system from testing during the week.
+
+## Description Updates Are Applied Exactly Once
+
+`update_youtube_stream.py` also runs on an hourly chain (via "Generate YouTube Description"), not just when `timings.txt` is pushed. To keep that hourly poll from clobbering a manual fix made directly on YouTube (e.g. correcting a mistimed chapter in the description), the script records the hash of each generated description it actually applies to a stream in `description_push_state.json`. Once a given piece of generated content has been applied, later runs leave the live description alone -- even if it now differs from the generated version -- until the underlying content changes again (a fresh `timings.txt` push, an updated `Description.txt`, etc.), at which point it's cleared to update once more.
