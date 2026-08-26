@@ -1,12 +1,5 @@
 [
   {
-    "name": "SALUTE TO TROY",
-    "date": "2026-08-21",
-    "location": "USC Felix Track Field, 850 West 37th St",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "MUSEIQUE",
     "date": "2026-08-30",
     "location": "Herscher Hall at Skirball Cultural Center",
@@ -21,13 +14,6 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "NEW STUDENT CONVOCATION",
-    "date": "2026-08-20",
-    "location": "USC, Alumni Park",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "LAPFCU 90TH ANNIVERSARY",
     "date": "2026-10-10",
     "location": "Los Angeles Police Academy Athletic Field",
@@ -35,30 +21,9 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "USC STUDENT CONVOCATION",
-    "date": "2026-08-20",
-    "location": "Doheny Library Steps",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "MUTINY",
-    "date": "2026-08-20",
-    "location": "Hollywood and vine",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "LAPFCU 90TH ANNIVERSARY",
     "date": "2026-10-10",
     "location": "Los Angeles Police Academy Athletic Field",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CARNIVAL",
-    "date": "2026-08-21",
-    "location": "4050 W. Washington Blvd., Los Angeles, CA 90018",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
@@ -73,13 +38,6 @@
     "name": "2026 ASLA CONFERENCE",
     "date": "2026-09-16",
     "location": "1201 FIGUEROA",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "USC EDU",
-    "date": "2026-08-20",
-    "location": "USC GALEN CENTER",
     "type": "Street Closure / Festival (LA City Permit)",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
