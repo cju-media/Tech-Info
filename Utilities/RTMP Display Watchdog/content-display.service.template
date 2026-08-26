@@ -1,0 +1,14 @@
+[Unit]
+Description=RTMP Stream (REPLACE-WITH-LOCATION display)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=REPLACE-WITH-PI-USERNAME
+ExecStart=/usr/bin/vlc -I dummy --no-audio --loop --repeat --extraintf cli --cli-host=localhost:4212 "rtmp://192.168.112.33/live/content-display"
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

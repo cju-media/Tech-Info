@@ -1,0 +1,6 @@
+[Unit]
+Description=VLC playback liveness watchdog for content-display.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/bin/vlc-watchdog.py

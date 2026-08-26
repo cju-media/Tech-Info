@@ -1,0 +1,10 @@
+[Unit]
+Description=Run VLC liveness watchdog periodically
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+Unit=vlc-watchdog.service
+
+[Install]
+WantedBy=timers.target
