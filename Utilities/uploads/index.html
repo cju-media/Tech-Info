@@ -331,7 +331,7 @@
 <div class="modal-overlay" id="worship-settings-modal">
     <div class="modal-box">
         <h2>Livestream Settings</h2>
-        <p class="hint">Controls the date, time, title, and description used when this thumbnail creates the YouTube livestream. Defaults to this coming Sunday at 10:30 AM and the currently generated title/description &mdash; edit any field before uploading.</p>
+        <p class="hint">Controls the date, time, title, and description used when this thumbnail creates the YouTube livestream. Defaults to this coming Sunday at 10:30 AM. Title/Description show the most recently generated text for reference &mdash; leave them as-is and the pipeline fills in this week's once the OW is posted; only what you actually edit is sent as an override.</p>
 
         <div class="form-row-pair">
             <div class="form-row">
@@ -468,11 +468,20 @@
     // itself so the backend is guaranteed to see it (rather than racing the
     // push that triggers queue processing). See upload_queue_to_drive.py.
     async function uploadStreamMetadataSidecar(timestamp, safeFilename, pat) {
+        // Only send Title/Description as an explicit override when the user
+        // actually changed them from the generated defaults we pre-filled.
+        // A field still equal to its fetched default (or empty) is sent as
+        // "" so the backend runs its normal freshness-checked generation for
+        // the service date -- otherwise a thumbnail uploaded before this
+        // week's OW is processed would lock in last week's pre-filled
+        // title/description. See upload_queue_to_drive.py.
+        const titleVal = streamTitleInput.value.trim();
+        const descVal = streamDescriptionInput.value.trim();
         const meta = {
             date: toBackendDate(streamDateInput.value || toDateInputValue(getUpcomingSunday())),
             time: streamTimeInput.value || '10:30',
-            title: streamTitleInput.value.trim(),
-            description: streamDescriptionInput.value.trim()
+            title: titleVal && titleVal !== fetchedDefaultTitle.trim() ? titleVal : '',
+            description: descVal && descVal !== fetchedDefaultDescription.trim() ? descVal : ''
         };
 
         const path = `Utilities/uploads_queue/${timestamp}---${WORSHIP_FOLDER_ID}---${safeFilename}.meta.json`;

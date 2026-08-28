@@ -2,8 +2,9 @@ import os
 import json
 import sys
 import hashlib
+import subprocess
 import dateutil.parser
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import re
 from google.oauth2.credentials import Credentials
@@ -133,6 +134,91 @@ def get_current_title():
                 return title
     return None
 
+TITLE_STATE_PATH = os.path.join("..", "Worship Scripts", "service_titles_state.json")
+DESC_STATE_PATH = "description_state.json"
+LA_TZ = pytz.timezone('America/Los_Angeles')
+
+def _state_target_date(path):
+    try:
+        with open(path) as f:
+            return json.load(f).get("target_date")
+    except Exception:
+        return None
+
+def _generation_date(path):
+    """The local (LA) date a state file was last written -- i.e. when that
+    title.txt / Description.txt was generated. Prefers the git commit time
+    (reliable across runners); falls back to the filesystem mtime."""
+    directory = os.path.dirname(path) or "."
+    base = os.path.basename(path)
+    try:
+        out = subprocess.run(
+            ["git", "-C", directory, "log", "-1", "--format=%ct", "--", base],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        if out:
+            return datetime.fromtimestamp(int(out), LA_TZ).date()
+    except Exception:
+        pass
+    try:
+        return datetime.fromtimestamp(os.path.getmtime(path), LA_TZ).date()
+    except Exception:
+        return None
+
+def content_ready_for(service_date):
+    """(ok, reason). ok is True only when BOTH title.txt and Description.txt:
+
+      * carry state target_date == service_date (a date object) -- i.e. they
+        were generated *for* this exact service, and
+      * were generated *during* that service's own week -- the preceding
+        Monday through the service Sunday itself.
+
+    title.txt / Description.txt are never cleared between weeks and the
+    playlist can hold more than one upcoming stream, so without this an
+    hourly run can merge last week's (or next week's) title/description --
+    and last week's chapter timings -- onto the wrong broadcast.
+    """
+    want = service_date.isoformat()
+    # The service week is the preceding Monday .. that Sunday. Allow one extra
+    # day on the early side purely for cron / timezone slop -- target_date ==
+    # want already pins generation to this week (update_service_titles.py only
+    # ever writes the *coming* Sunday, and never runs on a Sunday).
+    week_start = service_date - timedelta(days=7)
+
+    for label, state_path in (("title.txt", TITLE_STATE_PATH),
+                              ("Description.txt", DESC_STATE_PATH)):
+        got = _state_target_date(state_path)
+        if got != want:
+            return False, f"{label} was generated for {got!r}, not this service ({want})"
+        gen = _generation_date(state_path)
+        if gen is None:
+            return False, f"can't determine when {label} was generated"
+        if not (week_start <= gen <= service_date):
+            return False, (f"{label} was generated {gen.isoformat()}, outside this service's "
+                           f"week (need {(service_date - timedelta(days=6)).isoformat()}..{want})")
+    return True, ""
+
+def regenerate_worship_content():
+    """Best-effort: run the title + description generators for the coming
+    Sunday, the same way upload_queue_to_drive.py does when a thumbnail lands
+    before the OW. Lets an out-of-date stream be corrected in the same run
+    instead of waiting for the next hourly pass.
+
+    No FORCE_UPDATE: update_service_titles.py already no-ops (no Gemini call)
+    when this OW's SHA is already processed, so if the dedicated Service
+    Titles Checker beat us to it this is nearly free and won't fight it for
+    the commit. Logs and continues on any failure -- the caller re-checks
+    content_ready_for() afterward."""
+    for cmd, cwd in (
+        (["python", "worship workflows/update_service_titles.py"], os.path.join("..", "Worship Scripts")),
+        (["python", "generate_youtube_description.py"], "."),
+    ):
+        try:
+            print(f"  Running {' '.join(cmd)} ...")
+            subprocess.run(cmd, cwd=cwd, check=True)
+        except Exception as e:
+            print(f"  {cmd[-1]} failed: {e}")
+
 def main():
     service = get_youtube_service()
     if not service:
@@ -154,6 +240,10 @@ def main():
 
     la_tz = pytz.timezone('America/Los_Angeles')
     now_la = datetime.now(la_tz)
+
+    # regenerate_worship_content() is expensive (PDF + Gemini); run it at
+    # most once per invocation no matter how many streams are stale.
+    regenerated_this_run = False
 
     for stream in upcoming_streams:
         print(f"Checking stream: {stream['title']} (ID: {stream['id']})")
@@ -187,6 +277,21 @@ def main():
         elif now_la.date() == service_date:
             reason = "FORCE_UPDATE is enabled" if force_update else "files were modified recently"
             print(f"  Today is the service day, and {reason}. Proceeding...")
+
+        # Hard gate: only touch this stream if title.txt AND Description.txt
+        # were generated for -- and during -- THIS stream's service week. If
+        # they weren't, try regenerating them once, then re-check; if it
+        # still can't be confirmed, skip the stream entirely rather than risk
+        # pushing the wrong title/description (and last week's chapter timings).
+        ok, reason = content_ready_for(service_date)
+        if not ok and not regenerated_this_run:
+            print(f"  Content not confirmed for {service_date_str}: {reason}. Regenerating title/description...")
+            regenerate_worship_content()
+            regenerated_this_run = True
+            ok, reason = content_ready_for(service_date)
+        if not ok:
+            print(f"  Skipping {service_date_str}: {reason}. Not risking a wrong title/description.")
+            continue
 
         combined_desc = get_combined_description()
         if not combined_desc:
