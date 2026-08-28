@@ -1,0 +1,46 @@
+name: Dedupe Events Folder
+
+# Manual only -- run from the Actions tab when a batch upload is suspected of
+# having left byte-identical duplicates in the Events_Ads Drive folder.
+# process_uploads.yml's concurrency gate prevents new ones; this clears
+# existing ones. Trashes (never permanently deletes) all but the earliest
+# copy of each set of identical files.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (report only, do not trash anything)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  dedupe-events-folder:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+
+      - name: Trash duplicate flyers
+        env:
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          DRY_RUN: ${{ github.event.inputs.dry_run == 'false' && '0' || '1' }}
+        run: python "Worship Scripts/worship workflows/dedupe_events_folder.py"
