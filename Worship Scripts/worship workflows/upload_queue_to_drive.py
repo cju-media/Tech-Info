@@ -245,8 +245,37 @@ def get_drive_service():
     print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
     return None
 
-def upload_to_drive(service, file_path, original_filename, folder_id):
+def identical_file_in_folder(service, folder_id, name, local_path):
+    """True if a non-trashed file with this exact name AND identical content
+    (same MD5) already lives in folder_id. Idempotency backstop so a queue
+    entry that gets processed twice (see the concurrency gate on
+    process_uploads.yml) doesn't create a duplicate in Drive -- while still
+    allowing a genuinely new flyer that happens to reuse a filename to upload
+    alongside the old one, the way Drive normally would."""
+    safe_name = name.replace("\\", "\\\\").replace("'", "\\'")
+    query = f"name='{safe_name}' and '{folder_id}' in parents and trashed=false"
+    try:
+        import hashlib
+        with open(local_path, "rb") as fh:
+            local_md5 = hashlib.md5(fh.read()).hexdigest()
+        results = service.files().list(
+            q=query, spaces='drive', fields='files(id, md5Checksum)',
+            supportsAllDrives=True, includeItemsFromAllDrives=True,
+        ).execute()
+        return any(f.get('md5Checksum') == local_md5 for f in results.get('files', []))
+    except Exception as e:
+        # If the check itself fails, don't block the upload -- fall through
+        # and let create() proceed as it did before.
+        print(f"Could not check for an existing copy of '{name}' in {folder_id}: {e}")
+        return False
+
+
+def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_exists=False):
     print(f"Uploading {original_filename} to Google Drive folder {folder_id}...")
+
+    if skip_if_exists and identical_file_in_folder(service, folder_id, original_filename, file_path):
+        print(f"An identical '{original_filename}' already exists in {folder_id}; skipping (already processed).")
+        return True
 
     try:
         # Determine mimetype automatically if possible, otherwise default
@@ -378,7 +407,12 @@ def main():
                     except Exception as e:
                         print(f"Error redirecting folder for {original_filename}: {e}")
 
-            if upload_to_drive(drive_service, file_path, original_filename, folder_id):
+            # skip_if_exists: if this queued file (for any reason) gets
+            # processed a second time, an identical copy already in Drive
+            # means "already done" -- don't create a duplicate. Only the
+            # queued upload itself is guarded; the title.txt / Description.txt
+            # uploads below are meant to refresh in place.
+            if upload_to_drive(drive_service, file_path, original_filename, folder_id, skip_if_exists=True):
                 deferred = False
 
                 # If successful, check if it's a worship service thumbnail to create stream
