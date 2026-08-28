@@ -4,8 +4,10 @@ on:
   # No standalone hourly cron here: "Generate YouTube Description" already runs
   # hourly via its own chain off "Check Worship Scripts", so the workflow_run
   # trigger below already fires this job roughly every hour without a separate poll.
+  # Also chained off "Service Titles Checker" so a freshly generated title is
+  # pushed as soon as it lands, not up to an hour later.
   workflow_run:
-    workflows: ["Generate YouTube Description"]
+    workflows: ["Generate YouTube Description", "Service Titles Checker"]
     types:
       - completed
   push:
@@ -32,6 +34,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # On a workflow_run trigger the default checkout is the SHA that
+          # started the chain, not the commit the generator just pushed -- so
+          # grab the current branch head to see the fresh
+          # title.txt/Description.txt/state files.
+          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
+          # update_youtube_stream.py checks the git commit date of the state
+          # files to confirm the title/description were generated during the
+          # stream's own service week; a shallow clone hides that history.
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,17 +53,28 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib python-dateutil pytz
+          # google-genai / pypdf / requests are for the in-run regeneration
+          # fallback (update_service_titles.py + generate_youtube_description.py)
+          # when the on-disk title/description aren't fresh for a pending stream.
+          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib google-auth google-genai pypdf python-dateutil pytz requests
 
       - name: Run update script
         env:
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
         run: cd "Youtube Processing" && python update_youtube_stream.py
 
-      - name: Commit and push description push-state
+      - name: Commit and push regenerated content + push-state
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          [ -f "Youtube Processing/description_push_state.json" ] && git add "Youtube Processing/description_push_state.json" || true
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update YouTube description push state" && git pull --rebase origin ${{ github.ref_name }} && git push)
+          # The push-state, plus anything regenerate_worship_content() produced
+          # this run (so the next run doesn't re-run Gemini for the same OW).
+          git add "Youtube Processing/description_push_state.json" || true
+          git add "Youtube Processing/Description.txt" "Youtube Processing/chapters.txt" "Youtube Processing/description_state.json" "Youtube Processing/timings.txt" || true
+          git add "Worship Scripts/service-titles/" "Worship Scripts/service_titles_state.json" "Worship Scripts/worship_scripts.json" || true
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update YouTube stream content + push state" && git pull --rebase origin ${{ github.ref_name }} && git push)

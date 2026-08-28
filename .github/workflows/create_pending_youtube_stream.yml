@@ -5,9 +5,11 @@ on:
   # YouTube Description" already runs hourly via its own chain off "Check
   # Worship Scripts", so this fires roughly every hour without a separate
   # poll, right after title.txt/Description.txt have had a chance to catch
-  # up for the week.
+  # up for the week. Also chained off "Service Titles Checker" (the other,
+  # independent hourly cron) so a pending stream is created as soon as
+  # whichever of title/description finishes last, not up to an hour later.
   workflow_run:
-    workflows: ["Generate YouTube Description"]
+    workflows: ["Generate YouTube Description", "Service Titles Checker"]
     types:
       - completed
   workflow_dispatch:
@@ -25,6 +27,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # A workflow_run event otherwise checks out the SHA that started
+          # the chain (a stale commit from an hour ago), so the freshly
+          # committed title.txt/Description.txt/state files wouldn't be
+          # visible and the pending stream would needlessly wait another
+          # hour. Pull the current branch head instead.
+          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5

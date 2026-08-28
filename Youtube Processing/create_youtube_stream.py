@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import argparse
 import requests
 import time
 from datetime import datetime
@@ -12,6 +13,12 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
 PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs"
+
+# Distinct exit code for "the title/description pipeline hasn't confirmed
+# this week's content yet". Callers (create_pending_stream.py,
+# upload_queue_to_drive.py) treat this as "leave the thumbnail pending and
+# try again next run" rather than a hard failure.
+EXIT_NOT_READY = 3
 
 def get_youtube_service():
     creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
@@ -48,6 +55,71 @@ def get_title():
                 return title
 
     return "Sunday Service"
+
+def _state_target_date(path):
+    """The target_date recorded in a *_state.json file, or None. These are
+    written by update_service_titles.py (service_titles_state.json) and
+    generate_youtube_description.py (description_state.json) and record which
+    service date the current title.txt / Description.txt were generated for.
+    title.txt and Description.txt are never cleared between weeks, so the
+    state file is the only reliable signal that what's on disk is actually
+    this week's content and not a stale carry-over."""
+    try:
+        with open(path) as f:
+            return json.load(f).get("target_date")
+    except Exception:
+        return None
+
+def verify_content_ready(target_date, today):
+    """Return (ok, reason). ok is True only when ALL of the following hold:
+
+      1. target_date is the current service week -- not already in the past,
+         and not more than ~8 days out (the pipeline only ever generates for
+         the *coming* Sunday, so anything outside that window means we'd be
+         about to reuse a stale carry-over that happens to match).
+      2. BOTH service_titles_state.json and description_state.json record
+         target_date -- i.e. title.txt AND Description.txt were regenerated
+         for THIS service, this week, not carried over from a prior week.
+      3. title.txt / Description.txt are actually non-empty and not the
+         generic placeholders.
+
+    This is the hard gate that keeps a wrong/stale title or description off a
+    real YouTube stream: if it can't be confirmed, no stream is created and
+    the caller retries on a later run once the pipeline has caught up.
+    `today` is the current date in the service's timezone.
+    """
+    want = target_date.isoformat()
+
+    # 1. target_date must be this coming Sunday's service, give or take.
+    days_out = (target_date - today).days
+    if days_out < -1:
+        return False, f"service date {want} is in the past ({-days_out} days ago) -- not creating a stream for it"
+    if days_out > 8:
+        return False, (f"service date {want} is {days_out} days out; the title/description "
+                       f"pipeline only generates for the coming Sunday, so this can't be "
+                       f"confirmed as this week's content yet")
+
+    # 2. Both halves of the content confirmed generated for this service.
+    title_state = _state_target_date(os.path.join("Worship Scripts", "service_titles_state.json"))
+    if title_state != want:
+        return False, (f"title.txt is not confirmed for {want} "
+                       f"(service_titles_state.json target_date={title_state!r})")
+
+    desc_state = _state_target_date(os.path.join("Youtube Processing", "description_state.json"))
+    if desc_state != want:
+        return False, (f"Description.txt is not confirmed for {want} "
+                       f"(description_state.json target_date={desc_state!r})")
+
+    # 3. The files themselves are real.
+    title = get_title()
+    if not title or title.strip() == "Sunday Service":
+        return False, "title.txt is missing or empty despite the state file matching"
+
+    description = get_combined_description()
+    if not description or description.strip() == "Join us for our Sunday Service!":
+        return False, "Description.txt is missing or empty despite the state file matching"
+
+    return True, ""
 
 def stream_exists_for_date(service, target_date, la_tz):
     try:
@@ -137,13 +209,23 @@ def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
         return
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: python create_youtube_stream.py <MM-DD-YYYY> <thumbnail_path> [HH:MM]")
-        return
+    parser = argparse.ArgumentParser(description="Create a scheduled YouTube livestream for a worship service.")
+    parser.add_argument("date", help="Service date (MM-DD-YYYY, also accepts M-D-YY and slash separators)")
+    parser.add_argument("thumbnail", help="Path to the thumbnail image")
+    parser.add_argument("time", nargs="?", default="10:30", help="Start time HH:MM (LA time), default 10:30")
+    # An explicit title/description supplied by a human via the upload
+    # dashboard's settings panel. When BOTH are given they're trusted as-is
+    # and the freshness gate is skipped; otherwise the title/description come
+    # from title.txt/Description.txt and MUST pass verify_content_ready().
+    parser.add_argument("--title", default=None, help="Explicit, human-provided title (bypasses the freshness gate)")
+    parser.add_argument("--description", default=None, help="Explicit, human-provided description (bypasses the freshness gate)")
+    args = parser.parse_args()
 
-    date_str = sys.argv[1]
-    thumbnail_path = sys.argv[2]
-    time_str = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3].strip() else "10:30"
+    date_str = args.date
+    thumbnail_path = args.thumbnail
+    time_str = args.time if args.time and args.time.strip() else "10:30"
+    override_title = args.title.strip() if args.title and args.title.strip() else None
+    override_description = args.description.strip() if args.description and args.description.strip() else None
 
     la_tz = pytz.timezone('America/Los_Angeles')
 
@@ -173,6 +255,28 @@ def main():
         print(f"Error parsing date {date_str}: {e}")
         return
 
+    # --- Freshness gate -------------------------------------------------
+    # Never let a wrong/stale title or description reach a real stream. If a
+    # human supplied both explicitly, trust them. Otherwise require the
+    # pipeline to have confirmed this week's title AND description for
+    # target_date; if it hasn't, create nothing and exit EXIT_NOT_READY so
+    # the caller keeps the thumbnail pending and retries on a later run.
+    if override_title and override_description:
+        title = override_title
+        description = override_description
+        print("Using explicitly provided title/description; skipping the freshness gate.")
+    else:
+        today_la = datetime.now(la_tz).date()
+        ok, reason = verify_content_ready(target_date, today_la)
+        if not ok:
+            print(f"NOT creating a stream for {target_date}: {reason}.")
+            print("The stream will be created on a later run, once the title/description "
+                  "pipeline has processed this week's OW.")
+            sys.exit(EXIT_NOT_READY)
+        title = get_title()
+        description = get_combined_description()
+    # ------------------------------------------------------------------
+
     service = get_youtube_service()
     if not service:
         return
@@ -180,9 +284,6 @@ def main():
     if stream_exists_for_date(service, target_date, la_tz):
         print(f"A stream already exists in the playlist for {target_date}. Skipping creation.")
         return
-
-    title = get_title()
-    description = get_combined_description()
 
     try:
         scheduled_time = datetime.strptime(time_str, "%H:%M").time()

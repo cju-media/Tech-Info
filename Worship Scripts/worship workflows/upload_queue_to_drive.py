@@ -93,6 +93,35 @@ def dispatch_event(event_type, client_payload, max_retries=4, backoff_seconds=3)
         print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
         return
 
+def parse_flexible_date(date_str):
+    """Parse the handful of date formats that reach this pipeline (the
+    dashboard sidecar sends MM-DD-YYYY, but the filename-regex fallback can
+    produce M-D-YY and slash separators). Returns a date, or None."""
+    for fmt in ("%m-%d-%Y", "%m-%d-%y", "%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%Y/%m/%d"):
+        try:
+            return datetime.datetime.strptime(date_str, fmt).date()
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
+def ows_link_date(text):
+    """The date embedded in an fccla.org/ows/<M-D-YY> program link inside
+    text, as a date, or None. The description boilerplate always carries
+    this dated link, so it's a reliable way to tell which Sunday a given
+    Description.txt was generated for."""
+    m = re.search(r'fccla\.org/ows/(\d{1,2})-(\d{1,2})-(\d{2,4})', text or '')
+    if not m:
+        return None
+    month, day, year = (int(x) for x in m.groups())
+    if year < 100:
+        year += 2000
+    try:
+        return datetime.date(year, month, day)
+    except ValueError:
+        return None
+
+
 def content_matches_target_week(date_str):
     """True if title.txt on disk was actually generated for date_str
     (MM-DD-YYYY), not carried over from an earlier week that never got
@@ -113,11 +142,10 @@ def content_matches_target_week(date_str):
     target = state.get("target_date")
     if not target:
         return False
-    try:
-        wanted = datetime.datetime.strptime(date_str, "%m-%d-%Y").date().isoformat()
-    except ValueError:
+    wanted = parse_flexible_date(date_str)
+    if not wanted:
         return False
-    return target == wanted
+    return target == wanted.isoformat()
 
 
 def description_matches_target_week(date_str):
@@ -136,25 +164,33 @@ def description_matches_target_week(date_str):
     target = state.get("target_date")
     if not target:
         return False
-    try:
-        wanted = datetime.datetime.strptime(date_str, "%m-%d-%Y").date().isoformat()
-    except ValueError:
+    wanted = parse_flexible_date(date_str)
+    if not wanted:
         return False
-    return target == wanted
+    return target == wanted.isoformat()
 
 
-def defer_stream_creation(file_path, date_str, stream_time):
+def defer_stream_creation(file_path, date_str, stream_time, title=None, description=None):
     """Stash a worship-service thumbnail whose title/description aren't
     ready yet (this week's OW hasn't been posted) so
     "Youtube Processing/create_pending_stream.py" can finish creating the
     stream once they are, instead of publishing it now with a stale or
-    generic placeholder title/description."""
+    generic placeholder title/description.
+
+    title/description are only set when a human typed an explicit override
+    into the upload dashboard -- they're carried through so the pending run
+    uses exactly what was entered rather than re-deriving from disk."""
     os.makedirs(PENDING_STREAM_DIR, exist_ok=True)
     ext = os.path.splitext(file_path)[1] or ".jpg"
     thumb_dest = os.path.join(PENDING_STREAM_DIR, f"thumbnail{ext}")
     shutil.move(file_path, thumb_dest)
+    meta = {"date": date_str, "time": stream_time, "thumbnail_path": thumb_dest}
+    if title:
+        meta["title"] = title
+    if description:
+        meta["description"] = description
     with open(PENDING_STREAM_META, "w") as f:
-        json.dump({"date": date_str, "time": stream_time, "thumbnail_path": thumb_dest}, f, indent=2)
+        json.dump(meta, f, indent=2)
     print(f"Stashed thumbnail for {date_str} in {PENDING_STREAM_DIR}; the stream will be created once title/description are ready.")
 
 
@@ -350,11 +386,33 @@ def main():
                     title_path = os.path.join("Worship Scripts", "service-titles", "title.txt")
                     desc_path = os.path.join("Youtube Processing", "Description.txt")
 
-                    # An explicit title/description from the upload settings panel
-                    # always wins over whatever's already on disk.
+                    # A title/description the uploader actually typed into the
+                    # settings panel wins over whatever's already on disk (but see
+                    # the stale-pre-fill guard just below).
                     meta_title = stream_meta.get('title', '').strip() if stream_meta else ''
                     meta_desc = stream_meta.get('description', '').strip() if stream_meta else ''
                     stream_time = (stream_meta.get('time', '').strip() if stream_meta else '') or '10:30'
+
+                    # The dashboard's Livestream Settings panel pre-fills Title and
+                    # Description from the repo's *current* title.txt/Description.txt.
+                    # A thumbnail uploaded before this week's OW is processed pre-fills
+                    # with last week's values, and if the uploader doesn't edit them
+                    # they arrive here looking like a deliberate override -- which used
+                    # to get written straight onto the stream (last week's title + last
+                    # week's dated OW link). Catch that: the description boilerplate
+                    # always carries a dated fccla.org/ows/<date> link, so if it points
+                    # at a different Sunday than this upload, the "override" is a stale
+                    # echo. Drop both fields and fall back to the freshness-checked
+                    # generation / defer path.
+                    target_date = parse_flexible_date(date_str)
+                    override_ows_date = ows_link_date(meta_desc)
+                    if meta_desc and target_date and override_ows_date and override_ows_date != target_date:
+                        print(f"Ignoring title/description from upload settings for {date_str}: "
+                              f"its program link is for {override_ows_date.isoformat()}, not this "
+                              f"service -- treating it as a stale pre-fill and using the generated "
+                              f"title/description pipeline instead.")
+                        meta_title = ''
+                        meta_desc = ''
 
                     if meta_title:
                         print(f"Using title from upload settings for {date_str}: {meta_title}")
@@ -465,11 +523,32 @@ def main():
                         print(f"Launching create_youtube_stream.py for {date_str} at {stream_time}...")
                         script_path = os.path.join("Youtube Processing", "create_youtube_stream.py")
                         if os.path.exists(script_path):
+                            # We keep the file around so create_youtube_stream can upload it as thumbnail.
+                            cmd = ["python", script_path, date_str, file_path, stream_time]
+                            if meta_title and meta_desc:
+                                # Human-entered override: pass it through so
+                                # create_youtube_stream.py trusts it as-is
+                                # rather than re-checking title.txt state.
+                                cmd += ["--title", meta_title, "--description", meta_desc]
                             try:
-                                # We keep the file around so create_youtube_stream can upload it as thumbnail
-                                subprocess.run(["python", script_path, date_str, file_path, stream_time], check=True)
+                                result = subprocess.run(cmd)
+                                rc = result.returncode
                             except Exception as e:
                                 print(f"Error running create_youtube_stream.py: {e}")
+                                rc = 1
+                            # EXIT_NOT_READY (3) = the freshness gate refused because
+                            # this week's title/description isn't confirmed yet; any
+                            # other non-zero = a real failure. Either way, don't drop
+                            # the thumbnail -- stash it so the pending-stream run
+                            # retries once things are ready.
+                            if rc != 0:
+                                if rc == 3:
+                                    print(f"create_youtube_stream.py's freshness gate refused {date_str}; deferring.")
+                                else:
+                                    print(f"create_youtube_stream.py failed (exit {rc}); deferring so it retries.")
+                                defer_stream_creation(file_path, date_str, stream_time,
+                                                      title=meta_title or None, description=meta_desc or None)
+                                deferred = True
                         else:
                             print(f"Could not find script at {script_path}")
 
