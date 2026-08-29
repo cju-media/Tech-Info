@@ -9,6 +9,17 @@ on:
 permissions:
   contents: write
 
+# A dashboard batch upload pushes one commit per file in quick succession,
+# and each commit fires this workflow. Without this gate those runs overlap,
+# and every run uploads *every* file it finds in the queue at checkout -- so
+# a file another in-flight run already sent to Drive (but hasn't committed
+# the deletion for yet) gets uploaded a second/third time. Serialize instead:
+# a run drains the queue and commits before the next starts.
+# cancel-in-progress:false so a run is never killed mid Drive upload.
+concurrency:
+  group: process-uploads-queue
+  cancel-in-progress: false
+
 jobs:
   process-uploads:
     runs-on: ubuntu-latest
@@ -57,5 +68,20 @@ jobs:
           fi
           # Only commit if there are changes (files deleted)
           git diff --quiet && git diff --staged --quiet || git commit -m "Cleanup processed uploads"
-          git pull --rebase origin ${{ github.ref_name }}
-          git push origin HEAD:${{ github.ref_name }}
+          # Retry the rebase+push: other workflows (youtube description,
+          # service titles, ...) also push to this branch and can move the
+          # ref between our fetch and our push ("cannot lock ref").
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} || true
+            if git push origin HEAD:${{ github.ref_name }}; then
+              pushed=true
+              break
+            fi
+            echo "Push attempt $attempt failed (ref moved?); retrying in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+          if [ "$pushed" != "true" ]; then
+            echo "::error::Failed to push cleanup commit after 5 attempts."
+            exit 1
+          fi
