@@ -34,16 +34,35 @@ comparison 60s apart), since it only cycles through a handful of buffer
 IDs and a single far-apart comparison could coincidentally match by chance.
 
 If any of the three looks stuck for 3 consecutive checks (~3-4 min), it
-force-restarts `content-display.service`, verifies the restart actually
-succeeded, and fires a `repository_dispatch` event to this repo so the
+force-restarts `content-display.service` and verifies the restart actually
+succeeded. **Only a failed recovery texts** -- a successful auto-restart is
+the watchdog doing its job silently, logged locally to
+`/var/log/vlc-watchdog-restarts.log` (timestamp, outcome, and the specific
+reason(s) that triggered it) but not worth interrupting anyone for. A
+failed recovery fires a `repository_dispatch` event to this repo so the
 self-hosted macOS runner sends an iMessage (rate-limited to one per 15 min
-per Pi).
+per Pi, in case recovery keeps failing repeatedly).
 
 A fourth signal -- the RTMP socket's Recv-Q -- is recorded in notifications
 for diagnostic context but deliberately does **not** drive the restart
 decision; testing showed a WiFi-marginal Pi can legitimately show
 multi-hundred-KB to multi-MB buffering swings during genuinely healthy
 playback, which made it an unreliable trigger on its own.
+
+Two correctness fixes worth knowing about if you're reading the source:
+
+- **CPU delta is only compared within the same VLC process (`pid` is now
+  tracked in state).** `/proc/<pid>/stat`'s utime+stime resets near zero
+  for a fresh process, so comparing it against the previous (now-dead)
+  process's much higher count right after a restart produced a nonsensical
+  -- often negative -- delta that got misread as "no work happening,"
+  poisoning the very next check after *every* restart and contributing to
+  a self-reinforcing restart cascade (observed 2026-08-30: displays
+  failing roughly every 20 min).
+- **`STARTUP_GRACE_SECONDS` (30s) skips checks entirely** right after a
+  (re)start -- a service that just started hasn't finished
+  connecting/negotiating its DRM plane yet, and checking too early can
+  catch that normal window and misread it as frozen.
 
 ## Files
 

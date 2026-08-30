@@ -57,6 +57,13 @@ MIN_CPU_TICKS_PER_CHECK = 50  # ~0.5s of CPU time (at the usual 100 ticks/sec)
 # normal bursty TCP delivery produces.
 RTMP_DPORT_FILTER = "( dport = :1935 )"
 
+# A service that just (re)started hasn't finished connecting/negotiating
+# its DRM plane yet -- checking it too early (e.g. the very next 60s tick
+# after a restart) can catch a normal startup window and misread it as a
+# freeze, which would otherwise poison the count right after every
+# restart, legitimate or not. Skip the whole check while still this young.
+STARTUP_GRACE_SECONDS = 30
+
 # Direct DRM-level check: is a frame actually being presented on screen?
 # Both prior incidents showed get_time and CPU can look completely healthy
 # (VLC's own internal decode/clock bookkeeping still ticking along) while
@@ -78,6 +85,19 @@ GITHUB_TOKEN_FILE = "/etc/vlc-watchdog/github-token"
 GITHUB_REPO = "cju-media/Tech-Info"
 LAST_NOTIFY_FILE = "/var/lib/vlc-watchdog/last-notify"
 NOTIFY_COOLDOWN_SECONDS = 15 * 60  # avoid texting every cycle during a prolonged outage
+
+# Every restart (successful or not) is appended here regardless of whether
+# it texts -- a local record so restart *frequency* can still be diagnosed
+# later even though successful recoveries are now silent by design.
+RESTART_LOG_FILE = "/var/log/vlc-watchdog-restarts.log"
+
+
+def log_restart(outcome, reason_text):
+    try:
+        with open(RESTART_LOG_FILE, "a") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {outcome}: {reason_text}\n")
+    except OSError:
+        pass
 
 
 def notify(event_type, message):
@@ -151,6 +171,25 @@ def get_playback_time():
     except OSError:
         pass
     return None
+
+
+def service_uptime_seconds():
+    try:
+        result = subprocess.run(
+            ["systemctl", "show", SERVICE, "-p", "ActiveEnterTimestampMonotonic", "--value"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        active_since_us = int(result.stdout.strip())
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return None
+    try:
+        with open("/proc/uptime") as f:
+            now_s = float(f.read().split()[0])
+    except OSError:
+        return None
+    return now_s - (active_since_us / 1_000_000)
 
 
 def get_vlc_pid():
@@ -255,6 +294,10 @@ def write_state(state):
 
 
 def main():
+    uptime = service_uptime_seconds()
+    if uptime is not None and uptime < STARTUP_GRACE_SECONDS:
+        sys.exit(0)  # too soon after a (re)start to judge anything yet
+
     cur_time = get_playback_time()
     if cur_time is None:
         # Can't reach VLC's CLI -- either it's still starting up, or the
@@ -269,6 +312,7 @@ def main():
     prev = read_state()
     prev_time = prev.get("time")
     prev_cpu = prev.get("cpu")
+    prev_pid = prev.get("pid")
     prev_recvq = prev.get("recvq")
     count = prev.get("count", 0)
 
@@ -277,7 +321,19 @@ def main():
     if prev_time is not None and cur_time == prev_time:
         reasons.append(f"playback clock stuck at {cur_time}s")
 
-    if prev_cpu is not None and cur_cpu is not None:
+    # /proc/<pid>/stat's utime+stime is a per-process counter that starts
+    # back near zero for a fresh process -- comparing it against the
+    # previous (now-dead) process's much higher count after a restart
+    # produces a meaningless, often negative "delta" that would otherwise
+    # get misread as "no work happening". Only compare when it's actually
+    # the same process both times.
+    if (
+        prev_cpu is not None
+        and cur_cpu is not None
+        and prev_pid is not None
+        and pid is not None
+        and prev_pid == pid
+    ):
         delta = cur_cpu - prev_cpu
         if delta < MIN_CPU_TICKS_PER_CHECK:
             reasons.append(f"vlc process used almost no CPU this cycle ({delta} ticks)")
@@ -294,6 +350,7 @@ def main():
         {
             "time": cur_time,
             "cpu": cur_cpu,
+            "pid": pid,
             "recvq": cur_recvq,
             "count": count,
             "last_reasons": reasons,
@@ -302,7 +359,7 @@ def main():
 
     if count >= STALE_THRESHOLD:
         subprocess.run(["systemctl", "restart", SERVICE])
-        write_state({"time": cur_time, "cpu": cur_cpu, "recvq": cur_recvq, "count": 0})
+        write_state({"time": cur_time, "cpu": cur_cpu, "pid": pid, "recvq": cur_recvq, "count": 0})
 
         time.sleep(5)
         result = subprocess.run(
@@ -312,13 +369,14 @@ def main():
         reason_text = "; ".join(reasons) if reasons else "playback appeared stalled"
         if cur_recvq is not None:
             reason_text += f" [RTMP recv-q at time of restart: {cur_recvq} bytes]"
+        # Only notify when the display FAILS to recover -- a successful
+        # auto-restart is exactly the watchdog doing its job silently, not
+        # something that needs a text. Every restart is still logged
+        # locally either way, so frequency can be diagnosed later.
         if result.stdout.strip() == "active":
-            notify(
-                "rtmp_watchdog_restart",
-                f"{SERVICE} on {host} appeared frozen ({reason_text}, for "
-                f"{STALE_THRESHOLD} consecutive checks) and was automatically restarted.",
-            )
+            log_restart("recovered", reason_text)
         else:
+            log_restart("FAILED", reason_text)
             notify(
                 "rtmp_watchdog_restart_failed",
                 f"{SERVICE} on {host} froze ({reason_text}) and the automatic "
