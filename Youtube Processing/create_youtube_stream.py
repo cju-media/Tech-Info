@@ -318,6 +318,9 @@ def main():
                     },
                     "enableAutoStart": False,
                     "enableAutoStop": False,
+                    # Low latency for the live stream. "low" keeps DVR
+                    # available (ultra-low latency would disable it).
+                    "latencyPreference": "low",
                     "enableDvr": True
                 }
             }
