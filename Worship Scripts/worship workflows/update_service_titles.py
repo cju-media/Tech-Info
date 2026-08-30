@@ -96,7 +96,9 @@ def main():
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
 
-    if now_pt.weekday() == 6:
+    # TEMP BYPASS (2026-08-30): Sunday guard disabled for a one-off manual run to
+    # regenerate the 8/30 lower thirds after the Gemini billing outage. REVERT THIS.
+    if now_pt.weekday() == 6 and os.environ.get("ALLOW_SUNDAY_RUN", "").lower() != "true":
         print("Today is Sunday. Do not update text files. Exiting.")
         return
 
