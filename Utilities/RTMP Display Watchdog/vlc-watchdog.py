@@ -9,14 +9,22 @@ can keep advancing even while the actual picture is frozen, if the demux/
 network thread is still alive while only the render path is wedged -- so
 get_time alone is not a reliable liveness signal on its own.
 
-This polls two independent liveness signals every cycle:
+This polls three independent liveness signals every cycle:
   1. get_time via VLC's CLI interface (is the playback clock advancing?)
   2. Total process CPU time (is *any* thread actually doing work?)
+  3. The DRM plane's framebuffer ID, sampled in a tight burst (is a frame
+     actually being presented to the screen?)
 
-If EITHER looks stuck for several consecutive checks, the service is
+If ANY looks stuck for several consecutive checks, the service is
 force-restarted, its recovery is verified, and a notification is sent.
 
-A third signal -- the RTMP socket's Recv-Q (bytes piling up unread) -- is
+Signal 3 exists because two real incidents showed signals 1 and 2 can both
+look completely healthy -- VLC's own internal decode/clock bookkeeping
+still ticking along -- while the picture is visibly frozen on screen,
+something having failed between VLC's internal state and the actual DRM
+commit. Signals 1 and 2 alone were blind to that failure mode entirely.
+
+A fourth signal -- the RTMP socket's Recv-Q (bytes piling up unread) -- is
 recorded for diagnostic context in notifications, but deliberately does NOT
 drive the restart decision on its own: testing showed it produces false
 positives on a WiFi-marginal Pi, where healthy playback can legitimately
@@ -48,6 +56,21 @@ MIN_CPU_TICKS_PER_CHECK = 50  # ~0.5s of CPU time (at the usual 100 ticks/sec)
 # network is still delivering data -- as opposed to the few-KB fluctuations
 # normal bursty TCP delivery produces.
 RTMP_DPORT_FILTER = "( dport = :1935 )"
+
+# Direct DRM-level check: is a frame actually being presented on screen?
+# Both prior incidents showed get_time and CPU can look completely healthy
+# (VLC's own internal decode/clock bookkeeping still ticking along) while
+# the picture is visibly frozen -- something failing between VLC's internal
+# state and the actual DRM commit reaching the display. debugfs exposes the
+# framebuffer ID currently bound to whichever plane VLC owns; that ID
+# changes on every real frame presented. It cycles through only a handful
+# of buffer IDs (double/triple buffering), so a single comparison across
+# the normal 60s check interval could coincidentally match by chance --
+# instead, sample it several times in a tight burst within one check, and
+# only call it frozen if it never moves across that whole burst.
+DRM_STATE_FILE = "/sys/kernel/debug/dri/0/state"
+FB_SAMPLE_COUNT = 5
+FB_SAMPLE_INTERVAL_SECONDS = 2
 
 # iMessage notifications, via the same repository_dispatch -> self-hosted
 # macOS runner -> osascript pattern used elsewhere in Tech-Info.
@@ -176,6 +199,48 @@ def get_recvq_bytes():
         return None
 
 
+def get_vlc_plane_fb():
+    """DRM framebuffer ID currently bound to the plane VLC is presenting
+    to, parsed out of debugfs's state dump. Blocks are separated by
+    "plane[N]: plane-M" headers; find the block VLC owns and pull its
+    fb= line back out, rather than assuming a fixed plane index (which
+    can shift across restarts)."""
+    try:
+        with open(DRM_STATE_FILE) as f:
+            content = f.read()
+    except OSError:
+        return None
+    for block in content.split("plane["):
+        if "allocated by = vlc" not in block:
+            continue
+        for line in block.splitlines():
+            line = line.strip()
+            if line.startswith("fb="):
+                try:
+                    return int(line.split("=", 1)[1])
+                except ValueError:
+                    return None
+    return None
+
+
+def is_display_frozen():
+    """True only if the plane's framebuffer ID never changes across a
+    whole burst of closely-spaced samples -- see the module-level comment
+    on FB_SAMPLE_COUNT for why a single 60s-apart comparison isn't
+    trustworthy on its own. Returns None (inconclusive) rather than True
+    if debugfs isn't readable or VLC doesn't currently own a plane, so a
+    missing signal never masquerades as "frozen"."""
+    samples = []
+    for i in range(FB_SAMPLE_COUNT):
+        fb = get_vlc_plane_fb()
+        if fb is None:
+            return None
+        samples.append(fb)
+        if i < FB_SAMPLE_COUNT - 1:
+            time.sleep(FB_SAMPLE_INTERVAL_SECONDS)
+    return len(set(samples)) == 1
+
+
 def read_state():
     try:
         with open(STATE_FILE) as f:
@@ -216,6 +281,10 @@ def main():
         delta = cur_cpu - prev_cpu
         if delta < MIN_CPU_TICKS_PER_CHECK:
             reasons.append(f"vlc process used almost no CPU this cycle ({delta} ticks)")
+
+    frozen = is_display_frozen()
+    if frozen:
+        reasons.append("DRM plane framebuffer not changing across a sample burst -- picture isn't actually updating on screen")
 
     # Recv-Q is recorded for diagnostics but intentionally not a trigger --
     # see the module docstring for why.

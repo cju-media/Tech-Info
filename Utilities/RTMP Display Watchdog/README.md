@@ -16,18 +16,30 @@ handler -- without the process actually exiting, so plain `Restart=always`
 never fires.
 
 `vlc-watchdog.py`, run every 60s via `vlc-watchdog.timer`, catches that by
-polling two independent liveness signals against VLC's CLI interface and
-`/proc`:
+polling three independent liveness signals against VLC's CLI interface,
+`/proc`, and the kernel's DRM debugfs interface:
 
 1. **`get_time`** -- is VLC's playback clock advancing?
 2. **Process CPU time delta** -- is any thread actually doing work?
+3. **DRM plane framebuffer ID** (`/sys/kernel/debug/dri/0/state`) -- is a
+   frame actually being presented on screen?
 
-If either looks stuck for 3 consecutive checks (~3 min), it force-restarts
-`content-display.service`, verifies the restart actually succeeded, and
-fires a `repository_dispatch` event to this repo so the self-hosted macOS
-runner sends an iMessage (rate-limited to one per 15 min per Pi).
+Signal 3 exists because two real incidents (2026-08-26, 2026-08-29) showed
+signals 1 and 2 can both look completely healthy -- VLC's own internal
+decode/clock bookkeeping still ticking along -- while the picture is
+visibly frozen on screen, i.e. something failing between VLC's internal
+state and the actual DRM commit. It samples the plane's bound framebuffer
+ID several times in a tight ~8s burst per check (rather than a single
+comparison 60s apart), since it only cycles through a handful of buffer
+IDs and a single far-apart comparison could coincidentally match by chance.
 
-A third signal -- the RTMP socket's Recv-Q -- is recorded in notifications
+If any of the three looks stuck for 3 consecutive checks (~3-4 min), it
+force-restarts `content-display.service`, verifies the restart actually
+succeeded, and fires a `repository_dispatch` event to this repo so the
+self-hosted macOS runner sends an iMessage (rate-limited to one per 15 min
+per Pi).
+
+A fourth signal -- the RTMP socket's Recv-Q -- is recorded in notifications
 for diagnostic context but deliberately does **not** drive the restart
 decision; testing showed a WiFi-marginal Pi can legitimately show
 multi-hundred-KB to multi-MB buffering swings during genuinely healthy
