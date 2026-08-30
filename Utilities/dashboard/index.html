@@ -129,6 +129,12 @@
         .status-offline  { background: #fdecea; color: #c0392b; }
         .status-checking { background: #eef2f7; color: #666; }
         .status-unknown  { background: #fff8e1; color: #8a6d00; cursor: help; }
+        .status-stale    { background: #fff8e1; color: #8a6d00; cursor: help; }
+        .server-monitor {
+            font-size: 11px;
+            color: #999;
+            margin: 0;
+        }
         .status-note {
             background: #fff8e1;
             border: 1px solid #f0e0a0;
@@ -191,6 +197,8 @@
 
         <div id="server-grid" class="server-grid"></div>
 
+        <div class="status-note" id="monitor-note" style="display:none;"></div>
+
         <div class="status-note" id="status-note" style="display:none;">
             &#9888; Some servers show <strong>Unknown</strong> because this page is loaded over HTTPS (GitHub Pages),
             and browsers block secure pages from checking local, non-HTTPS servers. That's a browser security rule,
@@ -210,13 +218,59 @@
 
     <script>
         // Add/remove servers here — the grid and status checks are driven entirely by this list.
+        // `key` links a card to its entry in the health Gist published by the
+        // Server Health Poll workflow (Utilities/dashboard/servers.json). Cards
+        // with a key show the real status polled from Studio Mini; the rest fall
+        // back to a best-effort in-browser ping.
         const SERVERS = [
-            { name: 'QR Server', desc: 'QR code control', url: 'http://studio-mini.local:3000' },
-            { name: 'Timestamp (OSC) Server', desc: 'Livestream timing / OBS control', url: 'http://studio-mini.local:3671' },
-            { name: 'Content Display Server', desc: 'On-screen content display', url: 'http://studio-mini.local:1031' },
-            { name: 'Vertical Stream Controls', desc: 'Vertical stream controls', url: 'http://studio-mini.local:4200' },
+            { name: 'QR Server', desc: 'QR code control', url: 'http://studio-mini.local:3000', key: 'qr' },
+            { name: 'Timestamp (OSC) Server', desc: 'Livestream timing / OBS control', url: 'http://studio-mini.local:3671', key: 'osc' },
+            { name: 'Content Display Server', desc: 'On-screen content display', url: 'http://studio-mini.local:1031', key: 'content-display' },
+            { name: 'Vertical Stream Controls', desc: 'Vertical stream controls', url: 'http://studio-mini.local:4200', key: 'vertical-stream' },
             { name: 'Uploads', desc: 'Upload thumbnails, OWs, and timings', url: 'https://cju-media.github.io/Tech-Info/Utilities/uploads/' },
         ];
+
+        let healthCfg = null;
+        async function getHealthConfig() {
+            if (healthCfg) return healthCfg;
+            try {
+                healthCfg = await (await fetch('server-health-config.json', { cache: 'no-store' })).json();
+            } catch (e) {
+                healthCfg = {};
+            }
+            return healthCfg;
+        }
+
+        // Pull the status the Studio Mini poller published to the Gist.
+        // Returns { servers, pollerRanAt, pollerStale, staleMin } or null.
+        async function fetchHealthStatus() {
+            const cfg = await getHealthConfig();
+            if (!cfg || !cfg.gistRawUrl) return null;
+            try {
+                const url = cfg.gistRawUrl + (cfg.gistRawUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+                const data = await (await fetch(url, { cache: 'no-store' })).json();
+                const ranAt = data.poller_ran_at ? new Date(data.poller_ran_at) : null;
+                const offlineMin = cfg.monitoringOfflineMinutes || 30;
+                return {
+                    servers: data.servers || {},
+                    pollerRanAt: ranAt,
+                    pollerHost: data.poller_host || 'Studio Mini',
+                    pollerStale: !ranAt || (Date.now() - ranAt.getTime()) / 60000 > offlineMin,
+                    staleMin: cfg.dashboardStaleMinutes || 12,
+                };
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function timeAgo(date) {
+            const mins = Math.round((Date.now() - date.getTime()) / 60000);
+            if (mins < 1) return 'just now';
+            if (mins < 60) return `${mins} min ago`;
+            const hrs = Math.round(mins / 60);
+            if (hrs < 24) return `${hrs} hr ago`;
+            return `${Math.round(hrs / 24)} d ago`;
+        }
 
         function isMixedContent(targetUrl) {
             try {
@@ -240,16 +294,20 @@
             });
         }
 
-        function setPill(pillEl, status) {
-            pillEl.classList.remove('status-online', 'status-offline', 'status-checking', 'status-unknown');
+        function setPill(pillEl, status, detail) {
+            pillEl.classList.remove('status-online', 'status-offline', 'status-checking', 'status-unknown', 'status-stale');
             if (status === 'online') {
                 pillEl.textContent = 'Online';
                 pillEl.classList.add('status-online');
-                pillEl.title = '';
+                pillEl.title = detail || '';
             } else if (status === 'offline') {
                 pillEl.textContent = 'Offline';
                 pillEl.classList.add('status-offline');
-                pillEl.title = '';
+                pillEl.title = detail || '';
+            } else if (status === 'stale') {
+                pillEl.textContent = 'Stale';
+                pillEl.classList.add('status-stale');
+                pillEl.title = detail || 'Last check is older than expected — the monitor may not be running.';
             } else if (status === 'unknown') {
                 pillEl.textContent = 'Unknown';
                 pillEl.classList.add('status-unknown');
@@ -294,6 +352,10 @@
                 urlP.textContent = server.url;
                 card.appendChild(urlP);
 
+                const monitorP = document.createElement('p');
+                monitorP.className = 'server-monitor';
+                card.appendChild(monitorP);
+
                 const open = document.createElement('a');
                 open.className = 'server-open';
                 open.href = server.url;
@@ -303,7 +365,7 @@
                 card.appendChild(open);
 
                 grid.appendChild(card);
-                cards.push({ server, pill });
+                cards.push({ server, pill, monitorP });
             });
         }
 
@@ -311,7 +373,26 @@
             document.getElementById('last-checked').textContent = 'Checking status…';
             let anyUnknown = false;
 
-            await Promise.all(cards.map(async ({ server, pill }) => {
+            const health = await fetchHealthStatus();
+
+            await Promise.all(cards.map(async ({ server, pill, monitorP }) => {
+                // Prefer the real status polled from Studio Mini, when we have it.
+                if (server.key && health && health.servers[server.key]) {
+                    const h = health.servers[server.key];
+                    const checkedAt = h.checked_at ? new Date(h.checked_at) : null;
+                    const rowStale = !checkedAt || (Date.now() - checkedAt.getTime()) / 60000 > health.staleMin;
+                    let st;
+                    if (h.down || h.ok === false) st = 'offline';
+                    else if (rowStale || health.pollerStale) st = 'stale';
+                    else st = 'online';
+                    setPill(pill, st, h.detail || '');
+                    monitorP.textContent = 'Polled from ' + health.pollerHost
+                        + (checkedAt ? ' · ' + timeAgo(checkedAt) : '')
+                        + (h.alert === false ? ' · info only' : '');
+                    return;
+                }
+
+                monitorP.textContent = '';
                 if (isMixedContent(server.url)) {
                     anyUnknown = true;
                     setPill(pill, 'unknown');
@@ -322,9 +403,23 @@
                 setPill(pill, status);
             }));
 
+            const monitorNote = document.getElementById('monitor-note');
+            if (health && health.pollerStale) {
+                monitorNote.innerHTML = '&#9888; The Studio Mini health monitor last reported '
+                    + (health.pollerRanAt ? timeAgo(health.pollerRanAt) : 'never')
+                    + '. Server statuses below may be out of date.';
+                monitorNote.style.display = 'block';
+            } else {
+                monitorNote.style.display = 'none';
+            }
+
             document.getElementById('status-note').style.display = anyUnknown ? 'block' : 'none';
-            document.getElementById('last-checked').textContent =
-                'Last checked: ' + new Date().toLocaleTimeString();
+
+            let footer = 'Last checked: ' + new Date().toLocaleTimeString();
+            if (health && health.pollerRanAt && !health.pollerStale) {
+                footer += ' · monitor updated ' + timeAgo(health.pollerRanAt);
+            }
+            document.getElementById('last-checked').textContent = footer;
         }
 
         renderGrid();

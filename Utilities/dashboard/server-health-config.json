@@ -1,0 +1,6 @@
+{
+  "_comment": "gistRawUrl: raw URL of the Gist file check_server_health.py publishes (also read by the watchdog). dashboardStaleMinutes: a server whose last check is older than this shows STALE. monitoringOfflineMinutes: dashboard shows the offline banner if the poller has not reported in this long.",
+  "gistRawUrl": "https://gist.githubusercontent.com/cju-media/7f410b4a9b15c57104f85ce4f6068d81/raw/server-status.json",
+  "dashboardStaleMinutes": 12,
+  "monitoringOfflineMinutes": 30
+}

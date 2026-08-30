@@ -1,0 +1,38 @@
+{
+  "gist_id": "7f410b4a9b15c57104f85ce4f6068d81",
+  "poll_timeout_seconds": 5,
+  "poll_retries": 1,
+  "down_after_consecutive_fails": 2,
+  "dashboard_url": "https://cju-media.github.io/Tech-Info/Utilities/dashboard/",
+  "servers": [
+    {
+      "key": "qr",
+      "name": "QR / URL Server",
+      "url": "http://localhost:3000/status",
+      "expect_status": 200,
+      "alert": true
+    },
+    {
+      "key": "vertical-stream",
+      "name": "Vertical Stream (ATEM status)",
+      "url": "http://localhost:4200/status",
+      "expect_status": 200,
+      "alert": true
+    },
+    {
+      "key": "content-display",
+      "name": "Content Display Control Server",
+      "url": "http://localhost:1031/health",
+      "expect_status": 200,
+      "body_contains": "ok",
+      "alert": true
+    },
+    {
+      "key": "osc",
+      "name": "YouTube OSC Server",
+      "url": "http://localhost:3671/",
+      "expect_status": 200,
+      "alert": false
+    }
+  ]
+}

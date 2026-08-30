@@ -1,0 +1,45 @@
+name: Server Health Poll
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 min; GitHub may delay scheduled runs
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: [self-hosted, macOS]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Clean workspace
+        run: rm -rf .git || true
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Poll servers and publish status
+        env:
+          # gist id comes from Utilities/dashboard/servers.json; only the token
+          # (classic PAT, 'gist' scope) has to be a secret.
+          HEARTBEAT_GIST_TOKEN: ${{ secrets.HEARTBEAT_GIST_TOKEN }}
+          # optional override; defaults to Cameron in team_emails.json
+          HEALTH_ALERT_EMAIL: ${{ vars.HEALTH_ALERT_EMAIL }}
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+        run: python3 "Utilities/dashboard/check_server_health.py"
+
+      - name: Commit state changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add "Utilities/dashboard/server_status_state.json" || true
+          git diff --quiet && git diff --staged --quiet || \
+            (git commit -m "chore: update server health state" && \
+             git pull --rebase origin main && git push)

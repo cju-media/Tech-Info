@@ -1,0 +1,48 @@
+name: Server Health Watchdog
+
+# Runs in GitHub's cloud (not on Studio Mini) so it can still alert when the
+# Studio Mini runner - and therefore the Server Health Poll workflow - is down.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check poller freshness
+        env:
+          # raw Gist URL comes from Utilities/dashboard/server-health-config.json
+          # optional override; defaults to Cameron in team_emails.json
+          HEALTH_ALERT_EMAIL: ${{ vars.HEALTH_ALERT_EMAIL }}
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+        run: python3 "Utilities/dashboard/check_health_freshness.py"
+
+      - name: Commit state changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add "Utilities/dashboard/health_watchdog_state.json" || true
+          git diff --quiet && git diff --staged --quiet || \
+            (git commit -m "chore: update health watchdog state" && \
+             git pull --rebase origin main && git push)
