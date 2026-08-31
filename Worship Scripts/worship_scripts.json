@@ -1,15 +1,15 @@
 {
-  "2026-09-13": {
-    "path": "service-scripts/2026-09-13.pdf",
-    "modifiedTime": "2026-08-30T16:43:27.788Z",
-    "isCommunion": true,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Jay"
-  },
   "2026-09-06": {
     "path": "service-scripts/2026-09-06.pdf",
-    "modifiedTime": "2026-08-30T16:41:20.739Z",
+    "modifiedTime": "2026-08-31T18:36:39.794Z",
     "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura (LVF)\nLAV2: Michael (ML)\nLAV3: Sarah Fuhrmeister"
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\n    LAV1: Laura\n    LAV2: Michael\n    LAV3: Betsy Sullenger"
+  },
+  "2026-09-13": {
+    "path": "service-scripts/2026-09-13.pdf",
+    "modifiedTime": "2026-08-31T17:15:42.178Z",
+    "isCommunion": true,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\n    LAV1: Laura\n    LAV2: Michael\n    LAV3: Jay"
   },
   "2026-09-27": {
     "path": "service-scripts/2026-09-27.pdf",
