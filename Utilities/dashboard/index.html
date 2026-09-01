@@ -563,6 +563,14 @@
             return new Date().toISOString().slice(0, 10);
         }
 
+        // An event is still "upcoming" until its last day passes. Most permit
+        // rows only carry a start `date`; manually-tracked multi-day events also
+        // carry `end_date`.
+        function notPast(e) {
+            const last = e.end_date || e.date;
+            return !last || last >= todayISO();
+        }
+
         async function loadRfJson(file) {
             const res = await fetch(RF_BASE + file + '?t=' + Date.now(), { cache: 'no-store' });
             if (!res.ok) throw new Error(file + ': HTTP ' + res.status);
@@ -573,7 +581,7 @@
             const host = document.getElementById('rf-conflicts');
             const note = document.getElementById('rf-conflicts-note');
             const upcoming = (events || [])
-                .filter((e) => !e.date || e.date >= todayISO())
+                .filter(notPast)
                 .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
 
             if (!upcoming.length) {
@@ -597,7 +605,7 @@
             const note = document.getElementById('rf-all-note');
             const seen = new Set();
             const rows = (events || [])
-                .filter((e) => !e.date || e.date >= todayISO())
+                .filter(notPast)
                 .filter((e) => {
                     const k = (e.name || '') + '|' + (e.date || '');
                     if (seen.has(k)) return false;

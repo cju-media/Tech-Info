@@ -753,6 +753,59 @@ def merge_nearby(*lists):
 
 
 # ---------------------------------------------------------------------------
+# Manually-tracked recurring events
+#
+# Some annual gatherings near the church never file a City permit early enough
+# to land in the LADBS feed (or file none at all), so the automatic scan can't
+# see them. Hard-code those here. Each occurrence is only emitted once it is
+# within its lead window and has not finished yet, so it does not sit on the
+# dashboard for the other ten months of the year.
+# ---------------------------------------------------------------------------
+
+MANUAL_EVENT_LEAD_MONTH = 7   # start surfacing the current year's occurrence on the 1st of this month
+
+
+def _last_weekday_of_month(year, month, weekday):
+    """Date of the last <weekday> (Mon=0 .. Sun=6) in the given month."""
+    if month == 12:
+        last = datetime(year, 12, 31)
+    else:
+        last = datetime(year, month + 1, 1) - timedelta(days=1)
+    return last - timedelta(days=(last.weekday() - weekday) % 7)
+
+
+def manual_recurring_events(today):
+    """Hard-coded annual events, each emitted only within its lead window."""
+    events = []
+
+    # --- Guatemala Fest ------------------------------------------------------
+    # Lafayette Park, one block from the church. Runs the last Friday / Saturday
+    # / Sunday of August every year (big PA, likely wireless mics). Anchored on
+    # the last Sunday of August so all three days always fall within August.
+    # Spawns on 1 July and drops off once the weekend is over.
+    yr = today.year
+    sun = _last_weekday_of_month(yr, 8, 6)
+    start = (sun - timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
+    end = sun.replace(hour=23, minute=59, second=0, microsecond=0)
+    if datetime(yr, MANUAL_EVENT_LEAD_MONTH, 1) <= today <= end:
+        dist = haversine(LAT_540, LON_540, LAFAYETTE_PARK_LAT, LAFAYETTE_PARK_LON)
+        events.append({
+            "name": "Guatemala Fest",
+            "date": start.strftime('%Y-%m-%d'),
+            "end_date": end.strftime('%Y-%m-%d'),
+            "location": "Lafayette Park, 625 S Lafayette Park Pl, Los Angeles 90057",
+            "type": "Festival (recurring, manually tracked)",
+            "distance_mi": round(dist, 2),
+            "permit": "",
+            "source": "Manually tracked recurring event",
+            "start_dt": start,
+            "end_dt": end,
+        })
+
+    return events
+
+
+# ---------------------------------------------------------------------------
 # FCCLA sheet (unchanged behaviour)
 # ---------------------------------------------------------------------------
 
@@ -1049,12 +1102,29 @@ def main():
     # 3. Classify: everything future, and everything nearby+upcoming.
     all_future, nearby_upcoming = collect_public_events(raw_permits, today)
 
+    # 3b. Fold in manually-tracked annual events that never hit the feed in time.
+    manual_events = manual_recurring_events(today)
+    all_future.extend(manual_events)
+
     # 4. Detect a stale feed and infer recurring events missing from it.
     freshness = assess_feed_freshness(raw_permits, today)
     recurring_gaps = find_recurring_gaps(raw_permits, today, nearby_upcoming, all_future)
 
     # 5. The "Lafayette Park calendar": park permits + RAP page + MacArthur Park.
     lafayette = lafayette_park_report(raw_permits, today)
+    _laf_have = {_norm_name(r["name"]) for r in lafayette["upcoming"]}
+    for m in manual_events:
+        if "lafayette park" not in m["location"].lower():
+            continue
+        if _norm_name(m["name"]) in _laf_have:
+            continue
+        lafayette["upcoming"].append({
+            "name": m["name"],
+            "date": m["start_dt"].strftime('%Y-%m-%d'),
+            "work": "Recurring festival - manually tracked, no permit filed",
+            "start": m["start_dt"],
+        })
+    lafayette["upcoming"].sort(key=lambda r: r["start"])
     _laf_names = ({_norm_name(x["label"]) for x in lafayette["expected"]}
                   | {_norm_name(r["name"]) for r in lafayette["upcoming"]})
     recurring_gaps = [g for g in recurring_gaps
@@ -1073,6 +1143,7 @@ def main():
         nearby_upcoming,
         rap_near,
         [e for e in maccla if e["start_dt"] <= horizon],
+        manual_events,
     )
 
     # 6. Export JSON snapshots.
