@@ -142,13 +142,23 @@ def get_drive_service():
     print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
     return None
 
-def get_upcoming_sunday():
+def get_acceptable_service_sundays():
+    """The Sunday(s) a run right now could legitimately be about.
+
+    Monday-Saturday that's the coming Sunday. On Sunday it's *today* - the
+    service is happening now, not next week (the old ``6 - weekday()`` math
+    rolled forward a full week here, which made the freshness check below
+    reject content that had just been generated for today's service). A
+    Monday/Tuesday catch-up run (e.g. the Monday video migration needing the
+    title/description files) may also still be about the Sunday that just
+    passed, so include that too."""
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
-    days_ahead = 6 - now_pt.weekday()
-    if days_ahead <= 0:
-        days_ahead += 7
-    return now_pt + datetime.timedelta(days=days_ahead)
+    upcoming_sunday = (now_pt + datetime.timedelta(days=(6 - now_pt.weekday()) % 7)).date()
+    acceptable = {upcoming_sunday}
+    if now_pt.weekday() in (0, 1):  # Mon/Tue
+        acceptable.add(upcoming_sunday - datetime.timedelta(days=7))
+    return acceptable
 
 def get_sermon_title_target_date():
     """The Sunday update_service_titles.py actually generated the current
@@ -258,28 +268,30 @@ def main():
     formatted_text = f"{title} - {minister} || FCCLA Sermon"
 
     # 3. Calculate date and output filename
-    sunday = get_upcoming_sunday()
-
-    # Guard against stamping stale sermon-title.txt content (left over from
-    # a previous week that never got refreshed, e.g. no new OW PDF uploaded
-    # yet) onto the next calendar Sunday. Only proceed if the content was
-    # actually generated for the Sunday we're about to label it with.
+    #
+    # service_titles_state.json's target_date is the authoritative "which
+    # Sunday is the current sermon-title.txt content for" - it's stamped by
+    # update_service_titles.py when it processes an Order of Worship PDF. Use
+    # it as the label date, and guard only against it being genuinely stale
+    # (content left over from a week or more ago because no new OW was
+    # processed), so we never re-publish old content as a different week's.
     target_date = get_sermon_title_target_date()
+    acceptable_sundays = get_acceptable_service_sundays()
     if target_date is None:
         print("service_titles_state.json has no recorded target_date for the "
               "current sermon-title.txt content, so it can't be confirmed as "
-              f"fresh for the upcoming Sunday ({sunday.date()}). Skipping "
-              "rather than risk mislabeling stale content - re-run once "
-              "update_service_titles.py has processed a new OW PDF.")
+              "fresh. Skipping rather than risk mislabeling stale content - "
+              "re-run once update_service_titles.py has processed a new OW PDF.")
         return
-    if target_date != sunday.date():
-        print(f"sermon-title.txt was generated for {target_date}, but the "
-              f"next upcoming Sunday is {sunday.date()} - no fresh Order of "
-              "Worship has been processed for that week yet. Skipping "
-              f"instead of relabeling {target_date}'s content as "
-              f"{sunday.date()}'s.")
+    if target_date not in acceptable_sundays:
+        wanted = ", ".join(str(d) for d in sorted(acceptable_sundays))
+        print(f"sermon-title.txt was generated for {target_date}, which isn't "
+              f"a current service Sunday ({wanted}) - no fresh Order of "
+              "Worship has been processed. Skipping instead of re-publishing "
+              "stale content.")
         return
 
+    sunday = target_date
     date_str = sunday.strftime("%m-%d-%Y")
 
     output_dir = "Sermon-Series"
@@ -300,7 +312,7 @@ def main():
             desc_template = f.read()
 
         yt_service = get_youtube_service()
-        youtube_link = get_upcoming_stream_url(yt_service, sunday.date())
+        youtube_link = get_upcoming_stream_url(yt_service, sunday)
         if not youtube_link:
             # This script can regenerate the same week's description more than
             # once (e.g. a later sermon-title correction re-triggers it)
