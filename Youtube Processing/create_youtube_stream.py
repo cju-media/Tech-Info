@@ -208,6 +208,24 @@ def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
         print(f"Failed to dispatch github event: {response.status_code} {response.text}")
         return
 
+def record_last_stream(video_id, service_date):
+    """Write a small breadcrumb the tech-info dashboard reads to show when the
+    most recent worship livestream was created. Committed by whichever
+    workflow ran this script (create_pending_youtube_stream.yml via
+    create_pending_stream.py, or process_uploads.yml via
+    upload_queue_to_drive.py)."""
+    path = os.path.join("Youtube Processing", "last_stream.json")
+    try:
+        with open(path, "w") as f:
+            json.dump({
+                "created_at": datetime.now(pytz.utc).isoformat(),
+                "service_date": service_date.strftime("%m-%d-%Y"),
+                "stream_url": f"https://www.youtube.com/watch?v={video_id}",
+            }, f, indent=2)
+        print(f"Recorded last-stream breadcrumb to {path}")
+    except Exception as e:
+        print(f"Warning: could not write {path}: {e}")
+
 def main():
     parser = argparse.ArgumentParser(description="Create a scheduled YouTube livestream for a worship service.")
     parser.add_argument("date", help="Service date (MM-DD-YYYY, also accepts M-D-YY and slash separators)")
@@ -372,6 +390,7 @@ def main():
 
         # Dispatch event
         dispatch_event(broadcast_id, target_date.strftime("%m-%d-%Y"))
+        record_last_stream(broadcast_id, target_date)
 
     except HttpError as e:
         print(f"Failed to create stream or set metadata: {e}")

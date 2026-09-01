@@ -261,6 +261,59 @@
         table.rf-table tr:last-child td { border-bottom: none; }
         table.rf-table tr.rf-near td { background: #fffdf5; }
         .rf-dist-near { color: #c0392b; font-weight: bold; }
+
+        .pipeline-section { margin-bottom: 24px; }
+        .pipeline-section h2 {
+            margin: 0 0 4px 0;
+            font-size: 20px;
+            color: #222;
+        }
+        .pipeline-section .rf-sub { margin: 0 0 12px 0; }
+        .pipeline-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .pipeline-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 4px 16px;
+            padding: 14px 16px;
+            border-bottom: 1px solid #eee;
+        }
+        .pipeline-row:last-child { border-bottom: none; }
+        .pipeline-row .pl-main { flex: 1 1 240px; min-width: 0; }
+        .pipeline-row h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #222;
+        }
+        .pipeline-row .pl-desc {
+            margin: 2px 0 0 0;
+            font-size: 12px;
+            color: #888;
+        }
+        .pipeline-row .pl-when {
+            flex: 0 0 auto;
+            font-size: 13px;
+            color: #1e7e34;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .pipeline-row .pl-when.pl-old { color: #8a6d00; }
+        .pipeline-row .pl-when.pl-unknown { color: #999; font-weight: normal; }
+        .pipeline-row .pl-links {
+            flex: 1 1 100%;
+            margin-top: 6px;
+            font-size: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 14px;
+        }
+        .pipeline-row .pl-links a { color: #007bff; text-decoration: none; }
+        .pipeline-row .pl-links a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -309,6 +362,18 @@
                 Rows within ~1.6 mi of the church are highlighted.
             </p>
             <div id="rf-all"></div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="pipeline-section">
+            <h2>Weekly Content Pipeline</h2>
+            <p class="rf-sub">
+                When each stage of the Sunday content pipeline last produced fresh output, and where to see it.
+                Times come from the commit / upload that last changed each stage's output &mdash; not from a
+                workflow simply running.
+            </p>
+            <div id="pipeline-list" class="pipeline-list"></div>
         </div>
 
         <div class="section-divider"></div>
@@ -658,6 +723,160 @@
 
         loadRf();
         setInterval(loadRf, 3600000);
+
+        // ---- Weekly Content Pipeline ---------------------------------------
+        // Each stage's "last produced fresh output" time. For the
+        // repo-tracked stages (script / OW / titles) that's the most recent
+        // commit that changed the stage's output, via the GitHub commits
+        // API. For the livestream and the migrated sermon video it's a
+        // breadcrumb JSON the creating script writes on success
+        // (Youtube Processing/last_stream.json,
+        //  Utilities/Video Migration/last_upload.json).
+        const TECH_REPO = 'cju-media/Tech-Info';
+
+        function ghHeaders() {
+            const pat = localStorage.getItem('GITHUB_PAT');
+            return pat ? { Authorization: 'token ' + pat } : {};
+        }
+
+        async function latestCommitDate(path) {
+            const url = 'https://api.github.com/repos/' + TECH_REPO
+                + '/commits?per_page=1&path=' + encodeURIComponent(path);
+            const res = await fetch(url, { headers: ghHeaders(), cache: 'no-store' });
+            if (!res.ok) throw new Error('GitHub API HTTP ' + res.status);
+            const data = await res.json();
+            if (!Array.isArray(data) || !data.length) return null;
+            const c = data[0].commit || {};
+            return new Date((c.committer && c.committer.date) || (c.author && c.author.date));
+        }
+
+        async function pipelineRawJson(relPath) {
+            const res = await fetch(relPath + '?t=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }
+
+        function fmtAbs(date) {
+            return date.toLocaleString(undefined, {
+                weekday: 'short', month: 'short', day: 'numeric',
+                hour: 'numeric', minute: '2-digit',
+            });
+        }
+
+        const PIPELINE = [
+            {
+                name: 'Worship script',
+                desc: 'Run-of-show PDF pulled from Drive and parsed (Check Worship Scripts)',
+                when: async () => ({ date: await latestCommitDate('Worship Scripts/worship_scripts.json') }),
+                links: [
+                    { label: 'Rendered script', href: '../../Worship%20Scripts/upcoming_script.html' },
+                    { label: 'Script PDFs (GitHub)', href: 'https://github.com/cju-media/Tech-Info/tree/main/Worship%20Scripts/service-scripts' },
+                    { label: 'Drive folder', href: 'https://drive.google.com/drive/folders/1LW_e2qjwXiI5m-TOqbLiuurTO7XzZ4OT' },
+                ],
+            },
+            {
+                name: 'Order of Worship',
+                desc: 'Latest OW ingested from the OW repo and sent to Gemini (Service Titles Checker)',
+                when: async () => ({ date: await latestCommitDate('Worship Scripts/service_titles_state.json') }),
+                links: [
+                    { label: 'OW PDFs (cju-media/OW)', href: 'https://github.com/cju-media/OW/tree/main/OWs' },
+                    { label: 'Processing state', href: 'https://github.com/cju-media/Tech-Info/blob/main/Worship%20Scripts/service_titles_state.json' },
+                ],
+            },
+            {
+                name: 'Service titles',
+                desc: 'Title text files regenerated from the OW and synced to Drive',
+                when: async () => ({ date: await latestCommitDate('Worship Scripts/service-titles') }),
+                links: [
+                    { label: 'Titles (GitHub)', href: 'https://github.com/cju-media/Tech-Info/tree/main/Worship%20Scripts/service-titles' },
+                    { label: 'Drive folder', href: 'https://drive.google.com/drive/folders/1BICfy0OQa3fNvo69iEOpEx_66KCQGeUv' },
+                ],
+            },
+            {
+                name: 'YouTube livestream',
+                desc: 'Sunday-service live broadcast created, titled and thumbnailed',
+                when: async () => {
+                    try {
+                        const s = await pipelineRawJson('../../Youtube%20Processing/last_stream.json');
+                        return {
+                            date: s.created_at ? new Date(s.created_at) : null,
+                            note: s.service_date ? 'for ' + s.service_date : '',
+                            extraLink: s.stream_url ? { label: 'Watch stream', href: s.stream_url } : null,
+                        };
+                    } catch (e) {
+                        return {
+                            date: await latestCommitDate('Youtube Processing/description_push_state.json'),
+                            note: 'description last pushed',
+                        };
+                    }
+                },
+                links: [
+                    { label: 'Live playlist', href: 'https://www.youtube.com/playlist?list=PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs' },
+                ],
+            },
+            {
+                name: 'Sermon video',
+                desc: 'Recorded service copied from Drive and uploaded to YouTube (Video Migration)',
+                when: async () => {
+                    try {
+                        const v = await pipelineRawJson('../Video%20Migration/last_upload.json');
+                        return {
+                            date: v.uploaded_at ? new Date(v.uploaded_at) : null,
+                            note: v.service_date ? 'for ' + v.service_date : '',
+                            extraLink: v.video_url ? { label: 'Watch video', href: v.video_url } : null,
+                        };
+                    } catch (e) {
+                        return { date: null, note: 'no upload recorded yet' };
+                    }
+                },
+                links: [
+                    { label: 'Sermon playlist', href: 'https://www.youtube.com/playlist?list=PLGtiSp5WvUc9v95hvMCERRUvWBXJJsGrP' },
+                    { label: 'Drive folder', href: 'https://drive.google.com/drive/folders/1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4' },
+                ],
+            },
+        ];
+
+        function renderPipeline(results) {
+            const host = document.getElementById('pipeline-list');
+            host.innerHTML = PIPELINE.map((stage, i) => {
+                const r = results[i] || {};
+                let whenHtml, whenClass, whenTitle = '';
+                if (r.date instanceof Date && !isNaN(r.date)) {
+                    const ageDays = (Date.now() - r.date.getTime()) / 86400000;
+                    whenClass = ageDays > 9 ? 'pl-old' : '';
+                    whenHtml = escapeHtml(timeAgo(r.date));
+                    whenTitle = fmtAbs(r.date) + (r.note ? ' — ' + r.note : '');
+                } else {
+                    whenClass = 'pl-unknown';
+                    whenHtml = escapeHtml(r.note || 'unknown');
+                }
+                const links = stage.links.slice();
+                if (r.extraLink) links.unshift(r.extraLink);
+                const linksHtml = links.map((l) =>
+                    '<a href="' + escapeHtml(l.href) + '" target="_blank" rel="noopener noreferrer">'
+                    + escapeHtml(l.label) + ' ↗</a>'
+                ).join('');
+                return '<div class="pipeline-row">'
+                    + '<div class="pl-main"><h4>' + escapeHtml(stage.name) + '</h4>'
+                    + '<p class="pl-desc">' + escapeHtml(stage.desc) + '</p></div>'
+                    + '<div class="pl-when ' + whenClass + '"'
+                    + (whenTitle ? ' title="' + escapeHtml(whenTitle) + '"' : '') + '>' + whenHtml + '</div>'
+                    + '<div class="pl-links">' + linksHtml + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        async function loadPipeline() {
+            const results = await Promise.all(PIPELINE.map(async (stage) => {
+                try { return await stage.when(); }
+                catch (e) { return { date: null, note: 'could not load' }; }
+            }));
+            renderPipeline(results);
+        }
+
+        renderPipeline(PIPELINE.map(() => ({ date: null, note: 'checking…' })));
+        loadPipeline();
+        setInterval(loadPipeline, 3600000);
     </script>
 </body>
 </html>

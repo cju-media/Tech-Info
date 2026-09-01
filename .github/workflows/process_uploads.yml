@@ -66,6 +66,9 @@ jobs:
           if [ -d "Youtube Processing/pending_stream" ]; then
             git add "Youtube Processing/pending_stream/"
           fi
+          # Breadcrumb create_youtube_stream.py writes when upload_queue_to_drive.py
+          # creates the broadcast directly (dashboard's pipeline section reads it).
+          git add "Youtube Processing/last_stream.json" 2>/dev/null || true
           # Only commit if there are changes (files deleted)
           git diff --quiet && git diff --staged --quiet || git commit -m "Cleanup processed uploads"
           # Retry the rebase+push: other workflows (youtube description,

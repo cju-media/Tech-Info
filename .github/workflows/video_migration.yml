@@ -19,10 +19,14 @@ on:
 jobs:
   migrate_video:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -41,3 +45,12 @@ jobs:
           PAT: ${{ secrets.PAT }}
         run: |
           python "Utilities/Video Migration/migrate_videos.py"
+
+      - name: Commit last-upload breadcrumb
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # Written by migrate_videos.py only on a successful YouTube upload;
+          # the tech-info dashboard's pipeline section reads it.
+          git add "Utilities/Video Migration/last_upload.json" || true
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Record last sermon video migration" && git pull --rebase origin main && git push)

@@ -62,6 +62,23 @@ def dispatch_event(event_type, client_payload, max_retries=4, backoff_seconds=3)
         print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
         return
 
+def record_last_upload(video_id, title, service_date_str):
+    """Write a breadcrumb the tech-info dashboard reads to show when the most
+    recent sermon recording was migrated to YouTube. Committed by
+    video_migration.yml."""
+    path = os.path.join("Utilities", "Video Migration", "last_upload.json")
+    try:
+        with open(path, "w") as f:
+            json.dump({
+                "uploaded_at": datetime.now(pytz.utc).isoformat(),
+                "service_date": service_date_str,
+                "video_title": title,
+                "video_url": f"https://www.youtube.com/watch?v={video_id}",
+            }, f, indent=2)
+        print(f"Recorded last-upload breadcrumb to {path}")
+    except Exception as e:
+        print(f"Warning: could not write {path}: {e}")
+
 def get_drive_service():
     oauth_json = os.environ.get('GDRIVE_OAUTH_JSON')
     if oauth_json:
@@ -375,6 +392,7 @@ def main():
                         'video_url': f"https://youtube.com/watch?v={uploaded_video_id}",
                         'privacy_status': privacy_status
                     })
+                    record_last_upload(uploaded_video_id, video_title, sunday_str_formatted)
 
                     # Search for thumbnail image in destination subfolder
                     print("Searching for thumbnail image to upload...")
