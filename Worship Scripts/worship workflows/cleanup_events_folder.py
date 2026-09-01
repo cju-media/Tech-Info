@@ -31,23 +31,46 @@ edit access on this folder, over GDRIVE_OAUTH_JSON.
 
 import os
 import re
+import sys
 import json
 import smtplib
 import datetime
 import zoneinfo
-import requests
 import time
 from email.message import EmailMessage
 
-from google import genai
-from google.genai import types
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from google.oauth2 import service_account
-from google.oauth2.credentials import Credentials
+# The third-party stack is only needed for the Drive/Gemini/GitHub calls in
+# main() and its helpers. Guard the imports so the pure helpers
+# (parse_drive_created_date, extract_event_date's parsing, the misread-year
+# check) stay importable for unit tests without the full client libraries.
+# main() genuinely needs them and fails loudly at call time if they're absent.
+try:
+    import requests
+    from google import genai
+    from google.genai import types
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    from google.oauth2 import service_account
+    from google.oauth2.credentials import Credentials
+except ImportError:
+    pass
 
 EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 NOTIFIED_STATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'events_cleanup_notified_ids.json')
+
+# Gemini reads the event date off the flyer graphic, and flyers often print
+# the date with no year ("Friday, September 5"), so the model has to guess it
+# -- and sometimes guesses a past year for an upcoming event (this fired four
+# bogus "delete this" alerts on 2026-08-31). Drive's createdTime is the upload
+# time, so a flyer whose read event date lands this many days *before* it was
+# uploaded is almost certainly a misread year: skip it rather than act on it.
+SUSPECT_MISREAD_DAYS = 180
+
+
+class FlyerDateReadError(Exception):
+    """The Gemini API call to read a flyer's date failed at the transport/quota
+    layer (429, 5xx, network, timeout) -- distinct from the call succeeding but
+    finding no usable date, which is a plain None."""
 
 DATE_PROMPT = """This image is a promotional flyer for a church event, posted to a Google Drive folder that a human periodically clears out once the event has passed.
 
@@ -101,7 +124,7 @@ def list_image_files(service, folder_id):
     page_token = None
     while True:
         results = service.files().list(
-            q=query, spaces='drive', fields='nextPageToken, files(id, name, mimeType)',
+            q=query, spaces='drive', fields='nextPageToken, files(id, name, mimeType, createdTime)',
             pageToken=page_token, supportsAllDrives=True, includeItemsFromAllDrives=True,
         ).execute()
         files.extend(results.get('files', []))
@@ -116,8 +139,12 @@ def download_file(service, file_id):
 
 
 def extract_event_date(client, image_bytes, mime_type):
-    """Ask Gemini to read the event date off a flyer image. Returns a
-    datetime.date, or None if it couldn't find one (or the call failed)."""
+    """Ask Gemini to read the event date off a flyer image.
+
+    Returns a datetime.date, or None if the call succeeded but there's no
+    usable date (evergreen graphic, or the model's response didn't parse).
+    Raises FlyerDateReadError if the API call itself failed -- so the caller
+    can tell "no date here" apart from "we never got to look"."""
     try:
         response = client.models.generate_content(
             model='gemini-3.5-flash',
@@ -126,23 +153,47 @@ def extract_event_date(client, image_bytes, mime_type):
                 DATE_PROMPT,
             ],
         )
-        if not response or not response.text:
-            print("  No response from Gemini.")
-            return None
+    except Exception as e:
+        raise FlyerDateReadError(str(e)) from e
 
-        text = response.text.strip()
-        # Strip markdown fences if the model added them despite instructions.
-        text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text.strip())
+    if not response or not response.text:
+        print("  No response from Gemini.")
+        return None
 
+    text = response.text.strip()
+    # Strip markdown fences if the model added them despite instructions.
+    text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text.strip())
+
+    try:
         data = json.loads(text)
         if not data.get('has_date'):
             print("  Gemini found no explicit date on this flyer; leaving it alone.")
             return None
-
         return datetime.date.fromisoformat(data['last_date'])
-    except Exception as e:
-        print(f"  Could not determine a date for this flyer: {e}")
+    except (ValueError, TypeError, KeyError) as e:
+        print(f"  Could not parse a date out of Gemini's response ({e!r}); leaving it alone.")
         return None
+
+
+def parse_drive_created_date(created_time):
+    """Drive's createdTime is RFC 3339 (e.g. '2026-08-29T12:34:56.789Z').
+    Return just the calendar date, or None if it's missing/unparseable."""
+    if not created_time or not isinstance(created_time, str):
+        return None
+    try:
+        return datetime.date.fromisoformat(created_time[:10])
+    except ValueError:
+        return None
+
+
+def is_suspected_misread(event_date, created_date):
+    """True if a flyer's Gemini-read event date lands so far before the file
+    was uploaded to Drive that it's almost certainly a wrong-year read rather
+    than a genuinely-passed event (nobody uploads a flyer months after the
+    event). Returns False when we can't tell (no upload date)."""
+    if event_date is None or created_date is None:
+        return False
+    return (created_date - event_date).days > SUSPECT_MISREAD_DAYS
 
 
 def load_notified_state():
@@ -218,19 +269,10 @@ def get_smtp_credentials():
     }
 
 
-def send_manual_deletion_email(file_name, file_url):
+def send_alert_email(subject, body):
     creds = get_smtp_credentials()
     to_email = "cameron@cju.media"
     cc_email = "cjohnston@fccla.org"
-
-    subject = f"Action needed: delete '{file_name}' from Events_Ads"
-    body = (
-        f"Hi Cameron,\n\n"
-        f"The Events_Ads cleanup automation found a passed event flyer it can't delete itself "
-        f"(Google Drive only lets a personal file's owner trash it, even with Editor access):\n\n"
-        f"  {file_name}\n  {file_url}\n\n"
-        f"Please delete it manually.\n\nBest,\nCam-Bot"
-    )
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -240,7 +282,7 @@ def send_manual_deletion_email(file_name, file_url):
     msg.set_content(body)
 
     if not creds['email'] or not creds['password']:
-        print(f"DRY RUN (no SMTP creds): Would send manual-deletion email to {to_email} (CC: {cc_email})")
+        print(f"DRY RUN (no SMTP creds): Would email {to_email} (CC: {cc_email})")
         print(f"Subject: {subject}\nBody:\n{body}")
         return
 
@@ -249,15 +291,35 @@ def send_manual_deletion_email(file_name, file_url):
             server.starttls()
             server.login(creds['email'], creds['password'])
             server.send_message(msg, to_addrs=[to_email, cc_email])
-        print(f"Successfully sent manual-deletion email to {to_email} (CC: {cc_email}).")
+        print(f"Successfully emailed {to_email} (CC: {cc_email}).")
     except Exception as e:
-        print(f"Failed to send manual-deletion email: {e}")
+        print(f"Failed to send email: {e}")
 
 
 def notify_manual_deletion_needed(file_name, file_id):
     file_url = f"https://drive.google.com/file/d/{file_id}/view"
     dispatch_event('events_folder_manual_deletion_needed', {'file_name': file_name, 'file_url': file_url})
-    send_manual_deletion_email(file_name, file_url)
+    send_alert_email(
+        f"Action needed: delete '{file_name}' from Events_Ads",
+        f"Hi Cameron,\n\n"
+        f"The Events_Ads cleanup automation found a passed event flyer it can't delete itself "
+        f"(Google Drive only lets a personal file's owner trash it, even with Editor access):\n\n"
+        f"  {file_name}\n  {file_url}\n\n"
+        f"Please delete it manually.\n\nBest,\nCam-Bot"
+    )
+
+
+def notify_cleanup_failed(summary):
+    """The run couldn't read any flyer dates (usually Gemini quota/billing).
+    Without this the job just exits green -- which masked ~12 days of quota
+    exhaustion in Aug 2026."""
+    dispatch_event('events_folder_cleanup_failed', {'message': summary})
+    send_alert_email(
+        "Events_Ads cleanup failed to read any flyers",
+        f"Hi Cameron,\n\n{summary}\n\n"
+        f"The folder was NOT cleaned this run. Most often this is the Gemini API key "
+        f"being out of quota/credits -- check billing at https://ai.studio/ .\n\nBest,\nCam-Bot"
+    )
 
 
 def main():
@@ -292,6 +354,8 @@ def main():
     print(f"Found {len(files)} image file(s) to check.")
 
     trashed_count = 0
+    attempted_reads = 0
+    read_failures = 0
     for f in files:
         print(f"- {f['name']} ({f['id']})")
         try:
@@ -300,8 +364,22 @@ def main():
             print(f"  Failed to download: {e}")
             continue
 
-        event_date = extract_event_date(gemini_client, image_bytes, f['mimeType'])
+        attempted_reads += 1
+        try:
+            event_date = extract_event_date(gemini_client, image_bytes, f['mimeType'])
+        except FlyerDateReadError as e:
+            read_failures += 1
+            print(f"  Could not reach Gemini to read this flyer: {e}")
+            continue
+
         if event_date is None:
+            continue
+
+        created_date = parse_drive_created_date(f.get('createdTime'))
+        if is_suspected_misread(event_date, created_date):
+            print(f"  Gemini read an event date of {event_date}, but this file wasn't uploaded "
+                  f"until {created_date} -- {(created_date - event_date).days} days later. That's "
+                  f"almost certainly a misread year, so skipping it (no trash, no alert).")
             continue
 
         if event_date >= today:
@@ -346,6 +424,22 @@ def main():
     current_ids = {f['id'] for f in files}
     notified_state = {fid: info for fid, info in notified_state.items() if fid in current_ids}
     save_notified_state(notified_state)
+
+    # If every flyer we managed to hand to Gemini came back as an API failure,
+    # the run did nothing -- fail loudly (red X + alert) instead of exiting
+    # green, which is how ~12 days of quota exhaustion went unnoticed in Aug
+    # 2026.
+    if attempted_reads and read_failures == attempted_reads:
+        summary = (f"Events_Ads cleanup could not read a date from any of {attempted_reads} "
+                   f"flyer(s) -- every Gemini call failed.")
+        print(f"\n{summary}")
+        if not is_dry_run:
+            notify_cleanup_failed(summary)
+        sys.exit(1)
+
+    if read_failures:
+        print(f"Note: {read_failures} of {attempted_reads} flyer(s) couldn't be read this run; "
+              f"they'll be retried next run.")
 
     print(f"Done. Trashed {trashed_count} file(s)." if not is_dry_run else "Done (dry run).")
 

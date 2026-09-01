@@ -49,6 +49,7 @@ jobs:
         run: python "Worship Scripts/worship workflows/cleanup_events_folder.py"
 
       - name: Commit notified-file state
+        if: always()
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
