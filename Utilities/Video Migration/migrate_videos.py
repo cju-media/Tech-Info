@@ -424,7 +424,35 @@ def main():
                     os.remove(local_video_path)
                     print(f"Deleted local file {local_video_path}.")
         else:
-            print("Could not find both Title and Description text files in the destination subfolder. Skipping YouTube upload.")
+            missing = []
+            if not video_title:
+                missing.append("title")
+            if not video_description:
+                missing.append("description")
+            msg = (
+                f"Video migration: the {sunday_str_formatted} recording is in Drive but the "
+                f"YouTube upload was skipped - no {' or '.join(missing)} text file in the "
+                f"'{sunday_str_formatted}' folder yet. Re-run 'Video Migration' once "
+                "create_sermon_series.py has uploaded it."
+            )
+            print(msg)
+            dispatch_event('video_migration_upload_skipped', {
+                'date': sunday_str_formatted,
+                'missing': ", ".join(missing),
+                'message': msg,
+            })
+    elif copied_video_id and not youtube_service:
+        msg = (
+            f"Video migration: the {sunday_str_formatted} recording is in Drive but the "
+            "YouTube upload was skipped - could not authenticate with YouTube "
+            "(check YOUTUBE_CREDENTIALS_JSON)."
+        )
+        print(msg)
+        dispatch_event('video_migration_upload_skipped', {
+            'date': sunday_str_formatted,
+            'missing': 'youtube-auth',
+            'message': msg,
+        })
 
 if __name__ == "__main__":
     main()

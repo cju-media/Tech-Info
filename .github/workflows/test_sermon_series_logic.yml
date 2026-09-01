@@ -1,0 +1,32 @@
+name: Test Sermon Series Logic
+
+# Fast, dependency-free unit tests for create_sermon_series.py's "which
+# Sunday is this run about" logic - the guard that broke on 2026-08-30 when
+# an Order of Worship was processed on Sunday morning.
+
+on:
+  push:
+    paths:
+      - 'Worship Scripts/worship workflows/create_sermon_series.py'
+      - 'Worship Scripts/worship workflows/test_create_sermon_series.py'
+      - '.github/workflows/test_sermon_series_logic.yml'
+  pull_request:
+    paths:
+      - 'Worship Scripts/worship workflows/create_sermon_series.py'
+      - 'Worship Scripts/worship workflows/test_create_sermon_series.py'
+  workflow_dispatch:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run unit tests
+        run: cd "Worship Scripts/worship workflows" && python -m unittest test_create_sermon_series -v

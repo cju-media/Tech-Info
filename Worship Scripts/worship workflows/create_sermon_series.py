@@ -2,15 +2,24 @@ import os
 import json
 import io
 import re
-import requests
 import time
 import datetime
 import zoneinfo
-from googleapiclient.discovery import build
-from google.oauth2 import service_account
-from google.oauth2.credentials import Credentials
-from googleapiclient.http import MediaIoBaseUpload
-import dateutil.parser
+
+# The third-party stack is only needed for the Drive/YouTube API calls. Guard
+# the imports so the pure date/skip helpers (get_acceptable_service_sundays,
+# resolve_service_sunday) stay importable for unit tests without the full
+# Google client libraries installed. main() genuinely needs them and will
+# fail loudly at call time if they're missing.
+try:
+    import requests
+    from googleapiclient.discovery import build
+    from google.oauth2 import service_account
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.http import MediaIoBaseUpload
+    import dateutil.parser
+except ImportError:
+    pass
 
 PARENT_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs'
@@ -142,8 +151,8 @@ def get_drive_service():
     print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
     return None
 
-def get_acceptable_service_sundays():
-    """The Sunday(s) a run right now could legitimately be about.
+def get_acceptable_service_sundays(now=None):
+    """The Sunday(s) a run right now could legitimately be generating output for.
 
     Monday-Saturday that's the coming Sunday. On Sunday it's *today* - the
     service is happening now, not next week (the old ``6 - weekday()`` math
@@ -151,14 +160,46 @@ def get_acceptable_service_sundays():
     reject content that had just been generated for today's service). A
     Monday/Tuesday catch-up run (e.g. the Monday video migration needing the
     title/description files) may also still be about the Sunday that just
-    passed, so include that too."""
-    tz = zoneinfo.ZoneInfo("America/Los_Angeles")
-    now_pt = datetime.datetime.now(tz)
-    upcoming_sunday = (now_pt + datetime.timedelta(days=(6 - now_pt.weekday()) % 7)).date()
+    passed, so include that too.
+
+    ``now`` (a date or datetime, America/Los_Angeles) defaults to the current
+    time; it exists so tests can pin the day of week.
+    """
+    if now is None:
+        now = datetime.datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles"))
+    today = now.date() if isinstance(now, datetime.datetime) else now
+    upcoming_sunday = today + datetime.timedelta(days=(6 - today.weekday()) % 7)
     acceptable = {upcoming_sunday}
-    if now_pt.weekday() in (0, 1):  # Mon/Tue
+    if today.weekday() in (0, 1):  # Mon/Tue
         acceptable.add(upcoming_sunday - datetime.timedelta(days=7))
     return acceptable
+
+def resolve_service_sunday(target_date, now=None):
+    """Decide which Sunday this run should label its output for.
+
+    ``target_date`` is the Sunday stamped in service_titles_state.json for the
+    current sermon-title.txt content (see get_sermon_title_target_date; may be
+    None). Returns ``(sunday_date, None)`` when output should be generated for
+    that Sunday, or ``(None, reason)`` when the run should skip - either
+    because the stamp is missing or because it points at a week that isn't a
+    current service Sunday (stale content left over because no fresh Order of
+    Worship was processed)."""
+    acceptable = get_acceptable_service_sundays(now)
+    if target_date is None:
+        return None, (
+            "service_titles_state.json has no recorded target_date for the "
+            "current sermon-title.txt content, so it can't be confirmed as "
+            "fresh. Skipping rather than risk mislabeling stale content - "
+            "re-run once update_service_titles.py has processed a new OW PDF."
+        )
+    if target_date not in acceptable:
+        wanted = ", ".join(str(d) for d in sorted(acceptable))
+        return None, (
+            f"sermon-title.txt was generated for {target_date}, which isn't a "
+            f"current service Sunday ({wanted}) - no fresh Order of Worship "
+            "has been processed. Skipping instead of re-publishing stale content."
+        )
+    return target_date, None
 
 def get_sermon_title_target_date():
     """The Sunday update_service_titles.py actually generated the current
@@ -275,23 +316,11 @@ def main():
     # it as the label date, and guard only against it being genuinely stale
     # (content left over from a week or more ago because no new OW was
     # processed), so we never re-publish old content as a different week's.
-    target_date = get_sermon_title_target_date()
-    acceptable_sundays = get_acceptable_service_sundays()
-    if target_date is None:
-        print("service_titles_state.json has no recorded target_date for the "
-              "current sermon-title.txt content, so it can't be confirmed as "
-              "fresh. Skipping rather than risk mislabeling stale content - "
-              "re-run once update_service_titles.py has processed a new OW PDF.")
-        return
-    if target_date not in acceptable_sundays:
-        wanted = ", ".join(str(d) for d in sorted(acceptable_sundays))
-        print(f"sermon-title.txt was generated for {target_date}, which isn't "
-              f"a current service Sunday ({wanted}) - no fresh Order of "
-              "Worship has been processed. Skipping instead of re-publishing "
-              "stale content.")
+    sunday, skip_reason = resolve_service_sunday(get_sermon_title_target_date())
+    if skip_reason:
+        print(skip_reason)
         return
 
-    sunday = target_date
     date_str = sunday.strftime("%m-%d-%Y")
 
     output_dir = "Sermon-Series"
