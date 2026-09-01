@@ -179,6 +179,88 @@
             font-size: 24px;
             color: #999;
         }
+        .rf-section { margin-bottom: 24px; }
+        .rf-section h2 {
+            margin: 0 0 4px 0;
+            font-size: 20px;
+            color: #222;
+        }
+        .rf-section .rf-sub {
+            margin: 0 0 4px 0;
+            color: #666;
+            font-size: 13px;
+        }
+        .rf-section h3 {
+            margin: 20px 0 2px 0;
+            font-size: 15px;
+            color: #222;
+        }
+        .rf-note {
+            margin: 0 0 10px 0;
+            color: #888;
+            font-size: 12px;
+        }
+        .rf-conflict-card {
+            background: white;
+            border-left: 4px solid #e0a800;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 12px 16px;
+            margin-bottom: 10px;
+        }
+        .rf-conflict-card h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            color: #222;
+        }
+        .rf-conflict-card p {
+            margin: 2px 0;
+            font-size: 12px;
+            color: #666;
+        }
+        .rf-conflict-card .rf-when { color: #c0392b; font-weight: bold; }
+        .rf-empty {
+            background: #e6f4ea;
+            border: 1px solid #b7dfc4;
+            color: #1e7e34;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+        .rf-error {
+            background: #fdecea;
+            border: 1px solid #f5c6c0;
+            color: #c0392b;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+        .rf-table-wrap { overflow-x: auto; }
+        table.rf-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 13px;
+        }
+        table.rf-table th, table.rf-table td {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+        table.rf-table th {
+            background: #f4f6f8;
+            color: #555;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        table.rf-table td.rf-loc { white-space: normal; min-width: 220px; color: #666; }
+        table.rf-table tr:last-child td { border-bottom: none; }
+        table.rf-table tr.rf-near td { background: #fffdf5; }
+        .rf-dist-near { color: #c0392b; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -203,6 +285,30 @@
             &#9888; Some servers show <strong>Unknown</strong> because this page is loaded over HTTPS (GitHub Pages),
             and browsers block secure pages from checking local, non-HTTPS servers. That's a browser security rule,
             not a sign anything is down &mdash; open the link directly (on the venue network) to confirm.
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="rf-section">
+            <h2>RF Coordination</h2>
+            <p class="rf-sub">
+                Public events near the church (540 S Commonwealth Ave) that may run wireless mics,
+                amplified audio, or a large PA &mdash; anything worth coordinating frequencies against.
+                Refreshed weekly by the RF Coordination workflow.
+            </p>
+
+            <h3>Upcoming potential conflicts</h3>
+            <p class="rf-note" id="rf-conflicts-note">
+                Nearby gatherings (within ~1.6 mi) in the next 60 days flagged for frequency coordination.
+            </p>
+            <div id="rf-conflicts"></div>
+
+            <h3>All captured upcoming events</h3>
+            <p class="rf-note" id="rf-all-note">
+                Every future LA City special-event permit the scan captured, soonest first.
+                Rows within ~1.6 mi of the church are highlighted.
+            </p>
+            <div id="rf-all"></div>
         </div>
 
         <div class="section-divider"></div>
@@ -425,6 +531,125 @@
         renderGrid();
         checkAll();
         setInterval(checkAll, 30000);
+
+        // ---- RF Coordination -------------------------------------------------
+        // Both JSON files are written weekly by
+        // Utilities/Scheduling/RF Coordination/send_rf_coordination.py:
+        //   public_events.json  -> nearby gatherings flagged as potential conflicts
+        //   all_la_events.json  -> every future LA City special-event permit captured
+        const RF_BASE = '../Scheduling/RF%20Coordination/';
+        const RF_WATCH_RADIUS_MI = 1.6;
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+            }[c]));
+        }
+
+        function fmtDate(str) {
+            if (!str) return 'Date TBD';
+            const d = new Date(str + 'T00:00:00');
+            if (isNaN(d)) return str;
+            return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function fmtDist(mi) {
+            if (mi == null) return '<span style="color:#aaa">&mdash;</span>';
+            const near = mi <= RF_WATCH_RADIUS_MI;
+            return `<span class="${near ? 'rf-dist-near' : ''}">~${mi} mi</span>`;
+        }
+
+        function todayISO() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        async function loadRfJson(file) {
+            const res = await fetch(RF_BASE + file + '?t=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) throw new Error(file + ': HTTP ' + res.status);
+            return res.json();
+        }
+
+        function renderRfConflicts(events) {
+            const host = document.getElementById('rf-conflicts');
+            const note = document.getElementById('rf-conflicts-note');
+            const upcoming = (events || [])
+                .filter((e) => !e.date || e.date >= todayISO())
+                .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+
+            if (!upcoming.length) {
+                host.innerHTML = '<div class="rf-empty">No nearby public events are currently flagged as potential conflicts.</div>';
+                note.textContent = 'Nearby gatherings (within ~1.6 mi) in the next 60 days flagged for frequency coordination.';
+                return;
+            }
+            note.textContent = `${upcoming.length} nearby gathering(s) flagged in the next 60 days — coordinate frequencies before these dates.`;
+            host.innerHTML = upcoming.map((e) => `
+                <div class="rf-conflict-card">
+                    <h4>${escapeHtml(e.name)}</h4>
+                    <p class="rf-when">${escapeHtml(fmtDate(e.date))}${e.distance_mi != null ? ' &middot; ~' + escapeHtml(e.distance_mi) + ' mi from the church' : ''}</p>
+                    <p>${escapeHtml(e.location || 'Location unknown')}</p>
+                    <p>${escapeHtml(e.type || '')}${e.permit ? ' &middot; permit ' + escapeHtml(e.permit) : ''}${e.source ? ' &middot; <a href="' + escapeHtml(e.source) + '" target="_blank" rel="noopener noreferrer">source</a>' : ''}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderRfAll(events) {
+            const host = document.getElementById('rf-all');
+            const note = document.getElementById('rf-all-note');
+            const seen = new Set();
+            const rows = (events || [])
+                .filter((e) => !e.date || e.date >= todayISO())
+                .filter((e) => {
+                    const k = (e.name || '') + '|' + (e.date || '');
+                    if (seen.has(k)) return false;
+                    seen.add(k);
+                    return true;
+                })
+                .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+
+            if (!rows.length) {
+                host.innerHTML = '<div class="rf-empty">No upcoming events captured.</div>';
+                return;
+            }
+            note.textContent = `${rows.length} upcoming permit(s) captured, soonest first. Rows within ~1.6 mi of the church are highlighted.`;
+            host.innerHTML = `
+                <div class="rf-table-wrap">
+                    <table class="rf-table">
+                        <thead>
+                            <tr><th>Date</th><th>Event</th><th>Location</th><th>Distance</th><th>Permit</th></tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map((e) => {
+                                const near = e.distance_mi != null && e.distance_mi <= RF_WATCH_RADIUS_MI;
+                                return `<tr class="${near ? 'rf-near' : ''}">
+                                    <td>${escapeHtml(fmtDate(e.date))}</td>
+                                    <td>${escapeHtml(e.name)}</td>
+                                    <td class="rf-loc">${escapeHtml(e.location || '')}</td>
+                                    <td>${fmtDist(e.distance_mi)}</td>
+                                    <td>${e.permit ? escapeHtml(e.permit) : '<span style="color:#aaa">&mdash;</span>'}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+        }
+
+        async function loadRf() {
+            try {
+                const [conflicts, all] = await Promise.all([
+                    loadRfJson('public_events.json'),
+                    loadRfJson('all_la_events.json'),
+                ]);
+                renderRfConflicts(conflicts);
+                renderRfAll(all);
+            } catch (err) {
+                const msg = '<div class="rf-error">Could not load RF coordination data (' + escapeHtml(err.message) + ').</div>';
+                document.getElementById('rf-conflicts').innerHTML = msg;
+                document.getElementById('rf-all').innerHTML = '';
+            }
+        }
+
+        loadRf();
+        setInterval(loadRf, 3600000);
     </script>
 </body>
 </html>
