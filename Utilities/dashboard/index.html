@@ -355,6 +355,17 @@
         .sunday-today { margin: 10px 0 0 0; font-size: 12px; color: #555; }
         .sunday-note { margin: 8px 0 0 0; font-size: 11px; color: #aaa; }
         .sunday-error { background: #fdecea; border: 1px solid #f5c6c0; color: #c0392b; border-radius: 6px; padding: 10px 14px; font-size: 13px; }
+        .sunday-override { margin-top: 12px; border-top: 1px solid #eee; padding-top: 10px; }
+        .sunday-override-label { font-size: 11px; color: #999; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.3px; }
+        .sunday-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .sunday-chip {
+            border: 1px solid rgba(0,0,0,0.18); border-radius: 12px; padding: 4px 11px;
+            font-size: 11px; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 0.3px; font-family: inherit;
+        }
+        .sunday-chip-active { outline: 2px solid #007bff; outline-offset: 1px; }
+        .sunday-chip-reset { background: #ffffff; color: #555; border-color: #ccc; }
+        .sunday-override-hint { margin: 6px 0 0 0; font-size: 11px; color: #8a6d00; }
     </style>
 </head>
 <body>
@@ -944,8 +955,12 @@
             purple: { label: 'Purple', bg: '#6a2a8c', fg: '#ffffff', ring: '#521f6d' },
             blue:   { label: 'Blue',   bg: '#2b4b8f', fg: '#ffffff', ring: '#213a70' },
             red:    { label: 'Red',    bg: '#b3261e', fg: '#ffffff', ring: '#8c1d17' },
+            gold:   { label: 'Gold',   bg: '#c1962f', fg: '#3a2c07', ring: '#a07c22' },
             black:  { label: 'Black',  bg: '#2a2a2a', fg: '#ffffff', ring: '#000000' },
         };
+        // Colors offered by the manual override control, in display order.
+        const LIT_OVERRIDE_CHOICES = ['white', 'green', 'purple', 'blue', 'red', 'gold', 'black'];
+        const SUNDAY_OVERRIDE_KEY = 'sundayInfoColorOverride';
 
         function litNoon(y, m, d) { return new Date(y, m, d, 12, 0, 0, 0); }
         function litAddDays(dt, n) { const x = new Date(dt); x.setDate(x.getDate() + n); return x; }
@@ -1080,12 +1095,53 @@
         const WEEKDAY_FEASTS = ['Ash Wednesday', 'Maundy Thursday', 'Good Friday', 'Holy Saturday',
             'Christmas Eve', 'Nativity of the Lord (Christmas Day)', 'Epiphany of the Lord', "All Saints' Day"];
 
+        // Start of the liturgical year containing `date` (the most recent Advent 1).
+        function liturgicalYearStart(date) {
+            const d = litNoon(date.getFullYear(), date.getMonth(), date.getDate());
+            const a = adventFirstSunday(d.getFullYear());
+            return d >= a ? a : adventFirstSunday(d.getFullYear() - 1);
+        }
+        // Identifies one specific run of a season, so an override auto-expires when the season turns over.
+        function seasonKeyFor(sunday, lit) {
+            return litIso(liturgicalYearStart(sunday)) + '|' + lit.season;
+        }
+
+        // Manual paraments override, saved per-browser in localStorage.
+        function readColorOverride() {
+            try {
+                const raw = localStorage.getItem(SUNDAY_OVERRIDE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+        function writeColorOverride(obj) {
+            try {
+                if (obj) localStorage.setItem(SUNDAY_OVERRIDE_KEY, JSON.stringify(obj));
+                else localStorage.removeItem(SUNDAY_OVERRIDE_KEY);
+            } catch (e) { /* private mode / storage disabled — override just won't stick */ }
+        }
+        // Called from the override chips. color '' clears the override.
+        window.setSundayColorOverride = function (color) {
+            const sunday = targetSunday(new Date());
+            const lit = liturgicalDay(sunday);
+            if (color && LIT_COLORS[color]) {
+                writeColorOverride({ seasonKey: seasonKeyFor(sunday, lit), season: lit.season, color: color });
+            } else {
+                writeColorOverride(null);
+            }
+            loadSundayInfo();
+        };
+
         async function loadSundayInfo() {
             const host = document.getElementById('sunday-card');
             const now = new Date();
             const sunday = targetSunday(now);
             const lit = liturgicalDay(sunday);
-            const col = LIT_COLORS[lit.color] || LIT_COLORS.white;
+
+            const calCol = LIT_COLORS[lit.color] || LIT_COLORS.white;
+            const seasonKey = seasonKeyFor(sunday, lit);
+            const ov = readColorOverride();
+            const overridden = !!(ov && ov.seasonKey === seasonKey && LIT_COLORS[ov.color]);
+            const col = overridden ? LIT_COLORS[ov.color] : calCol;
 
             let commStatus = 'unknown';   // 'yes' | 'no' | 'unknown' (not posted) | 'error'
             try {
@@ -1105,9 +1161,16 @@
             else if (commStatus === 'error') commBadge = '<span class="sunday-badge badge-unknown">Communion — status unavailable</span>';
             else commBadge = '<span class="sunday-badge badge-unknown">Communion — script not posted yet</span>';
 
-            const colorText = lit.alt
-                ? escapeHtml(col.label) + ' <span style="font-weight:normal;opacity:.8">(' + escapeHtml(lit.alt) + ')</span>'
-                : escapeHtml(col.label);
+            let colorText;
+            if (overridden) {
+                colorText = escapeHtml(col.label)
+                    + ' <span style="font-weight:normal;opacity:.8">(manual override &mdash; calendar: '
+                    + escapeHtml(calCol.label) + ')</span>';
+            } else if (lit.alt) {
+                colorText = escapeHtml(col.label) + ' <span style="font-weight:normal;opacity:.8">(' + escapeHtml(lit.alt) + ')</span>';
+            } else {
+                colorText = escapeHtml(col.label);
+            }
 
             // The season name is shown right before this, so the count's own
             // label ("after Pentecost" etc.) is only added when it isn't already
@@ -1130,6 +1193,25 @@
                 }
             }
 
+            const chipsHtml = LIT_OVERRIDE_CHOICES.map((c) => {
+                const cc = LIT_COLORS[c];
+                const active = overridden && ov.color === c;
+                return '<button type="button" class="sunday-chip' + (active ? ' sunday-chip-active' : '') + '"'
+                    + ' style="background:' + cc.bg + ';color:' + cc.fg + '"'
+                    + ' onclick="setSundayColorOverride(\'' + c + '\')">' + escapeHtml(cc.label) + '</button>';
+            }).join('')
+                + (overridden
+                    ? '<button type="button" class="sunday-chip sunday-chip-reset" onclick="setSundayColorOverride(\'\')">&#8635; Calendar</button>'
+                    : '');
+            const overrideHtml =
+                '<div class="sunday-override">'
+                + '<p class="sunday-override-label">Override paraments for ' + escapeHtml(lit.season) + '</p>'
+                + '<div class="sunday-chips">' + chipsHtml + '</div>'
+                + (overridden
+                    ? '<p class="sunday-override-hint">Manual override saved on this device; clears when the season changes.</p>'
+                    : '')
+                + '</div>';
+
             host.innerHTML =
                 '<div class="sunday-swatch" style="background:' + col.bg + ';color:' + col.fg
                     + ';box-shadow:inset 0 0 0 1px ' + col.ring + '">' + escapeHtml(col.label) + '</div>'
@@ -1139,6 +1221,7 @@
                 + '<p class="sunday-season">' + escapeHtml(lit.season) + countText + ' &middot; paraments: ' + colorText + '</p>'
                 + '<div class="sunday-badges">' + commBadge + '</div>'
                 + todayLine
+                + overrideHtml
                 + '<p class="sunday-note">Color follows the Revised Common Lectionary calendar (Advent &amp; Lent shown as '
                     + escapeHtml((LIT_COLORS[ADVENT_COLOR] || {}).label || ADVENT_COLOR).toLowerCase()
                     + '). Weekday services may use their own color.</p>'
