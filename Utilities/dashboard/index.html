@@ -990,7 +990,13 @@
             return names[n] || (n + 'th');
         }
 
-        // { day, season, color, alt } for any date (tolerates non-Sundays).
+        // Whole weeks between two Sundays.
+        function sundaysBetween(a, b) { return Math.round(litDaysBetween(a, b) / 7); }
+        // First Sunday strictly after `dt`.
+        function nextSunday(dt) { let x = litAddDays(dt, 1); while (x.getDay() !== 0) x = litAddDays(x, 1); return x; }
+
+        // { day, season, color, alt, count } for any date (tolerates non-Sundays).
+        // count (when present) = { n, m, label }: this is Sunday n of m in that season.
         function liturgicalDay(date) {
             const d = litNoon(date.getFullYear(), date.getMonth(), date.getDate());
             const Y = d.getFullYear();
@@ -1001,7 +1007,7 @@
             const trinitySun = litAddDays(easter, 56);
             const adventThisYear = adventFirstSunday(Y);
             const epiphany = litNoon(Y, 0, 6);
-            const mk = (day, season, color, alt) => ({ day, season, color, alt: alt || '' });
+            const mk = (day, season, color, alt, count) => ({ day, season, color, alt: alt || '', count: count || null });
 
             if (d.getMonth() === 11 && d.getDate() === 25) return mk('Nativity of the Lord (Christmas Day)', 'Christmas', 'white', 'white or gold');
             if (d.getMonth() === 11 && d.getDate() === 24) return mk('Christmas Eve', 'Christmas', 'white', 'white or gold');
@@ -1009,48 +1015,60 @@
             if (d.getMonth() === 10 && d.getDate() === 1) return mk("All Saints' Day", 'All Saints', 'white');
 
             if (d >= adventThisYear && d < litNoon(Y, 11, 24)) {
-                const wk = Math.round(litDaysBetween(adventThisYear, d) / 7) + 1;
-                return mk(litOrdinal(Math.min(Math.max(wk, 1), 4)) + ' Sunday of Advent', 'Advent', ADVENT_COLOR);
+                const n = Math.min(Math.max(sundaysBetween(adventThisYear, d) + 1, 1), 4);
+                return mk(litOrdinal(n) + ' Sunday of Advent', 'Advent', ADVENT_COLOR, null, { n, m: 4, label: 'of Advent' });
             }
             if ((d.getMonth() === 11 && d.getDate() >= 26) || (d.getMonth() === 0 && d.getDate() <= 5)) {
-                return mk('Christmas season', 'Christmas', 'white', 'white or gold');
+                const xmas = (d.getMonth() === 11) ? litNoon(Y, 11, 25) : litNoon(Y - 1, 11, 25);
+                const firstSun = nextSunday(xmas);
+                const jan5 = litNoon(xmas.getFullYear() + 1, 0, 5);
+                const m = (litAddDays(firstSun, 7) <= jan5) ? 2 : 1;
+                const n = sundaysBetween(firstSun, d) + 1;
+                return mk(litOrdinal(n) + ' Sunday after Christmas Day', 'Christmas', 'white', 'white or gold', { n, m, label: 'after Christmas Day' });
             }
             if (d > epiphany && d < ashWed) {
                 const transfiguration = litAddDays(ashWed, -3);
-                let baptism = litAddDays(epiphany, 1);
-                while (baptism.getDay() !== 0) baptism = litAddDays(baptism, 1);
-                if (litSameDay(d, baptism)) return mk('Baptism of the Lord', 'Epiphany', 'white');
-                if (litSameDay(d, transfiguration)) return mk('Transfiguration Sunday', 'Epiphany', 'white');
-                const wk = Math.round(litDaysBetween(baptism, d) / 7) + 1;
-                return mk(litOrdinal(wk) + ' Sunday after the Epiphany', 'Ordinary Time', 'green');
+                const baptism = nextSunday(epiphany);
+                const m = sundaysBetween(baptism, transfiguration) + 1;
+                const n = sundaysBetween(baptism, d) + 1;
+                const count = { n, m, label: 'after the Epiphany' };
+                if (litSameDay(d, baptism)) return mk('Baptism of the Lord', 'Season after Epiphany', 'white', null, count);
+                if (litSameDay(d, transfiguration)) return mk('Transfiguration Sunday', 'Season after Epiphany', 'white', null, count);
+                return mk(litOrdinal(n) + ' Sunday after the Epiphany', 'Season after Epiphany', 'green', null, count);
             }
             if (litSameDay(d, ashWed)) return mk('Ash Wednesday', 'Lent', 'purple');
+            const lent1 = nextSunday(ashWed);
             if (d > ashWed && d < palmSun) {
-                let lent1 = litAddDays(ashWed, 1);
-                while (lent1.getDay() !== 0) lent1 = litAddDays(lent1, 1);
-                const wk = Math.round(litDaysBetween(lent1, d) / 7) + 1;
-                return mk(litOrdinal(wk) + ' Sunday in Lent', 'Lent', 'purple');
+                const m = sundaysBetween(lent1, palmSun) + 1;
+                const n = sundaysBetween(lent1, d) + 1;
+                return mk(litOrdinal(n) + ' Sunday in Lent', 'Lent', 'purple', null, { n, m, label: 'in Lent' });
             }
-            if (litSameDay(d, palmSun)) return mk('Palm / Passion Sunday', 'Holy Week', 'purple', 'purple or scarlet');
+            if (litSameDay(d, palmSun)) {
+                const m = sundaysBetween(lent1, palmSun) + 1;
+                return mk('Palm / Passion Sunday', 'Holy Week', 'purple', 'purple or scarlet', { n: m, m, label: 'in Lent' });
+            }
             if (d > palmSun && d < easter) {
                 if (litSameDay(d, litAddDays(easter, -3))) return mk('Maundy Thursday', 'Holy Week', 'white', 'white, then stripped');
                 if (litSameDay(d, litAddDays(easter, -2))) return mk('Good Friday', 'Holy Week', 'black', 'black or none');
                 if (litSameDay(d, litAddDays(easter, -1))) return mk('Holy Saturday', 'Holy Week', 'black', 'none / bare');
                 return mk('Holy Week', 'Holy Week', 'purple', 'purple or scarlet');
             }
-            if (litSameDay(d, easter)) return mk('Resurrection of the Lord (Easter Day)', 'Easter', 'white', 'white or gold');
+            if (litSameDay(d, easter)) return mk('Resurrection of the Lord (Easter Day)', 'Easter', 'white', 'white or gold', { n: 1, m: 7, label: 'of Easter' });
             if (d > easter && d < pentecost) {
-                const wk = Math.round(litDaysBetween(easter, d) / 7) + 1;
-                return mk(litOrdinal(wk) + ' Sunday of Easter', 'Easter', 'white');
+                const n = sundaysBetween(easter, d) + 1;
+                return mk(litOrdinal(n) + ' Sunday of Easter', 'Easter', 'white', null, { n, m: 7, label: 'of Easter' });
             }
             if (litSameDay(d, pentecost)) return mk('Day of Pentecost', 'Pentecost', 'red');
-            if (litSameDay(d, trinitySun)) return mk('Trinity Sunday', 'Ordinary Time', 'white');
 
             const nextAdvent = (d < adventThisYear) ? adventThisYear : adventFirstSunday(Y + 1);
-            if (litSameDay(d, litAddDays(nextAdvent, -7))) return mk('Reign of Christ / Christ the King', 'Ordinary Time', 'white');
-            if (d.getMonth() === 10 && d.getDate() <= 7) return mk("All Saints' Sunday", 'All Saints', 'white');
-            const wk = Math.round(litDaysBetween(trinitySun, d) / 7) + 1;
-            return mk(litOrdinal(wk) + ' Sunday after Pentecost', 'Ordinary Time', 'green');
+            const christKing = litAddDays(nextAdvent, -7);
+            const mAfterPent = sundaysBetween(trinitySun, christKing) + 1;
+            const nAfterPent = sundaysBetween(trinitySun, d) + 1;
+            const afterPentCount = { n: nAfterPent, m: mAfterPent, label: 'after Pentecost' };
+            if (litSameDay(d, trinitySun)) return mk('Trinity Sunday', 'Season after Pentecost', 'white', null, afterPentCount);
+            if (litSameDay(d, christKing)) return mk('Reign of Christ / Christ the King', 'Season after Pentecost', 'white', null, afterPentCount);
+            if (d.getMonth() === 10 && d.getDate() <= 7) return mk("All Saints' Sunday", 'Season after Pentecost', 'white', null, afterPentCount);
+            return mk(litOrdinal(nAfterPent) + ' Sunday after Pentecost', 'Season after Pentecost', 'green', null, afterPentCount);
         }
 
         function targetSunday(now) {
@@ -1091,6 +1109,17 @@
                 ? escapeHtml(col.label) + ' <span style="font-weight:normal;opacity:.8">(' + escapeHtml(lit.alt) + ')</span>'
                 : escapeHtml(col.label);
 
+            // The season name is shown right before this, so the count's own
+            // label ("after Pentecost" etc.) is only added when it isn't already
+            // implied by the season (e.g. Palm Sunday: "Holy Week" / "in Lent").
+            let countText = '';
+            if (lit.count) {
+                const key = lit.count.label.replace(/^(of|in|after)\s+(the\s+)?/, '');
+                const implied = lit.season.toLowerCase().indexOf(key.toLowerCase()) !== -1;
+                countText = ' &middot; Sunday ' + lit.count.n + ' of ' + lit.count.m
+                    + (implied ? '' : ' ' + escapeHtml(lit.count.label));
+            }
+
             let todayLine = '';
             if (!isToday) {
                 const todayLit = liturgicalDay(now);
@@ -1107,7 +1136,7 @@
                 + '<div class="sunday-body">'
                 + '<p class="sunday-date">' + escapeHtml(dateLabel) + (isToday ? ' &middot; today' : ' &middot; next service') + '</p>'
                 + '<p class="sunday-day">' + escapeHtml(lit.day) + '</p>'
-                + '<p class="sunday-season">' + escapeHtml(lit.season) + ' &middot; paraments: ' + colorText + '</p>'
+                + '<p class="sunday-season">' + escapeHtml(lit.season) + countText + ' &middot; paraments: ' + colorText + '</p>'
                 + '<div class="sunday-badges">' + commBadge + '</div>'
                 + todayLine
                 + '<p class="sunday-note">Color follows the Revised Common Lectionary calendar (Advent &amp; Lent shown as '
