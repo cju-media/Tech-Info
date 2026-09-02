@@ -314,6 +314,47 @@
         }
         .pipeline-row .pl-links a { color: #007bff; text-decoration: none; }
         .pipeline-row .pl-links a:hover { text-decoration: underline; }
+        .sunday-section { margin-bottom: 24px; }
+        .sunday-section h2 { margin: 0 0 10px 0; font-size: 20px; color: #222; }
+        .sunday-card {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .sunday-swatch {
+            flex: 0 0 108px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 8px;
+            font-weight: bold;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+        .sunday-body { padding: 14px 18px; flex: 1 1 auto; min-width: 0; }
+        @media (max-width: 640px) {
+            .sunday-card { flex-direction: column; }
+            .sunday-swatch { flex-basis: auto; padding: 12px; }
+        }
+        .sunday-loading { padding: 20px; color: #999; font-size: 13px; }
+        .sunday-date { font-size: 15px; font-weight: bold; color: #222; margin: 0 0 2px 0; }
+        .sunday-day { font-size: 14px; color: #444; margin: 0 0 2px 0; }
+        .sunday-season { font-size: 12px; color: #888; margin: 0 0 10px 0; }
+        .sunday-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+        .sunday-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .badge-communion { background: #e6f4ea; color: #1e7e34; }
+        .badge-nocommunion { background: #eef2f7; color: #555; }
+        .badge-unknown { background: #fff8e1; color: #8a6d00; }
+        .sunday-today { margin: 10px 0 0 0; font-size: 12px; color: #555; }
+        .sunday-note { margin: 8px 0 0 0; font-size: 11px; color: #aaa; }
+        .sunday-error { background: #fdecea; border: 1px solid #f5c6c0; color: #c0392b; border-radius: 6px; padding: 10px 14px; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -338,6 +379,15 @@
             &#9888; Some servers show <strong>Unknown</strong> because this page is loaded over HTTPS (GitHub Pages),
             and browsers block secure pages from checking local, non-HTTPS servers. That's a browser security rule,
             not a sign anything is down &mdash; open the link directly (on the venue network) to confirm.
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="sunday-section">
+            <h2>Sunday Info</h2>
+            <div id="sunday-card" class="sunday-card">
+                <div class="sunday-loading">Loading&hellip;</div>
+            </div>
         </div>
 
         <div class="section-divider"></div>
@@ -879,6 +929,195 @@
         renderPipeline(PIPELINE.map(() => ({ date: null, note: 'checking…' })));
         loadPipeline();
         setInterval(loadPipeline, 3600000);
+
+        // ---- Sunday Info: liturgical color + communion --------------------
+        // Color follows the ecumenical / Revised Common Lectionary liturgical
+        // calendar. Advent and Lent are shown as purple; set ADVENT_COLOR to
+        // 'blue' if the sanctuary uses Sarum blue for Advent. Communion status
+        // comes from worship_scripts.json (isCommunion), keyed by Sunday date.
+        const ADVENT_COLOR = 'purple';
+        const WORSHIP_SCRIPTS_URL = '../../Worship%20Scripts/worship_scripts.json';
+
+        const LIT_COLORS = {
+            white:  { label: 'White',  bg: '#f7f7f3', fg: '#33332e', ring: '#dcdcd0' },
+            green:  { label: 'Green',  bg: '#2f7d33', fg: '#ffffff', ring: '#256128' },
+            purple: { label: 'Purple', bg: '#6a2a8c', fg: '#ffffff', ring: '#521f6d' },
+            blue:   { label: 'Blue',   bg: '#2b4b8f', fg: '#ffffff', ring: '#213a70' },
+            red:    { label: 'Red',    bg: '#b3261e', fg: '#ffffff', ring: '#8c1d17' },
+            black:  { label: 'Black',  bg: '#2a2a2a', fg: '#ffffff', ring: '#000000' },
+        };
+
+        function litNoon(y, m, d) { return new Date(y, m, d, 12, 0, 0, 0); }
+        function litAddDays(dt, n) { const x = new Date(dt); x.setDate(x.getDate() + n); return x; }
+        function litDaysBetween(a, b) { return Math.round((b - a) / 86400000); }
+        function litSameDay(a, b) {
+            return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+        }
+        function litIso(d) {
+            const p = (n) => String(n).padStart(2, '0');
+            return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+        }
+
+        // Anonymous Gregorian algorithm (Meeus/Jones/Butcher).
+        function easterSunday(year) {
+            const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+            const d = Math.floor(b / 4), e = b % 4;
+            const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4), k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const mth = Math.floor((a + 11 * h + 22 * l) / 451);
+            const month = Math.floor((h + l - 7 * mth + 114) / 31);
+            const day = ((h + l - 7 * mth + 114) % 31) + 1;
+            return litNoon(year, month - 1, day);
+        }
+
+        // First Sunday of Advent in the calendar year `year` (the 4th Sunday before Christmas Day).
+        function adventFirstSunday(year) {
+            const dec25 = litNoon(year, 11, 25);
+            const dow = dec25.getDay();
+            const advent4 = litAddDays(dec25, dow === 0 ? -7 : -dow);
+            return litAddDays(advent4, -21);
+        }
+
+        function litOrdinal(n) {
+            const names = ['Zeroth', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh',
+                'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth',
+                'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth', 'Twenty-first',
+                'Twenty-second', 'Twenty-third', 'Twenty-fourth', 'Twenty-fifth', 'Twenty-sixth',
+                'Twenty-seventh', 'Twenty-eighth', 'Twenty-ninth', 'Thirtieth', 'Thirty-first',
+                'Thirty-second', 'Thirty-third', 'Thirty-fourth'];
+            return names[n] || (n + 'th');
+        }
+
+        // { day, season, color, alt } for any date (tolerates non-Sundays).
+        function liturgicalDay(date) {
+            const d = litNoon(date.getFullYear(), date.getMonth(), date.getDate());
+            const Y = d.getFullYear();
+            const easter = easterSunday(Y);
+            const ashWed = litAddDays(easter, -46);
+            const palmSun = litAddDays(easter, -7);
+            const pentecost = litAddDays(easter, 49);
+            const trinitySun = litAddDays(easter, 56);
+            const adventThisYear = adventFirstSunday(Y);
+            const epiphany = litNoon(Y, 0, 6);
+            const mk = (day, season, color, alt) => ({ day, season, color, alt: alt || '' });
+
+            if (d.getMonth() === 11 && d.getDate() === 25) return mk('Nativity of the Lord (Christmas Day)', 'Christmas', 'white', 'white or gold');
+            if (d.getMonth() === 11 && d.getDate() === 24) return mk('Christmas Eve', 'Christmas', 'white', 'white or gold');
+            if (d.getMonth() === 0 && d.getDate() === 6) return mk('Epiphany of the Lord', 'Epiphany', 'white');
+            if (d.getMonth() === 10 && d.getDate() === 1) return mk("All Saints' Day", 'All Saints', 'white');
+
+            if (d >= adventThisYear && d < litNoon(Y, 11, 24)) {
+                const wk = Math.round(litDaysBetween(adventThisYear, d) / 7) + 1;
+                return mk(litOrdinal(Math.min(Math.max(wk, 1), 4)) + ' Sunday of Advent', 'Advent', ADVENT_COLOR);
+            }
+            if ((d.getMonth() === 11 && d.getDate() >= 26) || (d.getMonth() === 0 && d.getDate() <= 5)) {
+                return mk('Christmas season', 'Christmas', 'white', 'white or gold');
+            }
+            if (d > epiphany && d < ashWed) {
+                const transfiguration = litAddDays(ashWed, -3);
+                let baptism = litAddDays(epiphany, 1);
+                while (baptism.getDay() !== 0) baptism = litAddDays(baptism, 1);
+                if (litSameDay(d, baptism)) return mk('Baptism of the Lord', 'Epiphany', 'white');
+                if (litSameDay(d, transfiguration)) return mk('Transfiguration Sunday', 'Epiphany', 'white');
+                const wk = Math.round(litDaysBetween(baptism, d) / 7) + 1;
+                return mk(litOrdinal(wk) + ' Sunday after the Epiphany', 'Ordinary Time', 'green');
+            }
+            if (litSameDay(d, ashWed)) return mk('Ash Wednesday', 'Lent', 'purple');
+            if (d > ashWed && d < palmSun) {
+                let lent1 = litAddDays(ashWed, 1);
+                while (lent1.getDay() !== 0) lent1 = litAddDays(lent1, 1);
+                const wk = Math.round(litDaysBetween(lent1, d) / 7) + 1;
+                return mk(litOrdinal(wk) + ' Sunday in Lent', 'Lent', 'purple');
+            }
+            if (litSameDay(d, palmSun)) return mk('Palm / Passion Sunday', 'Holy Week', 'purple', 'purple or scarlet');
+            if (d > palmSun && d < easter) {
+                if (litSameDay(d, litAddDays(easter, -3))) return mk('Maundy Thursday', 'Holy Week', 'white', 'white, then stripped');
+                if (litSameDay(d, litAddDays(easter, -2))) return mk('Good Friday', 'Holy Week', 'black', 'black or none');
+                if (litSameDay(d, litAddDays(easter, -1))) return mk('Holy Saturday', 'Holy Week', 'black', 'none / bare');
+                return mk('Holy Week', 'Holy Week', 'purple', 'purple or scarlet');
+            }
+            if (litSameDay(d, easter)) return mk('Resurrection of the Lord (Easter Day)', 'Easter', 'white', 'white or gold');
+            if (d > easter && d < pentecost) {
+                const wk = Math.round(litDaysBetween(easter, d) / 7) + 1;
+                return mk(litOrdinal(wk) + ' Sunday of Easter', 'Easter', 'white');
+            }
+            if (litSameDay(d, pentecost)) return mk('Day of Pentecost', 'Pentecost', 'red');
+            if (litSameDay(d, trinitySun)) return mk('Trinity Sunday', 'Ordinary Time', 'white');
+
+            const nextAdvent = (d < adventThisYear) ? adventThisYear : adventFirstSunday(Y + 1);
+            if (litSameDay(d, litAddDays(nextAdvent, -7))) return mk('Reign of Christ / Christ the King', 'Ordinary Time', 'white');
+            if (d.getMonth() === 10 && d.getDate() <= 7) return mk("All Saints' Sunday", 'All Saints', 'white');
+            const wk = Math.round(litDaysBetween(trinitySun, d) / 7) + 1;
+            return mk(litOrdinal(wk) + ' Sunday after Pentecost', 'Ordinary Time', 'green');
+        }
+
+        function targetSunday(now) {
+            const d = litNoon(now.getFullYear(), now.getMonth(), now.getDate());
+            const dow = d.getDay();
+            return dow === 0 ? d : litAddDays(d, 7 - dow);
+        }
+
+        const WEEKDAY_FEASTS = ['Ash Wednesday', 'Maundy Thursday', 'Good Friday', 'Holy Saturday',
+            'Christmas Eve', 'Nativity of the Lord (Christmas Day)', 'Epiphany of the Lord', "All Saints' Day"];
+
+        async function loadSundayInfo() {
+            const host = document.getElementById('sunday-card');
+            const now = new Date();
+            const sunday = targetSunday(now);
+            const lit = liturgicalDay(sunday);
+            const col = LIT_COLORS[lit.color] || LIT_COLORS.white;
+
+            let commStatus = 'unknown';   // 'yes' | 'no' | 'unknown' (not posted) | 'error'
+            try {
+                const scripts = await (await fetch(WORSHIP_SCRIPTS_URL + '?t=' + Date.now(), { cache: 'no-store' })).json();
+                const entry = scripts[litIso(sunday)];
+                if (entry && typeof entry.isCommunion === 'boolean') commStatus = entry.isCommunion ? 'yes' : 'no';
+            } catch (e) {
+                commStatus = 'error';
+            }
+
+            const isToday = litSameDay(sunday, litNoon(now.getFullYear(), now.getMonth(), now.getDate()));
+            const dateLabel = sunday.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+            let commBadge;
+            if (commStatus === 'yes') commBadge = '<span class="sunday-badge badge-communion">Communion</span>';
+            else if (commStatus === 'no') commBadge = '<span class="sunday-badge badge-nocommunion">No communion</span>';
+            else if (commStatus === 'error') commBadge = '<span class="sunday-badge badge-unknown">Communion — status unavailable</span>';
+            else commBadge = '<span class="sunday-badge badge-unknown">Communion — script not posted yet</span>';
+
+            const colorText = lit.alt
+                ? escapeHtml(col.label) + ' <span style="font-weight:normal;opacity:.8">(' + escapeHtml(lit.alt) + ')</span>'
+                : escapeHtml(col.label);
+
+            let todayLine = '';
+            if (!isToday) {
+                const todayLit = liturgicalDay(now);
+                if (todayLit.day !== lit.day && WEEKDAY_FEASTS.indexOf(todayLit.day) !== -1) {
+                    const tcol = LIT_COLORS[todayLit.color] || LIT_COLORS.white;
+                    todayLine = '<p class="sunday-today">Today is <strong>' + escapeHtml(todayLit.day)
+                        + '</strong> &mdash; ' + escapeHtml(tcol.label) + '.</p>';
+                }
+            }
+
+            host.innerHTML =
+                '<div class="sunday-swatch" style="background:' + col.bg + ';color:' + col.fg
+                    + ';box-shadow:inset 0 0 0 1px ' + col.ring + '">' + escapeHtml(col.label) + '</div>'
+                + '<div class="sunday-body">'
+                + '<p class="sunday-date">' + escapeHtml(dateLabel) + (isToday ? ' &middot; today' : ' &middot; next service') + '</p>'
+                + '<p class="sunday-day">' + escapeHtml(lit.day) + '</p>'
+                + '<p class="sunday-season">' + escapeHtml(lit.season) + ' &middot; paraments: ' + colorText + '</p>'
+                + '<div class="sunday-badges">' + commBadge + '</div>'
+                + todayLine
+                + '<p class="sunday-note">Color follows the Revised Common Lectionary calendar (Advent &amp; Lent shown as '
+                    + escapeHtml((LIT_COLORS[ADVENT_COLOR] || {}).label || ADVENT_COLOR).toLowerCase()
+                    + '). Weekday services may use their own color.</p>'
+                + '</div>';
+        }
+
+        loadSundayInfo();
+        setInterval(loadSundayInfo, 3600000);
     </script>
 </body>
 </html>
