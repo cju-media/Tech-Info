@@ -29,9 +29,16 @@ signals 1 and 2 can both look completely healthy -- VLC's own internal
 decode/clock bookkeeping still ticking along -- while the picture is
 visibly frozen on screen, i.e. something failing between VLC's internal
 state and the actual DRM commit. It samples the plane's bound framebuffer
-ID several times in a tight ~8s burst per check (rather than a single
-comparison 60s apart), since it only cycles through a handful of buffer
-IDs and a single far-apart comparison could coincidentally match by chance.
+ID several times across a ~50s burst per check (`FB_SAMPLE_COUNT` /
+`FB_SAMPLE_INTERVAL_SECONDS`), since it only cycles through a handful of
+buffer IDs and a single far-apart comparison could coincidentally match by
+chance. **This window was originally only ~8s and caused a real problem**:
+live monitoring on 2026-09-02 caught the fb ID legitimately holding the
+same value for 20-40+ seconds during genuinely healthy playback on both
+Pis (confirmed by `get_time` advancing normally the whole time) -- an 8s
+burst was frequently landing entirely inside one of those normal stable
+stretches, causing false "frozen" restarts every few minutes on both
+displays. Widened to comfortably exceed the observed normal range.
 
 If any of the three looks stuck for 3 consecutive checks (~3-4 min), it
 force-restarts `content-display.service` and verifies the restart actually

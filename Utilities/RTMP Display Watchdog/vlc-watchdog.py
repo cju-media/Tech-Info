@@ -75,9 +75,17 @@ STARTUP_GRACE_SECONDS = 30
 # the normal 60s check interval could coincidentally match by chance --
 # instead, sample it several times in a tight burst within one check, and
 # only call it frozen if it never moves across that whole burst.
+#
+# 2026-09-02: live monitoring on both Pis caught the fb ID legitimately
+# holding the same value for 20-40+ seconds during genuinely healthy
+# playback (get_time advancing normally throughout) -- an original burst
+# window of just 5 samples over 8s was far shorter than that, so it was
+# frequently landing entirely inside a normal stable stretch and causing
+# false "frozen" restarts every few minutes on both displays. Widened to
+# comfortably exceed the observed normal range with margin.
 DRM_STATE_FILE = "/sys/kernel/debug/dri/0/state"
-FB_SAMPLE_COUNT = 5
-FB_SAMPLE_INTERVAL_SECONDS = 2
+FB_SAMPLE_COUNT = 11
+FB_SAMPLE_INTERVAL_SECONDS = 5
 
 # iMessage notifications, via the same repository_dispatch -> self-hosted
 # macOS runner -> osascript pattern used elsewhere in Tech-Info.
