@@ -1,38 +1,110 @@
 [
   {
-    "name": "MUSEIQUE",
-    "date": "2026-08-30",
-    "location": "Herscher Hall at Skirball Cultural Center 2701 N SEPULVEDA BLVD 90049",
+    "name": "BIRTHDAY PARTY",
+    "date": "2026-09-13",
+    "location": "Foothill recreational center 11075 W FOOTHILL BLVD 91342",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 11.81,
-    "permit": "264109000001105",
+    "distance_mi": 15.33,
+    "permit": "264109000001138",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "SALVY FEST & DTLA CUMBIA FESTIVAL",
+    "date": "2026-09-05",
+    "location": "Pershing Square Park 530 S OLIVE ST 90013",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.14,
+    "permit": "264109000001079",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
     "name": "ASLA 2026 CONFERENCE ON LANDSCAPE ARCHIT",
+    "date": "2026-09-15",
+    "location": "South Level 1 Halls G/H/J 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000000820",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "FIRESTONE WALKER OKTOBERFEST",
+    "date": "2026-09-19",
+    "location": "3205 N Washington Blvd. 90292",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.56,
+    "permit": "264109000001203",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "WESTWOOD VILLAGE FARMERS' MARKET",
+    "date": "2026-07-02",
+    "location": "Broxton Plaza 1036 S BROXTON AVE 90024",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 9.21,
+    "permit": "264109000000967",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CHECK IN TENTS",
+    "date": "2026-08-31",
+    "location": "USC Campus",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001225",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LOS ANGELES GOT SOLE",
+    "date": "2026-09-19",
+    "location": "West Hall A 1201 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.89,
+    "permit": "264109000001164",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "ASLA_BERLINER 2026_ KAHEYO",
     "date": "2026-09-16",
+    "location": "1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001197",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CARNIVAL",
+    "date": "2026-09-18",
+    "location": "1380 N. Avalon Blvd., Wilmington, CA 90744",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 18.97,
+    "permit": "264109000001059",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "2026 ASLA CONF ON LANDSCAPE ARCHITECTURE",
+    "date": "2026-09-15",
     "location": "1201 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 1.89,
-    "permit": "264109000001097",
+    "permit": "264109000001113",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "LAPFCU 90TH ANNIVERSARY",
-    "date": "2026-10-10",
-    "location": "Los Angeles Police Academy Athletic Field 1880 N ACADEMY DR 90012",
+    "name": "GREENFIELDS OUTDOOR FITNESS BOOTH #838",
+    "date": "2026-09-16",
+    "location": "1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.82,
-    "permit": "264109000000752",
+    "distance_mi": 1.92,
+    "permit": "264109000001206",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "LAPFCU 90TH ANNIVERSARY",
-    "date": "2026-10-10",
-    "location": "Los Angeles Police Academy Athletic Field 1880 N ACADEMY DR 90012",
+    "name": "CAMERA TENT",
+    "date": "2026-08-29",
+    "location": "West end of stadium 3939 S FIGUEROA ST 90037",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.82,
-    "permit": "264109000001151",
+    "distance_mi": 3.65,
+    "permit": "264109000001180",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -42,15 +114,6 @@
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 3.52,
     "permit": "264109000001096",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "2026 ASLA CONFERENCE",
-    "date": "2026-09-16",
-    "location": "1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001014",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
