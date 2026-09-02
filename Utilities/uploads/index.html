@@ -849,6 +849,36 @@
         }
     }
 
+    // After an OW PDF lands in cju-media/OW, nudge the tech-info repo to run
+    // its "Service Titles Checker" now rather than waiting for the next hourly
+    // cron (which GitHub often delays by hours). The OW is in a separate repo,
+    // so a push event can't reach that workflow -- this repository_dispatch is
+    // the cross-repo trigger. Best-effort: a failure here doesn't undo the
+    // upload, the scheduled run is still the backstop.
+    async function triggerServiceTitlesRun(pat) {
+        try {
+            const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${pat}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify({ event_type: 'ow_uploaded' })
+            });
+            if (!res.ok) {
+                let msg = res.statusText;
+                try { msg = (await res.json()).message || msg; } catch (_) {}
+                console.warn('Could not trigger Service Titles Checker:', msg);
+                return false;
+            }
+            return true;
+        } catch (e) {
+            console.warn('Could not trigger Service Titles Checker:', e);
+            return false;
+        }
+    }
+
     async function uploadToGithub(filename, base64Content, pat, targetFolder, inputElement) {
         setStatus(`Uploading ${filename} to processing queue...`, 'info');
 
@@ -953,7 +983,14 @@
             }
 
             if (targetFolder === 'OW') {
-                setStatus('File uploaded successfully to OW repository!', 'success');
+                setStatus('File uploaded to OW repository! Starting Gemini processing...', 'success');
+                const triggered = await triggerServiceTitlesRun(pat);
+                setStatus(
+                    triggered
+                        ? 'File uploaded! Service Titles Checker is running now — titles update in a few minutes.'
+                        : 'File uploaded to OW repository! (Processing will run on the next hourly check.)',
+                    'success'
+                );
             } else if (targetFolder === 'TIMINGS_TXT') {
                 setStatus('timings.txt updated in the repo! The YouTube description update will run shortly.', 'success');
             } else {

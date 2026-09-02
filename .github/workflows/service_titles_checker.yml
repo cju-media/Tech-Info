@@ -10,6 +10,13 @@ on:
         required: false
         type: boolean
         default: false
+  # Fired by the upload dashboard (Utilities/uploads/index.html) right after a
+  # new OW PDF is pushed to cju-media/OW, so the Gemini run happens immediately
+  # instead of waiting up to an hour (often longer -- GitHub's cron lags) for
+  # the next scheduled check. The OW lives in a separate repo, so a push event
+  # can't reach this workflow; a repository_dispatch is the cross-repo bridge.
+  repository_dispatch:
+    types: [ow_uploaded]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
