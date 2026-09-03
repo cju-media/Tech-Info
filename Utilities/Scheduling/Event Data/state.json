@@ -2,6 +2,7 @@
     "assignments": {
         "Cameron": [
             "sa-9-5-2026-classical-fantasia",
+            "sa-9-26-2026-music-in-the-garden",
             "su-9-27-2026-resonance-collective"
         ],
         "Danny": [
@@ -41,6 +42,16 @@
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         },
+        "sa-9-26-2026-music-in-the-garden": {
+            "date": "2026-09-26",
+            "name": "Music In The Garden",
+            "call_time": "3:00pm-10:00pm"
+        },
+        "sa-9-26-2026-pcj-event-mother-agapia": {
+            "date": "2026-09-26",
+            "name": "PCJ event: Mother Agapia",
+            "call_time": "9:30am-2:00pm"
+        },
         "fr-9-25-2026-organ-concert": {
             "date": "2026-09-25",
             "name": "Organ Concert",
@@ -79,7 +90,7 @@
         "su-9-6-2026-worship-service": {
             "date": "2026-09-06",
             "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
+            "call_time": "8:30am-12:30pm"
         },
         "sa-9-5-2026-classical-fantasia": {
             "date": "2026-09-05",
