@@ -32,6 +32,81 @@
         ]
     },
     "event_details": {
+        "su-11-01-2026-wedding-ceremony": {
+            "date": "2026-11-01",
+            "name": "Wedding Ceremony",
+            "call_time": "3:00pm-6:00pm"
+        },
+        "su-11-01-2026-worship-service": {
+            "date": "2026-11-01",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "sa-10-31-2026-wedding-ceremony": {
+            "date": "2026-10-31",
+            "name": "Wedding Ceremony",
+            "call_time": "2:30pm-5:30pm"
+        },
+        "fr-10-30-2026-candlelight-concert-the-magic-of-ennio-morricone": {
+            "date": "2026-10-30",
+            "name": "Candlelight Concert: The Magic of Ennio Morricone",
+            "call_time": "5:00pm-10:00pm"
+        },
+        "mo-10-26-2026-book-soup-susan-orlean": {
+            "date": "2026-10-26",
+            "name": "Book Soup: Susan Orlean",
+            "call_time": "5:00pm-10:00pm"
+        },
+        "su-10-25-2026-resonance-collective": {
+            "date": "2026-10-25",
+            "name": "Resonance Collective ",
+            "call_time": "4:00pm-10:30pm"
+        },
+        "su-10-18-2026-worship-service": {
+            "date": "2026-10-18",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "su-10-18-2026-wedding-ceremony": {
+            "date": "2026-10-18",
+            "name": "Wedding Ceremony",
+            "call_time": "2:00pm-5:00pm"
+        },
+        "sa-10-17-2026-wedding-ceremony": {
+            "date": "2026-10-17",
+            "name": "Wedding Ceremony",
+            "call_time": "2:00pm-5:00pm"
+        },
+        "tu-10-13-2026-reception-and-book-talk-diesel-bookstore-min-jin-lee": {
+            "date": "2026-10-13",
+            "name": "Reception and Book Talk - Diesel Bookstore: Min Jin Lee",
+            "call_time": "4:00pm-9:00pm"
+        },
+        "su-10-11-2026-wedding-ceremony": {
+            "date": "2026-10-11",
+            "name": "Wedding Ceremony",
+            "call_time": "3:00pm-7:00pm"
+        },
+        "su-10-11-2026-worship-service": {
+            "date": "2026-10-11",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "su-10-4-2026-worship-service": {
+            "date": "2026-10-04",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "sa-10-3-2026-wedding-ceremony": {
+            "date": "2026-10-03",
+            "name": "Wedding Ceremony",
+            "call_time": "3:00pm-7:00pm"
+        },
+        "we-9-30-2026-book-soup": {
+            "date": "2026-09-30",
+            "name": "Book Soup",
+            "call_time": "5:00pm-9:00pm"
+        },
         "su-9-27-2026-resonance-collective": {
             "date": "2026-09-27",
             "name": "Resonance Collective",
