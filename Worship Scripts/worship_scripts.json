@@ -1,4 +1,10 @@
 {
+  "2026-09-20": {
+    "path": "service-scripts/2026-09-20.pdf",
+    "modifiedTime": "2026-09-04T02:17:46.942Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Janette"
+  },
   "2026-09-27": {
     "path": "service-scripts/2026-09-27.pdf",
     "modifiedTime": "2026-09-03T19:26:53.694Z",
@@ -16,11 +22,5 @@
     "modifiedTime": "2026-09-03T19:18:30.783Z",
     "isCommunion": false,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Betsy Sullenger"
-  },
-  "2026-09-20": {
-    "path": "service-scripts/2026-09-20.pdf",
-    "modifiedTime": "2026-08-23T21:55:40.776Z",
-    "isCommunion": false,
-    "speakerInfo": null
   }
 }
