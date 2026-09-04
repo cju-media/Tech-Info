@@ -126,3 +126,35 @@ skips the notification silently (see `notify()`'s `except OSError: return`).
 - Both Pis also have `vt.global_cursor_default=0` appended to
   `/boot/firmware/cmdline.txt` to stop the console's blinking cursor from
   showing through the video output.
+- **2026-09-04: unresolved hallway freeze below what the watchdog can see.**
+  Every signal (get_time, CPU delta, DRM plane fb ID, even the HVS underrun
+  counter) read healthy the whole time, yet the physical picture stayed on
+  the exact same frame until a manual restart fixed it. Root cause not
+  pinned down -- likely something at the HDMI signal/display-link level,
+  below what DRM debugfs reports. As an experiment, hallway was switched
+  from VLC to `ffplay` (same hardware-decode/DRM-output approach) to see
+  if this is VLC-specific or reproduces regardless of player -- narthex is
+  untouched as the control. The original VLC service file is backed up at
+  `/etc/systemd/system/content-display.service.vlc-backup` on hallway.
+  **The watchdog is inert while ffplay runs** (it specifically looks for a
+  VLC CLI interface and a DRM plane owned by a process named `vlc`), so a
+  freeze during this experiment needs a manual restart, same as before.
+
+## Troubleshooting a live freeze
+
+Before restarting a frozen `content-display.service`, capture memory state
+first -- a leak was raised as a candidate theory for the 2026-09-04
+incident above but was never confirmed or ruled out, because memory
+wasn't checked until after the restart already reset it:
+
+```bash
+free -h
+ps -o pid,rss,vsz,etime,cmd -C vlc,ffplay
+```
+
+Compare against the known-healthy baseline: narthex's VLC held a stable
+~47MB RSS over a 13h+ continuous run with modest swap usage (2026-09-04).
+A real leak would show RSS or swap climbing well past that right before
+a freeze. Log whatever you find into `/var/log/vlc-watchdog-restarts.log`
+on the affected Pi alongside the restart, so the data outlives the
+conversation.
