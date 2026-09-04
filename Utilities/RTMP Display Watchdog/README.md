@@ -140,6 +140,19 @@ skips the notification silently (see `notify()`'s `except OSError: return`).
   VLC CLI interface and a DRM plane owned by a process named `vlc`), so a
   freeze during this experiment needs a manual restart, same as before.
 
+## Scheduled restart (both Pis, since 2026-09-04)
+
+`scheduled-restart.timer` proactively restarts `content-display.service`
+every 10 min, logging `free -h` and the player process's RSS/etime to
+`/var/log/vlc-watchdog-restarts.log` first (tagged `scheduled-restart`).
+This is a blunt stopgap for the unresolved 2026-09-04 freeze (see above)
+-- restarting often enough that neither a slow memory leak nor whatever
+HDMI-link issue is actually responsible gets the chance to accumulate,
+while also building a running memory-usage dataset in case a leak pattern
+does show up across many restarts. Causes a brief, visible interruption
+every 10 minutes on both displays -- worth revisiting once the real root
+cause is found instead of leaving this running indefinitely.
+
 ## Troubleshooting a live freeze
 
 Before restarting a frozen `content-display.service`, capture memory state

@@ -1,0 +1,6 @@
+[Unit]
+Description=Proactive 10-min restart of content-display.service (logs memory first)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/scheduled-restart.sh
