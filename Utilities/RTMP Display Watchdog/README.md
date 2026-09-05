@@ -126,6 +126,29 @@ skips the notification silently (see `notify()`'s `except OSError: return`).
 - Both Pis also have `vt.global_cursor_default=0` appended to
   `/boot/firmware/cmdline.txt` to stop the console's blinking cursor from
   showing through the video output.
+- **Both Pis have `getty@tty1.service` masked** (2026-09-04). A full
+  `systemctl restart content-display.service` briefly tears down VLC's
+  DRM plane binding, which exposed whatever's underneath -- originally
+  the blinking cursor on tty1's login prompt (see above), and even with
+  that suppressed, the *active* login prompt itself could still flash
+  through during a restart. Masking it removes tty1's login prompt
+  entirely, at the cost of no longer being able to log in from a
+  directly-attached physical keyboard/monitor (SSH is unaffected and is
+  how this fleet is actually managed anyway).
+- **For a gap-free reconnect with no flash and no black screen at all**,
+  use `soft-reconnect.py` instead of a full service restart -- it tells
+  the *running* VLC process to drop and reopen its stream input over its
+  CLI interface (`clear` + `add <url>`), so the process (and its DRM
+  plane binding) never goes away and there's nothing to tear down.
+  Confirmed live, 2026-09-04: zero visible gap, vs. a black screen with
+  a full process restart (even with getty masked).
+  **Caveat: this is for planned reconnects only, not verified as a
+  substitute for a real restart during an actual freeze** -- if the
+  decode/render pipeline is genuinely wedged (the failure mode the
+  watchdog exists to catch), tearing down the old input through this
+  same command channel could hang for the same reason a full restart is
+  needed in the first place. The watchdog itself still does a real
+  `systemctl restart`, unchanged.
 - **2026-09-04: unresolved hallway freeze below what the watchdog can see.**
   Every signal (get_time, CPU delta, DRM plane fb ID, even the HVS underrun
   counter) read healthy the whole time, yet the physical picture stayed on
