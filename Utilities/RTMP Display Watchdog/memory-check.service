@@ -1,0 +1,6 @@
+[Unit]
+Description=Log a read-only memory snapshot (does not touch content-display.service)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/memory-check.sh
