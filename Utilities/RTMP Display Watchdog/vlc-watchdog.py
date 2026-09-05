@@ -44,6 +44,18 @@ HOST = "127.0.0.1"
 PORT = 4212
 STATE_FILE = "/var/lib/vlc-watchdog/state.json"
 STALE_THRESHOLD = 3  # consecutive unchanged/stuck checks before forcing a restart
+
+# The DRM plane fb ID only proves a buffer *slot* is being cycled through --
+# not that the actual pixel content is new. Confirmed live 2026-09-04: the
+# fb ID kept cycling through slots the entire time the picture was actually
+# frozen, because VLC (or the render pipeline) re-copies the last real
+# frame into the next slot on schedule to keep timing smooth even with no
+# new content. read-plane-hash reads the real luma bytes directly via
+# PRIME/dma-buf (bypassing VLC's own pipeline, which can't be fooled by
+# slot-cycling), so this check runs independently with its own (shorter,
+# user-specified) threshold rather than folding into the signals above.
+FRAME_HASH_BIN = "/usr/local/bin/read-plane-hash"
+FRAME_HASH_STALE_THRESHOLD = 2  # ~2 min at the normal 60s check interval
 SERVICE = "content-display.service"
 
 # A real, healthy decode+render pipeline burns some CPU every cycle. If total
@@ -288,6 +300,19 @@ def is_display_frozen():
     return len(set(samples)) == 1
 
 
+def get_frame_hash():
+    try:
+        result = subprocess.run(
+            [FRAME_HASH_BIN], capture_output=True, text=True, timeout=5
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+    if result.returncode != 0:
+        return None
+    out = result.stdout.strip()
+    return out or None
+
+
 def read_state():
     try:
         with open(STATE_FILE) as f:
@@ -316,13 +341,16 @@ def main():
     pid = get_vlc_pid()
     cur_cpu = get_cpu_ticks(pid) if pid else None
     cur_recvq = get_recvq_bytes()
+    cur_frame_hash = get_frame_hash()
 
     prev = read_state()
     prev_time = prev.get("time")
     prev_cpu = prev.get("cpu")
     prev_pid = prev.get("pid")
     prev_recvq = prev.get("recvq")
+    prev_frame_hash = prev.get("frame_hash")
     count = prev.get("count", 0)
+    frame_stale_count = prev.get("frame_stale_count", 0)
 
     reasons = []
 
@@ -354,20 +382,45 @@ def main():
     # see the module docstring for why.
     count = count + 1 if reasons else 0
 
+    if cur_frame_hash is not None and prev_frame_hash is not None and cur_frame_hash == prev_frame_hash:
+        frame_stale_count += 1
+    else:
+        frame_stale_count = 0
+
     write_state(
         {
             "time": cur_time,
             "cpu": cur_cpu,
             "pid": pid,
             "recvq": cur_recvq,
+            "frame_hash": cur_frame_hash,
             "count": count,
+            "frame_stale_count": frame_stale_count,
             "last_reasons": reasons,
         }
     )
 
-    if count >= STALE_THRESHOLD:
+    frame_stale = frame_stale_count >= FRAME_HASH_STALE_THRESHOLD
+    if count >= STALE_THRESHOLD or frame_stale:
+        if frame_stale:
+            reasons = reasons + [
+                f"actual pixel content unchanged (hash {cur_frame_hash}) for "
+                f"{FRAME_HASH_STALE_THRESHOLD} consecutive checks -- picture is really frozen, "
+                f"not just cycling buffer slots"
+            ]
+
         subprocess.run(["systemctl", "restart", SERVICE])
-        write_state({"time": cur_time, "cpu": cur_cpu, "pid": pid, "recvq": cur_recvq, "count": 0})
+        write_state(
+            {
+                "time": cur_time,
+                "cpu": cur_cpu,
+                "pid": pid,
+                "recvq": cur_recvq,
+                "frame_hash": cur_frame_hash,
+                "count": 0,
+                "frame_stale_count": 0,
+            }
+        )
 
         time.sleep(5)
         result = subprocess.run(

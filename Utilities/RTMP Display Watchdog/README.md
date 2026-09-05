@@ -16,13 +16,17 @@ handler -- without the process actually exiting, so plain `Restart=always`
 never fires.
 
 `vlc-watchdog.py`, run every 60s via `vlc-watchdog.timer`, catches that by
-polling three independent liveness signals against VLC's CLI interface,
-`/proc`, and the kernel's DRM debugfs interface:
+polling four independent liveness signals against VLC's CLI interface,
+`/proc`, the kernel's DRM debugfs interface, and the actual DRM plane
+buffer content:
 
 1. **`get_time`** -- is VLC's playback clock advancing?
 2. **Process CPU time delta** -- is any thread actually doing work?
 3. **DRM plane framebuffer ID** (`/sys/kernel/debug/dri/0/state`) -- is a
    frame actually being presented on screen?
+4. **Actual pixel content of that plane** (`read-plane-hash`) -- is the
+   picture itself actually different, not just cycling through buffer
+   slots?
 
 Signal 3 exists because two real incidents (2026-08-26, 2026-08-29) showed
 signals 1 and 2 can both look completely healthy -- VLC's own internal
@@ -40,7 +44,26 @@ burst was frequently landing entirely inside one of those normal stable
 stretches, causing false "frozen" restarts every few minutes on both
 displays. Widened to comfortably exceed the observed normal range.
 
-If any of the three looks stuck for 3 consecutive checks (~3-4 min), it
+Signal 4 exists because signal 3 turned out to have its own blind spot,
+confirmed live 2026-09-04: a genuinely frozen picture was reported by the
+user at the start of a manual test, and the fb ID sampled *different*
+values across every single sample the entire time -- proving VLC (or the
+render pipeline) keeps rotating through its buffer pool on schedule and
+re-copying the last real frame into each new slot to keep timing smooth,
+even when no new content has actually arrived. Buffer-slot cycling alone
+cannot tell that apart from genuinely new frames. `read-plane-hash.c` is a
+small C program (built against `libdrm`) that exports the plane's Y
+(luma) buffer via PRIME/dma-buf and hashes the actual pixel bytes
+directly -- bypassing VLC's pipeline entirely, so a repeated frame hashes
+identically regardless of which buffer slot it landed in. It runs with an
+explicit `DMA_BUF_SYNC` around the read for cache coherency, since
+skipping that could silently read back a stale cached copy instead of
+what the GPU actually wrote most recently. Uses its own shorter threshold
+(`FRAME_HASH_STALE_THRESHOLD`, 2 consecutive checks / ~2 min, per the
+user's request when this was added) rather than the 3-check threshold
+below, since it's a much more direct signal than the others.
+
+If any of the four looks stuck for their respective threshold, it
 force-restarts `content-display.service` and verifies the restart actually
 succeeded. **Only a failed recovery texts** -- a successful auto-restart is
 the watchdog doing its job silently, logged locally to
@@ -76,6 +99,19 @@ Two correctness fixes worth knowing about if you're reading the source:
 - `vlc-watchdog.py` -- the watchdog script, deployed to `/usr/local/bin/` on each Pi
 - `vlc-watchdog.service` / `vlc-watchdog.timer` -- systemd units running it every 60s (identical on every Pi)
 - `content-display.service.template` -- the VLC playback service; `Description` and `User` are host-specific, copy and fill in per Pi
+- `read-plane-hash.c` -- source for the pixel-content check (signal 4); compile per-Pi (see below), binary goes to `/usr/local/bin/read-plane-hash`
+
+## Building read-plane-hash on a Pi
+
+```bash
+sudo apt-get install -y libdrm-dev   # headers only; libdrm2 runtime is already present
+gcc -Wall -O2 read-plane-hash.c -o read-plane-hash -ldrm -I/usr/include/libdrm
+sudo mv read-plane-hash /usr/local/bin/read-plane-hash
+sudo chmod +x /usr/local/bin/read-plane-hash
+```
+
+Needs root to run (exports a PRIME fd off the plane's GEM handle) -- fine
+since `vlc-watchdog.service` already runs as root.
 
 ## Deploying to a Pi
 
