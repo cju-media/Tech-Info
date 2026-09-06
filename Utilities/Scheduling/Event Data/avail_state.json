@@ -3,7 +3,9 @@
         "Marc"
     ],
     "su-11-01-2026-worship-service": [],
-    "sa-10-31-2026-wedding-ceremony": [],
+    "sa-10-31-2026-wedding-ceremony": [
+        "Wayne Newton @ Burlesque Theater - Flamingo Hotel"
+    ],
     "fr-10-30-2026-candlelight-concert-the-magic-of-ennio-morricone": [],
     "mo-10-26-2026-book-soup-susan-orlean": [
         "Marc"
@@ -11,7 +13,9 @@
     "su-10-25-2026-resonance-collective": [
         "Marc"
     ],
-    "su-10-18-2026-worship-service": [],
+    "su-10-18-2026-worship-service": [
+        "Marc"
+    ],
     "su-10-18-2026-wedding-ceremony": [],
     "sa-10-17-2026-wedding-ceremony": [
         "Marc"
@@ -20,7 +24,9 @@
         "Marc"
     ],
     "su-10-11-2026-wedding-ceremony": [],
-    "su-10-11-2026-worship-service": [],
+    "su-10-11-2026-worship-service": [
+        "Marc"
+    ],
     "su-10-4-2026-worship-service": [
         "Marc"
     ],
@@ -32,42 +38,43 @@
         "Danny"
     ],
     "su-9-27-2026-worship-service": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "sa-9-26-2026-music-in-the-garden": [
         "Saad"
     ],
     "sa-9-26-2026-pcj-event-mother-agapia": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "fr-9-25-2026-organ-concert": [
         "Saad"
     ],
     "su-9-20-2026-worship-service": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "sa-9-19-2026-gala-choruses-showcase": [
-        "Saad",
-        "Jaffe"
+        "Jaffe",
+        "Marc",
+        "Saad"
     ],
     "we-9-16-2026-book-soup": [],
     "su-9-13-2026-worship-service": [
-        "Saad",
-        "Jaffe"
+        "Jaffe",
+        "Saad"
     ],
     "sa-9-12-2026-west-hollywood-philharmonic": [
         "Jaffe"
     ],
     "th-9-10-2026-organ-concert-upend-la": [
-        "Saad",
+        "Jaffe",
         "Marc",
-        "Jaffe"
+        "Saad"
     ],
     "su-9-6-2026-worship-service": [
-        "Danny",
-        "Jaffe"
+        "Jaffe",
+        "Danny"
     ]
 }
