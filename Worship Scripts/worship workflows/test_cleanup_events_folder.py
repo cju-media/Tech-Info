@@ -14,6 +14,7 @@ import unittest
 
 from cleanup_events_folder import (
     SUSPECT_MISREAD_DAYS,
+    build_date_prompt,
     is_suspected_misread,
     parse_drive_created_date,
 )
@@ -69,6 +70,15 @@ class IsSuspectedMisread(unittest.TestCase):
     def test_unknown_upload_date_never_flags(self):
         self.assertFalse(is_suspected_misread(datetime.date(2020, 1, 1), None))
         self.assertFalse(is_suspected_misread(None, self.UPLOADED))
+
+
+class BuildDatePrompt(unittest.TestCase):
+    def test_anchors_todays_date_and_asks_for_nearest_year(self):
+        prompt = build_date_prompt(datetime.date(2026, 9, 6))
+        self.assertIn("Today's date is 2026-09-06.", prompt)
+        self.assertIn("closest to today", prompt)
+        # JSON schema braces must survive the f-string.
+        self.assertIn('{"has_date": true or false, "last_date": "YYYY-MM-DD" or null}', prompt)
 
 
 if __name__ == "__main__":

@@ -72,12 +72,21 @@ class FlyerDateReadError(Exception):
     layer (429, 5xx, network, timeout) -- distinct from the call succeeding but
     finding no usable date, which is a plain None."""
 
-DATE_PROMPT = """This image is a promotional flyer for a church event, posted to a Google Drive folder that a human periodically clears out once the event has passed.
+def build_date_prompt(today):
+    """The flyer date prompt, anchored to today so the model can resolve a
+    year-less date ("Friday, September 5") to the right year instead of
+    guessing one at random -- guessed past years were firing bogus
+    "delete this" alerts (2026-08-31)."""
+    return f"""This image is a promotional flyer for a church event, posted to a Google Drive folder that a human periodically clears out once the event has passed.
+
+Today's date is {today:%Y-%m-%d}.
 
 Find the calendar date(s) the event actually takes place, printed somewhere on the flyer (e.g. "Sunday, August 9th, 2026"). If the flyer spans multiple days (e.g. a multi-day series or a date range), use the LAST day mentioned.
 
+Many flyers print only a month and day with no year (e.g. "Friday, September 5"). When the year is not printed, infer the one that places the event closest to today's date: these flyers are for an event in the coming weeks or one that happened in the last few weeks, never one years in the past or future. Do not default to the current year if a nearby year fits better, and never return a date more than a year away from today unless that year is explicitly printed on the flyer.
+
 Respond with ONLY compact JSON, no markdown fences, no commentary, matching exactly this schema:
-{"has_date": true or false, "last_date": "YYYY-MM-DD" or null}
+{{"has_date": true or false, "last_date": "YYYY-MM-DD" or null}}
 
 Set "has_date" to false (and "last_date" to null) if the flyer has no explicit calendar date on it -- e.g. an evergreen graphic like a generic "Give" or "Welcome" ad, or a recurring/ongoing announcement with no specific date."""
 
@@ -138,7 +147,7 @@ def download_file(service, file_id):
     return service.files().get_media(fileId=file_id, supportsAllDrives=True).execute()
 
 
-def extract_event_date(client, image_bytes, mime_type):
+def extract_event_date(client, image_bytes, mime_type, today):
     """Ask Gemini to read the event date off a flyer image.
 
     Returns a datetime.date, or None if the call succeeded but there's no
@@ -150,7 +159,7 @@ def extract_event_date(client, image_bytes, mime_type):
             model='gemini-3.5-flash',
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-                DATE_PROMPT,
+                build_date_prompt(today),
             ],
         )
     except Exception as e:
@@ -366,7 +375,7 @@ def main():
 
         attempted_reads += 1
         try:
-            event_date = extract_event_date(gemini_client, image_bytes, f['mimeType'])
+            event_date = extract_event_date(gemini_client, image_bytes, f['mimeType'], today)
         except FlyerDateReadError as e:
             read_failures += 1
             print(f"  Could not reach Gemini to read this flyer: {e}")
