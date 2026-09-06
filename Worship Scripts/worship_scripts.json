@@ -1,4 +1,10 @@
 {
+  "2026-09-13": {
+    "path": "service-scripts/2026-09-13.pdf",
+    "modifiedTime": "2026-09-06T21:00:13.065Z",
+    "isCommunion": true,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Jay"
+  },
   "2026-09-06": {
     "path": "service-scripts/2026-09-06.pdf",
     "modifiedTime": "2026-09-06T17:47:57.871Z",
@@ -10,12 +16,6 @@
     "modifiedTime": "2026-09-05T21:22:46.829Z",
     "isCommunion": true,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Megan"
-  },
-  "2026-09-13": {
-    "path": "service-scripts/2026-09-13.pdf",
-    "modifiedTime": "2026-09-05T21:22:25.434Z",
-    "isCommunion": true,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Jay"
   },
   "2026-09-20": {
     "path": "service-scripts/2026-09-20.pdf",
