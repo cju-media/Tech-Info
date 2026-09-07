@@ -389,15 +389,9 @@ def main():
     for sheet_row, name, reason in clears[:15]:
         print(f"  clear {NOTES_COLUMN}{sheet_row}  {name!r}  ({reason})")
 
-    if not updates and not clears and not header_needs_write:
-        print("\nNothing to do.")
-        return
-
     if is_dry_run:
         print("\nDRY RUN: no sheet writes, match cache not saved. Set DRY_RUN=0 to apply.")
         return
-
-    ensure_column_exists(service)
 
     data = []
     if header_needs_write:
@@ -407,13 +401,19 @@ def main():
     for sheet_row, _name, _reason in clears:
         data.append({'range': f"'{title}'!{NOTES_COLUMN}{sheet_row}", 'values': [['']]})
 
-    for start in range(0, len(data), 400):
-        service.spreadsheets().values().batchUpdate(
-            spreadsheetId=SHEET_ID,
-            body={'valueInputOption': 'RAW', 'data': data[start:start + 400]},
-        ).execute()
-    print(f"Wrote {len(data)} cell(s) to column {NOTES_COLUMN}.")
+    if data:
+        ensure_column_exists(service)
+        for start in range(0, len(data), 400):
+            service.spreadsheets().values().batchUpdate(
+                spreadsheetId=SHEET_ID,
+                body={'valueInputOption': 'RAW', 'data': data[start:start + 400]},
+            ).execute()
+        print(f"Wrote {len(data)} cell(s) to column {NOTES_COLUMN}.")
+    else:
+        print("Sheet already current; no cells written.")
 
+    # Always persist the match cache (it may hold new matches even when the
+    # sheet needed no writes, and the file may not exist yet).
     state['matches'] = matches
     state['updated'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     with open(STATE_FILE, 'w') as f:
