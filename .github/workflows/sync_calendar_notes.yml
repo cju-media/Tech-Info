@@ -1,9 +1,8 @@
 name: Sync Calendar Notes
 
 on:
-  # Enable once you've reviewed a dry run and one live run of the matches.
-  # schedule:
-  #   - cron: '30 9 * * *'  # Daily at 9:30 UTC
+  schedule:
+    - cron: '30 9 * * *'  # Daily at 9:30 UTC
   workflow_dispatch:
     inputs:
       dry_run:
