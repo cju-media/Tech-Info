@@ -788,6 +788,11 @@
             const existingTech = document.getElementById('event-modal-tech');
             if (existingTech) existingTech.remove();
 
+            const existingCalNotesBtn = document.getElementById('event-modal-calnotes-btn');
+            if (existingCalNotesBtn) existingCalNotesBtn.remove();
+            const existingCalNotesBr = document.getElementById('event-modal-calnotes-br');
+            if (existingCalNotesBr) existingCalNotesBr.remove();
+
             const isWorshipService = event.name && event.name.toLowerCase().includes('worship service');
             let dateKey = null;
             if (event.dateObj) {
@@ -952,6 +957,50 @@
                 techSection.style.textAlign = 'center';
                 techSection.innerHTML = '<strong>Tech:</strong><br>' + formatMultiline(event.tech);
                 buttonContainer.insertBefore(techSection, buttonContainer.firstChild);
+            }
+
+            // Calendar Notes: column L of the schedule sheet, synced from the
+            // Outlook calendar by sync_calendar_notes.py. Shown behind a toggle
+            // button (the text can run long) and only when the event has notes.
+            if (event.notes && event.notes.toString().trim() !== '') {
+                const calNotesPanel = document.createElement('div');
+                calNotesPanel.id = 'event-modal-calnotes';
+                calNotesPanel.style.display = 'none';
+                calNotesPanel.style.marginTop = '15px';
+                calNotesPanel.style.padding = '10px';
+                calNotesPanel.style.backgroundColor = '#f8f9fa';
+                calNotesPanel.style.border = '1px solid #dee2e6';
+                calNotesPanel.style.borderRadius = '5px';
+                calNotesPanel.style.fontSize = '14px';
+                calNotesPanel.style.textAlign = 'left';
+                calNotesPanel.style.whiteSpace = 'pre-wrap';
+                calNotesPanel.style.wordBreak = 'break-word';
+                calNotesPanel.textContent = event.notes.toString().trim();
+                // Lives in the scrollable modal body so long notes don't overflow the modal.
+                modalBody.appendChild(calNotesPanel);
+
+                const calNotesBtn = document.createElement('button');
+                calNotesBtn.id = 'event-modal-calnotes-btn';
+                calNotesBtn.type = 'button';
+                calNotesBtn.className = 'event-modal-sheet-button';
+                calNotesBtn.style.backgroundColor = '#6f42c1';
+                calNotesBtn.style.border = 'none';
+                calNotesBtn.style.cursor = 'pointer';
+                calNotesBtn.style.font = 'inherit';
+                calNotesBtn.style.fontWeight = 'bold';
+                calNotesBtn.style.marginBottom = '10px';
+                calNotesBtn.textContent = 'Show Calendar Notes';
+                calNotesBtn.addEventListener('click', function () {
+                    const hidden = calNotesPanel.style.display === 'none';
+                    calNotesPanel.style.display = hidden ? 'block' : 'none';
+                    calNotesBtn.textContent = hidden ? 'Hide Calendar Notes' : 'Show Calendar Notes';
+                    if (hidden) calNotesPanel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                });
+
+                buttonContainer.insertBefore(calNotesBtn, modalLink);
+                const calNotesBr = document.createElement('br');
+                calNotesBr.id = 'event-modal-calnotes-br';
+                buttonContainer.insertBefore(calNotesBr, modalLink);
             }
 
 
@@ -1152,6 +1201,7 @@
                              assignment: row.c[7]?.v || '',
                              schedule: row.c[8]?.v || '',
                              tech: row.c[9]?.v || '',
+                             notes: row.c[11]?.v || '',  // column L, "Event Notes" (synced from the Outlook calendar)
                              sheetRow: sheetRow
                          };
 
