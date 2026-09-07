@@ -93,16 +93,34 @@ def fetch_rows_gviz():
     return rows
 
 
-def get_sheet_title(service):
+def get_sheet_props(service):
+    """Return (title, column_count) for the GID tab."""
     meta = service.spreadsheets().get(
         spreadsheetId=SHEET_ID,
-        fields='sheets(properties(sheetId,title))',
+        fields='sheets(properties(sheetId,title,gridProperties(columnCount)))',
     ).execute()
     for sheet in meta.get('sheets', []):
         props = sheet.get('properties', {})
         if props.get('sheetId') == GID:
-            return props['title']
+            column_count = props.get('gridProperties', {}).get('columnCount', 0)
+            return props['title'], column_count
     raise ValueError(f"No tab with sheetId {GID} in spreadsheet {SHEET_ID}")
+
+
+def ensure_column_exists(service):
+    """The sheet ships with exactly 11 columns (A-K); column L has to be
+    added to the grid before any value can be written to it."""
+    _title, column_count = get_sheet_props(service)
+    if column_count >= LINK_COLUMN_INDEX + 1:
+        return
+    missing = (LINK_COLUMN_INDEX + 1) - column_count
+    print(f"Sheet has {column_count} columns; adding {missing} to reach column {LINK_COLUMN}.")
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=SHEET_ID,
+        body={'requests': [{
+            'appendDimension': {'sheetId': GID, 'dimension': 'COLUMNS', 'length': missing}
+        }]},
+    ).execute()
 
 
 def desired_formula(url):
@@ -169,7 +187,7 @@ def main():
 
     title = None
     if service:
-        title = get_sheet_title(service)
+        title, _column_count = get_sheet_props(service)
         print(f"Reading '{title}'!A:L ...")
         result = service.spreadsheets().values().get(
             spreadsheetId=SHEET_ID,
@@ -214,6 +232,8 @@ def main():
     if is_dry_run:
         print("\nDRY RUN: not writing. Set DRY_RUN=0 to apply.")
         return
+
+    ensure_column_exists(service)
 
     data = []
     if header_needs_write:
