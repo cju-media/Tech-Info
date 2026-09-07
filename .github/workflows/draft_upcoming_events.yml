@@ -50,12 +50,12 @@ jobs:
       - name: Commit the draft
         if: ${{ env.DRY_RUN == '0' }}
         run: |
-          draft="Utilities/Scheduling/Event Data/event_draft.json"
-          [ -f "$draft" ] || exit 0
-          git add "$draft"
-          if ! git diff --cached --quiet -- "$draft"; then
+          cd "Utilities/Scheduling/Event Data"
+          git add event_draft.json event_draft_state.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git commit -m "chore: Update upcoming events draft"
+            git pull --rebase origin ${{ github.ref_name }}
             git push
           fi

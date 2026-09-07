@@ -18,6 +18,11 @@ Events already on the sheet are skipped: the calendar_notes_state.json
 match cache says which calendar events map to an existing row, and the
 current sheet rows for nearby dates are shown to Gemini as a backstop.
 
+The Gemini classification is cached in event_draft_state.json, keyed by a
+fingerprint of the candidate events, so a run whose candidates haven't
+changed makes no Gemini call (it still rebuilds the JSON so dates and
+worship rows roll forward).
+
 Window: the next ~3 months.
 
 Env:
@@ -31,6 +36,7 @@ import os
 import re
 import sys
 import json
+import hashlib
 import datetime
 
 from sync_calendar_notes import (
@@ -40,6 +46,11 @@ from sync_calendar_notes import (
 
 WINDOW_DAYS = 92
 OUT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'event_draft.json')
+# Caches the last Gemini classification keyed by a fingerprint of the
+# candidate events. The candidate set changes only when a calendar event
+# is added/edited or gets onto the sheet, so most daily runs reuse this
+# and make no Gemini call. Delete the file to force a re-run.
+DRAFT_STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'event_draft_state.json')
 NOTE_EXCERPT = 1400
 GEMINI_BATCH = 40
 
@@ -160,6 +171,29 @@ def gemini_draft(events, sheet_by_date, api_key):
     return drafted
 
 
+def candidates_fingerprint(candidates):
+    """Stable hash of everything gemini_draft() feeds the model, so an
+    unchanged candidate set can reuse the last classification."""
+    basis = [
+        [eid, info['date'], info['summary'], info['location'], info['description']]
+        for eid, info in sorted(candidates)
+    ]
+    return hashlib.sha256(json.dumps(basis, sort_keys=True).encode()).hexdigest()
+
+
+def load_draft_state():
+    try:
+        with open(DRAFT_STATE_FILE) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_draft_state(state):
+    with open(DRAFT_STATE_FILE, 'w') as f:
+        json.dump(state, f, indent=2, sort_keys=True)
+
+
 def build_rows(worship_dates, drafted, events_by_id):
     """Return a list of {kind, cells, note} newest-first, with month dividers."""
     entries = []  # (date, cells, note)
@@ -225,13 +259,28 @@ def main():
     ]
     print(f"{len(in_window)} calendar events in window, {len(candidates)} not already on the sheet.")
 
+    fingerprint = candidates_fingerprint(candidates)
+    draft_state = load_draft_state()
     drafted = {}
+    called_gemini = False
     if candidates:
-        if api_key:
-            drafted = gemini_draft(candidates, sheet_by_date, api_key)
-            print(f"Gemini kept {len(drafted)} as crew events.")
-        else:
+        if not api_key:
             print("GEMINI_API_KEY not set; calendar events will be omitted from the draft.")
+        elif draft_state.get('fingerprint') == fingerprint and 'drafted' in draft_state:
+            candidate_ids = {eid for eid, _ in candidates}
+            drafted = {eid: f for eid, f in draft_state['drafted'].items() if eid in candidate_ids}
+            print(f"Candidate events unchanged since {draft_state.get('gemini_at', '?')}; "
+                  f"reusing {len(drafted)} cached classification(s), no Gemini call.")
+        else:
+            drafted = gemini_draft(candidates, sheet_by_date, api_key)
+            called_gemini = True
+            print(f"Gemini kept {len(drafted)} as crew events.")
+    if called_gemini:
+        draft_state = {
+            'fingerprint': fingerprint,
+            'drafted': drafted,
+            'gemini_at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
+        }
 
     # Sundays in the window with no worship service already on the sheet.
     worship_dates = []
@@ -271,6 +320,10 @@ def main():
     with open(OUT_FILE, 'w') as f:
         json.dump(payload, f, indent=2)
     print(f"\nWrote {os.path.basename(OUT_FILE)}")
+
+    if called_gemini:
+        save_draft_state(draft_state)
+        print(f"Saved classification cache ({len(draft_state['drafted'])} event(s)).")
 
 
 if __name__ == '__main__':

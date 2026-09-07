@@ -48,10 +48,11 @@ jobs:
           DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
         run: python "Worship Scripts/worship workflows/cleanup_events_folder.py"
 
-      - name: Commit notified-file state
+      - name: Commit cleanup state
         if: always()
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add "Worship Scripts/worship workflows/events_cleanup_notified_ids.json" || true
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update events cleanup notified-file state" && git pull --rebase origin ${{ github.ref_name }} && git push)
+          git add "Worship Scripts/worship workflows/events_cleanup_notified_ids.json" \
+                  "Worship Scripts/worship workflows/events_cleanup_date_cache.json" || true
+          git diff --staged --quiet || (git commit -m "chore: Update events cleanup state" && git pull --rebase origin ${{ github.ref_name }} && git push)

@@ -9,6 +9,10 @@ just the upload time, not the event date. The only place the date lives is
 printed as text on the flyer graphic itself, so this asks Gemini's vision
 model to read it off each image.
 
+That read is cached per Drive file id (events_cleanup_date_cache.json): a
+flyer's printed date doesn't change, so once read it never goes to Gemini
+again. Only genuinely new files cost an API call.
+
 Files are TRASHED, never permanently deleted -- Drive keeps trashed items
 for ~30 days, so a misread is recoverable. Anything Gemini can't confidently
 find a date on (an evergreen graphic, an unusual layout) is left alone.
@@ -57,6 +61,12 @@ except ImportError:
 
 EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 NOTIFIED_STATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'events_cleanup_notified_ids.json')
+# Cache of what Gemini read off each flyer, keyed by Drive file id (+ its
+# modifiedTime). A flyer's printed date never changes, so once we've read a
+# file we never send it to Gemini again -- this runs daily and the vision
+# calls were the bulk of the API spend (and caused the Aug 2026 quota
+# exhaustion). Entries for files no longer in the folder are pruned.
+DATE_CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'events_cleanup_date_cache.json')
 
 # Gemini reads the event date off the flyer graphic, and flyers often print
 # the date with no year ("Friday, September 5"), so the model has to guess it
@@ -133,7 +143,8 @@ def list_image_files(service, folder_id):
     page_token = None
     while True:
         results = service.files().list(
-            q=query, spaces='drive', fields='nextPageToken, files(id, name, mimeType, createdTime)',
+            q=query, spaces='drive',
+            fields='nextPageToken, files(id, name, mimeType, createdTime, modifiedTime)',
             pageToken=page_token, supportsAllDrives=True, includeItemsFromAllDrives=True,
         ).execute()
         files.extend(results.get('files', []))
@@ -218,6 +229,21 @@ def load_notified_state():
 def save_notified_state(state):
     with open(NOTIFIED_STATE_PATH, 'w') as f:
         json.dump(state, f, indent=2, sort_keys=True)
+
+
+def load_date_cache():
+    if os.path.exists(DATE_CACHE_PATH):
+        try:
+            with open(DATE_CACHE_PATH, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Could not read date cache, starting fresh: {e}")
+    return {}
+
+
+def save_date_cache(cache):
+    with open(DATE_CACHE_PATH, 'w') as f:
+        json.dump(cache, f, indent=2, sort_keys=True)
 
 
 def dispatch_event(event_type, client_payload, max_retries=4, backoff_seconds=3):
@@ -354,10 +380,12 @@ def main():
     print(f"Checking Events_Ads folder for passed events as of {today} (America/Los_Angeles)...")
     files = list_image_files(service, EVENTS_FOLDER_ID)
     notified_state = load_notified_state()
+    date_cache = load_date_cache()
 
     if not files:
         print("No image files found in the folder.")
         save_notified_state({})  # nothing left in the folder, so nothing to remember
+        save_date_cache({})
         return
 
     print(f"Found {len(files)} image file(s) to check.")
@@ -365,24 +393,50 @@ def main():
     trashed_count = 0
     attempted_reads = 0
     read_failures = 0
+    cache_hits = 0
     for f in files:
         print(f"- {f['name']} ({f['id']})")
-        try:
-            image_bytes = download_file(service, f['id'])
-        except HttpError as e:
-            print(f"  Failed to download: {e}")
-            continue
 
-        attempted_reads += 1
-        try:
-            event_date = extract_event_date(gemini_client, image_bytes, f['mimeType'], today)
-        except FlyerDateReadError as e:
-            read_failures += 1
-            print(f"  Could not reach Gemini to read this flyer: {e}")
-            continue
+        cached = date_cache.get(f['id'])
+        if cached and cached.get('modifiedTime') == f.get('modifiedTime'):
+            cache_hits += 1
+            if not cached.get('has_date'):
+                print("  (cached) no readable date on this flyer; leaving it alone.")
+                continue
+            try:
+                event_date = datetime.date.fromisoformat(cached['event_date'])
+            except (ValueError, TypeError, KeyError):
+                event_date = None
+            if event_date is None:
+                continue
+            print(f"  (cached) event date {event_date}.")
+        else:
+            try:
+                image_bytes = download_file(service, f['id'])
+            except HttpError as e:
+                print(f"  Failed to download: {e}")
+                continue
 
-        if event_date is None:
-            continue
+            attempted_reads += 1
+            try:
+                event_date = extract_event_date(gemini_client, image_bytes, f['mimeType'], today)
+            except FlyerDateReadError as e:
+                read_failures += 1
+                print(f"  Could not reach Gemini to read this flyer: {e}")
+                continue
+
+            # The read succeeded (a date, or a confident "no date") -- remember
+            # it so this flyer never goes to Gemini again.
+            date_cache[f['id']] = {
+                'name': f['name'],
+                'modifiedTime': f.get('modifiedTime'),
+                'has_date': event_date is not None,
+                'event_date': event_date.isoformat() if event_date else None,
+                'read_at': today.isoformat(),
+            }
+
+            if event_date is None:
+                continue
 
         created_date = parse_drive_created_date(f.get('createdTime'))
         if is_suspected_misread(event_date, created_date):
@@ -427,12 +481,18 @@ def main():
                 notify_manual_deletion_needed(f['name'], f['id'])
                 notified_state[f['id']] = {'name': f['name'], 'notified_at': today.isoformat()}
 
-    # Forget any file we'd previously flagged that's no longer in the folder
-    # (it got deleted, one way or another) so a reused Drive ID wouldn't be
-    # mistaken for the old one, and the state file doesn't grow forever.
+    # Forget any file we'd previously flagged or cached that's no longer in
+    # the folder (it got deleted, one way or another) so a reused Drive ID
+    # wouldn't be mistaken for the old one, and the state files don't grow
+    # forever.
     current_ids = {f['id'] for f in files}
     notified_state = {fid: info for fid, info in notified_state.items() if fid in current_ids}
     save_notified_state(notified_state)
+    date_cache = {fid: info for fid, info in date_cache.items() if fid in current_ids}
+    save_date_cache(date_cache)
+
+    if cache_hits:
+        print(f"Reused a cached date read for {cache_hits} flyer(s) (no Gemini call).")
 
     # If every flyer we managed to hand to Gemini came back as an API failure,
     # the run did nothing -- fail loudly (red X + alert) instead of exiting
