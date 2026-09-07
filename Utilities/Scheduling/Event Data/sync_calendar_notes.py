@@ -11,11 +11,13 @@ Wedding"), especially when a date has several events. That match is done
 by Gemini and cached in calendar_notes_state.json, so each run only asks
 Gemini about rows it hasn't matched before.
 
-Notes are written verbatim (RAW), overwriting column L every run - the
-calendar is the source of truth, so manual edits in that column are
-replaced. Rows with no confident calendar match are left blank; any
-leftover dashboard HYPERLINK from the earlier backfill_calendar_links
-experiment is cleared.
+Notes are written RAW, overwriting column L every run - the calendar is
+the source of truth, so manual edits in that column are replaced. The
+only edit to the text is _strip_boilerplate(), which removes the Teams
+meeting block and Google Calendar invite/RSVP footer that Outlook and
+Google append to synced events. Rows with no confident calendar match
+are left blank; any leftover dashboard HYPERLINK from the earlier
+backfill_calendar_links experiment is cleared.
 
 Auth:
     GDRIVE_SERVICE_ACCOUNT_JSON  Sheets read/write (Editor on the sheet)
@@ -83,8 +85,45 @@ def _unescape_ics(value):
 
 def _tidy(text):
     text = text.replace('\r\n', '\n').replace('\r', '\n')
-    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = re.sub(r'[ \t]+\n', '\n', text)              # trailing spaces
+    text = re.sub(r'\n{3,}', '\n\n', text)              # >2 blank lines
+    text = re.sub(r'(?:\n[ \t]*[*·•\-]?[ \t]*)+$', '', text)  # trailing empty bullets
     return text.strip()
+
+
+# Everything from here to the end of the note: Outlook/Teams and Google
+# Calendar append these invite/meeting footers to every synced event.
+_FOOTER_CUTS = [
+    r'\n_{10,}\nMicrosoft Teams\b',
+    r'\nMicrosoft Teams Need help\?',
+    r'\n_{10,}\n(?=(?:[^\n]*\n){0,3}?[^\n]*Microsoft Teams)',
+    r'\nWhen\n(?=\w+day\b|\w+day,|\w{3,9} \d{1,2},? \d{4})',
+    r'\nYou have been invited by .+? to attend an event named ',
+    r'\nInvitation from Google Calendar<',
+    r'\nView all guest info<https://calendar\.google\.com',
+    r'\n~-~-~-~',
+    r'\nGoing \(\w+\)\?',
+]
+# Google Meet / RSVP scaffolding lines that sit inside the note body.
+_JUNK_LINE = re.compile(
+    r'^(?:Join with Google Meet|Meeting link|Join by phone|More phone numbers|'
+    r'Description|CHANGED|This event has been updated|Changed: .*|'
+    r'\(US\) \+.*PIN:.*|meet\.google\.com/\S+|https?://meet\.google\.com/\S+)\s*$'
+)
+
+
+def _strip_boilerplate(text):
+    text = _tidy(text)
+    cut = len(text)
+    for pattern in _FOOTER_CUTS:
+        m = re.search(pattern, text)
+        if m:
+            cut = min(cut, m.start())
+    text = text[:cut]
+    text = text.replace('\nDescription\nCHANGED', '')
+    text = '\n'.join(ln for ln in text.split('\n') if not _JUNK_LINE.match(ln))
+    text = re.sub(r'[ \t]*<(?:https?|mailto):[^>\s]+>', '', text)  # <url> / <mailto:> tokens
+    return _tidy(text)
 
 
 def fetch_events():
@@ -119,7 +158,7 @@ def fetch_events():
             'date': iso,
             'summary': field('SUMMARY').strip(),
             'location': field('LOCATION').strip(),
-            'description': _tidy(field('DESCRIPTION')),
+            'description': _strip_boilerplate(field('DESCRIPTION')),
         }
     return events
 
