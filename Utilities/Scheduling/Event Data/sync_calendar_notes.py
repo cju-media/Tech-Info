@@ -355,21 +355,27 @@ def main():
     updates = []          # (sheet_row, event_name, uid, note_text)
     clears = []           # (sheet_row, event_name, reason)
     matched_count = 0
+    note_rows = set()
     for sheet_row, iso, name, current in in_window:
         key = f'{iso}|{normalize_name(name)}'
         uid = matches.get(key, 'NONE')
         if uid != 'NONE' and uid in events:
             matched_count += 1
+            note_rows.add(sheet_row)
             note = events[uid]['description']
             if len(note) > MAX_CELL_CHARS:
                 note = note[:MAX_CELL_CHARS] + '\n[...truncated]'
             if current != note:
                 updates.append((sheet_row, name, uid, note))
-        else:
-            if current and DASHBOARD_MARKER in current:
-                clears.append((sheet_row, name, 'stale dashboard link, no calendar match'))
-            elif current and current.startswith('=HYPERLINK'):
-                clears.append((sheet_row, name, 'leftover HYPERLINK, no calendar match'))
+
+    # Clear any leftover dashboard HYPERLINK from the earlier experiment on
+    # every dated row that isn't getting a note (including rows outside the
+    # feed's date range, which the loop above never visits).
+    for sheet_row, _iso, name, current in rows:
+        if sheet_row in note_rows or not current:
+            continue
+        if DASHBOARD_MARKER in current or current.startswith('=HYPERLINK'):
+            clears.append((sheet_row, name, 'leftover dashboard link, no calendar match'))
 
     print(f"\n{matched_count}/{len(in_window)} in-window rows matched to an event.")
     print(f"Header {NOTES_COLUMN}1: "
