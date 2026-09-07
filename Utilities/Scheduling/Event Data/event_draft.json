@@ -1,7 +1,299 @@
 {
-  "generated": null,
-  "window": { "start": "", "end": "" },
-  "columns": ["Date", "Name of Event", "Spaces Used", "Call Times", "Event Type", "#", "Availability", "Assignment", "Schedule", "Tech", "PAYCOM CODE"],
-  "rows": [],
-  "counts": { "events": 0, "worship": 0, "from_calendar": 0 }
+  "generated": "2026-09-07T20:20:23+00:00",
+  "window": {
+    "start": "2026-09-07",
+    "end": "2026-12-08"
+  },
+  "columns": [
+    "Date",
+    "Name of Event",
+    "Spaces Used",
+    "Call Times",
+    "Event Type",
+    "#",
+    "Availability",
+    "Assignment",
+    "Schedule",
+    "Tech",
+    "PAYCOM CODE"
+  ],
+  "rows": [
+    {
+      "kind": "divider",
+      "cells": [
+        "DECEMBER",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/6/2026",
+        "HoLAdays Synesthesia Sinfonietta Concert",
+        "Sanctuary/Stuart Hall/Forecourt/Mayflower",
+        "2:00pm-10:00pm",
+        "Concert",
+        "2",
+        "",
+        "",
+        "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
+        "",
+        ""
+      ],
+      "note": "from calendar: HoLAdays Synesthesia Sinfonietta concert"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/6/2026",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SA 12/5/2026",
+        "Bernal & Barnett Wedding",
+        "Sanctuary/Forecourt/Mayflower",
+        "3:00pm-11:00pm",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Elizabeth Bernal & Izett Barnett"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "FR 12/4/2026",
+        "Yamandu Costa Concert",
+        "Sanctuary",
+        "5:30pm-9:30pm",
+        "Concert",
+        "1",
+        "",
+        "",
+        "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
+        "",
+        ""
+      ],
+      "note": "from calendar: Concert: Yamandu Costa"
+    },
+    {
+      "kind": "divider",
+      "cells": [
+        "NOVEMBER",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 11/29/2026",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 11/22/2026",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SA 11/21/2026",
+        "Uribe & Aimaq Wedding",
+        "Sanctuary/Forecourt/Mayflower/Stuart Hall",
+        "TBD",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Sofia Uribe & Robin Aimaq"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 11/15/2026",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 11/8/2026",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "TH 11/5/2026",
+        "Documentary Screening: \"Groundswell\"",
+        "Shatto",
+        "7:00pm",
+        "Screening",
+        "1",
+        "",
+        "",
+        "TBD\n7:00pm start",
+        "",
+        ""
+      ],
+      "note": "from calendar: Screening, Q&A, Reception"
+    },
+    {
+      "kind": "divider",
+      "cells": [
+        "OCTOBER",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 10/25/2026",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
+    },
+    {
+      "kind": "divider",
+      "cells": [
+        "SEPTEMBER",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "TU 9/8/2026",
+        "VOX Femina Welcome Dinner",
+        "Mayflower",
+        "6:00pm-7:30pm",
+        "Special Event",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": "from calendar: VOX Femina Welcome Dinner"
+    }
+  ],
+  "counts": {
+    "events": 12,
+    "worship": 6,
+    "from_calendar": 6
+  }
 }
