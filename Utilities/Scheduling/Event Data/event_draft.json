@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-07T20:20:23+00:00",
+  "generated": "2026-09-07T22:41:00+00:00",
   "window": {
     "start": "2026-09-07",
     "end": "2026-12-08"
@@ -40,13 +40,13 @@
       "cells": [
         "SU 12/6/2026",
         "HoLAdays Synesthesia Sinfonietta Concert",
-        "Sanctuary/Stuart Hall/Forecourt/Mayflower",
+        "Sanctuary/Stuart Hall/Forecourt",
         "2:00pm-10:00pm",
         "Concert",
         "2",
         "",
         "",
-        "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
+        "2:00pm Load-in\n6:30pm Doors\n7:00pm Concert\n10:00pm Off campus",
         "",
         ""
       ],
@@ -73,8 +73,8 @@
       "kind": "event",
       "cells": [
         "SA 12/5/2026",
-        "Bernal & Barnett Wedding",
-        "Sanctuary/Forecourt/Mayflower",
+        "Elizabeth Bernal & Izett Barnett Wedding",
+        "Sanctuary/Forecourt",
         "3:00pm-11:00pm",
         "Wedding",
         "1",
@@ -97,7 +97,7 @@
         "1",
         "",
         "",
-        "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
+        "5:30pm Load-in\n7:30pm Concert\n9:30pm Off campus",
         "",
         ""
       ],
@@ -158,8 +158,8 @@
       "kind": "event",
       "cells": [
         "SA 11/21/2026",
-        "Uribe & Aimaq Wedding",
-        "Sanctuary/Forecourt/Mayflower/Stuart Hall",
+        "Sofia Uribe & Robin Aimaq Wedding",
+        "Sanctuary/Forecourt/Stuart Hall",
         "TBD",
         "Wedding",
         "1",
@@ -211,89 +211,21 @@
         "TH 11/5/2026",
         "Documentary Screening: \"Groundswell\"",
         "Shatto",
-        "7:00pm",
+        "7:00pm-9:00pm",
         "Screening",
         "1",
         "",
         "",
-        "TBD\n7:00pm start",
+        "7:00pm Start",
         "",
         ""
       ],
       "note": "from calendar: Screening, Q&A, Reception"
-    },
-    {
-      "kind": "divider",
-      "cells": [
-        "OCTOBER",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        ""
-      ],
-      "note": ""
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 10/25/2026",
-        "Worship Service",
-        "Sanctuary",
-        "8:45am-12:30pm",
-        "Worship Service",
-        "2",
-        "",
-        "(Live) \n(Stream)",
-        "",
-        "",
-        "Leave Blank"
-      ],
-      "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "divider",
-      "cells": [
-        "SEPTEMBER",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        ""
-      ],
-      "note": ""
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "TU 9/8/2026",
-        "VOX Femina Welcome Dinner",
-        "Mayflower",
-        "6:00pm-7:30pm",
-        "Special Event",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        ""
-      ],
-      "note": "from calendar: VOX Femina Welcome Dinner"
     }
   ],
   "counts": {
-    "events": 12,
-    "worship": 6,
-    "from_calendar": 6
+    "events": 10,
+    "worship": 5,
+    "from_calendar": 5
   }
 }
