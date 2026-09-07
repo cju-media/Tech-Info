@@ -36,8 +36,8 @@ import sys
 import datetime
 import urllib.request
 
-from googleapiclient.discovery import build
-from google.oauth2 import service_account
+# googleapiclient / google.oauth2 are imported lazily in get_sheets_service()
+# so other modules can reuse the ICS helpers here without the Sheets deps.
 
 SHEET_ID = '1UC8vgy89W14bVEWROqdUc9VgkMTGykC5ZZJqSDmi2-A'
 GID = 251348517
@@ -171,6 +171,8 @@ def get_sheets_service():
     blob = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
     if not blob:
         return None
+    from googleapiclient.discovery import build
+    from google.oauth2 import service_account
     creds = service_account.Credentials.from_service_account_info(
         json.loads(blob), scopes=SCOPES
     )
