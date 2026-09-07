@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upcoming Events Draft</title>
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #333; background: #fff; margin: 0; padding: 24px 20px 80px; line-height: 1.45;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .meta { color: #666; font-size: 13px; margin-bottom: 4px; }
+    .how { font-size: 13px; color: #555; background: #f1f3f5; border-radius: 6px; padding: 10px 14px; margin: 14px 0 18px; }
+    button.copy {
+        font: inherit; font-weight: bold; color: #fff; background: #6f42c1;
+        border: none; border-radius: 5px; padding: 9px 18px; cursor: pointer; margin-bottom: 14px;
+    }
+    button.copy:disabled { opacity: .6; cursor: default; }
+    .scroll { overflow-x: auto; border: 1px solid #dee2e6; border-radius: 6px; }
+    table { border-collapse: collapse; font-size: 13px; width: 100%; }
+    th, td { border: 1px solid #dee2e6; padding: 5px 8px; text-align: left; vertical-align: top; white-space: pre-wrap; }
+    th { background: #f1f3f5; position: sticky; top: 0; }
+    td:first-child, th:first-child { white-space: nowrap; }
+    tr.divider td { background: #e9ecef; font-weight: bold; letter-spacing: .05em; }
+    .src { color: #999; font-size: 11px; }
+    .empty { color: #888; font-style: italic; padding: 20px 0; }
+    .error { color: #b02a37; }
+    @media (prefers-color-scheme: dark) {
+        body { background: #1b1b1b; color: #e3e3e3; }
+        .meta, .src, .empty { color: #9a9a9a; }
+        .how { background: #262626; color: #c9c9c9; }
+        .scroll { border-color: #3a3a3a; }
+        th, td { border-color: #3a3a3a; }
+        th { background: #262626; }
+        tr.divider td { background: #333; }
+    }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>Upcoming Events Draft</h1>
+    <div class="meta" id="meta"></div>
+    <div class="how">
+        A starting point for the Tech Availability sheet &mdash; <strong>not</strong> the live sheet.
+        Click <em>Copy table</em>, paste into a blank area of the sheet, then edit.
+        Availability, Assignment and Tech are left blank on purpose. Check the month-divider
+        rows and any row that overlaps something already on the sheet.
+    </div>
+    <button class="copy" id="copyBtn" disabled>Copy table</button>
+    <div id="content"><p>Loading&hellip;</p></div>
+</div>
+<script>
+    var JSON_URL = 'Utilities/Scheduling/Event Data/event_draft.json';
+
+    var metaEl = document.getElementById('meta');
+    var contentEl = document.getElementById('content');
+    var copyBtn = document.getElementById('copyBtn');
+
+    fetch(JSON_URL + '?t=' + Date.now())
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(render)
+        .catch(function (e) {
+            contentEl.innerHTML = '<p class="error">Could not load the draft (' + e.message +
+                '). It is regenerated daily &mdash; if this is the first run it may not exist yet.</p>';
+        });
+
+    function fmtDate(iso) {
+        if (!iso) return '';
+        var p = iso.split('-');
+        return p[1] + '/' + p[2] + '/' + p[0];
+    }
+
+    function render(data) {
+        if (data.generated) {
+            metaEl.textContent = 'Generated ' + new Date(data.generated).toLocaleString() +
+                ' · window ' + fmtDate(data.window.start) + ' – ' + fmtDate(data.window.end) +
+                ' · ' + data.counts.worship + ' worship + ' + data.counts.from_calendar + ' from calendar';
+        }
+        var rows = data.rows || [];
+        if (!rows.length) {
+            contentEl.innerHTML = data.generated
+                ? '<p class="empty">Nothing to draft &mdash; every upcoming event is already on the sheet.</p>'
+                : '<p class="empty">The draft has not been generated yet. It runs daily.</p>';
+            return;
+        }
+
+        var table = document.createElement('table');
+        table.id = 'draft-table';
+
+        var thead = document.createElement('thead');
+        var htr = document.createElement('tr');
+        data.columns.forEach(function (c) {
+            var th = document.createElement('th');
+            th.textContent = c;
+            htr.appendChild(th);
+        });
+        thead.appendChild(htr);
+        table.appendChild(thead);
+
+        var tbody = document.createElement('tbody');
+        rows.forEach(function (row) {
+            var tr = document.createElement('tr');
+            if (row.kind === 'divider') tr.className = 'divider';
+            row.cells.forEach(function (val) {
+                var td = document.createElement('td');
+                td.textContent = val == null ? '' : String(val);
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+
+        contentEl.innerHTML = '';
+        var scroll = document.createElement('div');
+        scroll.className = 'scroll';
+        scroll.appendChild(table);
+        contentEl.appendChild(scroll);
+
+        var srcNote = document.createElement('p');
+        srcNote.className = 'src';
+        srcNote.textContent = 'Row sources: ' + rows.filter(function (r) { return r.kind === 'event'; })
+            .map(function (r) { return r.cells[0] + ' — ' + r.note; }).join('  |  ');
+        contentEl.appendChild(srcNote);
+
+        copyBtn.disabled = false;
+        copyBtn.addEventListener('click', function () { copyTable(table); });
+    }
+
+    function copyTable(table) {
+        // Google Sheets pastes text/html into cells and keeps line breaks.
+        var html = '<table>' + table.querySelector('tbody').innerHTML + '</table>';
+        html = html.replace(/\n/g, '<br>');
+        var tsv = Array.prototype.map.call(table.querySelectorAll('tbody tr'), function (tr) {
+            return Array.prototype.map.call(tr.children, function (td) {
+                return td.textContent.replace(/\t/g, ' ').replace(/\n/g, ' / ');
+            }).join('\t');
+        }).join('\n');
+
+        function done() {
+            copyBtn.textContent = 'Copied ✓';
+            setTimeout(function () { copyBtn.textContent = 'Copy table'; }, 2000);
+        }
+
+        if (navigator.clipboard && window.ClipboardItem) {
+            navigator.clipboard.write([new ClipboardItem({
+                'text/html': new Blob([html], { type: 'text/html' }),
+                'text/plain': new Blob([tsv], { type: 'text/plain' })
+            })]).then(done).catch(selectFallback);
+        } else {
+            selectFallback();
+        }
+
+        function selectFallback() {
+            var range = document.createRange();
+            range.selectNode(table);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            try { document.execCommand('copy'); done(); } catch (e) { /* leave selected */ }
+        }
+    }
+</script>
+</body>
+</html>

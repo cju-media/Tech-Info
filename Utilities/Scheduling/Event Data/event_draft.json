@@ -1,0 +1,7 @@
+{
+  "generated": null,
+  "window": { "start": "", "end": "" },
+  "columns": ["Date", "Name of Event", "Spaces Used", "Call Times", "Event Type", "#", "Availability", "Assignment", "Schedule", "Tech", "PAYCOM CODE"],
+  "rows": [],
+  "counts": { "events": 0, "worship": 0, "from_calendar": 0 }
+}

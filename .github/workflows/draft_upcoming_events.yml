@@ -1,0 +1,56 @@
+name: Draft Upcoming Events
+
+on:
+  schedule:
+    - cron: '45 9 * * *'  # Daily at 9:45 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (log the draft, do not commit event_draft.json)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  draft-upcoming-events:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-genai
+
+      - name: Build the upcoming-events draft
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: cd "Utilities/Scheduling/Event Data" && python draft_upcoming_events.py
+
+      - name: Commit the draft
+        if: ${{ env.DRY_RUN == '0' }}
+        run: |
+          draft="Utilities/Scheduling/Event Data/event_draft.json"
+          [ -f "$draft" ] || exit 0
+          git add "$draft"
+          if ! git diff --cached --quiet -- "$draft"; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: Update upcoming events draft"
+            git push
+          fi
