@@ -965,7 +965,9 @@
             if (event.notes && event.notes.toString().trim() !== '') {
                 const calNotesBtn = document.createElement('a');
                 calNotesBtn.id = 'event-modal-calnotes-btn';
-                calNotesBtn.href = 'event-notes.html?row=' + event.sheetRow;
+                // Absolute URL: the dashboard is embedded on Squarespace, so a
+                // relative href would resolve against that site and 404.
+                calNotesBtn.href = 'https://cju-media.github.io/Tech-Info/event-notes.html?row=' + event.sheetRow;
                 calNotesBtn.target = '_blank';
                 calNotesBtn.rel = 'noopener';
                 calNotesBtn.className = 'event-modal-sheet-button';
