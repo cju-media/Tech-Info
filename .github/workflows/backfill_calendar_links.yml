@@ -1,10 +1,8 @@
 name: Backfill Calendar Links
 
 on:
-  # Once you've done a dry-run dispatch, reviewed the log, and run it live
-  # once, uncomment this to keep new/renamed rows linked automatically.
-  # schedule:
-  #   - cron: '15 9 * * *'  # Daily at 9:15 UTC, just after Mark Past Schedule Events
+  schedule:
+    - cron: '15 9 * * *'  # Daily at 9:15 UTC, just after Mark Past Schedule Events
   workflow_dispatch:
     inputs:
       dry_run:
