@@ -6,19 +6,26 @@
     "sa-10-31-2026-wedding-ceremony": [],
     "fr-10-30-2026-candlelight-concert-the-magic-of-ennio-morricone": [],
     "mo-10-26-2026-book-soup-susan-orlean": [
+        "Jaffe",
         "Marc"
     ],
     "su-10-25-2026-resonance-collective": [
+        "Jaffe",
         "Marc"
     ],
     "su-10-18-2026-worship-service": [
+        "Jaffe",
         "Marc"
     ],
-    "su-10-18-2026-wedding-ceremony": [],
+    "su-10-18-2026-wedding-ceremony": [
+        "Jaffe"
+    ],
     "sa-10-17-2026-wedding-ceremony": [
+        "Jaffe",
         "Marc"
     ],
     "tu-10-13-2026-reception-and-book-talk-diesel-bookstore-min-jin-lee": [
+        "Jaffe",
         "Marc"
     ],
     "su-10-11-2026-wedding-ceremony": [],
@@ -26,6 +33,7 @@
         "Marc"
     ],
     "su-10-4-2026-worship-service": [
+        "Jaffe",
         "Marc"
     ],
     "sa-10-3-2026-wedding-ceremony": [
@@ -36,22 +44,22 @@
         "Danny"
     ],
     "su-9-27-2026-worship-service": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "sa-9-26-2026-music-in-the-garden": [
         "Saad"
     ],
     "sa-9-26-2026-pcj-event-mother-agapia": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "fr-9-25-2026-organ-concert": [
         "Saad"
     ],
     "su-9-20-2026-worship-service": [
-        "Saad",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "sa-9-19-2026-gala-choruses-showcase": [
         "Jaffe",
@@ -70,9 +78,5 @@
         "Jaffe",
         "Marc",
         "Saad"
-    ],
-    "su-9-6-2026-worship-service": [
-        "Jaffe",
-        "Danny"
     ]
 }
