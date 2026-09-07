@@ -47,10 +47,10 @@ jobs:
         if: ${{ env.DRY_RUN == '0' }}
         run: |
           state="Utilities/Scheduling/Event Data/calendar_notes_state.json"
-          if ! git diff --quiet -- "$state"; then
+          git add "$state"
+          if ! git diff --cached --quiet -- "$state"; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add "$state"
             git commit -m "chore: Update calendar notes match cache"
             git push
           fi
