@@ -26,6 +26,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # PAT so the draft commit fires pages_deployment's push trigger
+          # (a default-GITHUB_TOKEN commit does not); event-draft.html
+          # fetches event_draft.json from Pages at runtime.
+          token: ${{ secrets.PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
