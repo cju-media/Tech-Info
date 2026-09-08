@@ -345,7 +345,7 @@ that keeps hourly jobs idempotent and quiet.
 - **Published Outlook calendar** (`.ics` feed on `outlook.office365.com`) —
   event notes and the upcoming-events draft.
 - **GitHub Gist** — server-health heartbeat (`7f410b4a9b15c57104f85ce4f6068d81`).
-- **`cju-media/OW`** — separate repo the upload dashboard pushes Orders of
+- **[`cju-media/OW`](https://github.com/cju-media/ow)** — separate repo the upload dashboard pushes Orders of
   Worship into.
 - **[`cju-media/content-display`](https://github.com/cju-media/content-display)**
   — drives the on-screen content and the RTMP feed the display Pis render; its
