@@ -3,7 +3,7 @@
     "040000008200E00074C5B7101A82E008000000000E49EF75F06DDC01000000000000000010000000E5BDCE4BF492044FA758FB7F08FB19C0::2026-12-05": {
       "call_times": "3:00pm-11:00pm",
       "count": 1,
-      "name": "Elizabeth Bernal & Izett Barnett Wedding",
+      "name": "Wedding Ceremony",
       "schedule": "",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt"
@@ -11,15 +11,15 @@
     "040000008200E00074C5B7101A82E0080000000052498EA9FEF1DC01000000000000000010000000ABE2267440E71A42833B61FCF04435CF::2026-12-04": {
       "call_times": "5:30pm-9:30pm",
       "count": 1,
-      "name": "Yamandu Costa Concert",
-      "schedule": "5:30pm Load-in\n7:30pm Concert\n9:30pm Off campus",
+      "name": "\"Yamandu Costa\" Concert",
+      "schedule": "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
       "type": "Concert",
       "venue": "Sanctuary"
     },
     "040000008200E00074C5B7101A82E00800000000640A4C5486B1DC01000000000000000010000000BEA81B405584644EBB935795740D09E9::2026-11-21": {
       "call_times": "TBD",
       "count": 1,
-      "name": "Sofia Uribe & Robin Aimaq Wedding",
+      "name": "Wedding Ceremony",
       "schedule": "",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt/Stuart Hall"
@@ -27,20 +27,20 @@
     "040000008200E00074C5B7101A82E0080000000096796A8F6924DD010000000000000000100000003435062FACF0FE45B669B8A493E95B50::2026-12-06": {
       "call_times": "2:00pm-10:00pm",
       "count": 2,
-      "name": "HoLAdays Synesthesia Sinfonietta Concert",
-      "schedule": "2:00pm Load-in\n6:30pm Doors\n7:00pm Concert\n10:00pm Off campus",
+      "name": "Synesthesia Sinfonietta Concert",
+      "schedule": "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
       "type": "Concert",
       "venue": "Sanctuary/Stuart Hall/Forecourt"
     },
     "040000008200E00074C5B7101A82E00800000000EAEFDEF04A19DD010000000000000000100000009AD8CA85476F094EA332A26BF1EDF785::2026-11-05": {
-      "call_times": "7:00pm-9:00pm",
+      "call_times": "7:00pm",
       "count": 1,
-      "name": "Documentary Screening: \"Groundswell\"",
-      "schedule": "7:00pm Start",
+      "name": "\"Groundswell\" Screening",
+      "schedule": "TBD\n7:00pm start",
       "type": "Screening",
       "venue": "Shatto"
     }
   },
-  "fingerprint": "a20d65eb617555b8cc7b6ed72610ec087669e26b9ddcfe3e07abae0c2da6278a",
-  "gemini_at": "2026-09-07T22:41:00+00:00"
+  "fingerprint": "8ef49e4aad16f23ad39f0207e859425b155ba371c21049a0a00017f29875015f",
+  "gemini_at": "2026-09-09T13:56:48+00:00"
 }

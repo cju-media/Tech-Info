@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-08T13:54:11+00:00",
+  "generated": "2026-09-09T13:56:48+00:00",
   "window": {
-    "start": "2026-09-08",
-    "end": "2026-12-09"
+    "start": "2026-09-09",
+    "end": "2026-12-10"
   },
   "columns": [
     "Date",
@@ -39,14 +39,14 @@
       "kind": "event",
       "cells": [
         "SU 12/6/2026",
-        "HoLAdays Synesthesia Sinfonietta Concert",
+        "Synesthesia Sinfonietta Concert",
         "Sanctuary/Stuart Hall/Forecourt",
         "2:00pm-10:00pm",
         "Concert",
         "2",
         "",
         "",
-        "2:00pm Load-in\n6:30pm Doors\n7:00pm Concert\n10:00pm Off campus",
+        "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
         "",
         ""
       ],
@@ -73,7 +73,7 @@
       "kind": "event",
       "cells": [
         "SA 12/5/2026",
-        "Elizabeth Bernal & Izett Barnett Wedding",
+        "Wedding Ceremony",
         "Sanctuary/Forecourt",
         "3:00pm-11:00pm",
         "Wedding",
@@ -90,14 +90,14 @@
       "kind": "event",
       "cells": [
         "FR 12/4/2026",
-        "Yamandu Costa Concert",
+        "\"Yamandu Costa\" Concert",
         "Sanctuary",
         "5:30pm-9:30pm",
         "Concert",
         "1",
         "",
         "",
-        "5:30pm Load-in\n7:30pm Concert\n9:30pm Off campus",
+        "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
         "",
         ""
       ],
@@ -158,7 +158,7 @@
       "kind": "event",
       "cells": [
         "SA 11/21/2026",
-        "Sofia Uribe & Robin Aimaq Wedding",
+        "Wedding Ceremony",
         "Sanctuary/Forecourt/Stuart Hall",
         "TBD",
         "Wedding",
@@ -209,14 +209,14 @@
       "kind": "event",
       "cells": [
         "TH 11/5/2026",
-        "Documentary Screening: \"Groundswell\"",
+        "\"Groundswell\" Screening",
         "Shatto",
-        "7:00pm-9:00pm",
+        "7:00pm",
         "Screening",
         "1",
         "",
         "",
-        "7:00pm Start",
+        "TBD\n7:00pm start",
         "",
         ""
       ],
