@@ -1,17 +1,13 @@
 {
     "assignments": {
         "Cameron": [
-            "sa-9-5-2026-classical-fantasia",
             "sa-9-26-2026-music-in-the-garden",
             "su-9-27-2026-resonance-collective"
         ],
         "Danny": [
-            "su-9-6-2026-memorial-service",
-            "su-9-6-2026-worship-service",
             "su-9-27-2026-resonance-collective"
         ],
         "Jaffe": [
-            "su-9-6-2026-worship-service",
             "sa-9-12-2026-west-hollywood-philharmonic",
             "su-9-13-2026-worship-service",
             "sa-9-19-2026-gala-choruses-showcase"
@@ -20,14 +16,15 @@
         "Marc": [
             "th-9-10-2026-organ-concert-upend-la",
             "su-9-20-2026-worship-service",
+            "sa-9-26-2026-pcj-event-mother-agapia",
             "su-9-27-2026-worship-service"
         ],
         "Saad": [
-            "sa-9-5-2026-classical-fantasia",
             "su-9-13-2026-worship-service",
             "sa-9-19-2026-gala-choruses-showcase",
             "su-9-20-2026-worship-service",
             "fr-9-25-2026-organ-concert",
+            "sa-9-26-2026-music-in-the-garden",
             "su-9-27-2026-worship-service"
         ]
     },
@@ -61,6 +58,11 @@
             "date": "2026-10-25",
             "name": "Resonance Collective ",
             "call_time": "4:00pm-10:30pm"
+        },
+        "su-10-25-2026-worship-service": {
+            "date": "2026-10-25",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
         },
         "su-10-18-2026-worship-service": {
             "date": "2026-10-18",
@@ -142,6 +144,11 @@
             "name": "GALA Choruses Showcase",
             "call_time": "12:00pm-9:00pm"
         },
+        "we-9-16-2026-book-soup": {
+            "date": "2026-09-16",
+            "name": "Book Soup",
+            "call_time": "5:00pm-9:00pm"
+        },
         "su-9-13-2026-worship-service": {
             "date": "2026-09-13",
             "name": "Worship Service",
@@ -156,21 +163,6 @@
             "date": "2026-09-10",
             "name": "Organ Concert: Upend LA",
             "call_time": "5:00pm-9:00pm"
-        },
-        "su-9-6-2026-memorial-service": {
-            "date": "2026-09-06",
-            "name": "Memorial Service",
-            "call_time": "2:00pm-7:00pm"
-        },
-        "su-9-6-2026-worship-service": {
-            "date": "2026-09-06",
-            "name": "Worship Service",
-            "call_time": "8:30am-12:30pm"
-        },
-        "sa-9-5-2026-classical-fantasia": {
-            "date": "2026-09-05",
-            "name": "Classical Fantasia",
-            "call_time": "2:00pm-10:00pm"
         }
     }
 }
