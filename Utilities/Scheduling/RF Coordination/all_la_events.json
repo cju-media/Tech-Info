@@ -1,119 +1,65 @@
 [
   {
-    "name": "BIRTHDAY PARTY",
+    "name": "BLACK GIRL ART SHOW",
     "date": "2026-09-13",
-    "location": "Foothill recreational center 11075 W FOOTHILL BLVD 91342",
+    "location": "2800 casitas ave 90039",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 15.33,
-    "permit": "264109000001138",
+    "distance_mi": 3.9,
+    "permit": "264109000001277",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "SALVY FEST & DTLA CUMBIA FESTIVAL",
+    "name": "MEDIA TENT",
     "date": "2026-09-05",
-    "location": "Pershing Square Park 530 S OLIVE ST 90013",
+    "location": "Players Tunnel 3911 S FIGUEROA ST 90037",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.14,
-    "permit": "264109000001079",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "ASLA 2026 CONFERENCE ON LANDSCAPE ARCHIT",
-    "date": "2026-09-15",
-    "location": "South Level 1 Halls G/H/J 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000000820",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "FIRESTONE WALKER OKTOBERFEST",
-    "date": "2026-09-19",
-    "location": "3205 N Washington Blvd. 90292",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.56,
-    "permit": "264109000001203",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "WESTWOOD VILLAGE FARMERS' MARKET",
-    "date": "2026-07-02",
-    "location": "Broxton Plaza 1036 S BROXTON AVE 90024",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 9.21,
-    "permit": "264109000000967",
+    "distance_mi": 3.52,
+    "permit": "264109000001251",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
     "name": "CHECK IN TENTS",
-    "date": "2026-08-31",
+    "date": "2026-09-07",
     "location": "USC Campus",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": null,
-    "permit": "264109000001225",
+    "permit": "264109000001276",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "LOS ANGELES GOT SOLE",
-    "date": "2026-09-19",
+    "name": "RIFTBOUND REGIONAL QUALIFIER",
+    "date": "2026-09-25",
     "location": "West Hall A 1201 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 1.89,
-    "permit": "264109000001164",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "ASLA_BERLINER 2026_ KAHEYO",
-    "date": "2026-09-16",
-    "location": "1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001197",
+    "permit": "264109000001199",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
     "name": "CARNIVAL",
-    "date": "2026-09-18",
-    "location": "1380 N. Avalon Blvd., Wilmington, CA 90744",
+    "date": "2026-09-25",
+    "location": "4861 Venice Blvd., Los Angeles, CA 90019",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 18.97,
-    "permit": "264109000001059",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "2026 ASLA CONF ON LANDSCAPE ARCHITECTURE",
-    "date": "2026-09-15",
-    "location": "1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001113",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "GREENFIELDS OUTDOOR FITNESS BOOTH #838",
-    "date": "2026-09-16",
-    "location": "1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001206",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CAMERA TENT",
-    "date": "2026-08-29",
-    "location": "West end of stadium 3939 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.65,
-    "permit": "264109000001180",
+    "distance_mi": 3.5,
+    "permit": "264109000001191",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
     "name": "USC SUITES",
-    "date": "2026-08-29",
-    "location": "Field and Gate 19 3911 S FIGUEROA ST 90037",
+    "date": "2026-09-05",
+    "location": "Gate 19 & Field 3911 S FIGUEROA ST 90037",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 3.52,
-    "permit": "264109000001096",
+    "permit": "264109000001248",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "RUN, WALK & ROLL 26",
+    "date": "2026-09-27",
+    "location": "Griffith Park, Shane's Inspiration Playground near Merry-Go-Round 4730 N CRYSTAL SPRINGS DR 90027",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 5.02,
+    "permit": "264109000001255",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
