@@ -1,15 +1,15 @@
 {
-  "2026-09-13": {
-    "path": "service-scripts/2026-09-13.pdf",
-    "modifiedTime": "2026-09-09T07:21:15.250Z",
-    "isCommunion": true,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Jay"
-  },
   "2026-09-20": {
     "path": "service-scripts/2026-09-20.pdf",
-    "modifiedTime": "2026-09-08T23:04:54.745Z",
+    "modifiedTime": "2026-09-09T18:23:57.475Z",
     "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
+    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura Vincent Fregin\nLAV2: Michael Lehman"
+  },
+  "2026-09-13": {
+    "path": "service-scripts/2026-09-13.pdf",
+    "modifiedTime": "2026-09-09T18:18:58.925Z",
+    "isCommunion": true,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Jay"
   },
   "2026-09-27": {
     "path": "service-scripts/2026-09-27.pdf",
