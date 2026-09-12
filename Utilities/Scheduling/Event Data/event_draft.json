@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-11T13:50:48+00:00",
+  "generated": "2026-09-12T13:10:18+00:00",
   "window": {
-    "start": "2026-09-11",
-    "end": "2026-12-12"
+    "start": "2026-09-12",
+    "end": "2026-12-13"
   },
   "columns": [
     "Date",
@@ -34,6 +34,57 @@
         ""
       ],
       "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/13/2026",
+        "Sarah Smith & Elijah Rawlings Wedding",
+        "Sanctuary/Forecourt",
+        "TBD",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/13/2026",
+        "Resonance Collective Concert",
+        "Shatto",
+        "4:00pm-10:00pm",
+        "Concert",
+        "1",
+        "",
+        "",
+        "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
+        "",
+        ""
+      ],
+      "note": "from calendar: Resonance Collective Concert"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/13/2026",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
     },
     {
       "kind": "event",
@@ -73,7 +124,7 @@
       "kind": "event",
       "cells": [
         "SA 12/5/2026",
-        "Bernal & Barnett Wedding",
+        "Elizabeth Bernal & Izett Barnett Wedding",
         "Sanctuary/Forecourt",
         "3:00pm-11:00pm",
         "Wedding",
@@ -158,8 +209,8 @@
       "kind": "event",
       "cells": [
         "SA 11/21/2026",
-        "Uribe & Aimaq Wedding",
-        "Sanctuary/Forecourt/Stuart Hall",
+        "Sofia Uribe & Robin Aimaq Wedding",
+        "Sanctuary/Stuart Hall/Forecourt",
         "TBD",
         "Wedding",
         "1",
@@ -209,7 +260,7 @@
       "kind": "event",
       "cells": [
         "TH 11/5/2026",
-        "\"Groundswell\" Screening & Q&A",
+        "\"Groundswell\" Documentary Screening",
         "Shatto",
         "7:00pm-10:00pm",
         "Screening",
@@ -224,8 +275,8 @@
     }
   ],
   "counts": {
-    "events": 10,
-    "worship": 5,
-    "from_calendar": 5
+    "events": 13,
+    "worship": 6,
+    "from_calendar": 7
   }
 }
