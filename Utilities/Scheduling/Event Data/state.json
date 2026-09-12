@@ -14,7 +14,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "th-9-10-2026-organ-concert-upend-la",
             "su-9-20-2026-worship-service",
             "sa-9-26-2026-pcj-event-mother-agapia",
             "su-9-27-2026-worship-service"
@@ -158,11 +157,6 @@
             "date": "2026-09-12",
             "name": "West Hollywood Philharmonic",
             "call_time": "4:00pm-9:00pm"
-        },
-        "th-9-10-2026-organ-concert-upend-la": {
-            "date": "2026-09-10",
-            "name": "Organ Concert: Upend LA",
-            "call_time": "5:00pm-9:00pm"
         }
     }
 }
