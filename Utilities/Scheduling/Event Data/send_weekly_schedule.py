@@ -126,22 +126,39 @@ def fetch_events_from_sheet():
 
     return events
 
-def get_events_by_member(events, start_date, days_ahead=None):
+def assigned_members(event):
+    """Team members named in an event's Assignment cell."""
+    assignment = str(event['Assignment']).lower()
+    return [member for member in TEAM_MEMBERS if member.lower() in assignment]
+
+def unstaffed_note(event):
+    """
+    What the Assignment cell says for an event no team member is on, if it says
+    anything useful. Worship Services carry empty "(Live) / (Stream)" role
+    scaffolding, which is not worth repeating back; an outside name is.
+    """
+    raw = ' '.join(str(event['Assignment']).split())
+    leftover = re.sub(r'\((?:live|stream)\)', '', raw, flags=re.IGNORECASE).strip(' ,-')
+    return f" (sheet says: {leftover})" if leftover else ""
+
+def get_events_in_range(events, start_date, days_ahead=None):
+    """Every event in the range, regardless of who - if anyone - is assigned."""
     if days_ahead is not None:
         end_date = start_date + timedelta(days=days_ahead - 1)
         valid_events = [e for e in events if start_date <= e['date_obj'] <= end_date]
     else:
         valid_events = [e for e in events if start_date <= e['date_obj']]
-
     valid_events.sort(key=lambda x: x['date_obj'])
+    return valid_events
+
+def get_events_by_member(events, start_date, days_ahead=None):
+    valid_events = get_events_in_range(events, start_date, days_ahead)
 
     events_by_member = {member: [] for member in TEAM_MEMBERS}
 
     for e in valid_events:
-        assignment = str(e['Assignment']).lower()
-        for member in TEAM_MEMBERS:
-            if member.lower() in assignment:
-                events_by_member[member].append(e)
+        for member in assigned_members(e):
+            events_by_member[member].append(e)
 
     return events_by_member
 
@@ -861,49 +878,72 @@ if __name__ == "__main__":
             if is_day_before_cron:
                 print("Day-before window. Checking for all shifts tomorrow...")
                 target_date = today + timedelta(days=1)
-                target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
-                target_events = target_events_raw
                 date_word = "tomorrow"
+                in_window = lambda ev: True
             elif is_night_cron:
                 print("Night window. Checking for tomorrow's early shifts (<= 7:00 AM)...")
                 target_date = today + timedelta(days=1)
-                target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
-                target_events = {member: [e for e in evs if parse_time(e['Call Time']) <= 420]
-                                 for member, evs in target_events_raw.items()}
                 date_word = "tomorrow"
+                in_window = lambda ev: parse_time(ev['Call Time']) <= 420
             else:
                 print("Morning window. Checking for today's regular shifts (> 7:00 AM)...")
                 target_date = today
-                target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
-                target_events = {member: [e for e in evs if parse_time(e['Call Time']) > 420]
-                                 for member, evs in target_events_raw.items()}
                 date_word = "today"
+                in_window = lambda ev: parse_time(ev['Call Time']) > 420
 
-            sent_any = False
+            target_events = {member: [e for e in evs if in_window(e)]
+                             for member, evs
+                             in get_events_by_member(events, target_date, days_ahead=1).items()}
+            # Every event in this window, including ones with nobody on them.
+            # get_events_by_member only sees events a team member is named on,
+            # so an unstaffed event is invisible to it.
+            all_window_events = [e for e in get_events_in_range(events, target_date, days_ahead=1)
+                                 if in_window(e)]
+
             summary_lines = []
+            unreachable_lines = []
             for member in TEAM_MEMBERS:
-                if member in team_phones and target_events.get(member):
-                    member_events = target_events[member]
-                    msg_body = f"Hi {member},\n\nJust a quick reminder you have an event {date_word}:\n"
-                    summary_lines.append(f"{member}:")
-                    for ev in member_events:
-                        msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
-                        summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
-                    msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
-
-                    send_imessage(team_phones[member], msg_body, is_dry_run)
-                    sent_any = True
-                elif member not in team_phones and target_events.get(member):
+                member_events = target_events.get(member)
+                if not member_events:
+                    continue
+                if member not in team_phones:
                     print(f"No phone configured for {member}, skipping {date_word}'s iMessage.")
+                    unreachable_lines += [f"- {ev['Event']} @ {ev['Call Time']} "
+                                          f"({member} has no number on file)"
+                                          for ev in member_events]
+                    continue
 
-            if not sent_any:
-                print(f"No targeted events scheduled for {date_word}.")
+                msg_body = f"Hi {member},\n\nJust a quick reminder you have an event {date_word}:\n"
+                summary_lines.append(f"{member}:")
+                for ev in member_events:
+                    msg_body += f"- {ev['Event']} @ {ev['Call Time']}\n"
+                    summary_lines.append(f"- {ev['Event']} @ {ev['Call Time']}")
+                msg_body += "\nHave a great shift!\nBest,\nCam-Bot"
+
+                send_imessage(team_phones[member], msg_body, is_dry_run)
+
+            # Events with nobody from the team on them get no reminder of their
+            # own, so the digest is the only thing that will surface them.
+            unstaffed_lines = [f"- {e['Event']} @ {e['Call Time']}{unstaffed_note(e)}"
+                               for e in all_window_events if not assigned_members(e)]
+
+            if not all_window_events:
+                print(f"No events scheduled for {date_word}.")
+            elif "Cameron" not in team_phones:
+                print("Cameron's phone not configured. Skipping summary message.")
             else:
-                summary_msg = f"Summary ({date_word.capitalize()}):\nThe following team members are working:\n" + "\n".join(summary_lines)
-                if "Cameron" in team_phones:
-                    send_imessage(team_phones["Cameron"], summary_msg, is_dry_run)
-                else:
-                    print("Cameron's phone not configured. Skipping summary message.")
+                # At least one of these is non-empty whenever there are events:
+                # an event either has team members on it (reachable or not), or
+                # it has none and counts as unstaffed.
+                parts = [f"Summary ({date_word.capitalize()}):"]
+                if summary_lines:
+                    parts.append("The following team members are working:")
+                    parts += summary_lines
+                if unstaffed_lines:
+                    parts += ["", f"\u26a0\ufe0f Nobody assigned {date_word}:"] + unstaffed_lines
+                if unreachable_lines:
+                    parts += ["", "\u26a0\ufe0f Assigned but not textable:"] + unreachable_lines
+                send_imessage(team_phones["Cameron"], "\n".join(parts), is_dry_run)
 
         elif run_mode == 'weekly':
             print("Running in Weekly Mode.")

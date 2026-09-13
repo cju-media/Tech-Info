@@ -41,6 +41,13 @@ The unified workflow checks the time and triggers the following modes automatica
   - **`day_before` — 3 PM, deadline 9 PM:** *all shifts* occurring the next day (Day-Before Reminder).
   - **`night` — 8 PM, deadline midnight:** *early morning shifts* (Call time <= 7:00 AM) occurring the next day.
 - **What it does:** Sends quick, native text message reminders to team members directly to their phones (using AppleScript on the macOS runner). It also texts a summary digest to the Admin.
+- **The digest covers every event in the window, not just staffed ones.** An
+  event nobody on the team is assigned to produces no individual reminder, so
+  the digest is the only thing that will surface it — it is listed under
+  "Nobody assigned", with the raw Assignment cell quoted when it names someone
+  from outside the team. Events whose assignee has no number in
+  `team_phones.json` are listed under "Assigned but not textable". The digest
+  is suppressed only when the window genuinely contains no events.
 - If `day_before` and `night` both come due in the same run, the `night` nudge is
   skipped — `day_before` already covers every one of tomorrow's shifts.
 
