@@ -15,6 +15,9 @@ on:
         options:
           - auto_imessage
           - imessage_reminder
+          - imessage_reminder:morning
+          - imessage_reminder:day_before
+          - imessage_reminder:night
           - imessage_test
       test_message:
         description: 'Optional: send this exact text as a one-off test iMessage instead of running run_mode'
@@ -76,6 +79,7 @@ jobs:
           # Add any state files that may have changed
           git add "Utilities/Scheduling/Event Data/state.json" || true
           git add "Utilities/Scheduling/Event Data/avail_state.json" || true
+          git add "Utilities/Scheduling/Event Data/reminder_state.json" || true
           git add "Utilities/Scheduling/Event Data/disabled_workflows_state.json" || true
 
           # Only commit and push if state files have changed

@@ -4,7 +4,6 @@ import json
 import re
 import pandas as pd
 from datetime import datetime, timedelta
-import datetime as dt
 import os
 from weasyprint import HTML
 import smtplib
@@ -488,51 +487,124 @@ def save_avail_state(state):
     with open('avail_state.json', 'w') as f:
         json.dump(state, f, indent=4)
 
+# --- Daily notification windows (catch-up guard) -----------------------------
+#
+# GitHub's hourly `schedule:` trigger is best-effort, and for this repo it is
+# currently only firing ~6 times a day at arbitrary minutes past arbitrary
+# hours. Matching on an exact hour therefore dropped almost every daily
+# notification, so each one is a *window* instead: it fires on the first run at
+# or after `trigger`, as long as we are still before `deadline` and it has not
+# already gone out today. A JSON state file records the last date each window
+# ran on, and the workflow commits it back.
+#
+# Past its deadline a window is skipped, not run late - a reminder about a
+# shift that already started is worse than no reminder.
+#
+# Windows are evaluated against `datetime.now()` on whichever runner is
+# executing, the same clock the rest of the script uses to decide what "today"
+# and "tomorrow" mean:
+#   * IMESSAGE_WINDOWS runs on the church's self-hosted macOS box, so these are
+#     America/Los_Angeles wall-clock times and they stay put across DST.
+#   * EMAIL_WINDOWS runs on ubuntu-latest, which is UTC. Their deadlines stay
+#     inside 07:00-23:59 UTC, the span where the UTC date still matches the
+#     church's local date, so `today` keeps meaning the right day.
+IMESSAGE_WINDOWS = {
+    'morning':        {'trigger': (5, 0),  'deadline': (11, 0),
+                       'desc': "day-of reminder, shifts calling after 7:00 AM"},
+    'update':         {'trigger': (14, 0), 'deadline': (23, 59),
+                       'desc': "schedule-diff update"},
+    'day_before':     {'trigger': (15, 0), 'deadline': (21, 0),
+                       'desc': "day-before reminder, all of tomorrow's shifts"},
+    'night':          {'trigger': (20, 0), 'deadline': (23, 59),
+                       'desc': "evening nudge, tomorrow's shifts calling by 7:00 AM"},
+}
+IMESSAGE_STATE_FILE = 'reminder_state.json'
+
+EMAIL_WINDOWS = {
+    'daily_reminder': {'trigger': (10, 0), 'deadline': (18, 0),
+                       'desc': "emailed PDF of today's shifts"},
+    'weekly':         {'trigger': (11, 0), 'deadline': (23, 0), 'weekday': 4,
+                       'desc': "emailed PDF of the next 14 days, Fridays only"},
+}
+EMAIL_STATE_FILE = 'email_window_state.json'
+
+def get_window_state(path):
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return json.load(f)
+    return {}
+
+def save_window_state(path, state):
+    with open(path, 'w') as f:
+        json.dump(state, f, indent=4)
+
+def due_windows(now, state, windows):
+    """Window keys that should fire on this run, in trigger order."""
+    today_str = now.strftime('%Y-%m-%d')
+    due = []
+    for key, w in sorted(windows.items(), key=lambda kv: kv[1]['trigger']):
+        desc = w['desc']
+        if state.get(key) == today_str:
+            continue  # already went out today
+        if 'weekday' in w and now.weekday() != w['weekday']:
+            continue  # not this window's day of the week
+        th, tm = w['trigger']
+        dh, dm = w['deadline']
+        trigger = now.replace(hour=th, minute=tm, second=0, microsecond=0)
+        deadline = now.replace(hour=dh, minute=dm, second=59, microsecond=999999)
+        if trigger <= now <= deadline:
+            print(f"Window '{key}' is due ({desc}); trigger was {th:02d}:{tm:02d}.")
+            due.append(key)
+        elif now > deadline:
+            print(f"Window '{key}' ({desc}) was missed - no run landed between "
+                  f"{th:02d}:{tm:02d} and {dh:02d}:{dm:02d}. Skipping rather than "
+                  f"running it late.")
+    return due
+
 if __name__ == "__main__":
     is_dry_run = os.environ.get('DRY_RUN', '1') == '1'
     run_mode_env = os.environ.get('RUN_MODE', 'auto') # 'auto', 'weekly', 'admin', 'update', 'test', 'avail_check', 'daily_reminder'
 
     run_modes_to_execute = []
+    fired_windows = []
+    window_state = {}
+    window_state_file = None
     if run_mode_env == 'auto':
-        current_utc = datetime.now(dt.timezone.utc)
-        hour = current_utc.hour
-        weekday = current_utc.weekday()
-
-        # Hourly
+        # The availability check is a diff against avail_state.json, so it is
+        # self-healing and simply runs on every pass.
         run_modes_to_execute.append('avail_check')
 
-        # Daily at 10:00 UTC
-        if hour == 10:
-            run_modes_to_execute.append('daily_reminder')
-
-        # Weekly on Friday at 11:00 UTC (weekday 4 is Friday)
-        if weekday == 4 and hour == 11:
-            run_modes_to_execute.append('weekly')
+        window_state_file = EMAIL_STATE_FILE
+        window_state = get_window_state(window_state_file)
+        # These window keys are the mode names, so they dispatch directly.
+        fired_windows = due_windows(datetime.now(), window_state, EMAIL_WINDOWS)
+        run_modes_to_execute.extend(fired_windows)
 
     elif run_mode_env == 'auto_imessage':
-        current_utc = datetime.now(dt.timezone.utc)
-        hour = current_utc.hour
+        window_state_file = IMESSAGE_STATE_FILE
+        window_state = get_window_state(window_state_file)
+        fired_windows = due_windows(datetime.now(), window_state, IMESSAGE_WINDOWS)
 
-        # Daily at 21:00 UTC
-        if hour == 21:
-            run_modes_to_execute.append('update')
+        # A caught-up day_before already covers every one of tomorrow's shifts,
+        # early call times included, so drop a night nudge that lands in the
+        # same run rather than double-texting the early crew.
+        if 'day_before' in fired_windows and 'night' in fired_windows:
+            print("day_before and night are both due this run; skipping the night "
+                  "nudge since day_before already covers tomorrow.")
+            fired_windows.remove('night')
 
-        # iMessage reminders
-        if hour in [3, 12, 17]:
-            run_modes_to_execute.append('imessage_reminder')
-            if hour == 3:
-                os.environ['CRON_SCHEDULE'] = '0 3 * * *'
-            elif hour == 12:
-                os.environ['CRON_SCHEDULE'] = '0 12 * * *'
-            elif hour == 17:
-                os.environ['CRON_SCHEDULE'] = '0 17 * * *'
+        for key in fired_windows:
+            if key == 'update':
+                run_modes_to_execute.append('update')
+            else:
+                run_modes_to_execute.append(f'imessage_reminder:{key}')
     else:
         run_modes_to_execute = [run_mode_env]
 
     print(f"Modes to execute: {run_modes_to_execute}")
 
     if not run_modes_to_execute:
-        print("No modes to run at this hour.")
+        print("Nothing due on this run.")
         sys.exit(0)
 
     print("Fetching events...")
@@ -756,45 +828,51 @@ if __name__ == "__main__":
                     msg_body = f"Test Message - Sample Digest for next active day ({formatted_date}):\n\nThe following team members are working:\n" + "\n".join(summary_lines)
                     send_imessage(team_phones["Cameron"], msg_body, is_dry_run)
 
-        elif run_mode == 'imessage_reminder':
+        elif run_mode == 'imessage_reminder' or run_mode.startswith('imessage_reminder:'):
             print("Running in iMessage Reminder Mode.")
 
-            cron_schedule = os.environ.get('CRON_SCHEDULE', '')
-
-            is_night_cron = False
-            is_morning_cron = False
-            is_day_before_cron = False
-
-            if cron_schedule == '0 3 * * *':
-                is_night_cron = True
-            elif cron_schedule == '0 12 * * *':
-                is_morning_cron = True
-            elif cron_schedule == '0 17 * * *':
-                is_day_before_cron = True
+            if ':' in run_mode:
+                # Dispatched by the catch-up guard, which already picked the window.
+                window = run_mode.split(':', 1)[1]
             else:
-                current_utc_hour = datetime.utcnow().hour
-                if 2 <= current_utc_hour <= 10:
-                    is_night_cron = True
-                elif 16 <= current_utc_hour <= 19:
-                    is_day_before_cron = True
+                # Bare manual dispatch: honour a legacy CRON_SCHEDULE if one is
+                # set, otherwise infer the window from the local clock.
+                cron_schedule = os.environ.get('CRON_SCHEDULE', '')
+                if cron_schedule == '0 3 * * *':
+                    window = 'night'
+                elif cron_schedule == '0 12 * * *':
+                    window = 'morning'
+                elif cron_schedule == '0 17 * * *':
+                    window = 'day_before'
                 else:
-                    is_morning_cron = True
+                    hour_local = datetime.now().hour
+                    if hour_local >= 19:
+                        window = 'night'
+                    elif hour_local >= 14:
+                        window = 'day_before'
+                    else:
+                        window = 'morning'
+
+            print(f"Reminder window: {window}")
+            is_night_cron = window == 'night'
+            is_morning_cron = window == 'morning'
+            is_day_before_cron = window == 'day_before'
 
             if is_day_before_cron:
-                print("Day Before Cron Detected. Checking for all shifts tomorrow...")
+                print("Day-before window. Checking for all shifts tomorrow...")
                 target_date = today + timedelta(days=1)
                 target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
                 target_events = target_events_raw
                 date_word = "tomorrow"
             elif is_night_cron:
-                print("Night Cron Detected. Checking for tomorrow's early shifts (<= 7:00 AM)...")
+                print("Night window. Checking for tomorrow's early shifts (<= 7:00 AM)...")
                 target_date = today + timedelta(days=1)
                 target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
                 target_events = {member: [e for e in evs if parse_time(e['Call Time']) <= 420]
                                  for member, evs in target_events_raw.items()}
                 date_word = "tomorrow"
             else:
-                print("Morning Cron Detected. Checking for today's regular shifts (> 7:00 AM)...")
+                print("Morning window. Checking for today's regular shifts (> 7:00 AM)...")
                 target_date = today
                 target_events_raw = get_events_by_member(events, target_date, days_ahead=1)
                 target_events = {member: [e for e in evs if parse_time(e['Call Time']) > 420]
@@ -837,3 +915,16 @@ if __name__ == "__main__":
                     send_email(team_emails[member], member, today, filename, run_mode, is_dry_run)
                 else:
                     print(f"No email configured for {member}, skipping.")
+
+    # Record which daily windows actually ran so a later run today does not
+    # repeat them. Written only once every mode has finished, so a crash
+    # part-way through leaves the window due and the next run retries it.
+    if fired_windows:
+        if is_dry_run:
+            print(f"Dry run - not recording windows {fired_windows} as sent.")
+        else:
+            today_str = datetime.now().strftime('%Y-%m-%d')
+            for key in fired_windows:
+                window_state[key] = today_str
+            save_window_state(window_state_file, window_state)
+            print(f"Recorded windows {fired_windows} as sent for {today_str}.")

@@ -121,24 +121,35 @@ Under `Utilities/Scheduling/`. Full detail in
 `Utilities/Scheduling/SCHEDULING_WORKFLOWS.md`.
 
 `send_weekly_schedule.py` is the unified driver. It runs hourly from two
-workflows and branches on the current UTC hour:
+workflows and dispatches whichever daily notifications are currently *due*.
+
+GitHub's hourly `schedule:` cron is best-effort and drops most firings (this
+repo went from ~23 runs a day to ~6, at arbitrary times, in late August 2026),
+so each daily notification is a **window** rather than an exact-hour match: it
+fires on the first run at or after its trigger, at most once a day, and is
+skipped past its deadline rather than run late. `reminder_state.json` and
+`email_window_state.json` track what already went out. The two workflows run on
+different runners and so do not share a clock — iMessage windows are in church
+local time, email windows in UTC. See "Catch-up windows" in
+`Utilities/Scheduling/SCHEDULING_WORKFLOWS.md`.
 
 - **`schedule_notifications.yml`** (`ubuntu-latest`, `RUN_MODE=auto`) — email
   notifications:
   - **Availability check** (hourly) — emails when new crew availability appears
     (state: `avail_state.json`).
-  - **Schedule updates** (daily 21:00 UTC) — diffs the whole schedule against
-    `state.json`: new events, new assignments, cancellations, time changes;
-    broadcasts a master PDF for new events, emails targeted per-member update
-    PDFs.
-  - **Daily reminder** (10:00 UTC) — emails each assigned member a PDF of that
-    day's shifts.
-  - **Weekly schedule** (Fridays 11:00 UTC) — emails every member a
+  - **Daily reminder** (from 10:00 UTC) — emails each assigned member a PDF of
+    that day's shifts.
+  - **Weekly schedule** (Fridays, from 11:00 UTC) — emails every member a
     personalized PDF of the next 14 days.
 - **`imessage_notifications.yml`** (self-hosted macOS, `RUN_MODE=auto_imessage`)
   — native iMessage sends via `osascript` (`send_imessage.py`):
-  - iMessage shift reminders at 03:00 / 12:00 / 17:00 UTC (early-morning,
-    same-day, day-before).
+  - iMessage shift reminders — same-day (5 AM local), day-before (3 PM local)
+    and an early-shift nudge (8 PM local).
+  - **Schedule updates** (daily, from 2 PM local) — diffs the whole schedule
+    against `state.json`: new events, new assignments, cancellations, time
+    changes; broadcasts a master PDF for new events and emails targeted
+    per-member update PDFs. Runs here rather than on `ubuntu-latest` because
+    the cancellations go out as texts.
   - iMessage cancellations for removed events.
   - Also the sink for many `repository_dispatch` events across the repo
     (drive-upload complete, stream created, video-migration upload skipped,
