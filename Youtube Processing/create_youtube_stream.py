@@ -121,7 +121,30 @@ def verify_content_ready(target_date, today):
 
     return True, ""
 
-def stream_exists_for_date(service, target_date, la_tz):
+def find_stream_for_date(service, target_date, la_tz):
+    """The video id of the worship broadcast scheduled for target_date, or None.
+
+    Checks the playlist first, then falls back to our own broadcasts. That
+    fallback matters: adding a new broadcast to the playlist is a separate
+    API call that can fail on its own (it has), which leaves a real,
+    scheduled stream the playlist never learned about. Looking at the
+    playlist alone, the next run would conclude no stream exists and create
+    a duplicate."""
+    def scheduled_on_target(video_ids):
+        for start in range(0, len(video_ids), 50):
+            video_response = service.videos().list(
+                part='snippet,liveStreamingDetails',
+                id=','.join(video_ids[start:start + 50])
+            ).execute()
+            for video in video_response.get('items', []):
+                scheduled_start_time = (video.get('liveStreamingDetails') or {}).get('scheduledStartTime')
+                if not scheduled_start_time:
+                    continue
+                start_time_la = dateutil.parser.parse(scheduled_start_time).astimezone(la_tz)
+                if start_time_la.date() == target_date:
+                    return video['id']
+        return None
+
     try:
         playlist_response = service.playlistItems().list(
             part='snippet',
@@ -130,29 +153,30 @@ def stream_exists_for_date(service, target_date, la_tz):
         ).execute()
 
         video_ids = [item['snippet']['resourceId']['videoId'] for item in playlist_response.get('items', [])]
-        if not video_ids:
-            return False
+        found = scheduled_on_target(video_ids) if video_ids else None
+        if found:
+            return found
 
-        video_response = service.videos().list(
-            part='snippet,liveStreamingDetails',
-            id=','.join(video_ids)
+        broadcast_response = service.liveBroadcasts().list(
+            part='id,snippet',
+            mine=True,
+            maxResults=50
         ).execute()
-
-        for video in video_response.get('items', []):
-            if 'liveStreamingDetails' in video:
-                scheduled_start_time = video['liveStreamingDetails'].get('scheduledStartTime')
-                if scheduled_start_time:
-                    start_time_utc = dateutil.parser.parse(scheduled_start_time)
-                    start_time_la = start_time_utc.astimezone(la_tz)
-                    if start_time_la.date() == target_date:
-                        return True
-        return False
+        for broadcast in broadcast_response.get('items', []):
+            scheduled_start_time = broadcast.get('snippet', {}).get('scheduledStartTime')
+            if not scheduled_start_time:
+                continue
+            start_time_la = dateutil.parser.parse(scheduled_start_time).astimezone(la_tz)
+            if start_time_la.date() == target_date:
+                print(f"Found broadcast {broadcast['id']} for {target_date} outside the playlist.")
+                return broadcast['id']
+        return None
     except HttpError as e:
         print(f"An HTTP error occurred getting streams: {e}")
-        return False
+        return None
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        return False
+        return None
 
 def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
     """Fire a repository_dispatch event so imessage_notifications.yml can react.
@@ -207,6 +231,19 @@ def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
 
         print(f"Failed to dispatch github event: {response.status_code} {response.text}")
         return
+
+def last_stream_recorded(video_id):
+    """True when last_stream.json already points at this broadcast.
+
+    The announcement below re-fires for any existing stream we never got
+    around to announcing; this keeps that from meaning "announce the same
+    stream again on every hourly run"."""
+    path = os.path.join("Youtube Processing", "last_stream.json")
+    try:
+        with open(path) as f:
+            return json.load(f).get("stream_url", "").endswith(f"v={video_id}")
+    except Exception:
+        return False
 
 def record_last_stream(video_id, service_date):
     """Write a small breadcrumb the tech-info dashboard reads to show when the
@@ -299,8 +336,18 @@ def main():
     if not service:
         return
 
-    if stream_exists_for_date(service, target_date, la_tz):
-        print(f"A stream already exists in the playlist for {target_date}. Skipping creation.")
+    existing_id = find_stream_for_date(service, target_date, la_tz)
+    if existing_id:
+        print(f"A stream already exists for {target_date} (video {existing_id}). Skipping creation.")
+        if not last_stream_recorded(existing_id):
+            # The stream exists but was never announced -- a previous run
+            # created the broadcast and then died partway through the
+            # follow-up API calls. Finish that run's job now, or nothing
+            # ever backfills the real link into the sermon-series
+            # description and it ships with the placeholder.
+            print("It was never announced, so dispatching the stream-created event now.")
+            dispatch_event(existing_id, target_date.strftime("%m-%d-%Y"))
+            record_last_stream(existing_id, target_date)
         return
 
     try:
@@ -343,12 +390,32 @@ def main():
                 }
             }
         ).execute()
+    except HttpError as e:
+        print(f"Failed to create the broadcast: {e}")
+        return
 
-        broadcast_id = broadcast_insert_response["id"]
-        print(f"Successfully created broadcast with ID: {broadcast_id}")
+    broadcast_id = broadcast_insert_response["id"]
+    print(f"Successfully created broadcast with ID: {broadcast_id}")
 
-        # Update category
-        video_update_response = service.videos().update(
+    # Past this point the stream exists and the service can go live on it, so
+    # every remaining call gets its own guard instead of sharing one try
+    # block. Sharing one meant a single failure -- a 403 out of videos.update
+    # on 09-11-2026, say -- silently skipped everything after it, including
+    # the dispatch that backfills the real stream link into the sermon-series
+    # description and the breadcrumb the dashboard reads. The stream went out
+    # fine; the description shipped with the placeholder still in it.
+    def attempt(what, done, call):
+        try:
+            call()
+            print(done)
+        except Exception as e:
+            print(f"Warning: {what} failed for broadcast {broadcast_id}: {e}")
+
+    # Update category
+    attempt(
+        "setting the video category",
+        "Successfully set category to Activism and Non Profit.",
+        lambda: service.videos().update(
             part="snippet",
             body={
                 "id": broadcast_id,
@@ -359,10 +426,13 @@ def main():
                 }
             }
         ).execute()
-        print(f"Successfully set category to Activism and Non Profit.")
+    )
 
-        # Add to playlist
-        playlist_insert_response = service.playlistItems().insert(
+    # Add to playlist
+    attempt(
+        f"adding the broadcast to playlist {PLAYLIST_ID}",
+        f"Successfully added to playlist {PLAYLIST_ID}",
+        lambda: service.playlistItems().insert(
             part="snippet",
             body={
                 "snippet": {
@@ -374,26 +444,25 @@ def main():
                 }
             }
         ).execute()
-        print(f"Successfully added to playlist {PLAYLIST_ID}")
+    )
 
-        # Upload Thumbnail
-        if os.path.exists(thumbnail_path):
-            print(f"Uploading thumbnail from {thumbnail_path}...")
-            media = MediaFileUpload(thumbnail_path, mimetype='image/jpeg', resumable=True)
-            thumbnail_response = service.thumbnails().set(
+    # Upload Thumbnail
+    if os.path.exists(thumbnail_path):
+        print(f"Uploading thumbnail from {thumbnail_path}...")
+        attempt(
+            "uploading the thumbnail",
+            "Successfully set thumbnail.",
+            lambda: service.thumbnails().set(
                 videoId=broadcast_id,
-                media_body=media
+                media_body=MediaFileUpload(thumbnail_path, mimetype='image/jpeg', resumable=True)
             ).execute()
-            print("Successfully set thumbnail.")
-        else:
-            print(f"Thumbnail path not found: {thumbnail_path}")
+        )
+    else:
+        print(f"Thumbnail path not found: {thumbnail_path}")
 
-        # Dispatch event
-        dispatch_event(broadcast_id, target_date.strftime("%m-%d-%Y"))
-        record_last_stream(broadcast_id, target_date)
-
-    except HttpError as e:
-        print(f"Failed to create stream or set metadata: {e}")
+    # Dispatch event
+    dispatch_event(broadcast_id, target_date.strftime("%m-%d-%Y"))
+    record_last_stream(broadcast_id, target_date)
 
 if __name__ == '__main__':
     main()

@@ -48,6 +48,13 @@ jobs:
       - name: Run script
         env:
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
+          # create_youtube_stream.py needs this to fire the
+          # youtube_stream_created dispatch once it makes the broadcast.
+          # Without it a stream created down this path never reaches
+          # backfill_sermon_series_link.yml, so the sermon-series
+          # description keeps its YOUTUBE SERVICE LINK placeholder, nor
+          # imessage_notifications.yml, so nobody is told the stream exists.
+          PAT: ${{ secrets.PAT }}
         run: python "Youtube Processing/create_pending_stream.py"
 
       - name: Commit and push cleanup

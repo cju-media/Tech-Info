@@ -13,6 +13,11 @@ import io
 SOURCE_FOLDER_ID = '1wntwzav8sqcBOROpsr_Lm3MzAPyfGUUh'
 DEST_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc9v95hvMCERRUvWBXJJsGrP'
+# Where the Sunday livestream itself lives (create_youtube_stream.py's
+# PLAYLIST_ID), as opposed to YOUTUBE_PLAYLIST_ID above, which is the
+# sermon-series playlist this script uploads into.
+WORSHIP_STREAM_PLAYLIST_ID = 'PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs'
+STREAM_LINK_PLACEHOLDER = 'YOUTUBE SERVICE LINK'
 
 
 def dispatch_event(event_type, client_payload, max_retries=4, backoff_seconds=3):
@@ -61,6 +66,73 @@ def dispatch_event(event_type, client_payload, max_retries=4, backoff_seconds=3)
 
         print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
         return
+
+def find_worship_stream_url(youtube_service, service_date):
+    """The public URL of the worship livestream scheduled for service_date, or None."""
+    try:
+        playlist_response = youtube_service.playlistItems().list(
+            part='snippet',
+            playlistId=WORSHIP_STREAM_PLAYLIST_ID,
+            maxResults=50
+        ).execute()
+        video_ids = [item['snippet']['resourceId']['videoId']
+                     for item in playlist_response.get('items', [])]
+
+        for start in range(0, len(video_ids), 50):
+            video_response = youtube_service.videos().list(
+                part='liveStreamingDetails',
+                id=','.join(video_ids[start:start + 50])
+            ).execute()
+            for video in video_response.get('items', []):
+                scheduled = (video.get('liveStreamingDetails') or {}).get('scheduledStartTime')
+                if not scheduled:
+                    continue
+                # RFC 3339 with a trailing Z, which fromisoformat only
+                # accepts from 3.11 on; this workflow runs 3.10.
+                started = datetime.fromisoformat(scheduled.replace('Z', '+00:00'))
+                if started.astimezone(pytz.timezone('America/Los_Angeles')).date() == service_date:
+                    return f"https://www.youtube.com/watch?v={video['id']}"
+    except Exception as e:
+        print(f"Could not look up the worship stream for {service_date}: {e}")
+    return None
+
+
+def resolve_stream_link(description, youtube_service, service_date, service_date_str):
+    """Swap the "Watch the Service:" placeholder for the real stream URL.
+
+    create_sermon_series.py writes the placeholder whenever it runs before
+    the livestream exists, and backfill_sermon_series_link.py normally
+    patches it once the stream is created. That backfill only runs off a
+    repository_dispatch, though, so anything that stops the dispatch leaves
+    the placeholder in the description file -- and this script would upload
+    it verbatim onto a public video. By the time we migrate, the stream has
+    already happened, so we can look the link up ourselves. Failing that,
+    drop the line rather than publish the placeholder.
+    """
+    if STREAM_LINK_PLACEHOLDER not in description:
+        return description
+
+    stream_url = find_worship_stream_url(youtube_service, service_date)
+    if stream_url:
+        print(f"Description still had the {STREAM_LINK_PLACEHOLDER} placeholder; "
+              f"filling in {stream_url}.")
+        return description.replace(STREAM_LINK_PLACEHOLDER, stream_url)
+
+    msg = (
+        f"Video migration: the {service_date_str} sermon description still had the "
+        f"'{STREAM_LINK_PLACEHOLDER}' placeholder and no livestream for that date could "
+        "be found in the worship playlist. The line was dropped from the uploaded "
+        "description rather than published as-is - add the link by hand if the stream exists."
+    )
+    print(msg)
+    dispatch_event('video_migration_placeholder_link', {
+        'date': service_date_str,
+        'message': msg,
+    })
+    kept = [line for line in description.splitlines()
+            if STREAM_LINK_PLACEHOLDER not in line]
+    return "\n".join(kept).strip()
+
 
 def record_last_upload(video_id, title, service_date_str):
     """Write a breadcrumb the tech-info dashboard reads to show when the most
@@ -343,6 +415,10 @@ def main():
                 privacy_status = os.environ.get('YOUTUBE_PRIVACY_STATUS', 'public')
 
                 try:
+                    video_description = resolve_stream_link(
+                        video_description, youtube_service,
+                        sunday_date.date(), sunday_str_formatted
+                    )
                     body = {
                         'snippet': {
                             'title': video_title,
