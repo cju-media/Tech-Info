@@ -1,6 +1,7 @@
 {
     "assignments": {
         "Cameron": [
+            "we-9-16-2026-book-soup",
             "sa-9-26-2026-music-in-the-garden",
             "su-9-27-2026-resonance-collective"
         ],
@@ -8,7 +9,6 @@
             "su-9-27-2026-resonance-collective"
         ],
         "Jaffe": [
-            "su-9-13-2026-worship-service",
             "sa-9-19-2026-gala-choruses-showcase"
         ],
         "Kaspar": [],
@@ -18,7 +18,6 @@
             "su-9-27-2026-worship-service"
         ],
         "Saad": [
-            "su-9-13-2026-worship-service",
             "sa-9-19-2026-gala-choruses-showcase",
             "su-9-20-2026-worship-service",
             "fr-9-25-2026-organ-concert",
@@ -146,11 +145,6 @@
             "date": "2026-09-16",
             "name": "Book Soup",
             "call_time": "5:00pm-9:00pm"
-        },
-        "su-9-13-2026-worship-service": {
-            "date": "2026-09-13",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
