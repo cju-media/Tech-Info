@@ -121,15 +121,68 @@ def verify_content_ready(target_date, today):
 
     return True, ""
 
-def find_stream_for_date(service, target_date, la_tz):
-    """The video id of the worship broadcast scheduled for target_date, or None.
+# A 403 from the YouTube API is a mixed bag. A broadcast that was just
+# inserted isn't always addressable as a video yet, which surfaces as a
+# generic "forbidden" and clears on its own seconds later -- the most likely
+# explanation for the 09-11-2026 failure. A blown daily quota also arrives as
+# a 403 and will not clear no matter how long we wait. Retry the first kind,
+# give up immediately on the second.
+NON_RETRYABLE_REASONS = {"quotaExceeded", "dailyLimitExceeded"}
 
-    Checks the playlist first, then falls back to our own broadcasts. That
-    fallback matters: adding a new broadcast to the playlist is a separate
-    API call that can fail on its own (it has), which leaves a real,
-    scheduled stream the playlist never learned about. Looking at the
-    playlist alone, the next run would conclude no stream exists and create
-    a duplicate."""
+
+def _error_reason(e):
+    """The YouTube API's machine-readable reason for an HttpError, or ''."""
+    try:
+        payload = json.loads(e.content.decode("utf-8"))
+        return payload.get("error", {}).get("errors", [{}])[0].get("reason", "")
+    except Exception:
+        return ""
+
+
+def _is_retryable(e):
+    if not isinstance(e, HttpError):
+        return False
+    status = getattr(e.resp, "status", None) or 0
+    if status == 429 or status >= 500:
+        return True
+    if status == 403:
+        return _error_reason(e) not in NON_RETRYABLE_REASONS
+    return False
+
+
+def attempt(what, done, call, max_retries=4, backoff_seconds=3):
+    """Run one API call, retrying failures that plausibly clear on their own.
+
+    Returns (result, ok). A failure here is reported and swallowed: callers
+    use this for steps that decorate a broadcast which already exists, and no
+    single one of them is worth abandoning the rest of the run over."""
+    for attempt_no in range(1, max_retries + 1):
+        try:
+            result = call()
+            print(done)
+            return result, True
+        except Exception as e:
+            if attempt_no < max_retries and _is_retryable(e):
+                wait = backoff_seconds * (2 ** (attempt_no - 1))
+                print(f"{what} failed (attempt {attempt_no}/{max_retries}): {e}. Retrying in {wait}s...")
+                time.sleep(wait)
+                continue
+            print(f"Warning: {what} failed: {e}")
+            return None, False
+    return None, False
+
+
+def find_stream_for_date(service, target_date, la_tz):
+    """(video_id, in_playlist) for the broadcast scheduled on target_date.
+
+    Returns (None, False) when there isn't one. Checks the playlist first,
+    then falls back to our own broadcasts. That fallback matters: adding a
+    new broadcast to the playlist is a separate API call that can fail on its
+    own (it has), which leaves a real, scheduled stream the playlist never
+    learned about. Looking at the playlist alone, the next run would conclude
+    no stream exists and create a duplicate. in_playlist tells the caller
+    which of those two cases it is, so reconcile_stream() can repair the
+    missing playlist entry without a second lookup."""
     def scheduled_on_target(video_ids):
         for start in range(0, len(video_ids), 50):
             video_response = service.videos().list(
@@ -155,7 +208,7 @@ def find_stream_for_date(service, target_date, la_tz):
         video_ids = [item['snippet']['resourceId']['videoId'] for item in playlist_response.get('items', [])]
         found = scheduled_on_target(video_ids) if video_ids else None
         if found:
-            return found
+            return found, True
 
         broadcast_response = service.liveBroadcasts().list(
             part='id,snippet',
@@ -169,14 +222,14 @@ def find_stream_for_date(service, target_date, la_tz):
             start_time_la = dateutil.parser.parse(scheduled_start_time).astimezone(la_tz)
             if start_time_la.date() == target_date:
                 print(f"Found broadcast {broadcast['id']} for {target_date} outside the playlist.")
-                return broadcast['id']
-        return None
+                return broadcast['id'], False
+        return None, False
     except HttpError as e:
         print(f"An HTTP error occurred getting streams: {e}")
-        return None
+        return None, False
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        return None
+        return None, False
 
 def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
     """Fire a repository_dispatch event so imessage_notifications.yml can react.
@@ -232,6 +285,82 @@ def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
         print(f"Failed to dispatch github event: {response.status_code} {response.text}")
         return
 
+def reconcile_stream(service, video_id, in_playlist, thumbnail_path=None):
+    """Repair the follow-up steps an earlier run left undone.
+
+    Creating the broadcast is one API call; the category, the playlist entry
+    and the thumbnail are each a separate call that can fail on its own. A
+    re-run used to just see "a stream already exists" and return, so whatever
+    failed stayed failed forever -- re-running was not a remedy for anything.
+    Now it checks what is actually true of the stream and fixes only the gaps.
+
+    thumbnail_path is only acted on when the caller passes it (--reconcile),
+    because the API gives no way to tell a custom thumbnail from YouTube's own
+    generated one -- checking would mean re-uploading it on every run."""
+    repaired = []
+
+    response, ok = attempt(
+        f"reading video {video_id}",
+        f"Read current metadata for {video_id}.",
+        lambda: service.videos().list(part="snippet", id=video_id).execute()
+    )
+    items = (response or {}).get("items", []) if ok else []
+    if items:
+        snippet = items[0]["snippet"]
+        if snippet.get("categoryId") != "29":
+            # videos.update replaces the whole snippet, so edit the live one.
+            # Sending a freshly built body would blank whatever it omits.
+            snippet["categoryId"] = "29"
+            _, fixed = attempt(
+                f"setting the category on {video_id}",
+                "Repaired the video category.",
+                lambda: service.videos().update(
+                    part="snippet",
+                    body={"id": video_id, "snippet": snippet}
+                ).execute()
+            )
+            if fixed:
+                repaired.append("category")
+
+    if not in_playlist:
+        _, fixed = attempt(
+            f"adding {video_id} to playlist {PLAYLIST_ID}",
+            f"Repaired playlist membership ({PLAYLIST_ID}).",
+            lambda: service.playlistItems().insert(
+                part="snippet",
+                body={
+                    "snippet": {
+                        "playlistId": PLAYLIST_ID,
+                        "resourceId": {
+                            "kind": "youtube#video",
+                            "videoId": video_id
+                        }
+                    }
+                }
+            ).execute()
+        )
+        if fixed:
+            repaired.append("playlist")
+
+    if thumbnail_path and os.path.exists(thumbnail_path):
+        _, fixed = attempt(
+            f"re-uploading the thumbnail for {video_id}",
+            "Re-uploaded the thumbnail.",
+            lambda: service.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(thumbnail_path, mimetype='image/jpeg', resumable=True)
+            ).execute()
+        )
+        if fixed:
+            repaired.append("thumbnail")
+
+    if repaired:
+        print(f"Reconciled {video_id}: {', '.join(repaired)}.")
+    else:
+        print(f"Nothing to reconcile on {video_id}.")
+    return repaired
+
+
 def last_stream_recorded(video_id):
     """True when last_stream.json already points at this broadcast.
 
@@ -274,6 +403,10 @@ def main():
     # from title.txt/Description.txt and MUST pass verify_content_ready().
     parser.add_argument("--title", default=None, help="Explicit, human-provided title (bypasses the freshness gate)")
     parser.add_argument("--description", default=None, help="Explicit, human-provided description (bypasses the freshness gate)")
+    # Category and playlist membership are checked on every run; the thumbnail
+    # can't be checked (see reconcile_stream), so re-uploading it is opt-in.
+    parser.add_argument("--reconcile", action="store_true",
+                        help="When the stream already exists, also re-upload the thumbnail")
     args = parser.parse_args()
 
     date_str = args.date
@@ -336,9 +469,11 @@ def main():
     if not service:
         return
 
-    existing_id = find_stream_for_date(service, target_date, la_tz)
+    existing_id, in_playlist = find_stream_for_date(service, target_date, la_tz)
     if existing_id:
         print(f"A stream already exists for {target_date} (video {existing_id}). Skipping creation.")
+        reconcile_stream(service, existing_id, in_playlist,
+                         thumbnail_path if args.reconcile else None)
         if not last_stream_recorded(existing_id):
             # The stream exists but was never announced -- a previous run
             # created the broadcast and then died partway through the
@@ -404,16 +539,9 @@ def main():
     # the dispatch that backfills the real stream link into the sermon-series
     # description and the breadcrumb the dashboard reads. The stream went out
     # fine; the description shipped with the placeholder still in it.
-    def attempt(what, done, call):
-        try:
-            call()
-            print(done)
-        except Exception as e:
-            print(f"Warning: {what} failed for broadcast {broadcast_id}: {e}")
-
     # Update category
     attempt(
-        "setting the video category",
+        f"setting the video category on {broadcast_id}",
         "Successfully set category to Activism and Non Profit.",
         lambda: service.videos().update(
             part="snippet",
@@ -430,7 +558,7 @@ def main():
 
     # Add to playlist
     attempt(
-        f"adding the broadcast to playlist {PLAYLIST_ID}",
+        f"adding {broadcast_id} to playlist {PLAYLIST_ID}",
         f"Successfully added to playlist {PLAYLIST_ID}",
         lambda: service.playlistItems().insert(
             part="snippet",
@@ -450,7 +578,7 @@ def main():
     if os.path.exists(thumbnail_path):
         print(f"Uploading thumbnail from {thumbnail_path}...")
         attempt(
-            "uploading the thumbnail",
+            f"uploading the thumbnail for {broadcast_id}",
             "Successfully set thumbnail.",
             lambda: service.thumbnails().set(
                 videoId=broadcast_id,
