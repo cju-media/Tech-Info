@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-14T16:00:00+00:00",
+  "generated": "2026-09-15T14:30:17+00:00",
   "window": {
-    "start": "2026-09-14",
-    "end": "2026-12-15"
+    "start": "2026-09-15",
+    "end": "2026-12-16"
   },
   "columns": [
     "Date",
@@ -39,9 +39,9 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Sarah Smith & Elijah Rawlings Wedding",
+        "Wedding Ceremony",
         "Sanctuary/Forecourt",
-        "TBD",
+        "",
         "Wedding",
         "1",
         "",
@@ -124,7 +124,7 @@
       "kind": "event",
       "cells": [
         "SA 12/5/2026",
-        "Elizabeth Bernal & Izett Barnett Wedding",
+        "Wedding Ceremony",
         "Sanctuary/Forecourt",
         "3:00pm-11:00pm",
         "Wedding",
@@ -141,7 +141,7 @@
       "kind": "event",
       "cells": [
         "FR 12/4/2026",
-        "Yamandu Costa Concert",
+        "\"Yamandu Costa\" Concert",
         "Sanctuary",
         "5:30pm-9:30pm",
         "Concert",
@@ -209,9 +209,9 @@
       "kind": "event",
       "cells": [
         "SA 11/21/2026",
-        "Sofia Uribe & Robin Aimaq Wedding",
-        "Sanctuary/Stuart Hall/Forecourt",
-        "TBD",
+        "Wedding Ceremony",
+        "Sanctuary/Forecourt/Stuart Hall",
+        "",
         "Wedding",
         "1",
         "",
@@ -260,14 +260,14 @@
       "kind": "event",
       "cells": [
         "TH 11/5/2026",
-        "\"Groundswell\" Documentary Screening",
+        "\"Groundswell\" Screening",
         "Shatto",
-        "7:00pm-10:00pm",
+        "7:00pm",
         "Screening",
         "1",
         "",
         "",
-        "TBD\n7:00pm start",
+        "7:00pm start",
         "",
         ""
       ],
