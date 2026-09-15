@@ -20,6 +20,13 @@ PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs"
 # try again next run" rather than a hard failure.
 EXIT_NOT_READY = 3
 
+# The broadcast exists, but the thumbnail never made it onto it. The API gives
+# us no way to ask later whether a video has a custom thumbnail (see
+# reconcile_stream), so a failure here is invisible unless we say so now:
+# callers treat this as "keep the thumbnail stashed and run me again", and the
+# re-run reconciles the existing broadcast instead of creating a second one.
+EXIT_THUMBNAIL_PENDING = 4
+
 def get_youtube_service():
     creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
     if not creds_json:
@@ -231,7 +238,7 @@ def find_stream_for_date(service, target_date, la_tz):
         print(f"An unexpected error occurred: {e}")
         return None, False
 
-def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
+def dispatch(event_type, client_payload, max_retries=4, backoff_seconds=3):
     """Fire a repository_dispatch event so imessage_notifications.yml can react.
 
     Retries with exponential backoff on transient failures (network errors,
@@ -250,13 +257,7 @@ def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
         "Authorization": f"token {pat}"
     }
 
-    payload = {
-        "event_type": "youtube_stream_created",
-        "client_payload": {
-            "stream_url": f"https://www.youtube.com/watch?v={video_id}",
-            "date": date_str
-        }
-    }
+    payload = {"event_type": event_type, "client_payload": client_payload}
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -264,26 +265,60 @@ def dispatch_event(video_id, date_str, max_retries=4, backoff_seconds=3):
         except requests.exceptions.RequestException as e:
             if attempt < max_retries:
                 wait = backoff_seconds * (2 ** (attempt - 1))
-                print(f"Error dispatching github event (attempt {attempt}/{max_retries}): {e}. Retrying in {wait}s...")
+                print(f"Error dispatching '{event_type}' github event (attempt {attempt}/{max_retries}): {e}. Retrying in {wait}s...")
                 time.sleep(wait)
                 continue
-            print(f"Error dispatching github event after {max_retries} attempts: {e}")
+            print(f"Error dispatching '{event_type}' github event after {max_retries} attempts: {e}")
             return
 
         if response.status_code == 204:
-            print("Successfully dispatched github event.")
+            print(f"Successfully dispatched '{event_type}' github event.")
             return
 
         retryable = response.status_code == 429 or response.status_code >= 500
         if retryable and attempt < max_retries:
             wait = backoff_seconds * (2 ** (attempt - 1))
-            print(f"Failed to dispatch github event (attempt {attempt}/{max_retries}): "
+            print(f"Failed to dispatch '{event_type}' github event (attempt {attempt}/{max_retries}): "
                   f"{response.status_code} {response.text}. Retrying in {wait}s...")
             time.sleep(wait)
             continue
 
-        print(f"Failed to dispatch github event: {response.status_code} {response.text}")
+        print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
         return
+
+
+def dispatch_event(video_id, date_str):
+    """Announce a newly created (or newly discovered) worship broadcast."""
+    dispatch("youtube_stream_created", {
+        "stream_url": f"https://www.youtube.com/watch?v={video_id}",
+        "date": date_str,
+    })
+
+
+def dispatch_thumbnail_retrying(stream_url, date_str):
+    """Say up front that the thumbnail didn't go on.
+
+    Sent once, by the run that created the broadcast; the hourly retries
+    after it stay quiet and only giving up sends a second message. Hearing it
+    now is the whole point -- on 09-13 the stream went out with YouTube's own
+    frame on it and the first anyone knew was days later."""
+    dispatch("youtube_stream_thumbnail_retrying", {
+        "stream_url": stream_url,
+        "date": date_str,
+    })
+
+
+def dispatch_thumbnail_failed(stream_url, date_str, attempts):
+    """Tell a human the thumbnail never landed and won't be retried again.
+
+    Only sent once the retries are exhausted (create_pending_stream.py owns
+    that count) -- until then the hourly pending run keeps trying, and a
+    message per attempt would be noise."""
+    dispatch("youtube_stream_thumbnail_failed", {
+        "stream_url": stream_url or "",
+        "date": date_str,
+        "attempts": attempts,
+    })
 
 def reconcile_stream(service, video_id, in_playlist, thumbnail_path=None):
     """Repair the follow-up steps an earlier run left undone.
@@ -443,12 +478,46 @@ def main():
         print(f"Error parsing date {date_str}: {e}")
         return
 
+    service = get_youtube_service()
+    if not service:
+        return
+
+    existing_id, in_playlist = find_stream_for_date(service, target_date, la_tz)
+    if existing_id:
+        print(f"A stream already exists for {target_date} (video {existing_id}). Skipping creation.")
+        repaired = reconcile_stream(service, existing_id, in_playlist,
+                                    thumbnail_path if args.reconcile else None)
+        if not last_stream_recorded(existing_id):
+            # The stream exists but was never announced -- a previous run
+            # created the broadcast and then died partway through the
+            # follow-up API calls. Finish that run's job now, or nothing
+            # ever backfills the real link into the sermon-series
+            # description and it ships with the placeholder.
+            print("It was never announced, so dispatching the stream-created event now.")
+            dispatch_event(existing_id, target_date.strftime("%m-%d-%Y"))
+            record_last_stream(existing_id, target_date)
+        # --reconcile means the caller is here *because* the thumbnail is
+        # still outstanding, so a run that didn't manage to set it hasn't
+        # finished the job -- say so rather than reporting success and
+        # letting the caller throw the image away.
+        if args.reconcile and "thumbnail" not in repaired:
+            print("The thumbnail still has not been set on this stream.")
+            sys.exit(EXIT_THUMBNAIL_PENDING)
+        return
+
     # --- Freshness gate -------------------------------------------------
     # Never let a wrong/stale title or description reach a real stream. If a
     # human supplied both explicitly, trust them. Otherwise require the
     # pipeline to have confirmed this week's title AND description for
     # target_date; if it hasn't, create nothing and exit EXIT_NOT_READY so
     # the caller keeps the thumbnail pending and retries on a later run.
+    #
+    # This runs *after* the existence check, not before: it guards the
+    # title/description going onto a brand-new broadcast, and a run that
+    # finds the stream already there never touches either -- it only repairs
+    # the category, the playlist entry and the thumbnail. Gating first meant
+    # an outstanding thumbnail became unfixable the moment the service date
+    # slipped into the past, which is precisely when someone notices.
     if override_title and override_description:
         title = override_title
         description = override_description
@@ -464,26 +533,6 @@ def main():
         title = get_title()
         description = get_combined_description()
     # ------------------------------------------------------------------
-
-    service = get_youtube_service()
-    if not service:
-        return
-
-    existing_id, in_playlist = find_stream_for_date(service, target_date, la_tz)
-    if existing_id:
-        print(f"A stream already exists for {target_date} (video {existing_id}). Skipping creation.")
-        reconcile_stream(service, existing_id, in_playlist,
-                         thumbnail_path if args.reconcile else None)
-        if not last_stream_recorded(existing_id):
-            # The stream exists but was never announced -- a previous run
-            # created the broadcast and then died partway through the
-            # follow-up API calls. Finish that run's job now, or nothing
-            # ever backfills the real link into the sermon-series
-            # description and it ships with the placeholder.
-            print("It was never announced, so dispatching the stream-created event now.")
-            dispatch_event(existing_id, target_date.strftime("%m-%d-%Y"))
-            record_last_stream(existing_id, target_date)
-        return
 
     try:
         scheduled_time = datetime.strptime(time_str, "%H:%M").time()
@@ -575,9 +624,10 @@ def main():
     )
 
     # Upload Thumbnail
+    thumbnail_ok = False
     if os.path.exists(thumbnail_path):
         print(f"Uploading thumbnail from {thumbnail_path}...")
-        attempt(
+        _, thumbnail_ok = attempt(
             f"uploading the thumbnail for {broadcast_id}",
             "Successfully set thumbnail.",
             lambda: service.thumbnails().set(
@@ -588,9 +638,23 @@ def main():
     else:
         print(f"Thumbnail path not found: {thumbnail_path}")
 
-    # Dispatch event
+    # Dispatch event. This happens whatever became of the thumbnail: the
+    # stream is real and the service can go live on it, so it needs to be
+    # announced and the sermon-series link backfilled either way.
     dispatch_event(broadcast_id, target_date.strftime("%m-%d-%Y"))
     record_last_stream(broadcast_id, target_date)
+
+    if not thumbnail_ok:
+        # On 09-11 a 403 on the call before this one skipped the thumbnail
+        # entirely, and because the run still "succeeded" the image was
+        # deleted from the queue -- so the 09-13 stream went out with
+        # YouTube's auto-generated frame and nothing was ever going to
+        # notice. Exit non-zero so the caller keeps the image and runs us
+        # again; the re-run reconciles the broadcast that now exists.
+        print("The stream was created, but the thumbnail was not set on it.")
+        dispatch_thumbnail_retrying(f"https://www.youtube.com/watch?v={broadcast_id}",
+                                    target_date.strftime("%m-%d-%Y"))
+        sys.exit(EXIT_THUMBNAIL_PENDING)
 
 if __name__ == '__main__':
     main()

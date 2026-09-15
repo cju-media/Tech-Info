@@ -571,13 +571,19 @@ def main():
                                 print(f"Error running create_youtube_stream.py: {e}")
                                 rc = 1
                             # EXIT_NOT_READY (3) = the freshness gate refused because
-                            # this week's title/description isn't confirmed yet; any
-                            # other non-zero = a real failure. Either way, don't drop
-                            # the thumbnail -- stash it so the pending-stream run
-                            # retries once things are ready.
+                            # this week's title/description isn't confirmed yet;
+                            # EXIT_THUMBNAIL_PENDING (4) = the stream was created but
+                            # the thumbnail didn't stick to it; any other non-zero = a
+                            # real failure. In every case, don't drop the thumbnail --
+                            # stash it so the pending-stream run retries. For 4 that
+                            # retry reconciles the stream that now exists rather than
+                            # creating another one.
                             if rc != 0:
                                 if rc == 3:
                                     print(f"create_youtube_stream.py's freshness gate refused {date_str}; deferring.")
+                                elif rc == 4:
+                                    print(f"The stream for {date_str} was created but its thumbnail was not set; "
+                                          f"stashing the image so the pending-stream run retries it.")
                                 else:
                                     print(f"create_youtube_stream.py failed (exit {rc}); deferring so it retries.")
                                 defer_stream_creation(file_path, date_str, stream_time,
