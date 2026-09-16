@@ -1,29 +1,38 @@
 [
   {
-    "name": "BLACK GIRL ART SHOW",
-    "date": "2026-09-13",
-    "location": "2800 casitas ave 90039",
+    "name": "ASLA CONFERENCE & EXPO",
+    "date": "2026-09-16",
+    "location": "1201 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.9,
-    "permit": "264109000001277",
+    "distance_mi": 1.89,
+    "permit": "264109000001326",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "MEDIA TENT",
-    "date": "2026-09-05",
-    "location": "Players Tunnel 3911 S FIGUEROA ST 90037",
+    "name": "ASLA 2026",
+    "date": "2026-09-16",
+    "location": "1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001251",
+    "distance_mi": 1.92,
+    "permit": "264109000001284",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "CHECK IN TENTS",
-    "date": "2026-09-07",
-    "location": "USC Campus",
+    "name": "ASLA_BERLINER 2026_ KAHEYO",
+    "date": "2026-09-16",
+    "location": "1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001276",
+    "distance_mi": 1.92,
+    "permit": "264109000001197",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "GREENFIELDS OUTDOOR FITNESS BOOTH #838",
+    "date": "2026-09-16",
+    "location": "1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001206",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -36,21 +45,12 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "CARNIVAL",
-    "date": "2026-09-25",
-    "location": "4861 Venice Blvd., Los Angeles, CA 90019",
+    "name": "2026 ASLA",
+    "date": "2026-09-15",
+    "location": "Booth 339 of Convention Center 1201 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.5,
-    "permit": "264109000001191",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "USC SUITES",
-    "date": "2026-09-05",
-    "location": "Gate 19 & Field 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001248",
+    "distance_mi": 1.89,
+    "permit": "264109000001263",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -60,6 +60,51 @@
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 5.02,
     "permit": "264109000001255",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "ALL IN SUMMIT",
+    "date": "2026-09-13",
+    "location": "649 W JEFFERSON BLVD 90007",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.9,
+    "permit": "264109000001287",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LAPFCU 90TH ANNIVERSARY",
+    "date": "2026-10-10",
+    "location": "Los Angeles Police Academy Athletic Field 1880 N ACADEMY DR 90012",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.82,
+    "permit": "264109000001151",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "Greek Family Weekend",
+    "date": "2026-09-25",
+    "location": "688W. 28th St, 90007",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264101000001331",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "RETINA SOCIETY MEETING",
+    "date": "2026-09-23",
+    "location": "Santa Monica Ballroom 2025 S AVENUE OF THE STARS 90067",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 7.45,
+    "permit": "264109000001139",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CARNIVAL",
+    "date": "2026-09-18",
+    "location": "1380 N. Avalon Blvd., Wilmington, CA 90744",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 18.97,
+    "permit": "264109000001059",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
