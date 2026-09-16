@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-15T14:30:17+00:00",
+  "generated": "2026-09-16T14:23:21+00:00",
   "window": {
-    "start": "2026-09-15",
-    "end": "2026-12-16"
+    "start": "2026-09-16",
+    "end": "2026-12-17"
   },
   "columns": [
     "Date",
@@ -41,7 +41,7 @@
         "SU 12/13/2026",
         "Wedding Ceremony",
         "Sanctuary/Forecourt",
-        "",
+        "TBD",
         "Wedding",
         "1",
         "",
@@ -56,14 +56,14 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Resonance Collective Concert",
+        "\"Resonance Collective\" Concert",
         "Shatto",
         "4:00pm-10:00pm",
         "Concert",
         "1",
         "",
         "",
-        "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
+        "4:00pm Load in\n7:00pm Concert\n8:30pm Reception\n10:00pm Off campus",
         "",
         ""
       ],
@@ -89,6 +89,23 @@
     {
       "kind": "event",
       "cells": [
+        "SA 12/12/2026",
+        "Wedding Ceremony",
+        "Sanctuary/Forecourt",
+        "TBD",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
+    },
+    {
+      "kind": "event",
+      "cells": [
         "SU 12/6/2026",
         "HoLAdays Synesthesia Sinfonietta Concert",
         "Sanctuary/Stuart Hall/Forecourt",
@@ -97,7 +114,7 @@
         "2",
         "",
         "",
-        "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
+        "2:00pm Load-in\n6:30pm Doors\n7:00pm Concert\n10:00pm Off campus",
         "",
         ""
       ],
@@ -148,7 +165,7 @@
         "1",
         "",
         "",
-        "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
+        "5:30pm Load-in\n7:30pm Concert\n9:30pm Off campus",
         "",
         ""
       ],
@@ -211,7 +228,7 @@
         "SA 11/21/2026",
         "Wedding Ceremony",
         "Sanctuary/Forecourt/Stuart Hall",
-        "",
+        "TBD",
         "Wedding",
         "1",
         "",
@@ -275,8 +292,8 @@
     }
   ],
   "counts": {
-    "events": 13,
+    "events": 14,
     "worship": 6,
-    "from_calendar": 7
+    "from_calendar": 8
   }
 }
