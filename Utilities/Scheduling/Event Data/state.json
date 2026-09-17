@@ -1,7 +1,6 @@
 {
     "assignments": {
         "Cameron": [
-            "we-9-16-2026-book-soup",
             "sa-9-26-2026-music-in-the-garden",
             "su-9-27-2026-resonance-collective",
             "su-10-11-2026-worship-service",
@@ -164,11 +163,6 @@
             "date": "2026-09-19",
             "name": "GALA Choruses Showcase",
             "call_time": "12:00pm-9:00pm"
-        },
-        "we-9-16-2026-book-soup": {
-            "date": "2026-09-16",
-            "name": "Book Soup",
-            "call_time": "5:00pm-9:00pm"
         }
     }
 }
