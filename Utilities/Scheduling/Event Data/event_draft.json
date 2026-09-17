@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-16T14:23:21+00:00",
+  "generated": "2026-09-17T14:28:23+00:00",
   "window": {
-    "start": "2026-09-16",
-    "end": "2026-12-17"
+    "start": "2026-09-17",
+    "end": "2026-12-18"
   },
   "columns": [
     "Date",
@@ -39,9 +39,9 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Wedding Ceremony",
+        "Smith & Rawlings Wedding",
         "Sanctuary/Forecourt",
-        "TBD",
+        "",
         "Wedding",
         "1",
         "",
@@ -56,14 +56,14 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "\"Resonance Collective\" Concert",
+        "Resonance Collective Concert",
         "Shatto",
         "4:00pm-10:00pm",
         "Concert",
         "1",
         "",
         "",
-        "4:00pm Load in\n7:00pm Concert\n8:30pm Reception\n10:00pm Off campus",
+        "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
         "",
         ""
       ],
@@ -90,9 +90,9 @@
       "kind": "event",
       "cells": [
         "SA 12/12/2026",
-        "Wedding Ceremony",
+        "Kang & Kim Wedding",
         "Sanctuary/Forecourt",
-        "TBD",
+        "",
         "Wedding",
         "1",
         "",
@@ -114,7 +114,7 @@
         "2",
         "",
         "",
-        "2:00pm Load-in\n6:30pm Doors\n7:00pm Concert\n10:00pm Off campus",
+        "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
         "",
         ""
       ],
@@ -141,7 +141,7 @@
       "kind": "event",
       "cells": [
         "SA 12/5/2026",
-        "Wedding Ceremony",
+        "Bernal & Barnett Wedding",
         "Sanctuary/Forecourt",
         "3:00pm-11:00pm",
         "Wedding",
@@ -158,14 +158,14 @@
       "kind": "event",
       "cells": [
         "FR 12/4/2026",
-        "\"Yamandu Costa\" Concert",
+        "Yamandu Costa Concert",
         "Sanctuary",
         "5:30pm-9:30pm",
         "Concert",
         "1",
         "",
         "",
-        "5:30pm Load-in\n7:30pm Concert\n9:30pm Off campus",
+        "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
         "",
         ""
       ],
@@ -226,9 +226,9 @@
       "kind": "event",
       "cells": [
         "SA 11/21/2026",
-        "Wedding Ceremony",
+        "Uribe & Aimaq Wedding",
         "Sanctuary/Forecourt/Stuart Hall",
-        "TBD",
+        "",
         "Wedding",
         "1",
         "",
@@ -238,6 +238,23 @@
         "Weddings"
       ],
       "note": "from calendar: Ceremony: Sofia Uribe & Robin Aimaq"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "MO 11/16/2026",
+        "Boy Meets World Podcast",
+        "Sanctuary",
+        "5:00pm-9:00pm",
+        "Talk",
+        "1",
+        "",
+        "",
+        "5:00pm Set-up\n5:30pm Artist arrives\n6:15pm Doors\n7:00-8:30 Show\n9:00pm Off Campus",
+        "",
+        ""
+      ],
+      "note": "from calendar: Book Soup: Boy Meets World Podcast"
     },
     {
       "kind": "event",
@@ -292,8 +309,8 @@
     }
   ],
   "counts": {
-    "events": 14,
+    "events": 15,
     "worship": 6,
-    "from_calendar": 8
+    "from_calendar": 9
   }
 }
