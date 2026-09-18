@@ -79,7 +79,7 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # Stable on purpose -- see the module docstring. cleanup_events_folder.py's
 # PROTECTED_NAME_PREFIXES matches this stem, so renaming it here without
 # renaming it there would let the card get auto-trashed.
-CARD_FILENAME = 'FCCLA-Upcoming-Events-At-A-Glance.png'
+CARD_FILENAME = 'Events-At-A-Glance.png'
 
 TZ = zoneinfo.ZoneInfo('America/Los_Angeles')
 WINDOW_DAYS = 120          # how far ahead to advertise

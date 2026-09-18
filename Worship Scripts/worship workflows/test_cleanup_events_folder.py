@@ -89,29 +89,29 @@ class IsProtectedFlyer(unittest.TestCase):
     upcoming. It's skipped by name instead."""
 
     def test_the_at_a_glance_card_is_protected(self):
-        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance.png"))
+        self.assertTrue(is_protected_flyer("Events-At-A-Glance.png"))
 
     def test_the_weather_card_is_protected(self):
         # It prints eleven dates and none of them expires it; it's replaced
         # every few hours instead.
-        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Forecast.png"))
+        self.assertTrue(is_protected_flyer("LA-Weather-Forecast.png"))
 
     def test_the_service_card_is_protected(self):
         # Built from the stream thumbnail, which prints the service date.
-        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Service.png"))
+        self.assertTrue(is_protected_flyer("Upcoming-Service.png"))
 
     def test_match_is_case_insensitive(self):
-        self.assertTrue(is_protected_flyer("fccla-upcoming-events-at-a-glance.PNG"))
+        self.assertTrue(is_protected_flyer("events-at-a-glance.PNG"))
 
     def test_drive_collision_suffix_still_protected(self):
         # Drive renames a same-named upload rather than replacing it.
-        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance (1).png"))
+        self.assertTrue(is_protected_flyer("Events-At-A-Glance (1).png"))
 
     def test_future_revision_suffix_still_protected(self):
-        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance v2.png"))
+        self.assertTrue(is_protected_flyer("Events-At-A-Glance v2.png"))
 
     def test_extension_is_irrelevant(self):
-        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance.jpg"))
+        self.assertTrue(is_protected_flyer("Events-At-A-Glance.jpg"))
 
     def test_ordinary_flyers_are_not_protected(self):
         for name in (

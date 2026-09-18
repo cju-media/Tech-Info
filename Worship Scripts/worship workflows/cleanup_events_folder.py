@@ -94,10 +94,14 @@ SUSPECT_MISREAD_DAYS = 180
 # those thumbnails print the service date -- so the vision read would trash
 # it the day after the service, which is exactly when the next stream's card
 # is about to replace it anyway.
+# These three deliberately don't share a prefix. Content Display plays the
+# folder in filename order, so an "FCCLA-Upcoming-*" family sorted together
+# and the three generated cards ran back to back between the event flyers.
+# The names are chosen to interleave instead -- see the generators.
 PROTECTED_NAME_PREFIXES = (
-    'fccla-upcoming-events-at-a-glance',
-    'fccla-upcoming-forecast',
-    'fccla-upcoming-service',
+    'events-at-a-glance',
+    'la-weather-forecast',
+    'upcoming-service',
 )
 
 

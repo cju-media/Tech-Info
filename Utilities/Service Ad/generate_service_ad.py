@@ -57,7 +57,7 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # thumbnail prints a service date, so the vision read would trash this card
 # the day after the service it advertises -- exactly when the next one is
 # about to replace it anyway.
-CARD_FILENAME = 'FCCLA-Upcoming-Service.png'
+CARD_FILENAME = 'Upcoming-Service.png'
 
 # A broadcast stays on the card until this long after its scheduled start, so
 # the screen keeps advertising the service while it's actually happening

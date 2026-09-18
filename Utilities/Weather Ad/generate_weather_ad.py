@@ -58,7 +58,7 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # the vision read would trash it the day after whichever one it picked.
 # Matching that list also makes upload_to_drive() replace the card in place
 # rather than stacking a new copy every hour.
-CARD_FILENAME = 'FCCLA-Upcoming-Forecast.png'
+CARD_FILENAME = 'LA-Weather-Forecast.png'
 
 TZ = zoneinfo.ZoneInfo('America/Los_Angeles')
 LAT, LON = 34.0614, -118.2839          # 540 S Commonwealth Ave

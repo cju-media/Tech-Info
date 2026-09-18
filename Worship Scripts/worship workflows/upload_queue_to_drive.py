@@ -247,7 +247,7 @@ def get_drive_service():
 
 # The "at a glance" events card (generate_events_ad.py) is re-rendered on a
 # schedule and always keeps the same filename. Drive does not overwrite by
-# name -- it would hold a dozen "FCCLA-Upcoming-Events-At-A-Glance.png" files
+# name -- it would hold a dozen "Events-At-A-Glance.png" files
 # and Content Display would cycle every one of them -- and
 # cleanup_events_folder.py deliberately never trashes this card, so nothing
 # would ever reap the stale copies either. Update the existing file's content
