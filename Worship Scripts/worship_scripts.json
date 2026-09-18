@@ -1,14 +1,14 @@
 {
-  "2026-09-20": {
-    "path": "service-scripts/2026-09-20.pdf",
-    "modifiedTime": "2026-09-17T18:10:06.384Z",
-    "isCommunion": false,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Ayur Barduev"
-  },
   "2026-09-27": {
     "path": "service-scripts/2026-09-27.pdf",
-    "modifiedTime": "2026-09-15T19:33:06.504Z",
+    "modifiedTime": "2026-09-18T21:27:11.476Z",
     "isCommunion": true,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
+  },
+  "2026-09-20": {
+    "path": "service-scripts/2026-09-20.pdf",
+    "modifiedTime": "2026-09-18T21:08:52.814Z",
+    "isCommunion": false,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Ayur Barduev"
   }
 }
