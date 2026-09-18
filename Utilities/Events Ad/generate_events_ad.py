@@ -93,7 +93,8 @@ GEMINI_MODEL = 'gemini-3.5-flash'
 #   1  initial 3x3 grid
 #   2  "scan for tickets" QR in the header
 #   3  QR caption dropped; banner text centred on the y-axis
-RENDER_VERSION = 3
+#   4  "Events through <date>" dropped from the footer
+RENDER_VERSION = 4
 CHROME_CANDIDATES = [
     os.environ.get('CHROME_BIN') or '',
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -400,8 +401,10 @@ def build_html(cards, extra_count=0):
             venue=html.escape(c['venue'] or 'First Church'),
         ))
 
-    last = cards[-1]['_dt'] if cards else None
-    through = f"Events through {last.strftime('%B %-d, %Y')}" if last else 'See fccla.org/calendar'
+    # The footer used to carry "Events through <last date>", which existed so
+    # cleanup_events_folder.py's vision read would expire the card on the
+    # right day. The card is on that script's protected list now, so the line
+    # was doing nothing but ageing the ad in the reader's eye.
     more = (f" &middot; +{extra_count} more at fccla.org/calendar") if extra_count else ''
 
     qr_uri = build_qr_data_uri(CALENDAR_URL)
@@ -410,7 +413,7 @@ def build_html(cards, extra_count=0):
     return HTML_SHELL.format(
         rows=rows,
         cards='\n\n'.join(blocks),
-        through=through + more,
+        more=more,
         qr=qr_block,
     )
 
@@ -510,7 +513,7 @@ HTML_SHELL = """<!DOCTYPE html>
 
 <footer>
   <div class="cta">Tickets &amp; details at fccla.org/calendar</div>
-  <div class="note">Weekly Sunday Worship, 10:30 AM in the Sanctuary &middot; {through}</div>
+  <div class="note">Weekly Sunday Worship, 10:30 AM in the Sanctuary{more}</div>
 </footer>
 
 </body>

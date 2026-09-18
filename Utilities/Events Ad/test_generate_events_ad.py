@@ -276,6 +276,27 @@ class QrCode(unittest.TestCase):
         with mock.patch.dict(sys.modules, {'segno': None}):
             self.assertEqual(build_qr_data_uri(CALENDAR_URL), '')
 
+    def test_footer_carries_no_through_date(self):
+        """The footer used to print "Events through <last date>", which only
+        existed so cleanup_events_folder.py's vision read would expire the
+        card correctly. The card is protected from that sweep now, so the
+        line just aged the ad in the reader's eye."""
+        card = {'name': 'Yamandu Costa', 'start': '2026-12-04T19:30:00-08:00',
+                'venue': 'The Sanctuary', 'category': 'CONCERT',
+                '_dt': datetime.datetime(2026, 12, 4, 19, 30, tzinfo=TZ)}
+        out = build_html([card])
+        self.assertNotIn('Events through', out)
+        self.assertIn('Weekly Sunday Worship', out)
+
+    def test_overflow_note_survives_and_only_shows_when_needed(self):
+        # Dropping the date line must not take the "+N more" note with it --
+        # that one does real work when the calendar outgrows the 3x3 grid.
+        card = {'name': 'Yamandu Costa', 'start': '2026-12-04T19:30:00-08:00',
+                'venue': 'The Sanctuary', 'category': 'CONCERT',
+                '_dt': datetime.datetime(2026, 12, 4, 19, 30, tzinfo=TZ)}
+        self.assertIn('+4 more at fccla.org/calendar', build_html([card], 4))
+        self.assertNotIn('more at fccla.org/calendar', build_html([card], 0))
+
     def test_card_markup_includes_the_qr(self):
         now = datetime.datetime(2026, 9, 18, 9, 0, tzinfo=TZ)
         card = {'name': 'Yamandu Costa', 'start': '2026-12-04T19:30:00-08:00',
