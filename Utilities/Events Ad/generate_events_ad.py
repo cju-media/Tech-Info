@@ -150,12 +150,21 @@ def smart_quotes(text):
 
 
 def parse_start(start):
-    """The ISO start stamp as a timezone-aware datetime, or None."""
+    """The ISO start stamp as a datetime in church-local time, or None.
+
+    Always converted to America/Los_Angeles, never left on whatever offset
+    the feed happened to use. The calendar widget renders its dates in the
+    *browser's* timezone, so the same 7pm concert comes back as
+    "19:00:00-07:00" from a machine in LA and "02:00:00+00:00" (the next
+    day!) from a UTC CI runner. Printing that verbatim put every event on
+    the card a day late at 2 in the morning."""
     try:
         dt = datetime.datetime.fromisoformat(start)
     except (ValueError, TypeError):
         return None
-    return dt.replace(tzinfo=TZ) if dt.tzinfo is None else dt
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=TZ)
+    return dt.astimezone(TZ)
 
 
 def is_cancelled(status):
@@ -248,9 +257,12 @@ def chrome_run(args, capture, timeout=180):
     # real output instead, and raises if it's missing.
     cmd = [find_chrome(), '--headless', '--disable-gpu', '--no-sandbox',
            '--hide-scrollbars', '--force-device-scale-factor=1'] + args
+    # The events widget localises to the browser's timezone, so run the
+    # browser on church time and the scrape is byte-identical everywhere.
+    env = dict(os.environ, TZ='America/Los_Angeles')
     return subprocess.run(cmd, capture_output=capture, text=capture,
                           stderr=None if capture else subprocess.DEVNULL,
-                          timeout=timeout, check=False)
+                          env=env, timeout=timeout, check=False)
 
 
 def dump_dom(url):

@@ -175,6 +175,26 @@ class Helpers(unittest.TestCase):
         self.assertEqual(dt.hour, 19)
         self.assertIsNotNone(dt.tzinfo)
 
+    def test_utc_feed_is_normalised_to_church_time(self):
+        """Regression, 2026-09-18: the widget localises to the browser's
+        timezone, so the UTC CI runner scraped a 7pm concert as 02:00 the
+        next day. Printed verbatim, every event on the live card was a day
+        late at 2 in the morning."""
+        from_utc = parse_start('2026-09-28T02:00:00+00:00')
+        from_la = parse_start('2026-09-27T19:00:00-07:00')
+        self.assertEqual(from_utc, from_la, 'same instant')
+        self.assertEqual(from_utc.strftime('%b %-d %-I:%M %p'), 'Sep 27 7:00 PM')
+        self.assertEqual(from_utc.day, 27)
+
+    def test_winter_feed_uses_standard_time(self):
+        # December is PST (-08:00), so the offset isn't a constant.
+        self.assertEqual(
+            parse_start('2026-12-05T03:30:00+00:00').strftime('%b %-d %-I:%M %p'),
+            'Dec 4 7:30 PM')
+
+    def test_naive_timestamp_is_assumed_church_local(self):
+        self.assertEqual(parse_start('2026-09-27T19:00:00').hour, 19)
+
     def test_parse_start_rejects_junk(self):
         self.assertIsNone(parse_start('nope'))
         self.assertIsNone(parse_start(None))
