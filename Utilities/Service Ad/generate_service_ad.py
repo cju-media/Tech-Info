@@ -394,7 +394,7 @@ HTML_SHELL = """<!DOCTYPE html>
     letter-spacing:.04em;text-align:right;}}
 
   main{{flex:1 1 auto;display:flex;align-items:center;justify-content:center;
-    padding:24px 60px;min-height:0;}}
+    gap:44px;padding:20px 60px;min-height:0;}}
 
   /* the stream thumbnail is the advertisement -- let it dominate */
   /* height:100% rather than max-height: the source is 1280x720, and a max-
@@ -410,7 +410,7 @@ HTML_SHELL = """<!DOCTYPE html>
   .avatar{{width:340px;height:340px;border-radius:50%;object-fit:cover;
     border:5px solid #fff;box-shadow:0 6px 26px rgba(110,0,19,.18);}}
   .avatar-blank{{background:#E4DCD1}}
-  .cname{{font-family:Cinzel,Georgia,serif;font-size:64px;font-weight:700;
+  .cname{{font-family:Cinzel,Georgia,serif;font-size:52px;font-weight:700;
     color:var(--ink);text-align:center;margin-top:8px;}}
   .chandle{{font-size:32px;color:var(--muted);letter-spacing:.04em}}
   .csubs{{font-size:27px;color:var(--muted);letter-spacing:.03em}}
@@ -418,15 +418,18 @@ HTML_SHELL = """<!DOCTYPE html>
     letter-spacing:.06em;padding:18px 64px;border-radius:999px;margin-top:14px;
     box-shadow:0 4px 14px rgba(255,0,51,.28);}}
 
-  footer{{flex:0 0 auto;padding:12px 60px 26px;display:flex;
-    align-items:center;justify-content:space-between;gap:30px;
+  /* The subscribe URL is a 33-module symbol -- half again as dense as the
+     events card's -- so it needs real size to stay scannable. 204px puts it
+     near 5px a module. */
+  .qr{{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:12px}}
+  .qr img{{display:block;width:204px;height:204px;background:#fff;
+    border-radius:6px;box-shadow:0 3px 14px rgba(26,26,26,.18)}}
+  .qr-cap{{font-family:Cinzel,Georgia,serif;font-size:25px;font-weight:700;
+    color:var(--crimson);letter-spacing:.05em;white-space:nowrap;text-align:center}}
+
+  footer{{flex:0 0 auto;padding:12px 60px 18px;display:flex;
+    align-items:center;justify-content:space-between;
     font-size:17px;color:var(--muted);letter-spacing:.04em;}}
-  .foot-text{{display:flex;flex-direction:column;gap:5px}}
-  .qr{{margin-left:auto;display:flex;align-items:center;gap:16px;flex:0 0 auto}}
-  .qr img{{display:block;width:112px;height:112px;background:#fff;
-    border-radius:5px;box-shadow:0 2px 9px rgba(26,26,26,.16)}}
-  .qr-cap{{font-family:Cinzel,Georgia,serif;font-size:22px;font-weight:700;
-    color:var(--crimson);letter-spacing:.05em;white-space:nowrap}}
   footer .cta{{font-family:Cinzel,Georgia,serif;font-size:24px;font-weight:700;
     color:var(--crimson);letter-spacing:.05em;}}
   footer .note{{font-size:16px;color:#9A8F88}}
@@ -444,14 +447,12 @@ HTML_SHELL = """<!DOCTYPE html>
 
 <main>
 {body}
+{qr}
 </main>
 
 <footer>
-  <div class="foot-text">
-    <div class="cta">{footer}</div>
-    <div class="note">540 S Commonwealth Ave &middot; Los Angeles</div>
-  </div>
-{qr}
+  <div class="cta">{footer}</div>
+  <div class="note">540 S Commonwealth Ave &middot; Los Angeles</div>
 </footer>
 
 </body>
