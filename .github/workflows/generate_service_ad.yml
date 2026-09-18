@@ -59,8 +59,10 @@ jobs:
           # dateutil/pytz are imported at module scope by
           # Youtube Processing/update_youtube_stream.py, which this reuses for
           # the playlist id and the authenticated YouTube client.
+          # segno: pure-Python QR generation for the "scan to subscribe" code,
+          # inlined into the page as SVG so there's no runtime CDN fetch.
           pip install google-api-python-client google-auth google-auth-httplib2 \
-                      google-auth-oauthlib python-dateutil pytz requests
+                      google-auth-oauthlib python-dateutil pytz requests segno
 
       - name: Locate Chrome
         run: |

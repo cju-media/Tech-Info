@@ -10,9 +10,12 @@ import datetime
 import os
 import sys
 import unittest
+from unittest import mock
 
 from generate_service_ad import (
     CARD_FILENAME,
+    build_qr_data_uri,
+    subscribe_url,
     GRACE,
     TZ,
     best_thumbnail,
@@ -152,7 +155,7 @@ class Markup(unittest.TestCase):
         self.assertIn('data:image/jpeg;base64,AAA', out)
         self.assertIn('Upcoming Service', out)
         self.assertIn('Sunday, September 20 at 10:30 AM', out)
-        self.assertNotIn('Subscribe</div>', out)
+        self.assertNotIn('class="channel"', out)
 
     def test_no_broadcast_falls_back_to_the_channel_card(self):
         out = build_html(None, {'title': 'First Church', 'handle': '@x',
@@ -207,6 +210,60 @@ class CanonicalCardName(unittest.TestCase):
         from generate_events_ad import CARD_FILENAME as events
         from generate_weather_ad import CARD_FILENAME as weather
         self.assertEqual(len({CARD_FILENAME, events, weather}), 3)
+
+
+class SubscribeQr(unittest.TestCase):
+    """Both cards carry a QR to the channel's subscribe dialog."""
+
+    CH = {'handle': '@1stchurchla', 'id': 'UCabc123'}
+
+    def test_url_opens_the_subscribe_dialog(self):
+        # Without sub_confirmation=1 a scan just lands on the channel page,
+        # which is the difference between a scan that subscribes and one
+        # that doesn't.
+        self.assertEqual(subscribe_url(self.CH),
+                         'https://www.youtube.com/@1stchurchla?sub_confirmation=1')
+
+    def test_falls_back_to_the_channel_id_without_a_handle(self):
+        self.assertEqual(subscribe_url({'handle': '', 'id': 'UCabc123'}),
+                         'https://www.youtube.com/channel/UCabc123?sub_confirmation=1')
+
+    def test_no_channel_means_no_url(self):
+        self.assertEqual(subscribe_url({}), '')
+        self.assertEqual(subscribe_url(None), '')
+
+    def test_qr_is_an_inline_svg_data_uri(self):
+        uri = build_qr_data_uri(subscribe_url(self.CH))
+        self.assertTrue(uri.startswith('data:image/svg+xml'), uri[:40])
+
+    def test_qr_uri_is_attribute_safe(self):
+        self.assertNotIn('"', build_qr_data_uri(subscribe_url(self.CH)))
+
+    def test_no_url_means_no_qr(self):
+        self.assertEqual(build_qr_data_uri(''), '')
+
+    def test_missing_segno_degrades_instead_of_crashing(self):
+        with mock.patch.dict(sys.modules, {'segno': None}):
+            self.assertEqual(build_qr_data_uri(subscribe_url(self.CH)), '')
+
+    def test_stream_card_carries_the_qr(self):
+        svc = {'title': 'Sunday Worship', 'thumb_uri': 'data:image/jpeg;base64,AAA',
+               'start': datetime.datetime(2026, 9, 20, 10, 30, tzinfo=TZ)}
+        out = build_html(svc, self.CH, NOW)
+        self.assertIn('Scan to Subscribe', out)
+        self.assertIn('QR code to subscribe on YouTube', out)
+
+    def test_channel_card_carries_the_qr(self):
+        out = build_html(None, dict(self.CH, title='First Church'), NOW)
+        self.assertIn('Scan to Subscribe', out)
+
+    def test_card_renders_without_a_channel(self):
+        # An API hiccup fetching the channel must cost the QR, not the card.
+        svc = {'title': 'Sunday Worship', 'thumb_uri': 'data:image/jpeg;base64,AAA',
+               'start': datetime.datetime(2026, 9, 20, 10, 30, tzinfo=TZ)}
+        out = build_html(svc, None, NOW)
+        self.assertIn('data:image/jpeg;base64,AAA', out)
+        self.assertNotIn('Scan to Subscribe', out)
 
 
 if __name__ == '__main__':

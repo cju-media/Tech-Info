@@ -155,6 +155,42 @@ def format_when(start, now):
     return f"{lead} at {start.strftime('%-I:%M %p')}"
 
 
+def subscribe_url(channel):
+    """The channel's subscribe link, or '' if we don't know the channel.
+
+    ?sub_confirmation=1 makes YouTube open the subscribe dialog straight
+    away rather than just landing the visitor on the channel page -- the
+    difference between a scan that subscribes and one that doesn't. Prefers
+    the @handle because it survives; falls back to the channel id."""
+    if not channel:
+        return ''
+    handle = (channel.get('handle') or '').strip()
+    if handle.startswith('@'):
+        return f'https://www.youtube.com/{handle}?sub_confirmation=1'
+    cid = (channel.get('id') or '').strip()
+    if cid:
+        return f'https://www.youtube.com/channel/{cid}?sub_confirmation=1'
+    return ''
+
+
+def build_qr_data_uri(url, scale=4):
+    """The subscribe link as an inline SVG data URI.
+
+    Inlined, and with the quiet zone baked into the SVG rather than left to
+    CSS padding, for the same reasons as the events card: a QR fetched at
+    render time that failed would be a blank square on every screen, and a
+    restyle of the footer shouldn't be able to make the code unscannable."""
+    if not url:
+        return ''
+    try:
+        import segno
+    except ImportError:
+        print('  segno not installed; rendering the card without a QR code.')
+        return ''
+    return segno.make(url, error='m').svg_data_uri(
+        scale=scale, border=4, dark='#1A1A1A', light='#FFFFFF')
+
+
 def subscriber_text(count):
     """YouTube's own rounding: 1.2K, 3.4M. The API returns an exact string but
     the channel page shows it rounded, and the card should match what people
@@ -238,6 +274,7 @@ def fetch_channel(service):
     stats = items[0].get('statistics') or {}
     handle = snippet.get('customUrl') or ''
     return {
+        'id': items[0].get('id') or '',
         'title': snippet.get('title') or 'First Congregational Church',
         'handle': handle if handle.startswith('@') else (f'@{handle}' if handle else ''),
         'avatar': best_thumbnail(snippet.get('thumbnails')),
@@ -273,8 +310,14 @@ def render_png(html_path, png_path):
 # --------------------------------------------------------------------------
 
 def build_html(service=None, channel=None, now=None):
-    """The stream card when a broadcast is scheduled, else the channel card."""
+    """The stream card when a broadcast is scheduled, else the channel card.
+
+    Both carry the subscribe QR: the channel card is about subscribing, and
+    the stream card is the one people actually stop and look at."""
     now = now or datetime.datetime.now(TZ)
+    qr_uri = build_qr_data_uri(subscribe_url(channel))
+    qr_block = QR_TEMPLATE.format(uri=qr_uri) if qr_uri else ''
+
     if service and service.get('thumb_uri'):
         return HTML_SHELL.format(
             eyebrow='Join Us for Worship',
@@ -282,6 +325,7 @@ def build_html(service=None, channel=None, now=None):
             when=format_when(service.get('start'), now),
             body=STREAM_BODY.format(thumb=service['thumb_uri']),
             footer='Watch live at fccla.org/live',
+            qr=qr_block,
         )
 
     channel = channel or {}
@@ -300,8 +344,14 @@ def build_html(service=None, channel=None, now=None):
             subs=subs,
         ),
         footer='Watch live at fccla.org/live',
+        qr=qr_block,
     )
 
+
+QR_TEMPLATE = """<div class="qr">
+      <img src="{uri}" alt="QR code to subscribe on YouTube">
+      <div class="qr-cap">Scan to Subscribe</div>
+    </div>"""
 
 STREAM_BODY = """    <img class="thumb" src="{thumb}" alt="Upcoming service">"""
 
@@ -368,9 +418,15 @@ HTML_SHELL = """<!DOCTYPE html>
     letter-spacing:.06em;padding:18px 64px;border-radius:999px;margin-top:14px;
     box-shadow:0 4px 14px rgba(255,0,51,.28);}}
 
-  footer{{flex:0 0 auto;padding:14px 60px 20px;display:flex;
-    align-items:center;justify-content:space-between;
+  footer{{flex:0 0 auto;padding:12px 60px 26px;display:flex;
+    align-items:center;justify-content:space-between;gap:30px;
     font-size:17px;color:var(--muted);letter-spacing:.04em;}}
+  .foot-text{{display:flex;flex-direction:column;gap:5px}}
+  .qr{{margin-left:auto;display:flex;align-items:center;gap:16px;flex:0 0 auto}}
+  .qr img{{display:block;width:112px;height:112px;background:#fff;
+    border-radius:5px;box-shadow:0 2px 9px rgba(26,26,26,.16)}}
+  .qr-cap{{font-family:Cinzel,Georgia,serif;font-size:22px;font-weight:700;
+    color:var(--crimson);letter-spacing:.05em;white-space:nowrap}}
   footer .cta{{font-family:Cinzel,Georgia,serif;font-size:24px;font-weight:700;
     color:var(--crimson);letter-spacing:.05em;}}
   footer .note{{font-size:16px;color:#9A8F88}}
@@ -391,8 +447,11 @@ HTML_SHELL = """<!DOCTYPE html>
 </main>
 
 <footer>
-  <div class="cta">{footer}</div>
-  <div class="note">540 S Commonwealth Ave &middot; Los Angeles</div>
+  <div class="foot-text">
+    <div class="cta">{footer}</div>
+    <div class="note">540 S Commonwealth Ave &middot; Los Angeles</div>
+  </div>
+{qr}
 </footer>
 
 </body>
@@ -430,10 +489,14 @@ def main():
     if not yt:
         raise RuntimeError('No YouTube credentials: set YOUTUBE_CREDENTIALS_JSON.')
 
+    # Fetched unconditionally: the subscribe QR is on both cards, so the
+    # channel is needed even when a broadcast is scheduled. One extra quota
+    # unit a run.
+    channel = fetch_channel(yt) or {}
+
     print('Looking for the next scheduled service...')
     upcoming = fetch_next_service(yt, now)
 
-    channel = None
     if upcoming:
         print(f"  {upcoming['title']!r} at {upcoming['start']:%a %b %-d %-I:%M %p}")
         upcoming['thumb_uri'] = data_uri(upcoming.get('thumbnail'))
@@ -444,7 +507,6 @@ def main():
             upcoming = None
     if not upcoming:
         print('  Nothing scheduled; building the channel card.')
-        channel = fetch_channel(yt) or {}
         channel['avatar_uri'] = data_uri(channel.get('avatar'))
 
     with open(HTML_PATH, 'w', encoding='utf-8') as f:
