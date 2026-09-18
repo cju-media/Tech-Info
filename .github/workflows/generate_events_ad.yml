@@ -64,9 +64,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # segno: pure-Python QR generation for the card's "scan for tickets"
-          # code. Inlined into the page as SVG, so no runtime CDN fetch.
-          pip install google-genai segno
+          # segno: pure-Python QR generation for the card's header code,
+          # inlined into the page as SVG so there's no runtime CDN fetch.
+          # The Drive libraries aren't used by the generator itself -- they're
+          # for the test that asserts upload_queue_to_drive.py still replaces
+          # this card in place rather than stacking copies of it, which has to
+          # import that module to mean anything.
+          pip install google-genai segno \
+                      google-api-python-client google-auth requests
 
       - name: Locate Chrome
         run: |
