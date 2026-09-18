@@ -406,7 +406,12 @@ HTML_SHELL = """<!DOCTYPE html>
     box-shadow:0 6px 26px rgba(110,0,19,.18);}}
 
   /* fallback: the channel */
-  .channel{{display:flex;flex-direction:column;align-items:center;gap:18px}}
+  /* Extra separation from the QR column, applied here rather than to main's
+     gap so the stream card's thumbnail keeps its full width: the channel
+     name is wide and low-contrast against the QR, and 44px left the two
+     reading as one crowded block. */
+  .channel{{display:flex;flex-direction:column;align-items:center;gap:18px;
+    margin-right:96px}}
   .avatar{{width:340px;height:340px;border-radius:50%;object-fit:cover;
     border:5px solid #fff;box-shadow:0 6px 26px rgba(110,0,19,.18);}}
   .avatar-blank{{background:#E4DCD1}}
