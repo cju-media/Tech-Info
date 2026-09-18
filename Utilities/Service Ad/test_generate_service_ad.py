@@ -15,6 +15,7 @@ from unittest import mock
 from generate_service_ad import (
     CARD_FILENAME,
     build_qr_data_uri,
+    mini_channel,
     subscribe_url,
     GRACE,
     TZ,
@@ -264,6 +265,46 @@ class SubscribeQr(unittest.TestCase):
         out = build_html(svc, None, NOW)
         self.assertIn('data:image/jpeg;base64,AAA', out)
         self.assertNotIn('Scan to Subscribe', out)
+
+
+class MiniChannelPreview(unittest.TestCase):
+    """The stream card carries a compact channel identity above the QR: the
+    thumbnail says what the service is, but nothing on it says whose channel
+    the code subscribes you to."""
+
+    CH = {'title': 'First Congregational Church of LA', 'handle': '@firstchurchla',
+          'id': 'UCabc123', 'subscribers': '4.1K subscribers',
+          'avatar_uri': 'data:image/png;base64,AAA'}
+
+    SVC = {'title': 'Sunday Worship', 'thumb_uri': 'data:image/jpeg;base64,BBB',
+           'start': datetime.datetime(2026, 9, 20, 10, 30, tzinfo=TZ)}
+
+    def test_stream_card_shows_the_channel_above_the_qr(self):
+        out = build_html(self.SVC, self.CH, NOW)
+        self.assertIn('mini-avatar', out)
+        self.assertIn('First Congregational Church of LA', out)
+        self.assertIn('@firstchurchla', out)
+        self.assertIn('4.1K subscribers', out)
+        # Preview first, code second.
+        self.assertLess(out.index('class="mini"'), out.index('class="qr"'))
+
+    def test_channel_card_does_not_repeat_the_preview(self):
+        # That card already *is* the channel preview, full size.
+        out = build_html(None, self.CH, NOW)
+        self.assertNotIn('class="mini"', out)
+
+    def test_no_channel_name_means_no_preview(self):
+        self.assertEqual(mini_channel({}), '')
+        self.assertEqual(mini_channel(None), '')
+
+    def test_preview_survives_a_missing_avatar(self):
+        out = mini_channel({'title': 'First Church'})
+        self.assertIn('avatar-blank', out)
+        self.assertIn('First Church', out)
+
+    def test_hidden_subscriber_count_is_not_shown_in_the_preview(self):
+        out = mini_channel(dict(self.CH, hidden_subs=True))
+        self.assertNotIn('4.1K', out)
 
 
 if __name__ == '__main__':

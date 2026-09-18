@@ -315,17 +315,22 @@ def build_html(service=None, channel=None, now=None):
     Both carry the subscribe QR: the channel card is about subscribing, and
     the stream card is the one people actually stop and look at."""
     now = now or datetime.datetime.now(TZ)
+    channel = channel or {}
     qr_uri = build_qr_data_uri(subscribe_url(channel))
     qr_block = QR_TEMPLATE.format(uri=qr_uri) if qr_uri else ''
 
     if service and service.get('thumb_uri'):
+        # The stream card's right column carries a compact version of the
+        # channel above the code -- the thumbnail says what the service is,
+        # but nothing on it says whose channel to subscribe to.
+        side = SIDE_TEMPLATE.format(mini=mini_channel(channel), qr=qr_block)
         return HTML_SHELL.format(
             eyebrow='Join Us for Worship',
             heading='Upcoming Service',
             when=format_when(service.get('start'), now),
             body=STREAM_BODY.format(thumb=service['thumb_uri']),
             footer='Watch live at fccla.org/live',
-            qr=qr_block,
+            side=side if (qr_block or mini_channel(channel)) else '',
         )
 
     channel = channel or {}
@@ -344,14 +349,43 @@ def build_html(service=None, channel=None, now=None):
             subs=subs,
         ),
         footer='Watch live at fccla.org/live',
-        qr=qr_block,
+        side=SIDE_TEMPLATE.format(mini='', qr=qr_block) if qr_block else '',
     )
 
+
+MINI_CHANNEL = """<div class="mini">
+        {avatar}
+        <div class="mini-name">{name}</div>
+        <div class="mini-handle">{handle}</div>
+        <div class="mini-subs">{subs}</div>
+      </div>"""
+
+SIDE_TEMPLATE = """    <div class="side">
+      {mini}{qr}
+    </div>"""
 
 QR_TEMPLATE = """<div class="qr">
       <img src="{uri}" alt="QR code to subscribe on YouTube">
       <div class="qr-cap">Scan to Subscribe</div>
     </div>"""
+
+def mini_channel(channel):
+    """A compact channel identity for the stream card's side column, or ''.
+
+    The thumbnail already says what the service is; this says whose channel
+    the QR subscribes you to, which nothing else on that card does."""
+    channel = channel or {}
+    name = (channel.get('title') or '').strip()
+    if not name:
+        return ''
+    avatar = channel.get('avatar_uri') or ''
+    avatar_html = (f'<img class="mini-avatar" src="{avatar}" alt="">' if avatar
+                   else '<div class="mini-avatar avatar-blank"></div>')
+    subs = '' if channel.get('hidden_subs') else (channel.get('subscribers') or '')
+    return MINI_CHANNEL.format(
+        avatar=avatar_html, name=name,
+        handle=channel.get('handle') or '', subs=subs)
+
 
 STREAM_BODY = """    <img class="thumb" src="{thumb}" alt="Upcoming service">"""
 
@@ -423,6 +457,16 @@ HTML_SHELL = """<!DOCTYPE html>
     letter-spacing:.06em;padding:18px 64px;border-radius:999px;margin-top:14px;
     box-shadow:0 4px 14px rgba(255,0,51,.28);}}
 
+  .side{{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;
+    gap:52px;max-width:250px}}
+  .mini{{display:flex;flex-direction:column;align-items:center;gap:7px}}
+  .mini-avatar{{width:124px;height:124px;border-radius:50%;object-fit:cover;
+    border:4px solid #fff;box-shadow:0 3px 14px rgba(110,0,19,.18)}}
+  .mini-name{{font-family:Cinzel,Georgia,serif;font-size:21px;font-weight:700;
+    color:var(--ink);text-align:center;line-height:1.24;margin-top:5px}}
+  .mini-handle{{font-size:18px;color:var(--muted);letter-spacing:.03em}}
+  .mini-subs{{font-size:16px;color:#9A8F88;letter-spacing:.02em}}
+
   /* The subscribe URL is a 33-module symbol -- half again as dense as the
      events card's -- so it needs real size to stay scannable. 204px puts it
      near 5px a module. */
@@ -452,7 +496,7 @@ HTML_SHELL = """<!DOCTYPE html>
 
 <main>
 {body}
-{qr}
+{side}
 </main>
 
 <footer>
@@ -513,9 +557,11 @@ def main():
             # card with a hole where the advertisement should be.
             print('  Thumbnail unavailable; using the channel card instead.')
             upcoming = None
+    # Needed on both cards now: the stream card carries a compact channel
+    # preview beside the subscribe code.
+    channel['avatar_uri'] = data_uri(channel.get('avatar'))
     if not upcoming:
         print('  Nothing scheduled; building the channel card.')
-        channel['avatar_uri'] = data_uri(channel.get('avatar'))
 
     with open(HTML_PATH, 'w', encoding='utf-8') as f:
         f.write(build_html(upcoming, channel, now))
