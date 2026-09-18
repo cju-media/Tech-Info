@@ -1,7 +1,15 @@
 {
-  "card_fingerprint": "51f1fe84bc225c34e099fc307cb6263fbacadc3224b2fb932bc7121ab6adbaf4",
+  "card_fingerprint": "aab87db2e3848a745634bcef66c7cca6890d5daa9d04fff4a6a8481072d8f50c",
   "classified": {
+    "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"|2026-11-16T19:00:00-08:00": {
+      "category": "AUTHOR TALK",
+      "recurring": false
+    },
     "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"|2026-11-17T03:00:00+00:00": {
+      "category": "AUTHOR TALK",
+      "recurring": false
+    },
+    "Book Soup: Devon Rodriguez presents \"Work in Progress: A Memoir\"|2026-09-30T19:00:00-07:00": {
       "category": "AUTHOR TALK",
       "recurring": false
     },
@@ -9,11 +17,23 @@
       "category": "AUTHOR TALK",
       "recurring": false
     },
+    "Min Jin Lee discusses \"American Hagwon\"|2026-10-13T19:00:00-07:00": {
+      "category": "AUTHOR TALK",
+      "recurring": false
+    },
     "Min Jin Lee discusses \"American Hagwon\"|2026-10-14T02:00:00+00:00": {
       "category": "AUTHOR TALK",
       "recurring": false
     },
+    "Sunday Worship Service|2026-09-20T10:30:00-07:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2026-09-20T17:30:00+00:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
+    "Sunday Worship Service|2026-09-27T10:30:00-07:00": {
       "category": "WORSHIP",
       "recurring": true
     },
@@ -21,7 +41,15 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2026-10-04T10:30:00-07:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2026-10-04T17:30:00+00:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
+    "Sunday Worship Service|2026-10-11T10:30:00-07:00": {
       "category": "WORSHIP",
       "recurring": true
     },
@@ -29,7 +57,15 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2026-10-18T10:30:00-07:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2026-10-18T17:30:00+00:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
+    "Sunday Worship Service|2026-10-25T10:30:00-07:00": {
       "category": "WORSHIP",
       "recurring": true
     },
@@ -37,7 +73,15 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2026-11-01T10:30:00-08:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2026-11-01T18:30:00+00:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
+    "Sunday Worship Service|2026-11-08T10:30:00-08:00": {
       "category": "WORSHIP",
       "recurring": true
     },
@@ -45,7 +89,15 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2026-11-15T10:30:00-08:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2026-11-15T18:30:00+00:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
+    "Sunday Worship Service|2026-11-22T10:30:00-08:00": {
       "category": "WORSHIP",
       "recurring": true
     },
@@ -53,7 +105,15 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2026-11-29T10:30:00-08:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2026-11-29T18:30:00+00:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
+    "Sunday Worship Service|2026-12-06T10:30:00-08:00": {
       "category": "WORSHIP",
       "recurring": true
     },
@@ -61,7 +121,15 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2026-12-13T10:30:00-08:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2026-12-13T18:30:00+00:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
+    "Sunday Worship Service|2026-12-20T10:30:00-08:00": {
       "category": "WORSHIP",
       "recurring": true
     },
@@ -69,7 +137,15 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2026-12-27T10:30:00-08:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2026-12-27T18:30:00+00:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
+    "Sunday Worship Service|2027-01-03T10:30:00-08:00": {
       "category": "WORSHIP",
       "recurring": true
     },
@@ -77,15 +153,31 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2027-01-10T10:30:00-08:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Sunday Worship Service|2027-01-10T18:30:00+00:00": {
       "category": "WORSHIP",
       "recurring": true
+    },
+    "Susan Orlean discusses and signs \"Joyride: A Memoir\"|2026-10-26T19:00:00-07:00": {
+      "category": "AUTHOR TALK",
+      "recurring": false
     },
     "Susan Orlean discusses and signs \"Joyride: A Memoir\"|2026-10-27T02:00:00+00:00": {
       "category": "AUTHOR TALK",
       "recurring": false
     },
+    "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience|2026-10-30T19:30:00-07:00": {
+      "category": "CONCERT",
+      "recurring": false
+    },
     "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience|2026-10-31T02:30:00+00:00": {
+      "category": "CONCERT",
+      "recurring": false
+    },
+    "The Resonance Collective presents Lithic Breathing with Julia Edith Rigby|2026-09-27T19:00:00-07:00": {
       "category": "CONCERT",
       "recurring": false
     },
@@ -93,11 +185,23 @@
       "category": "CONCERT",
       "recurring": false
     },
+    "The Resonance Collective presents Mayab\u2019: Live Folktr\u00f3nica with Aurora Nohemi|2026-10-25T19:00:00-07:00": {
+      "category": "CONCERT",
+      "recurring": false
+    },
     "The Resonance Collective presents Mayab\u2019: Live Folktr\u00f3nica with Aurora Nohemi|2026-10-26T02:00:00+00:00": {
       "category": "CONCERT",
       "recurring": false
     },
+    "The Resonance Collective presents Rumi\u2019s Wedding Night with Yuval Ron Ensemble|2026-12-13T19:00:00-08:00": {
+      "category": "CONCERT",
+      "recurring": false
+    },
     "The Resonance Collective presents Rumi\u2019s Wedding Night with Yuval Ron Ensemble|2026-12-14T03:00:00+00:00": {
+      "category": "CONCERT",
+      "recurring": false
+    },
+    "Yamandu Costa: The Brazilian Guitar|2026-12-04T19:30:00-08:00": {
       "category": "CONCERT",
       "recurring": false
     },
@@ -106,6 +210,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "6c3885a565b941fbd15654fbe2a61b423b3779cfff72bb913a0a1c59827358a0",
-  "updated_at": "2026-09-18T08:33:19-07:00"
+  "page_fingerprint": "382dcf400be6631c078fa0ab9d3985c7b69b237313c15a09e4ea0fd4c936eb3f",
+  "updated_at": "2026-09-18T08:35:52-07:00"
 }
