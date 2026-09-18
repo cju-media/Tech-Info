@@ -493,6 +493,8 @@ def main():
     # channel is needed even when a broadcast is scheduled. One extra quota
     # unit a run.
     channel = fetch_channel(yt) or {}
+    sub_url = subscribe_url(channel)
+    print(f"  Subscribe QR -> {sub_url or 'unavailable (no channel)'}")
 
     print('Looking for the next scheduled service...')
     upcoming = fetch_next_service(yt, now)
