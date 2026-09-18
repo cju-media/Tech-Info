@@ -89,7 +89,7 @@ SUSPECT_MISREAD_DAYS = 180
 # collision suffixes ("... (1).png") and any future "... v2.png" stay covered.
 # The weather card (generate_weather_ad.py) has the same problem twice over:
 # it prints eleven dates, none of which is an "event date" that passing makes
-# it stale -- it's replaced every few hours regardless.
+# it stale -- it's replaced hourly regardless.
 PROTECTED_NAME_PREFIXES = (
     'fccla-upcoming-events-at-a-glance',
     'fccla-upcoming-forecast',

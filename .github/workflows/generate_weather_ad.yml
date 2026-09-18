@@ -7,13 +7,18 @@ name: Generate Weather Ad
 # forecast moves every run and the card shows a live current temperature, so
 # it regenerates on a schedule instead of on a fingerprint. Open-Meteo needs
 # no API key and there's no Gemini call, so a run is one HTTP request plus a
-# Chrome screenshot.
+# Chrome screenshot -- cheap enough to do hourly.
 
 on:
   schedule:
-    # Every 3 hours through the day, Pacific. Cron is UTC and doesn't follow
-    # DST, so these land an hour earlier once the clocks go back in November.
-    - cron: '0 13,16,19,22,1,4 * * *'
+    # Hourly at :37. GitHub queues scheduled workflows on shared infrastructure
+    # and drops or delays them when a minute is busy -- the top of the hour
+    # worst of all, and this repo alone already fires nine workflows at :00
+    # plus the health poll every ten minutes. :37 is clear of every other cron
+    # here and of the round minutes everyone else schedules on, so a run is
+    # far likelier to start near when it says.
+    # (Cron here is minute-resolution: GitHub's scheduler has no seconds field.)
+    - cron: '37 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -88,8 +93,9 @@ jobs:
       - name: Commit the card and queue it for upload
         if: ${{ env.DRY_RUN == '0' }}
         run: |
-          git add "Utilities/Weather Ad/weather-at-a-glance.html" \
-                  "Utilities/Weather Ad/weather-at-a-glance.png" 2>/dev/null || true
+          # The render itself is gitignored -- see .gitignore. Only the
+          # queued copy is committed, and process_uploads.yml deletes that
+          # again once it's in Drive.
           if [ -d "Utilities/uploads_queue" ]; then
             git add Utilities/uploads_queue/
           fi

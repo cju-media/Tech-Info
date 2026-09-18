@@ -5,3 +5,10 @@ node_modules/
 
 osc_config.json
 osc_node.log
+
+# The weather card is re-rendered hourly and is stale within the hour, so the
+# render itself is build output, not a record worth keeping. Committing it
+# added ~1GB of permanent git objects a year. The queued copy under
+# Utilities/uploads_queue/ is what actually reaches Drive.
+Utilities/Weather Ad/weather-at-a-glance.png
+Utilities/Weather Ad/weather-at-a-glance.html

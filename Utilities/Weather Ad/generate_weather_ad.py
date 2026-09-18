@@ -451,8 +451,8 @@ HTML_SHELL = """<!DOCTYPE html>
 def queue_card(png_path, dry_run):
     """Hand the card to process_uploads.yml, which pushes it to Drive."""
     os.makedirs(QUEUE_DIR, exist_ok=True)
-    # This regenerates every few hours; if a run lands before the queue is
-    # drained, only the newest forecast should reach the screens.
+    # This regenerates hourly; if a run lands before the queue is drained,
+    # only the newest forecast should reach the screens.
     for stale in os.listdir(QUEUE_DIR):
         if stale.endswith(f'---{CARD_FILENAME}'):
             print(f'  Replacing a forecast still queued from an earlier run: {stale}')
