@@ -12,3 +12,8 @@ osc_node.log
 # Utilities/uploads_queue/ is what actually reaches Drive.
 Utilities/Weather Ad/weather-at-a-glance.png
 Utilities/Weather Ad/weather-at-a-glance.html
+
+# Same as the weather card: rebuilt hourly and uploaded straight to Drive, so
+# the render is build output rather than anything worth keeping in history.
+Utilities/Service Ad/service-ad.png
+Utilities/Service Ad/service-ad.html

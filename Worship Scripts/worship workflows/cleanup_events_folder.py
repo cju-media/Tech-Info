@@ -90,9 +90,14 @@ SUSPECT_MISREAD_DAYS = 180
 # The weather card (generate_weather_ad.py) has the same problem twice over:
 # it prints eleven dates, none of which is an "event date" that passing makes
 # it stale -- it's replaced hourly regardless.
+# The service card is built around the upcoming stream's own thumbnail, and
+# those thumbnails print the service date -- so the vision read would trash
+# it the day after the service, which is exactly when the next stream's card
+# is about to replace it anyway.
 PROTECTED_NAME_PREFIXES = (
     'fccla-upcoming-events-at-a-glance',
     'fccla-upcoming-forecast',
+    'fccla-upcoming-service',
 )
 
 

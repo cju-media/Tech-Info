@@ -96,6 +96,10 @@ class IsProtectedFlyer(unittest.TestCase):
         # every few hours instead.
         self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Forecast.png"))
 
+    def test_the_service_card_is_protected(self):
+        # Built from the stream thumbnail, which prints the service date.
+        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Service.png"))
+
     def test_match_is_case_insensitive(self):
         self.assertTrue(is_protected_flyer("fccla-upcoming-events-at-a-glance.PNG"))
 

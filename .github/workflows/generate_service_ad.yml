@@ -1,0 +1,90 @@
+name: Generate Service Ad
+
+# Rebuilds the "Upcoming Service" card for the campus screens from the next
+# scheduled broadcast on the worship playlist, using that stream's own
+# thumbnail, and uploads it straight to the Events_Ads Drive folder.
+#
+# Hourly, because the thumbnail is often uploaded to a broadcast some time
+# after the broadcast itself is created (see create_youtube_stream.py's
+# thumbnail retry) -- an hourly rebuild picks the real artwork up promptly
+# instead of leaving a placeholder on the wall for a day.
+#
+# Like the weather card and unlike the events card, this writes nothing to
+# the repo: the upload queue publishes by committing the PNG to git, which
+# is the wrong trade for something that regenerates this often.
+
+on:
+  schedule:
+    # Hourly at :23 -- clear of the nine workflows on :00, the health poll on
+    # every tenth minute, the weather card on :37, and the round minutes the
+    # rest of GitHub schedules on, where the queue backs up.
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (render, but upload nothing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generate-service-ad
+  cancel-in-progress: false
+
+jobs:
+  generate-service-ad:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        # No PAT: this job pushes nothing back to the repo.
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # dateutil/pytz are imported at module scope by
+          # Youtube Processing/update_youtube_stream.py, which this reuses for
+          # the playlist id and the authenticated YouTube client.
+          pip install google-api-python-client google-auth google-auth-httplib2 \
+                      google-auth-oauthlib python-dateutil pytz requests
+
+      - name: Locate Chrome
+        run: |
+          for candidate in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              resolved="$(command -v "$candidate")"
+              break
+            fi
+          done
+          if [ -z "${resolved:-}" ]; then
+            echo "No Chrome on the runner; installing Chromium."
+            sudo apt-get update
+            sudo apt-get install -y chromium-browser
+            resolved="$(command -v chromium-browser)"
+          fi
+          echo "CHROME_BIN=$resolved" >> "$GITHUB_ENV"
+          "$resolved" --version
+
+      - name: Run generator tests
+        run: cd "Utilities/Service Ad" && python -m unittest discover -p 'test_*.py' -v
+
+      - name: Generate and upload the card
+        env:
+          YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: cd "Utilities/Service Ad" && python generate_service_ad.py
