@@ -245,6 +245,40 @@ def get_drive_service():
     print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
     return None
 
+# The "at a glance" events card (generate_events_ad.py) is re-rendered on a
+# schedule and always keeps the same filename. Drive does not overwrite by
+# name -- it would hold a dozen "FCCLA-Upcoming-Events-At-A-Glance.png" files
+# and Content Display would cycle every one of them -- and
+# cleanup_events_folder.py deliberately never trashes this card, so nothing
+# would ever reap the stale copies either. Update the existing file's content
+# in place instead. Reusing cleanup's own predicate keeps the two ends of that
+# arrangement from drifting apart.
+try:
+    from cleanup_events_folder import is_protected_flyer
+except ImportError:  # pragma: no cover - only if the module moves
+    def is_protected_flyer(name):
+        return False
+
+
+def find_file_id_by_name(service, folder_id, name):
+    """Drive id of the non-trashed file with this exact name in folder_id, or
+    None. Newest first, so a folder that somehow already holds duplicates
+    updates the most recent and leaves the rest for a human."""
+    safe_name = name.replace("\\", "\\\\").replace("'", "\\'")
+    try:
+        results = service.files().list(
+            q=f"name='{safe_name}' and '{folder_id}' in parents and trashed=false",
+            spaces='drive', fields='files(id, name)', orderBy='createdTime desc',
+            supportsAllDrives=True, includeItemsFromAllDrives=True,
+        ).execute()
+        files = results.get('files', [])
+        return files[0]['id'] if files else None
+    except Exception as e:
+        # Fall through to a plain create rather than losing the upload.
+        print(f"Could not look up an existing '{name}' in {folder_id}: {e}")
+        return None
+
+
 def identical_file_in_folder(service, folder_id, name, local_path):
     """True if a non-trashed file with this exact name AND identical content
     (same MD5) already lives in folder_id. Idempotency backstop so a queue
@@ -285,6 +319,18 @@ def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_ex
             mime_type = 'application/octet-stream'
 
         media = MediaIoBaseUpload(io.BytesIO(open(file_path, "rb").read()), mimetype=mime_type, resumable=True)
+
+        if is_protected_flyer(original_filename):
+            existing_id = find_file_id_by_name(service, folder_id, original_filename)
+            if existing_id:
+                service.files().update(
+                    fileId=existing_id,
+                    media_body=media,
+                    supportsAllDrives=True,
+                ).execute()
+                print(f"Replaced the existing '{original_filename}' in Drive "
+                      f"in place ({existing_id}).")
+                return True
 
         file_metadata = {
             'name': original_filename,

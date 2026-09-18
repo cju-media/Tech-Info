@@ -1,0 +1,130 @@
+name: Generate Events Ad
+
+# Re-renders the "at a glance" events card for the campus screens from
+# fccla.org/calendar and queues it for upload to the Events_Ads Drive folder.
+#
+# Runs ahead of the 9:00-9:45 UTC cluster so a card regenerated today is in
+# Drive before cleanup_events_folder.py does its 9:15 sweep.
+#
+# Most days this does nothing but scrape and compare two fingerprints: the
+# calendar changes maybe monthly, so the Gemini call and the render are both
+# skipped on an unchanged page. See generate_events_ad.py's docstring.
+
+on:
+  schedule:
+    - cron: '45 8 * * *'  # Daily at 8:45 UTC (~1-2 AM Pacific)
+  workflow_dispatch:
+    inputs:
+      force_refresh:
+        description: 'Ignore the cached fingerprints (re-classify and re-render)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      dry_run:
+        description: 'Dry run (render, but queue and commit nothing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-events-ad
+  cancel-in-progress: false
+
+jobs:
+  generate-events-ad:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+      FORCE_REFRESH: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.force_refresh == 'true') && '1' || '0' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # PAT, not the default token: the queued PNG is picked up by
+          # process_uploads.yml's push trigger, and a commit pushed with
+          # GITHUB_TOKEN does not fire other workflows -- the card would sit
+          # in the queue until something else happened to push.
+          token: ${{ secrets.PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # segno: pure-Python QR generation for the card's "scan for tickets"
+          # code. Inlined into the page as SVG, so no runtime CDN fetch.
+          pip install google-genai segno
+
+      - name: Locate Chrome
+        run: |
+          # The page renders its events client-side and the card is
+          # screenshotted, so both halves need a real browser. ubuntu-latest
+          # ships Chrome; fall back to Chromium if that ever stops being true.
+          for candidate in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              resolved="$(command -v "$candidate")"
+              break
+            fi
+          done
+          if [ -z "${resolved:-}" ]; then
+            echo "No Chrome on the runner; installing Chromium."
+            sudo apt-get update
+            sudo apt-get install -y chromium-browser
+            resolved="$(command -v chromium-browser)"
+          fi
+          echo "CHROME_BIN=$resolved" >> "$GITHUB_ENV"
+          "$resolved" --version
+
+      - name: Run generator tests
+        run: cd "Utilities/Events Ad" && python -m unittest discover -p 'test_*.py' -v
+
+      - name: Generate the card
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: cd "Utilities/Events Ad" && python generate_events_ad.py
+
+      - name: Commit the card and queue it for upload
+        if: ${{ env.DRY_RUN == '0' }}
+        run: |
+          git add "Utilities/Events Ad/events_ad_state.json" \
+                  "Utilities/Events Ad/events-at-a-glance.html" \
+                  "Utilities/Events Ad/events-at-a-glance.png" 2>/dev/null || true
+          if [ -d "Utilities/uploads_queue" ]; then
+            git add Utilities/uploads_queue/
+          fi
+          if git diff --cached --quiet; then
+            echo "Calendar unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: Update events at-a-glance card"
+          # Other scheduled workflows push to this branch on the same
+          # schedule, so the ref can move between our fetch and our push.
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} || true
+            if git push origin HEAD:${{ github.ref_name }}; then
+              pushed=true
+              break
+            fi
+            echo "Push attempt $attempt failed (ref moved?); retrying in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+          if [ "$pushed" != "true" ]; then
+            echo "::error::Failed to push the events card after 5 attempts."
+            exit 1
+          fi

@@ -13,8 +13,10 @@ import datetime
 import unittest
 
 from cleanup_events_folder import (
+    PROTECTED_NAME_PREFIXES,
     SUSPECT_MISREAD_DAYS,
     build_date_prompt,
+    is_protected_flyer,
     is_suspected_misread,
     parse_drive_created_date,
 )
@@ -79,6 +81,49 @@ class BuildDatePrompt(unittest.TestCase):
         self.assertIn("closest to today", prompt)
         # JSON schema braces must survive the f-string.
         self.assertIn('{"has_date": true or false, "last_date": "YYYY-MM-DD" or null}', prompt)
+
+
+class IsProtectedFlyer(unittest.TestCase):
+    """The "at a glance" roundup card lists many dates at once, so Gemini would
+    read one of them and trash the card while later events on it are still
+    upcoming. It's skipped by name instead."""
+
+    def test_the_at_a_glance_card_is_protected(self):
+        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance.png"))
+
+    def test_match_is_case_insensitive(self):
+        self.assertTrue(is_protected_flyer("fccla-upcoming-events-at-a-glance.PNG"))
+
+    def test_drive_collision_suffix_still_protected(self):
+        # Drive renames a same-named upload rather than replacing it.
+        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance (1).png"))
+
+    def test_future_revision_suffix_still_protected(self):
+        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance v2.png"))
+
+    def test_extension_is_irrelevant(self):
+        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance.jpg"))
+
+    def test_ordinary_flyers_are_not_protected(self):
+        for name in (
+            "Yamandu Costa Brazilian Guitar.png",
+            "Morricone Candlelit.jpg",
+            "upcoming-events.png",
+            "Book Soup Susan Orlean.jpeg",
+        ):
+            with self.subTest(name=name):
+                self.assertFalse(is_protected_flyer(name))
+
+    def test_missing_or_empty_name_is_not_protected(self):
+        self.assertFalse(is_protected_flyer(None))
+        self.assertFalse(is_protected_flyer(""))
+
+    def test_prefixes_are_stored_lowercased(self):
+        # is_protected_flyer lowercases the stem, so a non-lowercase entry here
+        # would silently never match.
+        for prefix in PROTECTED_NAME_PREFIXES:
+            with self.subTest(prefix=prefix):
+                self.assertEqual(prefix, prefix.lower())
 
 
 if __name__ == "__main__":

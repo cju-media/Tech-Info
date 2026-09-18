@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming Events at a Glance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crimson:#99001A; --crimson-deep:#6E0013; --ivory:#F7F3EC;
+    --ink:#1A1A1A; --muted:#6B5F58; --gold:#C8A04B; --rule:rgba(26,26,26,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1920px;height:1080px}
+  body{background:var(--ivory);color:var(--ink);
+    font-family:"Source Sans 3","Helvetica Neue",Arial,sans-serif;
+    display:flex;flex-direction:column;overflow:hidden;}
+  header{background:var(--crimson);color:#fff;padding:22px 70px 20px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:6px solid var(--gold);flex:0 0 auto;}
+  .eyebrow{font-size:19px;letter-spacing:.34em;text-transform:uppercase;
+    font-weight:600;color:rgba(255,255,255,.72);margin-bottom:10px;}
+  h1{font-family:Cinzel,Georgia,serif;font-weight:700;font-size:67px;
+    line-height:1;letter-spacing:.015em;}
+  .header-right{display:flex;align-items:center;gap:28px;
+    text-align:right;line-height:1.5}
+  .qr{background:#fff;border-radius:6px;padding:10px;flex:0 0 auto;
+    text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .qr img{display:block;width:168px;height:168px}
+  .header-right .site{font-family:Cinzel,Georgia,serif;font-size:29px;
+    font-weight:500;letter-spacing:.06em;color:#fff;}
+  .header-right .addr{font-size:19px;color:rgba(255,255,255,.75);letter-spacing:.05em;}
+  main{flex:1 1 auto;padding:34px 70px 0;display:grid;
+    grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:26px;}
+  .card{background:#fff;border:1px solid var(--rule);border-top:5px solid var(--crimson);
+    border-radius:4px;padding:20px 26px 18px;display:flex;gap:24px;
+    box-shadow:0 2px 10px rgba(110,0,19,.07);min-height:0;}
+  .card.special{border-top-color:var(--gold)}
+  .date{flex:0 0 106px;text-align:center;padding-top:2px}
+  .mon{font-size:23px;font-weight:700;letter-spacing:.17em;
+    text-transform:uppercase;color:var(--crimson);}
+  .day{font-family:Cinzel,Georgia,serif;font-weight:700;font-size:66px;
+    line-height:.96;color:var(--ink);}
+  .dow{font-size:16px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--muted);margin-top:5px;}
+  .body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+  .tag{display:inline-block;align-self:flex-start;font-size:13px;font-weight:700;
+    letter-spacing:.17em;text-transform:uppercase;padding:3px 10px;
+    border-radius:2px;margin-bottom:8px;
+    background:rgba(153,0,26,.09);color:var(--crimson);}
+  .special .tag{background:rgba(200,160,75,.18);color:#8A6A1F}
+  .title{font-family:Cinzel,Georgia,serif;font-weight:700;font-size:22px;
+    line-height:1.19;color:var(--ink);display:-webkit-box;-webkit-line-clamp:4;
+    -webkit-box-orient:vertical;overflow:hidden;}
+  .meta{margin-top:auto;padding-top:11px;border-top:1px solid var(--rule);
+    display:flex;align-items:baseline;gap:12px;font-size:20px;color:var(--muted);}
+  .meta .time{font-weight:700;color:var(--crimson-deep);font-size:22px}
+  .meta .dot{color:var(--rule)}
+  footer{flex:0 0 auto;padding:22px 70px 26px;display:flex;align-items:center;
+    justify-content:space-between;font-size:19px;color:var(--muted);letter-spacing:.04em;}
+  footer .cta{font-family:Cinzel,Georgia,serif;font-size:25px;font-weight:700;
+    color:var(--crimson);letter-spacing:.05em;}
+  footer .note{font-size:17px;color:#9A8F88}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="eyebrow">First Congregational Church of Los Angeles</div>
+    <h1>Upcoming Events</h1>
+  </div>
+  <div class="header-right">
+    <div>
+      <div class="site">fccla.org/calendar</div>
+      <div class="addr">540 S Commonwealth Ave &middot; Los Angeles</div>
+    </div>
+<div class="qr">
+      <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27132%27%20height%3D%27132%27%20class%3D%27segno%27%3E%3Cg%20transform%3D%27scale%284%29%27%3E%3Cpath%20fill%3D%27%23fff%27%20d%3D%27M0%200h33v33h-33z%27%2F%3E%3Cpath%20class%3D%27qrline%27%20stroke%3D%27%231a1a1a%27%20d%3D%27M4%204.5h7m4%200h1m1%200h1m4%200h7m-25%201h1m5%200h1m3%200h1m2%200h4m1%200h1m5%200h1m-25%201h1m1%200h3m1%200h1m1%200h1m2%200h1m2%200h1m1%200h1m1%200h1m1%200h3m1%200h1m-25%201h1m1%200h3m1%200h1m1%200h2m1%200h1m1%200h3m2%200h1m1%200h3m1%200h1m-25%201h1m1%200h3m1%200h1m1%200h1m1%200h3m3%200h1m1%200h1m1%200h3m1%200h1m-25%201h1m5%200h1m1%200h1m4%200h1m1%200h1m2%200h1m5%200h1m-25%201h7m1%200h1m1%200h1m1%200h1m1%200h1m1%200h1m1%200h7m-17%201h2m1%200h1m2%200h1m-15%201h1m1%200h5m3%200h2m1%200h4m1%200h5m-23%201h2m1%200h2m4%200h1m1%200h2m3%200h1m2%200h1m3%200h1m-21%201h4m1%200h2m1%200h1m3%200h2m1%200h1m1%200h2m1%200h2m-20%201h1m3%200h3m2%200h1m1%200h2m1%200h1m4%200h1m-24%201h1m4%200h1m1%200h1m3%200h3m2%200h2m1%200h1m1%200h3m-25%201h2m1%200h3m1%200h3m2%200h2m2%200h1m2%200h1m1%200h1m1%200h1m-24%201h1m1%200h2m1%200h3m2%200h1m1%200h1m1%200h2m2%200h4m1%200h2m-25%201h1m1%200h3m4%200h4m3%200h2m1%200h2m3%200h1m-25%201h1m1%200h2m1%200h2m1%200h1m4%200h2m1%200h5m1%200h1m-15%201h2m1%200h1m3%200h2m3%200h2m-22%201h7m2%200h1m4%200h1m1%200h1m1%200h1m1%200h1m1%200h3m-25%201h1m5%200h1m1%200h1m1%200h1m1%200h1m1%200h3m3%200h2m-22%201h1m1%200h3m1%200h1m1%200h2m2%200h9m1%200h1m-23%201h1m1%200h3m1%200h1m1%200h4m1%200h1m3%200h2m1%200h5m-25%201h1m1%200h3m1%200h1m1%200h1m1%200h1m1%200h4m5%200h2m1%200h1m-25%201h1m5%200h1m3%200h1m4%200h3m1%200h3m2%200h1m-25%201h7m1%200h2m2%200h3m3%200h7%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E" alt="QR code linking to fccla.org/calendar">
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">SEP</div><div class="day">27</div><div class="dow">SUN</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">The Resonance Collective presents Lithic Breathing with Julia Edith Rigby</div>
+      <div class="meta"><span class="time">7:00 PM</span><span class="dot">&bull;</span><span class="venue">The Sanctuary</span></div>
+    </div>
+  </div>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">SEP</div><div class="day">30</div><div class="dow">WED</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">Book Soup: Devon Rodriguez presents “Work in Progress: A Memoir”</div>
+      <div class="meta"><span class="time">7:00 PM</span><span class="dot">&bull;</span><span class="venue">The Sanctuary</span></div>
+    </div>
+  </div>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">OCT</div><div class="day">13</div><div class="dow">TUE</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">Min Jin Lee discusses “American Hagwon”</div>
+      <div class="meta"><span class="time">7:00 PM</span><span class="dot">&bull;</span><span class="venue">The Sanctuary</span></div>
+    </div>
+  </div>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">OCT</div><div class="day">25</div><div class="dow">SUN</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">The Resonance Collective presents Mayab’: Live Folktrónica with Aurora Nohemi</div>
+      <div class="meta"><span class="time">7:00 PM</span><span class="dot">&bull;</span><span class="venue">Shatto Chapel</span></div>
+    </div>
+  </div>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">OCT</div><div class="day">26</div><div class="dow">MON</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">Susan Orlean discusses and signs “Joyride: A Memoir”</div>
+      <div class="meta"><span class="time">7:00 PM</span><span class="dot">&bull;</span><span class="venue">The Sanctuary</span></div>
+    </div>
+  </div>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">OCT</div><div class="day">30</div><div class="dow">FRI</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">The Music of Ennio Morricone: A Candlelit Piano and Strings Experience</div>
+      <div class="meta"><span class="time">7:30 PM</span><span class="dot">&bull;</span><span class="venue">The Sanctuary</span></div>
+    </div>
+  </div>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">NOV</div><div class="day">16</div><div class="dow">MON</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">Book Soup: “Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World”</div>
+      <div class="meta"><span class="time">7:00 PM</span><span class="dot">&bull;</span><span class="venue">The Sanctuary</span></div>
+    </div>
+  </div>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">DEC</div><div class="day">4</div><div class="dow">FRI</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">Yamandu Costa: The Brazilian Guitar</div>
+      <div class="meta"><span class="time">7:30 PM</span><span class="dot">&bull;</span><span class="venue">The Sanctuary</span></div>
+    </div>
+  </div>
+
+  <div class="card concert">
+    <div class="date"><div class="mon">DEC</div><div class="day">13</div><div class="dow">SUN</div></div>
+    <div class="body">
+      <span class="tag">EVENT</span>
+      <div class="title">The Resonance Collective presents Rumi’s Wedding Night with Yuval Ron Ensemble</div>
+      <div class="meta"><span class="time">7:00 PM</span><span class="dot">&bull;</span><span class="venue">Shatto Chapel</span></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="cta">Tickets &amp; details at fccla.org/calendar</div>
+  <div class="note">Weekly Sunday Worship, 10:30 AM in the Sanctuary &middot; Events through December 13, 2026</div>
+</footer>
+
+</body>
+</html>

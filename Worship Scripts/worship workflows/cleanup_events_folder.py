@@ -76,6 +76,28 @@ DATE_CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'even
 # uploaded is almost certainly a misread year: skip it rather than act on it.
 SUSPECT_MISREAD_DAYS = 180
 
+# The "at a glance" roundup card (generated from fccla.org/calendar, uploaded
+# through the dashboard's Events Ad zone) is a standing graphic, not a flyer
+# for one event: it lists every upcoming non-recurring event at once. Gemini
+# would read *a* date off it -- whichever the prompt's "LAST day mentioned"
+# rule lands on -- and trash the whole card the morning after that event,
+# pulling the roundup off the campus screens while the later events on it are
+# still upcoming. It's replaced wholesale whenever the calendar is re-scraped,
+# so it never needs auto-expiring. Skipped by name, before any download or
+# vision call, so it costs nothing and can never be trashed or alerted on.
+# Matched as a case-insensitive prefix of the filename stem so Drive's
+# collision suffixes ("... (1).png") and any future "... v2.png" stay covered.
+PROTECTED_NAME_PREFIXES = (
+    'fccla-upcoming-events-at-a-glance',
+)
+
+
+def is_protected_flyer(name):
+    """True for standing graphics that must never be auto-trashed, matched on
+    the filename stem (see PROTECTED_NAME_PREFIXES)."""
+    stem = os.path.splitext(name or '')[0].strip().lower()
+    return stem.startswith(PROTECTED_NAME_PREFIXES)
+
 
 class FlyerDateReadError(Exception):
     """The Gemini API call to read a flyer's date failed at the transport/quota
@@ -396,6 +418,10 @@ def main():
     cache_hits = 0
     for f in files:
         print(f"- {f['name']} ({f['id']})")
+
+        if is_protected_flyer(f['name']):
+            print("  Protected standing graphic; never auto-trashed. Skipping.")
+            continue
 
         cached = date_cache.get(f['id'])
         if cached and cached.get('modifiedTime') == f.get('modifiedTime'):
