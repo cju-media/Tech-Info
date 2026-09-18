@@ -1,0 +1,116 @@
+name: Generate Weather Ad
+
+# Re-renders the "Upcoming Forecast" card for the campus screens and queues
+# it for the Events_Ads Drive folder, alongside the event flyers.
+#
+# Unlike the events card this has no cheap "nothing changed" state: the
+# forecast moves every run and the card shows a live current temperature, so
+# it regenerates on a schedule instead of on a fingerprint. Open-Meteo needs
+# no API key and there's no Gemini call, so a run is one HTTP request plus a
+# Chrome screenshot.
+
+on:
+  schedule:
+    # Every 3 hours through the day, Pacific. Cron is UTC and doesn't follow
+    # DST, so these land an hour earlier once the clocks go back in November.
+    - cron: '0 13,16,19,22,1,4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (render, but queue and commit nothing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-weather-ad
+  cancel-in-progress: false
+
+jobs:
+  generate-weather-ad:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # PAT, not the default token: the queued PNG is picked up by
+          # process_uploads.yml's push trigger, and a commit pushed with
+          # GITHUB_TOKEN does not fire other workflows.
+          token: ${{ secrets.PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # The generator itself needs nothing beyond the standard library --
+          # these are for the test that asserts cleanup_events_folder.py still
+          # refuses to trash this card and upload_queue_to_drive.py still
+          # replaces it in place, which has to import those modules to mean
+          # anything.
+          pip install google-api-python-client google-auth google-genai requests
+
+      - name: Locate Chrome
+        run: |
+          for candidate in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              resolved="$(command -v "$candidate")"
+              break
+            fi
+          done
+          if [ -z "${resolved:-}" ]; then
+            echo "No Chrome on the runner; installing Chromium."
+            sudo apt-get update
+            sudo apt-get install -y chromium-browser
+            resolved="$(command -v chromium-browser)"
+          fi
+          echo "CHROME_BIN=$resolved" >> "$GITHUB_ENV"
+          "$resolved" --version
+
+      - name: Run generator tests
+        run: cd "Utilities/Weather Ad" && python -m unittest discover -p 'test_*.py' -v
+
+      - name: Generate the card
+        run: cd "Utilities/Weather Ad" && python generate_weather_ad.py
+
+      - name: Commit the card and queue it for upload
+        if: ${{ env.DRY_RUN == '0' }}
+        run: |
+          git add "Utilities/Weather Ad/weather-at-a-glance.html" \
+                  "Utilities/Weather Ad/weather-at-a-glance.png" 2>/dev/null || true
+          if [ -d "Utilities/uploads_queue" ]; then
+            git add Utilities/uploads_queue/
+          fi
+          if git diff --cached --quiet; then
+            echo "Forecast render is byte-identical to the last one; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: Update weather forecast card"
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} || true
+            if git push origin HEAD:${{ github.ref_name }}; then
+              pushed=true
+              break
+            fi
+            echo "Push attempt $attempt failed (ref moved?); retrying in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+          if [ "$pushed" != "true" ]; then
+            echo "::error::Failed to push the weather card after 5 attempts."
+            exit 1
+          fi

@@ -87,8 +87,12 @@ SUSPECT_MISREAD_DAYS = 180
 # vision call, so it costs nothing and can never be trashed or alerted on.
 # Matched as a case-insensitive prefix of the filename stem so Drive's
 # collision suffixes ("... (1).png") and any future "... v2.png" stay covered.
+# The weather card (generate_weather_ad.py) has the same problem twice over:
+# it prints eleven dates, none of which is an "event date" that passing makes
+# it stale -- it's replaced every few hours regardless.
 PROTECTED_NAME_PREFIXES = (
     'fccla-upcoming-events-at-a-glance',
+    'fccla-upcoming-forecast',
 )
 
 

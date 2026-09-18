@@ -91,6 +91,11 @@ class IsProtectedFlyer(unittest.TestCase):
     def test_the_at_a_glance_card_is_protected(self):
         self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Events-At-A-Glance.png"))
 
+    def test_the_weather_card_is_protected(self):
+        # It prints eleven dates and none of them expires it; it's replaced
+        # every few hours instead.
+        self.assertTrue(is_protected_flyer("FCCLA-Upcoming-Forecast.png"))
+
     def test_match_is_case_insensitive(self):
         self.assertTrue(is_protected_flyer("fccla-upcoming-events-at-a-glance.PNG"))
 
