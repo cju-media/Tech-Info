@@ -10,9 +10,11 @@ import datetime
 import os
 import sys
 import unittest
+from unittest import mock
 
 from generate_weather_ad import (
     CARD_FILENAME,
+    EVENTS_FOLDER_ID,
     ICONS,
     TZ,
     build_html,
@@ -184,6 +186,40 @@ class CanonicalCardName(unittest.TestCase):
             os.path.dirname(__file__), os.pardir, 'Events Ad')))
         from generate_events_ad import CARD_FILENAME as events_card
         self.assertNotEqual(CARD_FILENAME, events_card)
+
+
+class DriveUpload(unittest.TestCase):
+    """The card goes straight to Drive rather than through the git-backed
+    upload queue -- hourly, that queue would add ~1GB of unprunable git
+    objects a year."""
+
+    def setUp(self):
+        from generate_weather_ad import upload_to_drive
+        self.upload = upload_to_drive
+
+    def test_dry_run_uploads_nothing(self):
+        # Must not need credentials, or a dry run can't be run locally.
+        self.assertTrue(self.upload('/nonexistent.png', dry_run=True))
+
+    def test_missing_credentials_fails_loudly(self):
+        # Silently "succeeding" would leave a stale forecast on the screens
+        # with a green tick next to it.
+        with mock.patch.dict(os.environ, {'GDRIVE_OAUTH_JSON': '',
+                                          'GDRIVE_SERVICE_ACCOUNT_JSON': ''},
+                             clear=False):
+            with self.assertRaises(RuntimeError) as ctx:
+                self.upload('/nonexistent.png', dry_run=False)
+        self.assertIn('credentials', str(ctx.exception).lower())
+
+    def test_nothing_is_written_to_the_upload_queue(self):
+        # The whole point of the direct upload: this module must not know
+        # about the queue directory any more.
+        import generate_weather_ad as g
+        self.assertFalse(hasattr(g, 'QUEUE_DIR'))
+        self.assertFalse(hasattr(g, 'queue_card'))
+
+    def test_targets_the_events_ads_folder(self):
+        self.assertRegex(EVENTS_FOLDER_ID, r'^[A-Za-z0-9_-]{20,}$')
 
 
 if __name__ == '__main__':

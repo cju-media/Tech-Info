@@ -21,8 +21,14 @@ blank boxes on every screen on campus with nothing to notice it.
 No Gemini here. The forecast is already structured; there is no judgement
 call to make.
 
+Uploads straight to Drive rather than through Utilities/uploads_queue/.
+The events card goes through the queue, which publishes by committing the
+PNG to git -- fine a few times a year, but this regenerates hourly, and a
+132KB blob an hour is roughly a gigabyte of unprunable git objects a year.
+
 Env:
-    DRY_RUN   "1" renders but writes nothing to the upload queue
+    GDRIVE_OAUTH_JSON / GDRIVE_SERVICE_ACCOUNT_JSON   required to upload
+    DRY_RUN   "1" renders but uploads nothing
 """
 
 import os
@@ -39,16 +45,19 @@ HTML_PATH = os.path.join(HERE, 'weather-at-a-glance.html')
 PNG_PATH = os.path.join(HERE, 'weather-at-a-glance.png')
 
 REPO_ROOT = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir))
-QUEUE_DIR = os.path.join(REPO_ROOT, 'Utilities', 'uploads_queue')
+# upload_queue_to_drive.py owns this repo's Drive credentials and its
+# replace-in-place upload. Reused rather than reimplemented: two copies of
+# Drive auth is two places to get it wrong, and that module's upload path is
+# the one already proven against this folder in production.
+UPLOADER_DIR = os.path.join(REPO_ROOT, 'Worship Scripts', 'worship workflows')
 # The Events Ad drop zone -- the same flat folder the event flyers and the
-# events at-a-glance card live in. upload_queue_to_drive.py parses this out
-# of the queued filename.
+# events at-a-glance card live in.
 EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # Stable on purpose. cleanup_events_folder.py's PROTECTED_NAME_PREFIXES has
 # to match this stem or the card gets auto-trashed: it prints ten dates, so
 # the vision read would trash it the day after whichever one it picked.
-# Matching that list also makes upload_queue_to_drive.py replace the card in
-# place rather than stacking a new copy every few hours.
+# Matching that list also makes upload_to_drive() replace the card in place
+# rather than stacking a new copy every hour.
 CARD_FILENAME = 'FCCLA-Upcoming-Forecast.png'
 
 TZ = zoneinfo.ZoneInfo('America/Los_Angeles')
@@ -448,26 +457,39 @@ HTML_SHELL = """<!DOCTYPE html>
 """
 
 
-def queue_card(png_path, dry_run):
-    """Hand the card to process_uploads.yml, which pushes it to Drive."""
-    os.makedirs(QUEUE_DIR, exist_ok=True)
-    # This regenerates hourly; if a run lands before the queue is drained,
-    # only the newest forecast should reach the screens.
-    for stale in os.listdir(QUEUE_DIR):
-        if stale.endswith(f'---{CARD_FILENAME}'):
-            print(f'  Replacing a forecast still queued from an earlier run: {stale}')
-            if not dry_run:
-                os.remove(os.path.join(QUEUE_DIR, stale))
+def upload_to_drive(png_path, dry_run):
+    """Push the card straight to Drive, replacing the existing one in place.
 
-    ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-    dest = os.path.join(QUEUE_DIR, f'{ts}---{EVENTS_FOLDER_ID}---{CARD_FILENAME}')
+    Deliberately not routed through Utilities/uploads_queue/ the way the
+    events card is. That pipeline works by committing the PNG to git, which
+    is fine for a card that publishes a few times a year -- but this one
+    regenerates hourly, and a 132KB blob an hour is about a gigabyte a year
+    of git objects that can never be pruned without rewriting history.
+    Nothing here touches the repo.
+
+    upload_to_drive() replaces the file in place because CARD_FILENAME
+    matches cleanup_events_folder.py's protected list; skip_if_exists means
+    a byte-identical render (the forecast genuinely not having moved) costs
+    no Drive write at all.
+    """
     if dry_run:
-        print(f'  DRY RUN: would queue {os.path.basename(dest)}')
-        return None
-    with open(png_path, 'rb') as src, open(dest, 'wb') as out:
-        out.write(src.read())
-    print(f'  Queued {os.path.basename(dest)}')
-    return dest
+        print(f'  DRY RUN: would upload {CARD_FILENAME} to Drive.')
+        return True
+
+    if UPLOADER_DIR not in sys.path:
+        sys.path.insert(0, UPLOADER_DIR)
+    from upload_queue_to_drive import get_drive_service, upload_to_drive as push
+
+    service = get_drive_service()
+    if not service:
+        raise RuntimeError(
+            'No Drive credentials: set GDRIVE_OAUTH_JSON or '
+            'GDRIVE_SERVICE_ACCOUNT_JSON.')
+
+    if not push(service, png_path, CARD_FILENAME, EVENTS_FOLDER_ID,
+                skip_if_exists=True):
+        raise RuntimeError('Drive upload failed; see the error above.')
+    return True
 
 
 def main():
@@ -485,7 +507,7 @@ def main():
     render_png(HTML_PATH, PNG_PATH)
     print(f'  Wrote {os.path.basename(PNG_PATH)} ({os.path.getsize(PNG_PATH)} bytes)')
 
-    queue_card(PNG_PATH, dry_run)
+    upload_to_drive(PNG_PATH, dry_run)
     print('Done.')
 
 
