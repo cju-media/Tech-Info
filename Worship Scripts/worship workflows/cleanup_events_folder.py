@@ -20,17 +20,17 @@ find a date on (an evergreen graphic, an unusual layout) is left alone.
 Google Drive only lets a personal (non-Shared-Drive) file's OWNER trash or
 delete it -- Editor/writer access, however it's granted, does not include
 canTrash/canDelete (confirmed via the API's own reported capabilities after
-a real grant still 403'd). So flyers uploaded straight into Drive by a
-person (rather than through the dashboard pipeline, which uploads as this
-script's own Drive account and therefore owns what it uploads) can never be
-auto-trashed. For those, this notifies Cameron once via iMessage + email
+a real grant still 403'd). So this has to run AS the owner, which means the
+GDRIVE_OAUTH_JSON account: it owns everything the dashboard pipeline
+uploads. A flyer dragged into Drive by a person signed in as themselves
+stays owned by that person and can never be auto-trashed. For those, this notifies Cameron once via iMessage + email
 with the filename and a link so he can delete it by hand, then remembers
 that file's ID (events_cleanup_notified_ids.json) so it doesn't nag every
 day the file remains stuck.
 
-Auth: same pattern as upload_queue_to_drive.py -- prefers the service
-account (GDRIVE_SERVICE_ACCOUNT_JSON), which has been explicitly granted
-edit access on this folder, over GDRIVE_OAUTH_JSON.
+Auth: same as upload_queue_to_drive.py -- GDRIVE_OAUTH_JSON, the account
+that owns this folder and everything the pipeline puts in it. See
+get_drive_service() for why the service account cannot be used here.
 """
 
 import os
@@ -137,26 +137,30 @@ Set "has_date" to false (and "last_date" to null) if the flyer has no explicit c
 
 
 def get_drive_service():
-    # Prefer the service account (drivereader@worship-scripts-fetcher) over
-    # GDRIVE_OAUTH_JSON here: it's been explicitly granted edit access on the
-    # Events_Ads folder specifically so this script can trash files it
-    # doesn't own (uploaded by a person directly, not through the pipeline) --
-    # something the OAuth account was denied with insufficientFilePermissions
-    # (see the Aug 2026 run). Other scripts in this repo (e.g.
-    # upload_queue_to_drive.py) still need GDRIVE_OAUTH_JSON's user quota for
-    # *creating* files, so this preference is local to this script.
-    service_account_json = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
-    if service_account_json:
-        try:
-            creds_dict = json.loads(service_account_json)
-            creds = service_account.Credentials.from_service_account_info(
-                creds_dict, scopes=['https://www.googleapis.com/auth/drive']
-            )
-            print(f"Using GDRIVE_SERVICE_ACCOUNT_JSON for authentication ({creds_dict.get('client_email')}).")
-            return build('drive', 'v3', credentials=creds)
-        except Exception as e:
-            print(f"Error parsing GDRIVE_SERVICE_ACCOUNT_JSON: {e}")
-
+    # Prefer GDRIVE_OAUTH_JSON (first.church.la, which owns the Events_Ads
+    # folder) over the service account.
+    #
+    # This used to be the other way round, on the theory that the service
+    # account had been "granted edit access so it can trash files it doesn't
+    # own". That theory is wrong, and this script trashed nothing at all for
+    # as long as it held: Drive does not let a *writer* trash a file in a
+    # personal My Drive, only its owner. The API says so itself -- the
+    # diagnostic below, on a real 403, reported
+    #     permissions:  drivereader@... -> writer, anyone -> writer
+    #     capabilities: canEdit: True, canTrash: False, canDelete: False
+    # No sharing role short of ownership changes that, so granting more
+    # access was never going to help.
+    #
+    # The service account owns nothing here, so it could never trash
+    # anything. The OAuth account owns every file the dashboard pipeline
+    # uploads (upload_queue_to_drive.py creates them as that user), so
+    # running as it reaps all of those -- verified 2026-09-18, when it
+    # trashed three cards this one had been failing on for weeks.
+    #
+    # What still can't be trashed: a flyer dragged into Drive by a person
+    # signed in as themselves, which stays owned by that person. Those are
+    # reported for manual deletion, same as before. Uploading through the
+    # dashboard instead of dropping files in Drive avoids creating them.
     oauth_json = os.environ.get('GDRIVE_OAUTH_JSON')
     if oauth_json:
         try:
@@ -166,9 +170,22 @@ def get_drive_service():
             return build('drive', 'v3', credentials=creds)
         except Exception as e:
             print(f"Error parsing GDRIVE_OAUTH_JSON: {e}")
+
+    service_account_json = os.environ.get('GDRIVE_SERVICE_ACCOUNT_JSON')
+    if service_account_json:
+        try:
+            creds_dict = json.loads(service_account_json)
+            creds = service_account.Credentials.from_service_account_info(
+                creds_dict, scopes=['https://www.googleapis.com/auth/drive']
+            )
+            print(f"Using GDRIVE_SERVICE_ACCOUNT_JSON for authentication ({creds_dict.get('client_email')}) "
+                  f"-- note this account owns nothing here and cannot trash.")
+            return build('drive', 'v3', credentials=creds)
+        except Exception as e:
+            print(f"Error parsing GDRIVE_SERVICE_ACCOUNT_JSON: {e}")
             return None
 
-    print("Warning: Neither GDRIVE_SERVICE_ACCOUNT_JSON nor GDRIVE_OAUTH_JSON is set.")
+    print("Warning: Neither GDRIVE_OAUTH_JSON nor GDRIVE_SERVICE_ACCOUNT_JSON is set.")
     return None
 
 
