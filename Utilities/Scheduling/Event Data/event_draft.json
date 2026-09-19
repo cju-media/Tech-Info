@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-18T13:53:06+00:00",
+  "generated": "2026-09-19T13:27:53+00:00",
   "window": {
-    "start": "2026-09-18",
-    "end": "2026-12-19"
+    "start": "2026-09-19",
+    "end": "2026-12-20"
   },
   "columns": [
     "Date",
@@ -34,6 +34,23 @@
         ""
       ],
       "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/20/2026",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
     },
     {
       "kind": "event",
@@ -309,8 +326,8 @@
     }
   ],
   "counts": {
-    "events": 15,
-    "worship": 6,
+    "events": 16,
+    "worship": 7,
     "from_calendar": 9
   }
 }
