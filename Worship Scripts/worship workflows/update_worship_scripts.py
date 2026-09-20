@@ -91,12 +91,14 @@ def extract_date(text):
 
 
 def get_speaker_info(text, date_str):
-    """Returns (is_communion, speaker_info_html). is_communion is None if Gemini
-    couldn't be reached, so the caller can fall back to the keyword heuristic."""
+    """Returns (is_communion, coffee_hour_room, speaker_info_html). is_communion is
+    None if Gemini couldn't be reached, so the caller can fall back to the keyword
+    heuristic. coffee_hour_room is None if there's no Coffee Hour mention this week
+    (or Gemini was unreachable)."""
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         print("No GEMINI_API_KEY found, skipping speaker info extraction.")
-        return None, None
+        return None, None, None
 
     # 1. Calculate a dynamic delay to stay under the 250,000 TPM limit
     # (Approx. 4 characters = 1 token). We calculate how much of our TPM bucket
@@ -129,7 +131,12 @@ def get_speaker_info(text, date_str):
        "Communion" itself. If the service includes any such element, treat it as
        Communion.
 
-    2. Extract the names of the people doing the "Worship Leading" (or Worship Leader)
+    2. Look in the "Life at First Church" announcements section for the sentence
+       inviting people to Coffee Hour, and extract ONLY the room/location named in
+       it (e.g. "Mayflower Courtyard"). If there is no Coffee Hour mention that week,
+       use "None".
+
+    3. Extract the names of the people doing the "Worship Leading" (or Worship Leader)
        and the "Sermon" (or Preaching) from the text below.
        Note that the key of who is speaking is usually located on the first page, but the full context of the service script is provided below.
 
@@ -141,6 +148,7 @@ def get_speaker_info(text, date_str):
     Format the output EXACTLY like this, on multiple lines, with nothing before the
     first line and nothing after the last:
     Communion: [Yes or No]
+    CoffeeHour: [Room name, or None]
     <strong>Speakers - [X] Lavs total</strong>
     LAV1: [Name]
     LAV2: [Name]
@@ -163,24 +171,34 @@ def get_speaker_info(text, date_str):
             print(f"[Gemini] Successfully parsed: {result}")
 
             is_communion = None
-            lines = result.split('\n', 1)
-            first_line = lines[0].strip()
-            if first_line.lower().startswith('communion:'):
-                is_communion = 'yes' in first_line.lower()
-                # Strip the Communion line out so it doesn't show up in the LAV display
-                result = lines[1].strip() if len(lines) > 1 else ''
+            coffee_hour_room = None
+            lines = result.split('\n')
 
-            return is_communion, result
+            if lines and lines[0].strip().lower().startswith('communion:'):
+                is_communion = 'yes' in lines[0].lower()
+                lines = lines[1:]
+
+            if lines and lines[0].strip().lower().startswith('coffeehour:'):
+                room = lines[0].split(':', 1)[1].strip()
+                coffee_hour_room = None if room.lower() == 'none' else room
+                lines = lines[1:]
+
+            # Whatever's left (the LAV assignment block) is what downstream
+            # consumers of speakerInfo expect.
+            result = '\n'.join(lines).strip()
+
+            return is_communion, coffee_hour_room, result
 
     except Exception as e:
         error_msg = str(e)
         print(f"[Gemini] API error: {error_msg}")
 
     print(f"[Gemini] Failed to process {date_str}.")
-    return None, None
+    return None, None, None
 
 def extract_pdf_info(pdf_path, date_str):
     is_communion = False
+    coffee_hour_room = None
     speaker_info = None
     try:
         reader = pypdf.PdfReader(pdf_path)
@@ -193,7 +211,7 @@ def extract_pdf_info(pdf_path, date_str):
 
             gemini_is_communion = None
             if full_text:
-                gemini_is_communion, speaker_info = get_speaker_info(full_text, date_str)
+                gemini_is_communion, coffee_hour_room, speaker_info = get_speaker_info(full_text, date_str)
 
             if gemini_is_communion is not None:
                 is_communion = gemini_is_communion
@@ -207,7 +225,7 @@ def extract_pdf_info(pdf_path, date_str):
                 print(f"[Fallback] Gemini unavailable for {date_str}; keyword heuristic set isCommunion={is_communion}")
     except Exception as e:
         print(f"Error reading PDF {pdf_path}: {e}")
-    return is_communion, speaker_info
+    return is_communion, coffee_hour_room, speaker_info
 
 def parse_date_range(text):
     # Try to find (Start Date - End Date)
@@ -397,13 +415,14 @@ def main():
                                 with open(pdf_path, 'wb') as pdf_file:
                                     pdf_file.write(pdf_content)
 
-                                is_communion, speaker_info = extract_pdf_info(pdf_path, date_str)
+                                is_communion, coffee_hour_room, speaker_info = extract_pdf_info(pdf_path, date_str)
 
                                 # Save URL encoded path for the web and modifiedTime
                                 new_entry = {
                                     'path': pdf_path,
                                     'modifiedTime': modified_time,
                                     'isCommunion': is_communion,
+                                    'coffeeHourRoom': coffee_hour_room,
                                     'speakerInfo': speaker_info
                                 }
 
@@ -415,12 +434,17 @@ def main():
                                         new_entry['speakerInfo'] = old_entry.get('speakerInfo', speaker_info)
                                         if 'customNotes' in old_entry:
                                             new_entry['customNotes'] = old_entry['customNotes']
+                                    # coffeeHourRoom has no manual-override flag of its own;
+                                    # only fall back to the previously recorded value when
+                                    # this run didn't extract one at all.
+                                    if coffee_hour_room is None and old_entry.get('coffeeHourRoom'):
+                                        new_entry['coffeeHourRoom'] = old_entry['coffeeHourRoom']
                                     if 'youtubeDescriptionModifiedTime' in old_entry:
                                         new_entry['youtubeDescriptionModifiedTime'] = old_entry['youtubeDescriptionModifiedTime']
 
                                 worship_scripts_new[date_str] = new_entry
                                 print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
-                                print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, speakerInfo='{speaker_info}'")
+                                print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, coffeeHourRoom='{coffee_hour_room}', speakerInfo='{speaker_info}'")
                             except Exception as e:
                                 print(f"Error downloading {doc['name']}: {e}")
                                 # Keep old data if it fails

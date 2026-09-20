@@ -1,0 +1,24 @@
+name: Push Coffee Hour to Content Display
+
+on:
+  schedule:
+    # Sunday mornings only, every 15 min from ~8:00am-11:45am Pacific.
+    # 15-18 UTC covers 8am-noon PDT (UTC-7); shifts an hour earlier in
+    # standard time (PST, UTC-8), which is an acceptable slop for this.
+    - cron: '0,15,30,45 15-18 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  push:
+    runs-on: [self-hosted, macOS]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Push Coffee Hour text to Content Display server
+        run: python3 "Worship Scripts/worship workflows/push_coffee_hour.py"
