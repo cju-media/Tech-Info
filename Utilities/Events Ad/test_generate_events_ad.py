@@ -16,7 +16,7 @@ from unittest import mock
 
 from generate_events_ad import (
     CALENDAR_URL,
-    CARD_FILENAMES,
+    CARD_FRAGMENT,
     EVENTS_FOLDER_ID,
     TZ,
     build_html,
@@ -208,42 +208,36 @@ class Helpers(unittest.TestCase):
 
 
 class CanonicalCardName(unittest.TestCase):
-    """The card's filename is load-bearing in three places: the generator
-    writes it, cleanup_events_folder.py refuses to trash it, and
-    upload_queue_to_drive.py replaces it in place instead of stacking copies.
-    Renaming it in one place only would quietly break the other two -- the
-    card would start getting auto-trashed, and duplicates would pile up on
-    the screens. Tie them together here so that can't happen silently."""
+    """The card is found in Drive by a fragment of its filename, because
+    renumber_rotation.py renames every copy into the folder's running order.
+    That same fragment is what cleanup_events_folder.py refuses to trash, so
+    the two have to agree or the card either goes stale or gets deleted."""
 
     def setUp(self):
-        workflows = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), os.pardir, os.pardir,
-            'Worship Scripts', 'worship workflows'))
-        if workflows not in sys.path:
-            sys.path.insert(0, workflows)
+        base = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        for extra in (os.path.join(base, os.pardir, 'Worship Scripts', 'worship workflows'),
+                      os.path.join(base, 'Rotation')):
+            extra = os.path.abspath(extra)
+            if extra not in sys.path:
+                sys.path.insert(0, extra)
 
-    def test_cleanup_protects_the_name_the_generator_writes(self):
+    def test_cleanup_never_trashes_this_card(self):
         from cleanup_events_folder import is_protected_flyer
-        for name in CARD_FILENAMES:
+        for name in (f'{CARD_FRAGMENT}.png', f'07 - {CARD_FRAGMENT}.PNG'):
             with self.subTest(name=name):
-                self.assertTrue(
-                    is_protected_flyer(name),
-                    f"cleanup_events_folder.py would auto-trash {name}")
+                self.assertTrue(is_protected_flyer(name),
+                                f'cleanup_events_folder.py would auto-trash {name}')
 
-    def test_uploader_replaces_the_name_the_generator_writes(self):
-        # The uploader reuses cleanup's predicate; assert the wiring holds
-        # rather than trusting the import.
-        from upload_queue_to_drive import is_protected_flyer as uploader_predicate
-        for name in CARD_FILENAMES:
-            with self.subTest(name=name):
-                self.assertTrue(
-                    uploader_predicate(name),
-                    f"upload_queue_to_drive.py would stack copies of {name}")
+    def test_rotation_recognises_this_card(self):
+        # If the rotation job didn't see it as an info card it would be
+        # numbered as an event flyer and break the alternation.
+        from drive_cards import card_fragment
+        self.assertEqual(card_fragment(f'09 - {CARD_FRAGMENT}.png'), CARD_FRAGMENT)
 
-    def test_generator_targets_the_events_ads_drop_zone(self):
-        from upload_queue_to_drive import main  # noqa: F401  (import sanity)
-        self.assertRegex(EVENTS_FOLDER_ID, r'^[A-Za-z0-9_-]{20,}$')
-
+    def test_fragment_is_in_the_shared_card_table(self):
+        from drive_cards import CARDS, ROTATION
+        self.assertIn(CARD_FRAGMENT, CARDS)
+        self.assertIn(CARD_FRAGMENT, ROTATION)
 
 class QrCode(unittest.TestCase):
     """The card carries a "scan for tickets" QR. It is generated at render

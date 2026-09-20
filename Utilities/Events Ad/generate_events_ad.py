@@ -71,7 +71,8 @@ HTML_PATH = os.path.join(HERE, 'events-at-a-glance.html')
 PNG_PATH = os.path.join(HERE, 'events-at-a-glance.png')
 
 REPO_ROOT = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir))
-QUEUE_DIR = os.path.join(REPO_ROOT, 'Utilities', 'uploads_queue')
+UPLOADER_DIR = os.path.join(REPO_ROOT, 'Worship Scripts', 'worship workflows')
+ROTATION_DIR = os.path.join(REPO_ROOT, 'Utilities', 'Rotation')
 
 # The Events Ad drop zone on the upload dashboard; upload_queue_to_drive.py
 # parses this out of the queued filename.
@@ -79,17 +80,11 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # Stable on purpose -- see the module docstring. cleanup_events_folder.py's
 # PROTECTED_NAME_PREFIXES matches this stem, so renaming it here without
 # renaming it there would let the card get auto-trashed.
-# Published several times over, under sort-key prefixes. Content Display
-# plays the folder in filename order, so one copy of a card appears once per
-# lap; these land between the event flyers so an info card comes up roughly
-# every other poster. The prefixes are fitted to the flyers currently in the
-# folder -- as those come and go the interleave drifts, and the fix is to
-# re-pick these letters. cleanup_events_folder.py matches the descriptive
-# part as a fragment, so every copy is protected without listing them all.
-CARD_FILENAMES = (
-    'C-Events-At-A-Glance.png',
-    'N-Events-At-A-Glance.png',
-)
+# Identified by a fragment of the filename rather than an exact name:
+# renumber_rotation.py renames every copy into the folder's running order
+# ("05 - Events-At-A-Glance.png"), so an exact name would go stale the
+# first time the rotation shifted.
+CARD_FRAGMENT = 'events-at-a-glance'
 
 TZ = zoneinfo.ZoneInfo('America/Los_Angeles')
 WINDOW_DAYS = 120          # how far ahead to advertise
@@ -533,28 +528,35 @@ HTML_SHELL = """<!DOCTYPE html>
 
 # --------------------------------------------------------------------------
 
-def queue_card(png_path, dry_run):
-    os.makedirs(QUEUE_DIR, exist_ok=True)
-    # Clear any earlier card still waiting in the queue -- if two runs land
-    # before process_uploads.yml drains it, only the newest should upload.
-    for stale in os.listdir(QUEUE_DIR):
-        if any(stale.endswith(f'---{name}') for name in CARD_FILENAMES):
-            print(f"  Replacing card still queued from an earlier run: {stale}")
-            if not dry_run:
-                os.remove(os.path.join(QUEUE_DIR, stale))
+def publish(png_path, dry_run):
+    """Refresh every copy of the card in Drive.
 
-    queued = []
-    for name in CARD_FILENAMES:
-        ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-        dest = os.path.join(QUEUE_DIR, f'{ts}---{EVENTS_FOLDER_ID}---{name}')
+    Direct rather than through Utilities/uploads_queue/, which the other two
+    cards abandoned as well: the queue publishes by committing the PNG to
+    git, and it uploads under a fixed filename -- which renumber_rotation.py
+    renames, so the next run would create a duplicate instead of refreshing
+    the copy that's actually in the rotation.
+    """
+    if UPLOADER_DIR not in sys.path:
+        sys.path.insert(0, UPLOADER_DIR)
+    if ROTATION_DIR not in sys.path:
+        sys.path.insert(0, ROTATION_DIR)
+    from upload_queue_to_drive import get_drive_service
+    from drive_cards import publish_card
+
+    drive = get_drive_service()
+    if not drive:
+        # A dry run is meant to be runnable on a laptop with no secrets; a
+        # real run without them must fail loudly rather than exit green
+        # having published nothing.
         if dry_run:
-            print(f"  DRY RUN: would queue {os.path.basename(dest)}")
-            continue
-        with open(png_path, 'rb') as src, open(dest, 'wb') as out:
-            out.write(src.read())
-        print(f"  Queued {os.path.basename(dest)}")
-        queued.append(dest)
-    return queued
+            print(f'  DRY RUN: would refresh every copy of {CARD_FRAGMENT} '
+                  f'(no Drive credentials here).')
+            return True
+        raise RuntimeError('No Drive credentials: set GDRIVE_OAUTH_JSON or '
+                           'GDRIVE_SERVICE_ACCOUNT_JSON.')
+    publish_card(drive, png_path, CARD_FRAGMENT, dry_run=dry_run)
+    return True
 
 
 def main():
@@ -639,7 +641,7 @@ def main():
     print(f"  Wrote {os.path.basename(PNG_PATH)} "
           f"({os.path.getsize(PNG_PATH)} bytes)")
 
-    queue_card(PNG_PATH, dry_run)
+    publish(PNG_PATH, dry_run)
 
     if not dry_run:
         # Only commit the fingerprints once the card they describe is actually

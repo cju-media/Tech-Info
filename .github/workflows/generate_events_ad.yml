@@ -49,12 +49,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          # PAT, not the default token: the queued PNG is picked up by
-          # process_uploads.yml's push trigger, and a commit pushed with
-          # GITHUB_TOKEN does not fire other workflows -- the card would sit
-          # in the queue until something else happened to push.
-          token: ${{ secrets.PAT }}
+        # The default token is enough now: this commits its Gemini cache and
+        # nothing downstream keys off that push. The card goes straight to
+        # Drive rather than through the git-backed upload queue.
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -96,20 +93,19 @@ jobs:
       - name: Run generator tests
         run: cd "Utilities/Events Ad" && python -m unittest discover -p 'test_*.py' -v
 
-      - name: Generate the card
+      - name: Generate and upload the card
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
         run: cd "Utilities/Events Ad" && python generate_events_ad.py
 
-      - name: Commit the card and queue it for upload
+      - name: Commit the card state
         if: ${{ env.DRY_RUN == '0' }}
         run: |
           git add "Utilities/Events Ad/events_ad_state.json" \
                   "Utilities/Events Ad/events-at-a-glance.html" \
                   "Utilities/Events Ad/events-at-a-glance.png" 2>/dev/null || true
-          if [ -d "Utilities/uploads_queue" ]; then
-            git add Utilities/uploads_queue/
-          fi
           if git diff --cached --quiet; then
             echo "Calendar unchanged; nothing to commit."
             exit 0

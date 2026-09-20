@@ -1,0 +1,54 @@
+name: Renumber Screen Rotation
+
+# Assigns the Events_Ads folder an explicit "NN - " running order so the
+# campus screens alternate info card, event flyer, info card, event flyer.
+#
+# Content Display plays the folder in filename order, and flyers arrive named
+# whatever the uploader's file was called. Choosing sort keys to land the
+# cards between them was guesswork that broke whenever an event came or went.
+# This assigns the order outright instead.
+#
+# Runs after the three card generators (:23 and :37) so it places whatever
+# they just published, and adjusts how many copies of each card exist to keep
+# the alternation exact as events come and go.
+
+on:
+  schedule:
+    - cron: '51 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (print the running order, change nothing)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: renumber-rotation
+  cancel-in-progress: false
+
+jobs:
+  renumber-rotation:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install google-api-python-client google-auth requests
+
+      - name: Run the planner's tests
+        run: cd "Utilities/Rotation" && python -m unittest discover -p 'test_*.py' -v
+
+      - name: Renumber the rotation
+        env:
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+        run: cd "Utilities/Rotation" && python renumber_rotation.py

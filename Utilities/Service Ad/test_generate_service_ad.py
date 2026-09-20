@@ -13,7 +13,7 @@ import unittest
 from unittest import mock
 
 from generate_service_ad import (
-    CARD_FILENAMES,
+    CARD_FRAGMENT,
     build_qr_data_uri,
     mini_channel,
     subscribe_url,
@@ -182,42 +182,36 @@ class Markup(unittest.TestCase):
 
 
 class CanonicalCardName(unittest.TestCase):
-    """cleanup_events_folder.py must never trash this card, and
-    upload_queue_to_drive.py must replace it in place."""
+    """The card is found in Drive by a fragment of its filename, because
+    renumber_rotation.py renames every copy into the folder's running order.
+    That same fragment is what cleanup_events_folder.py refuses to trash, so
+    the two have to agree or the card either goes stale or gets deleted."""
 
     def setUp(self):
-        workflows = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), os.pardir, os.pardir,
-            'Worship Scripts', 'worship workflows'))
-        if workflows not in sys.path:
-            sys.path.insert(0, workflows)
+        base = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        for extra in (os.path.join(base, os.pardir, 'Worship Scripts', 'worship workflows'),
+                      os.path.join(base, 'Rotation')):
+            extra = os.path.abspath(extra)
+            if extra not in sys.path:
+                sys.path.insert(0, extra)
 
-    def test_cleanup_never_trashes_any_copy(self):
+    def test_cleanup_never_trashes_this_card(self):
         from cleanup_events_folder import is_protected_flyer
-        for name in CARD_FILENAMES:
+        for name in (f'{CARD_FRAGMENT}.png', f'07 - {CARD_FRAGMENT}.PNG'):
             with self.subTest(name=name):
                 self.assertTrue(is_protected_flyer(name),
                                 f'cleanup_events_folder.py would auto-trash {name}')
 
-    def test_uploader_replaces_every_copy_in_place(self):
-        from upload_queue_to_drive import is_protected_flyer
-        for name in CARD_FILENAMES:
-            with self.subTest(name=name):
-                self.assertTrue(is_protected_flyer(name),
-                                f'upload_queue_to_drive.py would stack copies of {name}')
+    def test_rotation_recognises_this_card(self):
+        # If the rotation job didn't see it as an info card it would be
+        # numbered as an event flyer and break the alternation.
+        from drive_cards import card_fragment
+        self.assertEqual(card_fragment(f'09 - {CARD_FRAGMENT}.png'), CARD_FRAGMENT)
 
-    def test_all_three_cards_have_distinct_filenames(self):
-        # They share one Drive folder, so a collision would have one card
-        # silently overwrite another.
-        base = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-        for sub in ('Events Ad', 'Weather Ad'):
-            sys.path.insert(0, os.path.join(base, sub))
-        from generate_events_ad import CARD_FILENAMES as events
-        from generate_weather_ad import CARD_FILENAMES as weather
-        every = list(CARD_FILENAMES) + list(events) + list(weather)
-        self.assertEqual(len(every), len(set(every)),
-                         'two cards would publish under the same filename')
-
+    def test_fragment_is_in_the_shared_card_table(self):
+        from drive_cards import CARDS, ROTATION
+        self.assertIn(CARD_FRAGMENT, CARDS)
+        self.assertIn(CARD_FRAGMENT, ROTATION)
 
 class SubscribeQr(unittest.TestCase):
     """Both cards carry a QR to the channel's subscribe dialog."""

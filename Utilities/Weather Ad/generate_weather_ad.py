@@ -50,6 +50,7 @@ REPO_ROOT = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir))
 # Drive auth is two places to get it wrong, and that module's upload path is
 # the one already proven against this folder in production.
 UPLOADER_DIR = os.path.join(REPO_ROOT, 'Worship Scripts', 'worship workflows')
+ROTATION_DIR = os.path.join(REPO_ROOT, 'Utilities', 'Rotation')
 # The Events Ad drop zone -- the same flat folder the event flyers and the
 # events at-a-glance card live in.
 EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
@@ -58,18 +59,11 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # the vision read would trash it the day after whichever one it picked.
 # Matching that list also makes upload_to_drive() replace the card in place
 # rather than stacking a new copy every hour.
-# Published several times over, under sort-key prefixes. Content Display
-# plays the folder in filename order, so one copy of a card appears once per
-# lap; these land between the event flyers so an info card comes up roughly
-# every other poster. The prefixes are fitted to the flyers currently in the
-# folder -- as those come and go the interleave drifts, and the fix is to
-# re-pick these letters. cleanup_events_folder.py matches the descriptive
-# part as a fragment, so every copy is protected without listing them all.
-CARD_FILENAMES = (
-    'A-LA-Weather-Forecast.png',
-    'L-LA-Weather-Forecast.png',
-    'W-LA-Weather-Forecast.png',
-)
+# Identified by a fragment of the filename rather than an exact name:
+# renumber_rotation.py renames every copy into the folder's running
+# order ("03 - LA-Weather-Forecast.png"), so an exact name would go
+# stale the first time the rotation shifted.
+CARD_FRAGMENT = 'la-weather-forecast'
 
 TZ = zoneinfo.ZoneInfo('America/Los_Angeles')
 LAT, LON = 34.0614, -118.2839          # 540 S Commonwealth Ave
@@ -478,35 +472,30 @@ def upload_to_drive(png_path, dry_run):
     of git objects that can never be pruned without rewriting history.
     Nothing here touches the repo.
 
-    upload_to_drive() replaces the file in place because CARD_FILENAMES
-    matches cleanup_events_folder.py's protected list; skip_if_exists means
-    a byte-identical render (the forecast genuinely not having moved) costs
-    no Drive write at all.
+    publish_card() refreshes every copy of this card in place, found by
+    fragment so renumber_rotation.py's numbering survives, and skips any
+    copy whose bytes already match -- a forecast that hasn't moved costs no
+    Drive write at all.
     """
-    if dry_run:
-        for name in CARD_FILENAMES:
-            print(f'  DRY RUN: would upload {name} to Drive.')
-        return True
-
     if UPLOADER_DIR not in sys.path:
         sys.path.insert(0, UPLOADER_DIR)
-    from upload_queue_to_drive import get_drive_service, upload_to_drive as push
+    if ROTATION_DIR not in sys.path:
+        sys.path.insert(0, ROTATION_DIR)
+    from upload_queue_to_drive import get_drive_service
+    from drive_cards import publish_card
 
     service = get_drive_service()
     if not service:
-        raise RuntimeError(
-            'No Drive credentials: set GDRIVE_OAUTH_JSON or '
-            'GDRIVE_SERVICE_ACCOUNT_JSON.')
-
-    # One upload per copy. skip_if_exists means a copy whose bytes haven't
-    # changed costs nothing, so a steady forecast is a listing call per name
-    # rather than a re-upload.
-    failed = [name for name in CARD_FILENAMES
-              if not push(service, png_path, name, EVENTS_FOLDER_ID,
-                          skip_if_exists=True)]
-    if failed:
-        raise RuntimeError(f"Drive upload failed for {', '.join(failed)}; "
-                           f'see the error above.')
+        # A dry run is meant to be runnable on a laptop with no secrets; a
+        # real run without them must fail loudly rather than exit green
+        # having published nothing.
+        if dry_run:
+            print(f'  DRY RUN: would refresh every copy of {CARD_FRAGMENT} '
+                  f'(no Drive credentials here).')
+            return True
+        raise RuntimeError('No Drive credentials: set GDRIVE_OAUTH_JSON or '
+                           'GDRIVE_SERVICE_ACCOUNT_JSON.')
+    publish_card(service, png_path, CARD_FRAGMENT, dry_run=dry_run)
     return True
 
 

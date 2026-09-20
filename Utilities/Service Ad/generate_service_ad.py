@@ -49,6 +49,7 @@ PNG_PATH = os.path.join(HERE, 'service-ad.png')
 
 REPO_ROOT = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir))
 UPLOADER_DIR = os.path.join(REPO_ROOT, 'Worship Scripts', 'worship workflows')
+ROTATION_DIR = os.path.join(REPO_ROOT, 'Utilities', 'Rotation')
 YOUTUBE_DIR = os.path.join(REPO_ROOT, 'Youtube Processing')
 
 TZ = zoneinfo.ZoneInfo('America/Los_Angeles')
@@ -57,18 +58,11 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # thumbnail prints a service date, so the vision read would trash this card
 # the day after the service it advertises -- exactly when the next one is
 # about to replace it anyway.
-# Published several times over, under sort-key prefixes. Content Display
-# plays the folder in filename order, so one copy of a card appears once per
-# lap; these land between the event flyers so an info card comes up roughly
-# every other poster. The prefixes are fitted to the flyers currently in the
-# folder -- as those come and go the interleave drifts, and the fix is to
-# re-pick these letters. cleanup_events_folder.py matches the descriptive
-# part as a fragment, so every copy is protected without listing them all.
-CARD_FILENAMES = (
-    '1-Upcoming-Service.png',
-    'E-Upcoming-Service.png',
-    'T-Upcoming-Service.png',
-)
+# Identified by a fragment of the filename rather than an exact name:
+# renumber_rotation.py renames every copy into the folder's running
+# order ("03 - LA-Weather-Forecast.png"), so an exact name would go
+# stale the first time the rotation shifted.
+CARD_FRAGMENT = 'upcoming-service'
 
 # A broadcast stays on the card until this long after its scheduled start, so
 # the screen keeps advertising the service while it's actually happening
@@ -523,29 +517,31 @@ HTML_SHELL = """<!DOCTYPE html>
 # --------------------------------------------------------------------------
 
 def upload_to_drive(png_path, dry_run):
-    """Straight to Drive -- see the weather card for why this doesn't use the
-    git-backed upload queue."""
-    if dry_run:
-        for name in CARD_FILENAMES:
-            print(f'  DRY RUN: would upload {name} to Drive.')
-        return True
+    """Refresh every copy of this card in Drive.
+
+    Straight to Drive rather than through the git-backed upload queue: this
+    regenerates hourly, and that pipeline publishes by committing the PNG.
+    Copies are found by fragment so renumber_rotation.py's numbering
+    survives."""
     if UPLOADER_DIR not in sys.path:
         sys.path.insert(0, UPLOADER_DIR)
-    from upload_queue_to_drive import get_drive_service, upload_to_drive as push
+    if ROTATION_DIR not in sys.path:
+        sys.path.insert(0, ROTATION_DIR)
+    from upload_queue_to_drive import get_drive_service
+    from drive_cards import publish_card
 
     drive = get_drive_service()
     if not drive:
+        # A dry run is meant to be runnable on a laptop with no secrets; a
+        # real run without them must fail loudly rather than exit green
+        # having published nothing.
+        if dry_run:
+            print(f'  DRY RUN: would refresh every copy of {CARD_FRAGMENT} '
+                  f'(no Drive credentials here).')
+            return True
         raise RuntimeError('No Drive credentials: set GDRIVE_OAUTH_JSON or '
                            'GDRIVE_SERVICE_ACCOUNT_JSON.')
-    # One upload per copy. skip_if_exists means a copy whose bytes haven't
-    # changed costs nothing, so a steady forecast is still a single listing
-    # call per name rather than a re-upload.
-    failed = [name for name in CARD_FILENAMES
-              if not push(drive, png_path, name, EVENTS_FOLDER_ID,
-                          skip_if_exists=True)]
-    if failed:
-        raise RuntimeError(f"Drive upload failed for {', '.join(failed)}; "
-                           f'see the error above.')
+    publish_card(drive, png_path, CARD_FRAGMENT, dry_run=dry_run)
     return True
 
 

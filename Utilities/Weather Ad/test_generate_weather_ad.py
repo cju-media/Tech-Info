@@ -13,7 +13,7 @@ import unittest
 from unittest import mock
 
 from generate_weather_ad import (
-    CARD_FILENAMES,
+    CARD_FRAGMENT,
     EVENTS_FOLDER_ID,
     ICONS,
     TZ,
@@ -154,41 +154,36 @@ class Markup(unittest.TestCase):
 
 
 class CanonicalCardName(unittest.TestCase):
-    """The forecast card lives in Events_Ads next to the event flyers, and
-    two other scripts key off its filename: cleanup_events_folder.py must
-    never trash it (it prints eleven dates, so a vision read would expire it
-    on the wrong one), and upload_queue_to_drive.py must replace it in place
-    rather than stacking a fresh copy every few hours. Renaming it here alone
-    would break both, quietly."""
+    """The card is found in Drive by a fragment of its filename, because
+    renumber_rotation.py renames every copy into the folder's running order.
+    That same fragment is what cleanup_events_folder.py refuses to trash, so
+    the two have to agree or the card either goes stale or gets deleted."""
 
     def setUp(self):
-        workflows = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), os.pardir, os.pardir,
-            'Worship Scripts', 'worship workflows'))
-        if workflows not in sys.path:
-            sys.path.insert(0, workflows)
+        base = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        for extra in (os.path.join(base, os.pardir, 'Worship Scripts', 'worship workflows'),
+                      os.path.join(base, 'Rotation')):
+            extra = os.path.abspath(extra)
+            if extra not in sys.path:
+                sys.path.insert(0, extra)
 
-    def test_cleanup_never_trashes_any_copy(self):
+    def test_cleanup_never_trashes_this_card(self):
         from cleanup_events_folder import is_protected_flyer
-        for name in CARD_FILENAMES:
+        for name in (f'{CARD_FRAGMENT}.png', f'07 - {CARD_FRAGMENT}.PNG'):
             with self.subTest(name=name):
                 self.assertTrue(is_protected_flyer(name),
                                 f'cleanup_events_folder.py would auto-trash {name}')
 
-    def test_uploader_replaces_every_copy_in_place(self):
-        from upload_queue_to_drive import is_protected_flyer
-        for name in CARD_FILENAMES:
-            with self.subTest(name=name):
-                self.assertTrue(is_protected_flyer(name),
-                                f'upload_queue_to_drive.py would stack copies of {name}')
+    def test_rotation_recognises_this_card(self):
+        # If the rotation job didn't see it as an info card it would be
+        # numbered as an event flyer and break the alternation.
+        from drive_cards import card_fragment
+        self.assertEqual(card_fragment(f'09 - {CARD_FRAGMENT}.png'), CARD_FRAGMENT)
 
-    def test_forecast_and_events_cards_are_distinct_files(self):
-        # Same folder, so a shared name would have one card overwrite the other.
-        sys.path.insert(0, os.path.abspath(os.path.join(
-            os.path.dirname(__file__), os.pardir, 'Events Ad')))
-        from generate_events_ad import CARD_FILENAMES as events_cards
-        self.assertFalse(set(CARD_FILENAMES) & set(events_cards))
-
+    def test_fragment_is_in_the_shared_card_table(self):
+        from drive_cards import CARDS, ROTATION
+        self.assertIn(CARD_FRAGMENT, CARDS)
+        self.assertIn(CARD_FRAGMENT, ROTATION)
 
 class DriveUpload(unittest.TestCase):
     """The card goes straight to Drive rather than through the git-backed
