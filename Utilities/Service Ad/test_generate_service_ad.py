@@ -19,11 +19,13 @@ from generate_service_ad import (
     subscribe_url,
     watch_url,
     GRACE,
+    LEAD,
     TZ,
     best_thumbnail,
     build_html,
     format_when,
     service_labels,
+    stream_is_current,
     parse_api_time,
     pick_next_broadcast,
     subscriber_text,
@@ -442,6 +444,55 @@ class QrTarget(unittest.TestCase):
                          datetime.datetime(2026, 9, 20, 11, 15, tzinfo=TZ))
         self.assertIn('Scan to Subscribe', out)
         self.assertNotIn('Scan to Watch', out)
+
+
+class LeadIn(unittest.TestCase):
+    """The card only changes when it's regenerated, and the Sunday timer
+    fires at 10:27 for a 10:30 service. With no lead-in that run still saw
+    "not started yet" and rendered "Upcoming Service" with a subscribe code,
+    so the wrong card stayed up until 10:42 -- twelve minutes in."""
+
+    START = datetime.datetime(2026, 9, 27, 10, 30, tzinfo=TZ)
+
+    def at(self, hour, minute):
+        return datetime.datetime(2026, 9, 27, hour, minute, tzinfo=TZ)
+
+    def test_the_1027_timer_produces_the_live_card(self):
+        heading, when = service_labels(self.START, self.at(10, 27))
+        self.assertEqual(heading, "Today's Service")
+        self.assertEqual(when, 'Watch on YouTube')
+        self.assertTrue(stream_is_current(self.START, self.at(10, 27)))
+
+    def test_it_flips_exactly_one_lead_before_the_start(self):
+        self.assertFalse(stream_is_current(self.START,
+                                           self.START - LEAD - datetime.timedelta(minutes=1)))
+        self.assertTrue(stream_is_current(self.START, self.START - LEAD))
+
+    def test_an_hour_before_it_still_sells_the_time(self):
+        heading, when = service_labels(self.START, self.at(9, 27))
+        self.assertEqual(heading, 'Upcoming Service')
+        self.assertEqual(when, 'Today at 10:30 AM')
+
+    def test_the_lead_clears_the_sunday_timer(self):
+        # The timer fires three minutes before the start; the lead-in has to
+        # be longer than that or the run lands on the wrong side of it.
+        self.assertGreater(LEAD, datetime.timedelta(minutes=3))
+
+    def test_the_line_and_the_code_never_disagree(self):
+        """The invariant worth protecting: whenever the card says "Watch on
+        YouTube" the code must go to the broadcast, never to a subscribe
+        dialog."""
+        svc = {'id': 'vid', 'title': 'Sunday Worship', 'start': self.START,
+               'thumb_uri': 'data:image/jpeg;base64,AAA'}
+        ch = {'handle': '@firstchurchla', 'id': 'UCabc'}
+        for hour in range(7, 23):
+            for minute in (0, 14, 15, 27, 30, 42):
+                now = self.at(hour, minute)
+                with self.subTest(now=f'{hour:02d}:{minute:02d}'):
+                    out = build_html(svc, ch, now)
+                    says_watch = 'Watch on YouTube' in out
+                    code_watches = 'Scan to Watch' in out
+                    self.assertEqual(says_watch, code_watches)
 
 
 if __name__ == '__main__':

@@ -71,6 +71,15 @@ CARD_FRAGMENT = 'upcoming-service'
 # instead of flipping to the generic channel card mid-worship.
 GRACE = datetime.timedelta(hours=3)
 
+# ...and the card starts pointing at the stream this long BEFORE the start.
+# The card only changes when it's regenerated, and the Sunday timer fires at
+# 10:27 for a 10:30 service: with no lead-in that run still saw "not started
+# yet" and rendered "Upcoming Service" with a subscribe code, leaving the
+# wrong card up until the 10:42 run -- twelve minutes into the service. The
+# lead-in also matches reality, since the stream's waiting room is live
+# before the service begins.
+LEAD = datetime.timedelta(minutes=15)
+
 CHROME_CANDIDATES = [
     os.environ.get('CHROME_BIN') or '',
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -208,6 +217,15 @@ def build_qr_data_uri(url, scale=4):
         scale=scale, border=4, dark='#1A1A1A', light='#FFFFFF')
 
 
+def stream_is_current(start, now):
+    """True once the card should point at the broadcast rather than sell the
+    time: from LEAD before the scheduled start onward.
+
+    Both the heading/line and the QR target key off this, so the card can't
+    end up saying "Watch on YouTube" beside a code that subscribes."""
+    return start is not None and now >= start - LEAD
+
+
 def service_labels(start, now):
     """(heading, when-line) for a broadcast, before and after it begins.
 
@@ -217,12 +235,14 @@ def service_labels(start, now):
     already missed the start of. Once it's under way the card stops selling
     the time and starts pointing at the stream.
     """
-    if start is None or start > now:
+    if not stream_is_current(start, now):
         return 'Upcoming Service', format_when(start, now)
-    # Under way: still today's, and still worth joining. Once the grace
-    # window closes the same card stays up as the placeholder until the next
-    # stream is created, so it has to stop calling itself today's.
-    if now <= start + GRACE and start.date() == now.date():
+    # From the lead-in through the grace window it's today's, and still worth
+    # joining. After that the same card stays up as the placeholder until the
+    # next stream is created, so it has to stop calling itself today's.
+    # `now < start` keeps the lead-in on the right side of midnight for a
+    # late-evening broadcast.
+    if now <= start + GRACE and (start.date() == now.date() or now < start):
         return "Today's Service", 'Watch on YouTube'
     return 'Past Service', 'Watch on YouTube'
 
@@ -366,15 +386,13 @@ def build_html(service=None, channel=None, now=None):
         # channel above the code -- the thumbnail says what the service is,
         # but nothing on it says whose channel to subscribe to.
         heading, when = service_labels(service.get('start'), now)
-        start = service.get('start')
-        # True for both the under-way and past states -- in either the card
-        # says "Watch on YouTube", so the code goes to the broadcast rather
-        # than the channel. Sending someone to a subscribe dialog is not what
-        # that line offered them.
-        has_started = start is not None and start <= now
+        # Same predicate as the heading, so the code and the line beside it
+        # can never disagree: whenever the card says "Watch on YouTube" the
+        # code goes to the broadcast, not a subscribe dialog.
+        current = stream_is_current(service.get('start'), now)
         qr_block = (code(watch_url(service),
                          'QR code linking to the service broadcast', 'Scan to Watch')
-                    if has_started and watch_url(service) else subscribe)
+                    if current and watch_url(service) else subscribe)
         side = SIDE_TEMPLATE.format(mini=mini_channel(channel), qr=qr_block)
         return HTML_SHELL.format(
             eyebrow='Join Us for Worship',
