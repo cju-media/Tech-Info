@@ -22,6 +22,7 @@ from generate_service_ad import (
     best_thumbnail,
     build_html,
     format_when,
+    service_labels,
     parse_api_time,
     pick_next_broadcast,
     subscriber_text,
@@ -305,6 +306,59 @@ class MiniChannelPreview(unittest.TestCase):
     def test_hidden_subscriber_count_is_not_shown_in_the_preview(self):
         out = mini_channel(dict(self.CH, hidden_subs=True))
         self.assertNotIn('4.1K', out)
+
+
+class ServiceLabels(unittest.TestCase):
+    """The card stays up for three hours past the scheduled start so the
+    screens keep advertising a service that's actually happening. Before
+    this, it went on saying "Sunday at 10:30 AM" the whole time -- an
+    invitation to something the reader had already missed the start of."""
+
+    START = datetime.datetime(2026, 9, 20, 10, 30, tzinfo=TZ)
+
+    def test_before_the_service_it_sells_the_time(self):
+        heading, when = service_labels(self.START,
+                                       datetime.datetime(2026, 9, 18, 9, 0, tzinfo=TZ))
+        self.assertEqual(heading, 'Upcoming Service')
+        self.assertEqual(when, 'Sunday, September 20 at 10:30 AM')
+
+    def test_on_the_morning_it_still_sells_the_time(self):
+        heading, when = service_labels(self.START,
+                                       datetime.datetime(2026, 9, 20, 9, 0, tzinfo=TZ))
+        self.assertEqual(heading, 'Upcoming Service')
+        self.assertEqual(when, 'Today at 10:30 AM')
+
+    def test_once_under_way_it_points_at_the_stream(self):
+        for hour in (10, 11, 13):
+            now = datetime.datetime(2026, 9, 20, hour, 31, tzinfo=TZ)
+            with self.subTest(hour=hour):
+                heading, when = service_labels(self.START, now)
+                self.assertEqual(heading, "Today's Service")
+                self.assertEqual(when, 'Watch on YouTube')
+
+    def test_a_service_that_spilled_past_midnight_is_not_called_today(self):
+        # A late-evening broadcast plus the grace window crosses the date
+        # line, and "Today's Service" would be a lie the next morning.
+        late = datetime.datetime(2026, 9, 20, 23, 0, tzinfo=TZ)
+        heading, when = service_labels(late,
+                                       datetime.datetime(2026, 9, 21, 1, 0, tzinfo=TZ))
+        self.assertEqual(heading, 'Latest Service')
+        self.assertEqual(when, 'Watch on YouTube')
+
+    def test_no_start_falls_back_to_upcoming(self):
+        self.assertEqual(service_labels(None, NOW), ('Upcoming Service', ''))
+
+    def test_the_rendered_card_uses_them(self):
+        svc = {'title': 'Sunday Worship', 'thumb_uri': 'data:image/jpeg;base64,AAA',
+               'start': self.START}
+        out = build_html(svc, None, datetime.datetime(2026, 9, 20, 11, 15, tzinfo=TZ))
+        # The heading specifically: "Upcoming Service" also appears in the
+        # page <title> and the thumbnail's alt text, neither of which is
+        # rendered, so a bare assertNotIn would fail on invisible markup.
+        self.assertIn("<h1>Today's Service</h1>", out)
+        self.assertNotIn('<h1>Upcoming Service</h1>', out)
+        self.assertIn('Watch on YouTube', out)
+        self.assertNotIn('10:30 AM', out)
 
 
 if __name__ == '__main__':

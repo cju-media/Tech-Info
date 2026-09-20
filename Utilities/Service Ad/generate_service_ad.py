@@ -196,6 +196,23 @@ def build_qr_data_uri(url, scale=4):
         scale=scale, border=4, dark='#1A1A1A', light='#FFFFFF')
 
 
+def service_labels(start, now):
+    """(heading, when-line) for a broadcast, before and after it begins.
+
+    The card stays up for GRACE past the scheduled start so the screens keep
+    advertising a service that's actually happening -- but "Sunday, September
+    20 at 10:30 AM" then reads as an invitation to something the reader has
+    already missed the start of. Once it's under way the card stops selling
+    the time and starts pointing at the stream.
+    """
+    if start is None or start > now:
+        return 'Upcoming Service', format_when(start, now)
+    # Same-day is the normal case (a 10:30 service plus three hours), but a
+    # late-evening one would spill past midnight and "Today's" would be a lie.
+    heading = "Today's Service" if start.date() == now.date() else 'Latest Service'
+    return heading, 'Watch on YouTube'
+
+
 def subscriber_text(count):
     """YouTube's own rounding: 1.2K, 3.4M. The API returns an exact string but
     the channel page shows it rounded, and the card should match what people
@@ -329,10 +346,11 @@ def build_html(service=None, channel=None, now=None):
         # channel above the code -- the thumbnail says what the service is,
         # but nothing on it says whose channel to subscribe to.
         side = SIDE_TEMPLATE.format(mini=mini_channel(channel), qr=qr_block)
+        heading, when = service_labels(service.get('start'), now)
         return HTML_SHELL.format(
             eyebrow='Join Us for Worship',
-            heading='Upcoming Service',
-            when=format_when(service.get('start'), now),
+            heading=heading,
+            when=when,
             body=STREAM_BODY.format(thumb=service['thumb_uri']),
             footer='Watch live at fccla.org/live',
             side=side if (qr_block or mini_channel(channel)) else '',
