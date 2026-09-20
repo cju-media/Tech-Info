@@ -20,7 +20,7 @@
 	<key>ProgramArguments</key>
 	<array>
 		<string>/usr/bin/python3</string>
-		<string>/Users/soundteam/Tech-Info/Utilities/Scheduling/launchd/dispatch_workflow.py</string>
+		<string>/Users/soundteam/Documents/Tech-Info/Utilities/Scheduling/launchd/dispatch_workflow.py</string>
 		<string>generate_weather_ad.yml</string>
 	</array>
 	<key>RunAtLoad</key>

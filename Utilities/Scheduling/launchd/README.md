@@ -43,8 +43,8 @@ workflow name, log path and schedule.
    ```
 
 2. **Check the paths in the plist.** It assumes the repo is at
-   `/Users/soundteam/Tech-Info`. Edit `ProgramArguments` and the two log
-   paths if it lives somewhere else.
+   `/Users/soundteam/Documents/Tech-Info`. Edit `ProgramArguments` and the two
+   log paths if it lives somewhere else.
 
 3. **Install and load them.**
 
