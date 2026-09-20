@@ -56,8 +56,11 @@ def plan_rotation(files):
     copies. Both are returned rather than acted on so the caller can print a
     plan under DRY_RUN.
     """
+    # The id breaks ties: two flyers really are both named "image.jpeg", and
+    # sorting on name alone let them swap places between runs, so every run
+    # renamed them back and forth forever.
     flyers = sorted((f for f in files if not card_fragment(f['name'])),
-                    key=lambda f: base_name(f['name']).lower())
+                    key=lambda f: (base_name(f['name']).lower(), f['id']))
     cards = {}
     for f in files:
         fragment = card_fragment(f['name'])

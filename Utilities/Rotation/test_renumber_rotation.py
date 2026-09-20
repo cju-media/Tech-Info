@@ -48,6 +48,17 @@ class Alternation(unittest.TestCase):
         first, second = [i for i, n in enumerate(names) if n == 'image.jpeg']
         self.assertGreater(second - first, 1, 'the two image.jpeg files are adjacent')
 
+    def test_identically_named_flyers_keep_a_stable_order(self):
+        """Two flyers really are both named image.jpeg. Sorting on name alone
+        let them swap slots between runs, so every run renamed them back and
+        forth and the job was never actually idempotent."""
+        contents = [f('image.jpeg', 'id-b'), f('image.jpeg', 'id-a'),
+                    f('other.png', 'id-c')] + [f(n) for n in enough_cards(3)]
+        first = [x['id'] for _, x in plan_rotation(contents)[0]]
+        shuffled = list(reversed(contents))
+        second = [x['id'] for _, x in plan_rotation(shuffled)[0]]
+        self.assertEqual(first, second)
+
     def test_too_few_copies_asks_for_more(self):
         seq, to_copy, to_trash = plan_rotation(folder(cards=enough_cards(4)))
         self.assertTrue(to_copy)
