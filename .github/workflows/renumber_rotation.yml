@@ -15,8 +15,12 @@ name: Renumber Screen Rotation
 on:
   schedule:
     # The backstop: catches flyers dragged straight into Drive, which never
-    # touch process_uploads and so never fire the trigger below.
-    - cron: '51 * * * *'
+    # touch process_uploads and so never fire the trigger below. Every 15
+    # minutes, on minutes that are otherwise free -- :26 lands just after the
+    # service card at :23, :41 just after the weather card at :37, so a card
+    # copy the generators create gets placed almost immediately. The job is
+    # idempotent, so a run with nothing to do renames nothing.
+    - cron: '11,26,41,56 * * * *'
   workflow_run:
     # A dashboard upload reaches Drive through process_uploads, so chain off
     # it: otherwise a new flyer keeps its uploader's filename until the next
