@@ -58,12 +58,13 @@ reports freshness for each stage.
 
 | Stage | Script | Trigger | Output |
 | ----- | ------ | ------- | ------ |
-| **Worship script** | `Worship Scripts/worship workflows/update_worship_scripts.py` | `worship_scripts_checker.yml` (hourly) | Pulls the run-of-show PDF from Drive, parses it (pypdf + Gemini), writes `worship_scripts.json` |
+| **Worship script** | `Worship Scripts/worship workflows/update_worship_scripts.py` | `worship_scripts_checker.yml` (hourly) | Pulls the run-of-show PDF from Drive, parses it (pypdf + Gemini) for communion status, the Coffee Hour room, and mic/speaker assignments, writes `worship_scripts.json` |
 | **Order of Worship → service titles** | `update_service_titles.py` | `service_titles_checker.yml` (hourly, or `ow_uploaded` repository_dispatch from the upload dashboard) | Ingests the OW PDF from the `cju-media/OW` repo, sends it to Gemini with `worship-prompt.txt`, writes the per-attribute files under `Worship Scripts/service-titles/` and `service_titles_state.json` |
 | **Service titles → Drive** | `sync_service_titles_to_drive.py` | `sync_service_titles.yml` (on push to `service-titles/**`) | Mirrors the title files into the shared Drive folder |
 | **Sermon series description** | `create_sermon_series.py` | `sermon_series.yml` (on push to `sermon-title.txt` / `sermon-minister.txt`) | Generates the Sermon Series title + description files, uploads to Drive, adds the video to the sermon-series playlist |
 | **Backfill stream link** | `backfill_sermon_series_link.py` | `backfill_sermon_series_link.yml` (`youtube_stream_created` repository_dispatch) | Replaces the `YOUTUBE SERVICE LINK` placeholder in the sermon-series description once the livestream URL is known |
 | **Archive** | `archive_service_files.yml` | Mondays 05:00 UTC | Snapshots `chapters.txt` / `description.txt` / `timings.txt` / `title.txt` into `Utilities/Archives/<date>/` |
+| **Coffee Hour push** | `push_coffee_hour.py` | `push_coffee_hour.yml` (Sunday mornings, every 15 min) | Reads `coffeeHourRoom` from `worship_scripts.json` and POSTs the on-screen text to the [Content Display](https://github.com/cju-media/content-display) control server's `/api/coffee-hour` endpoint, so the display matches the printed script |
 
 Gemini reads are cached (per Drive file id / per content hash) so unchanged
 inputs don't cost repeated API calls.
@@ -277,6 +278,7 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `sermon_series.yml` | push to `sermon-title.txt` / `sermon-minister.txt` | ubuntu |
 | `backfill_sermon_series_link.yml` | `youtube_stream_created` dispatch | ubuntu |
 | `archive_service_files.yml` | Mon 05:00 UTC | ubuntu |
+| `push_coffee_hour.yml` | Sun 15:00-18:45 UTC (~8am-noon PT), every 15 min | self-hosted macOS |
 | `schedule_notifications.yml` | hourly | ubuntu |
 | `imessage_notifications.yml` | hourly; many `repository_dispatch` types | self-hosted macOS |
 | `mark_past_sheet_events.yml` | daily 09:00 UTC | ubuntu |
