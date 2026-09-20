@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Fires the service-card workflow on a clock that doesn't drop timers.
+
+  GitHub's scheduler delivered about one in four of this workflow's hourly
+  runs (measured 2026-09-20), which left the card reading "Upcoming Service"
+  for 37 minutes of a service it was meant to be advertising. launchd runs
+  what it is told to, and in LOCAL time, so 10:27 here means 10:27 in Los
+  Angeles in both halves of the year, with none of the UTC/DST juggling the
+  cron entries needed.
+
+  The hourly :27 keeps the card current the rest of the week. The Sunday
+  entries cover the service itself, where being an hour late is the whole
+  problem. Dispatching more often than needed costs nothing: a run whose
+  render is byte identical skips the Drive write entirely.
+
+  Install: see README.md in this directory.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>org.fccla.service-card</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/soundteam/Tech-Info/Utilities/Scheduling/launchd/dispatch_workflow.py</string>
+        <string>generate_service_ad.yml</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Minute</key><integer>27</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>0</integer>
+            <key>Hour</key><integer>10</integer>
+            <key>Minute</key><integer>42</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>0</integer>
+            <key>Hour</key><integer>10</integer>
+            <key>Minute</key><integer>57</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key><integer>0</integer>
+            <key>Hour</key><integer>11</integer>
+            <key>Minute</key><integer>12</integer>
+        </dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/soundteam/Library/Logs/fccla-service-card.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/soundteam/Library/Logs/fccla-service-card.log</string>
+</dict>
+</plist>
