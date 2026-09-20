@@ -16,7 +16,6 @@
             "su-11-01-2026-worship-service"
         ],
         "Jaffe": [
-            "sa-9-19-2026-gala-choruses-showcase",
             "we-9-30-2026-book-soup",
             "sa-10-17-2026-wedding-ceremony",
             "su-10-18-2026-worship-service",
@@ -36,7 +35,6 @@
             "su-11-01-2026-wedding-ceremony"
         ],
         "Saad": [
-            "sa-9-19-2026-gala-choruses-showcase",
             "su-9-20-2026-worship-service",
             "fr-9-25-2026-organ-concert",
             "sa-9-26-2026-music-in-the-garden",
@@ -158,11 +156,6 @@
             "date": "2026-09-20",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "sa-9-19-2026-gala-choruses-showcase": {
-            "date": "2026-09-19",
-            "name": "GALA Choruses Showcase",
-            "call_time": "12:00pm-9:00pm"
         }
     }
 }
