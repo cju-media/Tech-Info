@@ -494,6 +494,30 @@ def save_assignment_state(state):
     with open('state.json', 'w') as f:
         json.dump(state, f, indent=4)
 
+WORSHIP_SCRIPTS_PATH = '../../../Worship Scripts/worship_scripts.json'
+
+def get_communion_status(target_date):
+    """
+    Communion/TV-setup status for a Sunday, from worship_scripts.json (kept up
+    to date by update_worship_scripts.py). Non-communion Sundays are the ones
+    that need the TV setup; communion Sundays don't. Mirrors the same
+    customNotes-overrides-isCommunion logic the dashboard (index.html) uses.
+    Returns None if there's no worship script recorded for that date.
+    """
+    if not os.path.exists(WORSHIP_SCRIPTS_PATH):
+        return None
+    with open(WORSHIP_SCRIPTS_PATH, 'r') as f:
+        worship_scripts = json.load(f)
+    entry = worship_scripts.get(target_date.strftime('%Y-%m-%d'))
+    if not entry:
+        return None
+    custom_notes = entry.get('customNotes')
+    if custom_notes:
+        return custom_notes
+    if entry.get('isCommunion'):
+        return "Communion Sunday - no TV setup needed"
+    return "Non-communion Sunday - TV setup needed"
+
 def get_avail_state():
     if os.path.exists('avail_state.json'):
         with open('avail_state.json', 'r') as f:
@@ -943,6 +967,10 @@ if __name__ == "__main__":
                     parts += ["", f"\u26a0\ufe0f Nobody assigned {date_word}:"] + unstaffed_lines
                 if unreachable_lines:
                     parts += ["", "\u26a0\ufe0f Assigned but not textable:"] + unreachable_lines
+                if target_date.weekday() == 6:  # Sunday
+                    communion_status = get_communion_status(target_date)
+                    if communion_status:
+                        parts += ["", f"\U0001f4fa {communion_status}"]
                 send_imessage(team_phones["Cameron"], "\n".join(parts), is_dry_run)
 
         elif run_mode == 'weekly':
