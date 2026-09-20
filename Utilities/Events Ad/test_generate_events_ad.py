@@ -293,6 +293,33 @@ class QrCode(unittest.TestCase):
         self.assertIn('+4 more at fccla.org/calendar', build_html([card], 4))
         self.assertNotIn('more at fccla.org/calendar', build_html([card], 0))
 
+    def test_empty_calendar_publishes_a_check_the_calendar_card(self):
+        """With nothing to list, the card used to be left untouched -- and
+        since these cards are exempt from the cleanup sweep, nothing would
+        ever expire it. A quiet stretch meant the screens advertised events
+        that had all already happened."""
+        out = build_html([])
+        self.assertIn('More Events Coming Soon', out)
+        self.assertIn('fccla.org/calendar', out)
+        self.assertIn('QR code linking to fccla.org/calendar', out)
+        self.assertIn('class="empty"', out)
+        self.assertNotIn('class="card', out)
+
+    def test_populated_card_is_not_the_empty_one(self):
+        card = {'name': 'Yamandu Costa', 'start': '2026-12-04T19:30:00-08:00',
+                'venue': 'The Sanctuary', 'category': 'CONCERT',
+                '_dt': datetime.datetime(2026, 12, 4, 19, 30, tzinfo=TZ)}
+        out = build_html([card])
+        self.assertIn('class="grid"', out)
+        self.assertNotIn('More Events Coming Soon', out)
+
+    def test_empty_card_has_a_stable_fingerprint(self):
+        # It has to publish once and then stop, like any other card state.
+        self.assertEqual(card_fingerprint([]), card_fingerprint([]))
+        card = {'name': 'X', 'start': '2026-12-04T19:30:00-08:00',
+                'venue': 'V', 'category': 'CONCERT'}
+        self.assertNotEqual(card_fingerprint([]), card_fingerprint([card]))
+
     def test_card_markup_includes_the_qr(self):
         now = datetime.datetime(2026, 9, 18, 9, 0, tzinfo=TZ)
         card = {'name': 'Yamandu Costa', 'start': '2026-12-04T19:30:00-08:00',

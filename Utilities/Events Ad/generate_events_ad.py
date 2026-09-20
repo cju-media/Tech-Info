@@ -99,7 +99,8 @@ GEMINI_MODEL = 'gemini-3.5-flash'
 #   2  "scan for tickets" QR in the header
 #   3  QR caption dropped; banner text centred on the y-axis
 #   4  "Events through <date>" dropped from the footer
-RENDER_VERSION = 4
+#   5  empty-state card for when the calendar has nothing on it
+RENDER_VERSION = 5
 CHROME_CANDIDATES = [
     os.environ.get('CHROME_BIN') or '',
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -415,8 +416,23 @@ def build_html(cards, extra_count=0):
     qr_uri = build_qr_data_uri(CALENDAR_URL)
     qr_block = QR_TEMPLATE.format(uri=qr_uri) if qr_uri else ''
 
+    if not cards:
+        # One big code instead of the header one: with no listings to read,
+        # scanning it is the only thing left to do on the card.
+        return HTML_SHELL.format(
+            rows=1,
+            main_class='empty',
+            cards=EMPTY_BODY.format(
+                qr=(f'<img class="empty-qr" src="{qr_uri}" '
+                    f'alt="QR code linking to fccla.org/calendar">')
+                   if qr_uri else ''),
+            more='',
+            qr='',
+        )
+
     return HTML_SHELL.format(
         rows=rows,
+        main_class='grid',
         cards='\n\n'.join(blocks),
         more=more,
         qr=qr_block,
@@ -425,6 +441,14 @@ def build_html(cards, extra_count=0):
 
 QR_TEMPLATE = """<div class="qr">
       <img src="{uri}" alt="QR code linking to fccla.org/calendar">
+    </div>"""
+
+
+EMPTY_BODY = """    <div class="empty-cta">
+      <div class="empty-lead">More Events Coming Soon</div>
+      <div class="empty-sub">Concerts, author talks and special events are being planned.</div>
+      {qr}
+      <div class="empty-url">fccla.org/calendar</div>
     </div>"""
 
 
@@ -461,8 +485,19 @@ HTML_SHELL = """<!DOCTYPE html>
   .header-right .site{{font-family:Cinzel,Georgia,serif;font-size:29px;
     font-weight:500;letter-spacing:.06em;color:#fff;}}
   .header-right .addr{{font-size:19px;color:rgba(255,255,255,.75);letter-spacing:.05em;}}
-  main{{flex:1 1 auto;padding:34px 70px 0;display:grid;
-    grid-template-columns:repeat(3,1fr);grid-template-rows:repeat({rows},1fr);gap:26px;}}
+  main{{flex:1 1 auto;padding:34px 70px 0;}}
+  main.grid{{display:grid;grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat({rows},1fr);gap:26px;}}
+  main.empty{{display:flex;align-items:center;justify-content:center;
+    padding-bottom:40px;}}
+  .empty-cta{{display:flex;flex-direction:column;align-items:center;text-align:center}}
+  .empty-lead{{font-family:Cinzel,Georgia,serif;font-size:66px;font-weight:700;
+    color:var(--ink);letter-spacing:.01em;}}
+  .empty-sub{{font-size:29px;color:var(--muted);margin-top:14px;letter-spacing:.02em}}
+  .empty-qr{{width:300px;height:300px;background:#fff;border-radius:8px;
+    padding:0;margin-top:38px;box-shadow:0 4px 18px rgba(26,26,26,.18)}}
+  .empty-url{{font-family:Cinzel,Georgia,serif;font-size:34px;font-weight:700;
+    color:var(--crimson);letter-spacing:.05em;margin-top:22px}}
   .card{{background:#fff;border:1px solid var(--rule);border-top:5px solid var(--crimson);
     border-radius:4px;padding:20px 26px 18px;display:flex;gap:24px;
     box-shadow:0 2px 10px rgba(110,0,19,.07);min-height:0;}}
@@ -510,7 +545,7 @@ HTML_SHELL = """<!DOCTYPE html>
   </div>
 </header>
 
-<main>
+<main class="{main_class}">
 
 {cards}
 
@@ -622,8 +657,12 @@ def main():
           + (f" (+{extra} beyond the grid)" if extra else ""))
 
     if not cards:
-        print('Nothing non-recurring to advertise; leaving the existing card alone.')
-        return
+        # Publish an empty-state card rather than leaving the last one up.
+        # These cards are exempt from cleanup_events_folder.py's sweep, so
+        # nothing would ever expire a stale grid -- in a quiet stretch the
+        # screens would advertise events that had all already happened.
+        print('Nothing non-recurring to advertise; publishing the '
+              '"check the calendar" card.')
 
     card_fp = card_fingerprint(cards)
     if not force and card_fp == state.get('card_fingerprint') and os.path.exists(PNG_PATH):
