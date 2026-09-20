@@ -20,13 +20,15 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # Fragment -> the name a first-ever upload gets. The rotation job renames it
 # almost immediately; these only have to be unique and recognisable.
 CARDS = {
-    'upcoming-service':    'Upcoming-Service.png',
-    'la-weather-forecast': 'LA-Weather-Forecast.png',
-    'events-at-a-glance':  'Events-At-A-Glance.png',
+    'upcoming-service':       'Upcoming-Service.png',
+    'la-weather-forecast':    'LA-Weather-Forecast.png',
+    'events-at-a-glance':     'Events-At-A-Glance.png',
+    'meetinghouse-newsletter': 'Meetinghouse-Newsletter.png',
 }
 
 # The order info cards take their turns in the rotation.
-ROTATION = ('upcoming-service', 'la-weather-forecast', 'events-at-a-glance')
+ROTATION = ('upcoming-service', 'la-weather-forecast', 'events-at-a-glance',
+            'meetinghouse-newsletter')
 
 
 def base_name(name):

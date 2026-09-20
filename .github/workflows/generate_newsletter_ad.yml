@@ -1,0 +1,71 @@
+name: Generate Newsletter Ad
+
+# Renders the Meetinghouse Newsletter sign-up card and uploads it to the
+# Events_Ads Drive folder.
+#
+# Daily rather than hourly: the card is static, so a run only does anything
+# when the wording or the sign-up URL changes, or when a copy has been
+# deleted from Drive and needs to come back. publish_card() skips copies
+# whose bytes already match, so an ordinary run is one listing and no writes.
+
+on:
+  schedule:
+    - cron: '7 7 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (render, but upload nothing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generate-newsletter-ad
+  cancel-in-progress: false
+
+jobs:
+  generate-newsletter-ad:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth requests segno
+
+      - name: Locate Chrome
+        run: |
+          for candidate in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              resolved="$(command -v "$candidate")"
+              break
+            fi
+          done
+          if [ -z "${resolved:-}" ]; then
+            sudo apt-get update && sudo apt-get install -y chromium-browser
+            resolved="$(command -v chromium-browser)"
+          fi
+          echo "CHROME_BIN=$resolved" >> "$GITHUB_ENV"
+          "$resolved" --version
+
+      - name: Run generator tests
+        run: cd "Utilities/Newsletter Ad" && python -m unittest discover -p 'test_*.py' -v
+
+      - name: Generate and upload the card
+        env:
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: cd "Utilities/Newsletter Ad" && python generate_newsletter_ad.py

@@ -103,6 +103,7 @@ PROTECTED_NAME_FRAGMENTS = (
     'events-at-a-glance',
     'la-weather-forecast',
     'upcoming-service',
+    'meetinghouse-newsletter',
 )
 
 
