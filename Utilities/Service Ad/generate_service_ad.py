@@ -8,10 +8,12 @@ church name -- so this deliberately frames the thumbnail rather than
 restating it. The header carries the scheduled day and time because that
 comes from the API and is authoritative even if a thumbnail is stale.
 
-When nothing is scheduled (between a service ending and the next one being
-created), it falls back to a channel card: avatar, channel name, subscriber
-count and a subscribe button, so the screen advertises the channel instead
-of going blank or showing last week's service.
+Between a service ending and the next being created there is nothing
+scheduled, so the card keeps showing the most recent past service, labelled
+"Past Service" -- a real service with a real thumbnail says more than a
+generic card. The channel card (avatar, name, subscriber count, subscribe
+button) is the last resort: an empty playlist, or a thumbnail that can't be
+downloaded.
 
 Playlist, channel credentials and the YouTube client all come from
 Youtube Processing/update_youtube_stream.py rather than being redeclared
@@ -114,27 +116,31 @@ def best_thumbnail(thumbnails):
 
 
 def pick_next_broadcast(videos, now):
-    """The soonest broadcast still worth advertising, or None.
+    """The broadcast to put on the card, or None if the playlist has none.
 
-    `videos` is the raw videos().list items. A broadcast qualifies while its
-    scheduled start is in the future, or recent enough to still be underway
-    (see GRACE)."""
-    candidates = []
+    The soonest one still to come or under way, and failing that the most
+    recent past one. That last case is the placeholder between a service
+    ending and the next being created: a real service with a real thumbnail
+    says more than a generic channel card, and the labels make clear it has
+    already happened."""
+    upcoming, past = [], []
     for video in videos or []:
         details = video.get('liveStreamingDetails') or {}
         start = parse_api_time(details.get('scheduledStartTime'))
         if start is None:
             continue
-        # Anything already finished is last week's service, not next week's.
-        if details.get('actualEndTime'):
-            continue
-        if start + GRACE < now:
-            continue
-        candidates.append((start, video))
-    if not candidates:
+        # Ended, or long enough past that it can't still be running.
+        if details.get('actualEndTime') or start + GRACE < now:
+            past.append((start, video))
+        else:
+            upcoming.append((start, video))
+
+    if upcoming:
+        start, video = min(upcoming, key=lambda pair: pair[0])
+    elif past:
+        start, video = max(past, key=lambda pair: pair[0])
+    else:
         return None
-    candidates.sort(key=lambda pair: pair[0])
-    start, video = candidates[0]
     snippet = video.get('snippet') or {}
     return {
         'id': video.get('id'),
@@ -213,10 +219,12 @@ def service_labels(start, now):
     """
     if start is None or start > now:
         return 'Upcoming Service', format_when(start, now)
-    # Same-day is the normal case (a 10:30 service plus three hours), but a
-    # late-evening one would spill past midnight and "Today's" would be a lie.
-    heading = "Today's Service" if start.date() == now.date() else 'Latest Service'
-    return heading, 'Watch on YouTube'
+    # Under way: still today's, and still worth joining. Once the grace
+    # window closes the same card stays up as the placeholder until the next
+    # stream is created, so it has to stop calling itself today's.
+    if now <= start + GRACE and start.date() == now.date():
+        return "Today's Service", 'Watch on YouTube'
+    return 'Past Service', 'Watch on YouTube'
 
 
 def subscriber_text(count):
@@ -359,13 +367,14 @@ def build_html(service=None, channel=None, now=None):
         # but nothing on it says whose channel to subscribe to.
         heading, when = service_labels(service.get('start'), now)
         start = service.get('start')
-        under_way = start is not None and start <= now
-        # Once it's under way the card says "Watch on YouTube", so the code
-        # should go to the broadcast rather than the channel -- sending
-        # someone to a subscribe dialog is not what that line offered them.
+        # True for both the under-way and past states -- in either the card
+        # says "Watch on YouTube", so the code goes to the broadcast rather
+        # than the channel. Sending someone to a subscribe dialog is not what
+        # that line offered them.
+        has_started = start is not None and start <= now
         qr_block = (code(watch_url(service),
-                         'QR code linking to the live stream', 'Scan to Watch')
-                    if under_way and watch_url(service) else subscribe)
+                         'QR code linking to the service broadcast', 'Scan to Watch')
+                    if has_started and watch_url(service) else subscribe)
         side = SIDE_TEMPLATE.format(mini=mini_channel(channel), qr=qr_block)
         return HTML_SHELL.format(
             eyebrow='Join Us for Worship',

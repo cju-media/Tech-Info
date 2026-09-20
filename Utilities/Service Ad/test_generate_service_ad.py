@@ -88,13 +88,30 @@ class PickNextBroadcast(unittest.TestCase):
         ], NOW)
         self.assertEqual(got['id'], 'sooner')
 
-    def test_finished_broadcasts_are_ignored(self):
-        # Last week's service has an actualEndTime; advertising it would put a
-        # past date on the screens.
+    def test_a_finished_broadcast_becomes_the_placeholder(self):
+        """Between a service ending and the next being created there is
+        nothing scheduled. The last one stays on the card rather than falling
+        back to a generic channel card -- a real service with a real
+        thumbnail says more, and the labels make clear it has happened."""
         got = pick_next_broadcast([
             video('done', '2026-09-20T17:30:00Z', ended='2026-09-20T19:00:00Z'),
         ], NOW)
-        self.assertIsNone(got)
+        self.assertIsNotNone(got)
+        self.assertEqual(got['id'], 'done')
+
+    def test_an_upcoming_broadcast_beats_a_finished_one(self):
+        got = pick_next_broadcast([
+            video('done', '2026-09-13T17:30:00Z', ended='2026-09-13T19:00:00Z'),
+            video('next', '2026-09-27T17:30:00Z'),
+        ], NOW)
+        self.assertEqual(got['id'], 'next')
+
+    def test_the_most_recent_past_broadcast_wins(self):
+        got = pick_next_broadcast([
+            video('older', '2026-09-06T17:30:00Z', ended='2026-09-06T19:00:00Z'),
+            video('newer', '2026-09-13T17:30:00Z', ended='2026-09-13T19:00:00Z'),
+        ], NOW)
+        self.assertEqual(got['id'], 'newer')
 
     def test_a_service_in_progress_still_shows(self):
         # Scheduled an hour ago, no end time: the screens should keep
@@ -103,9 +120,10 @@ class PickNextBroadcast(unittest.TestCase):
         got = pick_next_broadcast([video('live', started.isoformat())], NOW)
         self.assertEqual(got['id'], 'live')
 
-    def test_a_long_past_broadcast_is_dropped(self):
+    def test_a_long_past_broadcast_is_kept_as_the_placeholder(self):
         stale = (NOW - GRACE - datetime.timedelta(hours=1)).astimezone(datetime.timezone.utc)
-        self.assertIsNone(pick_next_broadcast([video('old', stale.isoformat())], NOW))
+        got = pick_next_broadcast([video('old', stale.isoformat())], NOW)
+        self.assertEqual(got['id'], 'old')
 
     def test_broadcasts_with_no_schedule_are_ignored(self):
         self.assertIsNone(pick_next_broadcast(
@@ -330,7 +348,8 @@ class ServiceLabels(unittest.TestCase):
         self.assertEqual(when, 'Today at 10:30 AM')
 
     def test_once_under_way_it_points_at_the_stream(self):
-        for hour in (10, 11, 13):
+        # Inside the three-hour grace window only: 13:31 is past it.
+        for hour in (10, 11, 12):
             now = datetime.datetime(2026, 9, 20, hour, 31, tzinfo=TZ)
             with self.subTest(hour=hour):
                 heading, when = service_labels(self.START, now)
@@ -343,8 +362,18 @@ class ServiceLabels(unittest.TestCase):
         late = datetime.datetime(2026, 9, 20, 23, 0, tzinfo=TZ)
         heading, when = service_labels(late,
                                        datetime.datetime(2026, 9, 21, 1, 0, tzinfo=TZ))
-        self.assertEqual(heading, 'Latest Service')
+        self.assertEqual(heading, 'Past Service')
         self.assertEqual(when, 'Watch on YouTube')
+
+    def test_after_the_grace_window_it_becomes_the_past_service(self):
+        """It stays up as the placeholder until the next stream is created,
+        so it has to stop calling itself today's."""
+        for now in (datetime.datetime(2026, 9, 20, 14, 0, tzinfo=TZ),
+                    datetime.datetime(2026, 9, 23, 9, 0, tzinfo=TZ)):
+            with self.subTest(now=now):
+                heading, when = service_labels(self.START, now)
+                self.assertEqual(heading, 'Past Service')
+                self.assertEqual(when, 'Watch on YouTube')
 
     def test_no_start_falls_back_to_upcoming(self):
         self.assertEqual(service_labels(None, NOW), ('Upcoming Service', ''))
@@ -393,13 +422,20 @@ class QrTarget(unittest.TestCase):
                          datetime.datetime(2026, 9, 20, 11, 15, tzinfo=TZ))
         self.assertIn('Scan to Watch', out)
         self.assertNotIn('Scan to Subscribe', out)
-        self.assertIn('QR code linking to the live stream', out)
+        self.assertIn('QR code linking to the service broadcast', out)
 
     def test_without_a_video_id_it_falls_back_to_subscribing(self):
         # A code that goes nowhere is worse than one that goes to the channel.
         out = build_html(self.svc(vid=''), self.CH,
                          datetime.datetime(2026, 9, 20, 11, 15, tzinfo=TZ))
         self.assertIn('Scan to Subscribe', out)
+
+    def test_the_past_service_card_also_points_at_the_broadcast(self):
+        # It says "Watch on YouTube" in that state too.
+        out = build_html(self.svc(), self.CH,
+                         datetime.datetime(2026, 9, 23, 9, 0, tzinfo=TZ))
+        self.assertIn('Scan to Watch', out)
+        self.assertIn('<h1>Past Service</h1>', out)
 
     def test_the_channel_card_always_subscribes(self):
         out = build_html(None, dict(self.CH, title='First Church'),

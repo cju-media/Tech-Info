@@ -19,6 +19,17 @@ on:
     # every tenth minute, the weather card on :37, and the round minutes the
     # rest of GitHub schedules on, where the queue backs up.
     - cron: '23 * * * *'
+    # Sunday, around the 10:30 service. The card only changes when it's
+    # regenerated, so left to the hourly run alone it would go on saying
+    # "Upcoming Service / Today at 10:30 AM" until 11:23 -- most of the way
+    # through. Both hours are listed because cron is UTC and doesn't follow
+    # DST: 17:xx is 10:xx Pacific in summer, 18:xx in winter.
+    #
+    # :27 is the one aimed just before the service, on the assumption
+    # GitHub's queue pushes it past 10:30. If it fires punctually it renders
+    # the pre-service state instead, which is why :42 and :57 follow -- they
+    # are what actually guarantees the flip, not the :27.
+    - cron: '27,42,57 17,18 * * 0'
   workflow_dispatch:
     inputs:
       dry_run:
