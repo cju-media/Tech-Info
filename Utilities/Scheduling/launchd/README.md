@@ -1,4 +1,4 @@
-# launchd timers for the screen cards
+# launchd timers for the screen cards (and the server-health poller)
 
 GitHub's `schedule:` trigger is best effort, and on this repo it is not close
 to reliable. Measured over 46 hours on 2026-09-20, two workflows each asking
@@ -27,8 +27,9 @@ in Los Angeles year round. The cron entries had to list both `17:xx` and
 | `org.fccla.weather-card` | `generate_weather_ad.yml` | hourly `:37` |
 | `org.fccla.rotation` | `renumber_rotation.yml` | every 15 min |
 | `org.fccla.events-card` | `generate_events_ad.yml` | hourly `:47` |
+| `org.fccla.server-health` | `server_health.yml` | every 10 min (`:04 :14 :24 :34 :44 :54`) |
 
-All four call the same `dispatch_workflow.py`; they differ only in label,
+All five call the same `dispatch_workflow.py`; they differ only in label,
 workflow name, log path and schedule.
 
 ## Install (on the self-hosted Mac)
@@ -88,9 +89,19 @@ Measured 2026-09-20:
 | `generate_weather_ad.yml` | hourly | ~1 in 4 (avg gap 3.6h, worst 5.0h) |
 | `renumber_rotation.yml` | every 15 min | ~1 in 14 (gaps of 3.3h and 4.4h) |
 | `generate_events_ad.yml` | daily 08:45 UTC | arrived, ~4h late |
+| `server_health.yml` | every 10 min | ~1 in 18 (avg gap 3.1h, worst 4.7h) |
 
 The events card has since been moved to hourly, so that gap now applies to
 the "new event on the calendar" text as well as the card itself.
+
+`server_health.yml` is the odd one out here: it already ran on this same
+self-hosted Mac (it has to, to reach `localhost:3000/4200/1031/3671`), and
+every run that fired succeeded. Measured over the 44 hours ending
+2026-09-20T19:15Z via `gh run list`, it got 15 of the ~264 runs it asked
+for. The dashboard marks a server STALE after 12 minutes
+(`dashboardStaleMinutes` in `server-health-config.json`) against a 10-minute
+ask, so it read as stale almost the entire time — not because Studio Mini or
+the network were down, but because GitHub's scheduler wasn't firing the job.
 
 The rotation was hit hardest by a wide margin: 96 requested runs a day,
 about seven delivered. That gap is how long a newly uploaded flyer sat at
@@ -109,6 +120,7 @@ Each timer sits on its own minute so they never fire together:
 | `:27` | service card |
 | `:37` | weather card |
 | `:47` | events card |
+| `:04` `:14` `:24` `:34` `:44` `:54` | server health |
 
 The events card is hourly rather than daily because it also sends the "new
 event on the calendar" text, and daily meant that text could be a day behind.

@@ -199,7 +199,10 @@ YouTube OSC :3671).
 - **`check_server_health.py`** (`server_health.yml`, self-hosted, every 10 min)
   — polls each URL in `servers.json`, publishes status to a secret Gist,
   emails on up↔down transitions (after 2 consecutive fails). State:
-  `server_status_state.json`.
+  `server_status_state.json`. GitHub's `schedule:` trigger drops most of
+  this workflow's firings (~1 in 18, measured), so a `launchd` timer on
+  Studio Mini (`org.fccla.server-health`, see
+  `Utilities/Scheduling/launchd/`) dispatches it on a real clock instead.
 - **`check_health_freshness.py`** (`server_health_watchdog.yml`, GitHub-hosted,
   every 30 min) — reads the Gist and emails once if the poller has gone silent
   >40 min (catches a fully-down Studio Mini). State: `health_watchdog_state.json`.

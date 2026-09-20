@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Fires the server-health poller on a clock that doesn't drop timers.
+
+  server_health.yml already runs on this same self-hosted Mac (it has to,
+  to reach localhost:3000/4200/1031/3671), and every run that fires succeeds.
+  The problem is the schedule: cron asks for every 10 minutes but GitHub was
+  only delivering a run every 2-5 hours (measured 2026-09-20 via `gh run
+  list`), while the dashboard marks a server STALE after just 12 minutes
+  (dashboardStaleMinutes in server-health-config.json). Same drop pattern as
+  the other cards this directory already works around.
+
+  Every 10 minutes, matching the cron it replaces, on minutes that don't
+  collide with the other timers here (:11/26/41/56 rotation, :27 service,
+  :37 weather, :47 events).
+
+  Install: see README.md in this directory.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>org.fccla.server-health</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/soundteam/Documents/Tech-Info/Utilities/Scheduling/launchd/dispatch_workflow.py</string>
+		<string>server_health.yml</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StandardErrorPath</key>
+	<string>/Users/soundteam/Library/Logs/fccla-server-health.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/soundteam/Library/Logs/fccla-server-health.log</string>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Minute</key>
+			<integer>4</integer>
+		</dict>
+		<dict>
+			<key>Minute</key>
+			<integer>14</integer>
+		</dict>
+		<dict>
+			<key>Minute</key>
+			<integer>24</integer>
+		</dict>
+		<dict>
+			<key>Minute</key>
+			<integer>34</integer>
+		</dict>
+		<dict>
+			<key>Minute</key>
+			<integer>44</integer>
+		</dict>
+		<dict>
+			<key>Minute</key>
+			<integer>54</integer>
+		</dict>
+	</array>
+</dict>
+</plist>
