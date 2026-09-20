@@ -17,6 +17,7 @@ from generate_service_ad import (
     build_qr_data_uri,
     mini_channel,
     subscribe_url,
+    watch_url,
     GRACE,
     TZ,
     best_thumbnail,
@@ -359,6 +360,52 @@ class ServiceLabels(unittest.TestCase):
         self.assertNotIn('<h1>Upcoming Service</h1>', out)
         self.assertIn('Watch on YouTube', out)
         self.assertNotIn('10:30 AM', out)
+
+
+class QrTarget(unittest.TestCase):
+    """Before a service the code subscribes; once it's under way the card
+    says "Watch on YouTube", so the code goes to the broadcast -- sending
+    someone to a subscribe dialog is not what that line offered them."""
+
+    CH = {'handle': '@firstchurchla', 'id': 'UCabc123'}
+    START = datetime.datetime(2026, 9, 20, 10, 30, tzinfo=TZ)
+
+    def svc(self, vid='o87JyZNAKeM'):
+        return {'id': vid, 'title': 'Sunday Worship', 'start': self.START,
+                'thumb_uri': 'data:image/jpeg;base64,AAA'}
+
+    def test_watch_url_is_the_broadcast(self):
+        self.assertEqual(watch_url({'id': 'o87JyZNAKeM'}),
+                         'https://www.youtube.com/watch?v=o87JyZNAKeM')
+
+    def test_watch_url_without_an_id_is_blank(self):
+        self.assertEqual(watch_url({}), '')
+        self.assertEqual(watch_url(None), '')
+
+    def test_before_the_service_the_code_subscribes(self):
+        out = build_html(self.svc(), self.CH,
+                         datetime.datetime(2026, 9, 18, 9, 0, tzinfo=TZ))
+        self.assertIn('Scan to Subscribe', out)
+        self.assertNotIn('Scan to Watch', out)
+
+    def test_once_under_way_the_code_goes_to_the_broadcast(self):
+        out = build_html(self.svc(), self.CH,
+                         datetime.datetime(2026, 9, 20, 11, 15, tzinfo=TZ))
+        self.assertIn('Scan to Watch', out)
+        self.assertNotIn('Scan to Subscribe', out)
+        self.assertIn('QR code linking to the live stream', out)
+
+    def test_without_a_video_id_it_falls_back_to_subscribing(self):
+        # A code that goes nowhere is worse than one that goes to the channel.
+        out = build_html(self.svc(vid=''), self.CH,
+                         datetime.datetime(2026, 9, 20, 11, 15, tzinfo=TZ))
+        self.assertIn('Scan to Subscribe', out)
+
+    def test_the_channel_card_always_subscribes(self):
+        out = build_html(None, dict(self.CH, title='First Church'),
+                         datetime.datetime(2026, 9, 20, 11, 15, tzinfo=TZ))
+        self.assertIn('Scan to Subscribe', out)
+        self.assertNotIn('Scan to Watch', out)
 
 
 if __name__ == '__main__':

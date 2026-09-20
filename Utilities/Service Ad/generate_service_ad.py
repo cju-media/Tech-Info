@@ -178,6 +178,12 @@ def subscribe_url(channel):
     return ''
 
 
+def watch_url(service):
+    """The broadcast's own watch link, or '' if we don't have its id."""
+    vid = ((service or {}).get('id') or '').strip()
+    return f'https://www.youtube.com/watch?v={vid}' if vid else ''
+
+
 def build_qr_data_uri(url, scale=4):
     """The subscribe link as an inline SVG data URI.
 
@@ -334,19 +340,33 @@ def render_png(html_path, png_path):
 def build_html(service=None, channel=None, now=None):
     """The stream card when a broadcast is scheduled, else the channel card.
 
-    Both carry the subscribe QR: the channel card is about subscribing, and
-    the stream card is the one people actually stop and look at."""
+    Both carry a QR. Before a service begins, and on the channel card, it
+    subscribes; once a service is under way the stream card's code goes to
+    the broadcast itself, to match the "Watch on YouTube" line beside it."""
     now = now or datetime.datetime.now(TZ)
     channel = channel or {}
-    qr_uri = build_qr_data_uri(subscribe_url(channel))
-    qr_block = QR_TEMPLATE.format(uri=qr_uri) if qr_uri else ''
+
+    def code(url, alt, cap):
+        uri = build_qr_data_uri(url)
+        return QR_TEMPLATE.format(uri=uri, alt=alt, cap=cap) if uri else ''
+
+    subscribe = code(subscribe_url(channel),
+                     'QR code to subscribe on YouTube', 'Scan to Subscribe')
 
     if service and service.get('thumb_uri'):
         # The stream card's right column carries a compact version of the
         # channel above the code -- the thumbnail says what the service is,
         # but nothing on it says whose channel to subscribe to.
-        side = SIDE_TEMPLATE.format(mini=mini_channel(channel), qr=qr_block)
         heading, when = service_labels(service.get('start'), now)
+        start = service.get('start')
+        under_way = start is not None and start <= now
+        # Once it's under way the card says "Watch on YouTube", so the code
+        # should go to the broadcast rather than the channel -- sending
+        # someone to a subscribe dialog is not what that line offered them.
+        qr_block = (code(watch_url(service),
+                         'QR code linking to the live stream', 'Scan to Watch')
+                    if under_way and watch_url(service) else subscribe)
+        side = SIDE_TEMPLATE.format(mini=mini_channel(channel), qr=qr_block)
         return HTML_SHELL.format(
             eyebrow='Join Us for Worship',
             heading=heading,
@@ -372,7 +392,7 @@ def build_html(service=None, channel=None, now=None):
             subs=subs,
         ),
         footer='Watch live at fccla.org/live',
-        side=SIDE_TEMPLATE.format(mini='', qr=qr_block) if qr_block else '',
+        side=SIDE_TEMPLATE.format(mini='', qr=subscribe) if subscribe else '',
     )
 
 
@@ -388,8 +408,8 @@ SIDE_TEMPLATE = """    <div class="side">
     </div>"""
 
 QR_TEMPLATE = """<div class="qr">
-      <img src="{uri}" alt="QR code to subscribe on YouTube">
-      <div class="qr-cap">Scan to Subscribe</div>
+      <img src="{uri}" alt="{alt}">
+      <div class="qr-cap">{cap}</div>
     </div>"""
 
 def mini_channel(channel):
