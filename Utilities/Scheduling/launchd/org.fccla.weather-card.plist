@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Fires the weather-card workflow on a clock that doesn't drop timers.
+
+  The card shows a live current temperature, so a stale one is wrong rather
+  than merely old. GitHub's scheduler delivered about one in four of this
+  workflow's hourly runs (measured 2026-09-20), an average gap of 3.6 hours,
+  which meant a "69 degrees now" reading could be from breakfast.
+
+  Hourly at :37, matching the cron it replaces. A run whose render is byte
+  identical skips the Drive write, so an unchanged forecast costs nothing.
+
+  Install: see README.md in this directory.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>org.fccla.weather-card</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/soundteam/Tech-Info/Utilities/Scheduling/launchd/dispatch_workflow.py</string>
+		<string>generate_weather_ad.yml</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StandardErrorPath</key>
+	<string>/Users/soundteam/Library/Logs/fccla-weather-card.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/soundteam/Library/Logs/fccla-weather-card.log</string>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Minute</key>
+			<integer>37</integer>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Fires the rotation renumbering on a clock that doesn't drop timers.
+
+  This one was hit hardest: it asks for 96 runs a day and was getting about
+  seven (measured 2026-09-20, gaps of 3.3 and 4.4 hours against a 15 minute
+  schedule). The rotation is what puts a newly uploaded flyer into the
+  running order, so those gaps are how long a new poster sits at the back of
+  the lap instead of in its slot.
+
+  Every 15 minutes, matching the cron it replaces. The job is idempotent, so
+  a run with nothing to do lists the folder and renames nothing.
+
+  Install: see README.md in this directory.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>org.fccla.rotation</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/soundteam/Tech-Info/Utilities/Scheduling/launchd/dispatch_workflow.py</string>
+		<string>renumber_rotation.yml</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StandardErrorPath</key>
+	<string>/Users/soundteam/Library/Logs/fccla-rotation.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/soundteam/Library/Logs/fccla-rotation.log</string>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Minute</key>
+			<integer>11</integer>
+		</dict>
+		<dict>
+			<key>Minute</key>
+			<integer>26</integer>
+		</dict>
+		<dict>
+			<key>Minute</key>
+			<integer>41</integer>
+		</dict>
+		<dict>
+			<key>Minute</key>
+			<integer>56</integer>
+		</dict>
+	</array>
+</dict>
+</plist>

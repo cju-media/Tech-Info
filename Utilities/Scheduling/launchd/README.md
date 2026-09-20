@@ -19,6 +19,18 @@ A second benefit: launchd schedules in **local time**, so "10:27" means 10:27
 in Los Angeles year round. The cron entries had to list both `17:xx` and
 `18:xx` UTC to hit the same moment either side of daylight saving.
 
+## What's here
+
+| Plist | Workflow | Fires |
+| --- | --- | --- |
+| `org.fccla.service-card` | `generate_service_ad.yml` | hourly `:27`, plus Sun 10:42 / 10:57 / 11:12 |
+| `org.fccla.weather-card` | `generate_weather_ad.yml` | hourly `:37` |
+| `org.fccla.rotation` | `renumber_rotation.yml` | every 15 min |
+| `org.fccla.events-card` | `generate_events_ad.yml` | daily 01:45 |
+
+All four call the same `dispatch_workflow.py`; they differ only in label,
+workflow name, log path and schedule.
+
 ## Install (on the self-hosted Mac)
 
 1. **Give it a token.** Any token that can dispatch workflows on this repo —
@@ -34,12 +46,14 @@ in Los Angeles year round. The cron entries had to list both `17:xx` and
    `/Users/soundteam/Tech-Info`. Edit `ProgramArguments` and the two log
    paths if it lives somewhere else.
 
-3. **Install and load it.**
+3. **Install and load them.**
 
    ```bash
-   cp org.fccla.service-card.plist ~/Library/LaunchAgents/
-   launchctl unload ~/Library/LaunchAgents/org.fccla.service-card.plist 2>/dev/null
-   launchctl load ~/Library/LaunchAgents/org.fccla.service-card.plist
+   for f in org.fccla.*.plist; do
+     cp "$f" ~/Library/LaunchAgents/
+     launchctl unload ~/Library/LaunchAgents/"$f" 2>/dev/null
+     launchctl load ~/Library/LaunchAgents/"$f"
+   done
    ```
 
 4. **Prove it works** without waiting for the clock:
@@ -64,20 +78,31 @@ in Los Angeles year round. The cron entries had to list both `17:xx` and
 Dispatching more often than strictly needed costs nothing — a run whose
 render is byte identical skips the Drive write entirely.
 
-## Adding the other cards
+## What GitHub was actually delivering
 
-The same script dispatches anything. Copy the plist, change three things —
-`Label`, the workflow filename in `ProgramArguments`, and the log paths — and
-load it. The workflows worth moving over are:
+Measured 2026-09-20:
 
-| Workflow | Currently asks for | Actually gets |
+| Workflow | Asks for | Was getting |
 | --- | --- | --- |
-| `generate_weather_ad.yml` | hourly at `:37` | ~1 in 4 |
-| `renumber_rotation.yml` | every 15 min | ~1 in 4 |
-| `generate_events_ad.yml` | hourly | ~1 in 4 |
+| `generate_service_ad.yml` | hourly | ~1 in 4 (avg gap 3.8h, worst 6.1h) |
+| `generate_weather_ad.yml` | hourly | ~1 in 4 (avg gap 3.6h, worst 5.0h) |
+| `renumber_rotation.yml` | every 15 min | ~1 in 14 (gaps of 3.3h and 4.4h) |
+| `generate_events_ad.yml` | daily 08:45 UTC | arrived, ~4h late |
+
+The rotation was hit hardest by a wide margin: 96 requested runs a day,
+about seven delivered. That gap is how long a newly uploaded flyer sat at
+the back of the lap instead of in its slot.
 
 Leave the `schedule:` blocks in the workflows as they are. They cost nothing
 when they do fire and are a useful backstop if the Mac is off.
+
+## Cadence note
+
+The events card runs daily, matching the cron it replaces — but it is also
+what sends the "new event on the calendar" text, so that text can be up to a
+day behind. Hourly would make it near immediate and costs almost nothing: an
+unchanged calendar skips both the Gemini call and the Drive write. The change
+is one line in `org.fccla.events-card.plist`, noted in its comment.
 
 ## Caveats
 

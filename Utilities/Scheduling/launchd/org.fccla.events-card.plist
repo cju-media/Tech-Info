@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Fires the events-card workflow on a clock that doesn't drop timers.
+
+  Daily at 01:45 local, matching the 08:45 UTC cron it replaces (which was
+  arriving around 13:00 UTC, four hours late, though it did arrive).
+
+  Worth knowing: this workflow also sends the "new event on the calendar"
+  text, so daily means that text can be up to a day behind. Running it
+  hourly would make it near immediate and costs almost nothing, because an
+  unchanged calendar skips both the Gemini call and the Drive write. To do
+  that, replace the single entry below with {'Minute': 47}.
+
+  Install: see README.md in this directory.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>org.fccla.events-card</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/soundteam/Tech-Info/Utilities/Scheduling/launchd/dispatch_workflow.py</string>
+		<string>generate_events_ad.yml</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>StandardErrorPath</key>
+	<string>/Users/soundteam/Library/Logs/fccla-events-card.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/soundteam/Library/Logs/fccla-events-card.log</string>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Hour</key>
+			<integer>1</integer>
+			<key>Minute</key>
+			<integer>45</integer>
+		</dict>
+	</array>
+</dict>
+</plist>
