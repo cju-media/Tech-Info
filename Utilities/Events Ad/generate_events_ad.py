@@ -230,6 +230,58 @@ def heuristic_recurring(name):
     return 'worship service' in (name or '').lower()
 
 
+def announce_new_events(cards, state, dry_run):
+    """Text Cameron about events that have appeared on the calendar.
+
+    Only genuinely new ones: `announced` in the state file remembers every
+    event already mentioned, so a run that finds nothing new sends nothing.
+    On the first run after this was added the key is absent -- that is
+    seeded silently rather than texting about all nine events already on the
+    calendar.
+    """
+    seen = state.get('announced')
+    keys = [event_key(c) for c in cards]
+
+    if seen is None:
+        state['announced'] = sorted(keys)
+        print(f'  Seeded the announced list with {len(keys)} existing event(s); '
+              f'no notification.')
+        return []
+
+    seen = set(seen)
+    fresh = [c for c in cards if event_key(c) not in seen]
+    if not fresh:
+        return []
+
+    if len(fresh) == 1:
+        c = fresh[0]
+        summary = (f"New event on fccla.org/calendar: '{c['name']}' - "
+                   f"{c['_dt']:%a %b %-d} at {c['_dt']:%-I:%M %p}, {c['venue']}")
+    else:
+        # One message rather than one per event: a batch of five added at
+        # once should be one buzz, not five.
+        listed = '; '.join(f"{c['name']} ({c['_dt']:%b %-d})" for c in fresh)
+        summary = f'{len(fresh)} new events on fccla.org/calendar: {listed}'
+
+    print(f'  {len(fresh)} new event(s) to announce.')
+    if dry_run:
+        print(f'  DRY RUN: would text - {summary}')
+        return fresh
+
+    if UPLOADER_DIR not in sys.path:
+        sys.path.insert(0, UPLOADER_DIR)
+    try:
+        from upload_queue_to_drive import dispatch_event
+        dispatch_event('calendar_event_added', {'summary': summary})
+    except Exception as e:
+        # A missed text is not worth failing the card over.
+        print(f'  Could not dispatch the notification ({e}); carrying on.')
+        return fresh
+
+    state['announced'] = sorted(seen | set(keys))
+    return fresh
+
+
 def load_state():
     try:
         with open(STATE_PATH) as f:
@@ -662,6 +714,11 @@ def main():
         # screens would advertise events that had all already happened.
         print('Nothing non-recurring to advertise; publishing the '
               '"check the calendar" card.')
+
+    # Before the fingerprint short-circuit below: a new event changes the
+    # card, but an event added and then removed again between runs would not,
+    # and it should still be worth knowing about.
+    announce_new_events(cards, state, dry_run)
 
     card_fp = card_fingerprint(cards)
     if not force and card_fp == state.get('card_fingerprint') and os.path.exists(PNG_PATH):

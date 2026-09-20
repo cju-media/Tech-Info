@@ -19,6 +19,7 @@ from generate_events_ad import (
     CARD_FRAGMENT,
     EVENTS_FOLDER_ID,
     TZ,
+    announce_new_events,
     build_html,
     build_qr_data_uri,
     card_fingerprint,
@@ -335,6 +336,49 @@ class QrCode(unittest.TestCase):
         self.assertIn('QR code linking to fccla.org/calendar', html_out)
         # The code stands on its own now -- no caption under it.
         self.assertNotIn('Scan for tickets', html_out)
+
+
+class AnnounceNewEvents(unittest.TestCase):
+    """A text when something new appears on fccla.org/calendar."""
+
+    def card(self, name, day=4):
+        return {'name': name, 'start': f'2026-12-{day:02d}T19:30:00-08:00',
+                'venue': 'The Sanctuary', 'category': 'CONCERT',
+                '_dt': datetime.datetime(2026, 12, day, 19, 30, tzinfo=TZ)}
+
+    def test_first_run_seeds_silently(self):
+        """Otherwise switching this on would text about every event already
+        on the calendar."""
+        state = {}
+        fresh = announce_new_events([self.card('A'), self.card('B', 5)],
+                                    state, dry_run=True)
+        self.assertEqual(fresh, [])
+        self.assertEqual(len(state['announced']), 2)
+
+    def test_nothing_new_sends_nothing(self):
+        cards = [self.card('A')]
+        state = {'announced': [event_key(c) for c in cards]}
+        self.assertEqual(announce_new_events(cards, state, dry_run=True), [])
+
+    def test_a_new_event_is_picked_up(self):
+        old = self.card('Old')
+        state = {'announced': [event_key(old)]}
+        fresh = announce_new_events([old, self.card('New', 5)], state, dry_run=True)
+        self.assertEqual([c['name'] for c in fresh], ['New'])
+
+    def test_a_renamed_or_rescheduled_event_counts_as_new(self):
+        # The key is name + start, so a moved date is worth knowing about.
+        original = self.card('Concert', 4)
+        state = {'announced': [event_key(original)]}
+        fresh = announce_new_events([self.card('Concert', 11)], state, dry_run=True)
+        self.assertEqual(len(fresh), 1)
+
+    def test_a_dry_run_does_not_mark_events_announced(self):
+        # Otherwise a dry run would silence the real one that follows.
+        old = self.card('Old')
+        state = {'announced': [event_key(old)]}
+        announce_new_events([old, self.card('New', 5)], state, dry_run=True)
+        self.assertEqual(state['announced'], [event_key(old)])
 
 
 if __name__ == '__main__':
