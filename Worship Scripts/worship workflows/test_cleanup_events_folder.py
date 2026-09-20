@@ -13,7 +13,7 @@ import datetime
 import unittest
 
 from cleanup_events_folder import (
-    PROTECTED_NAME_PREFIXES,
+    PROTECTED_NAME_FRAGMENTS,
     SUSPECT_MISREAD_DAYS,
     build_date_prompt,
     is_protected_flyer,
@@ -127,12 +127,21 @@ class IsProtectedFlyer(unittest.TestCase):
         self.assertFalse(is_protected_flyer(None))
         self.assertFalse(is_protected_flyer(""))
 
-    def test_prefixes_are_stored_lowercased(self):
+    def test_fragments_are_stored_lowercased(self):
         # is_protected_flyer lowercases the stem, so a non-lowercase entry here
         # would silently never match.
-        for prefix in PROTECTED_NAME_PREFIXES:
-            with self.subTest(prefix=prefix):
-                self.assertEqual(prefix, prefix.lower())
+        for fragment in PROTECTED_NAME_FRAGMENTS:
+            with self.subTest(fragment=fragment):
+                self.assertEqual(fragment, fragment.lower())
+
+    def test_sort_key_prefixed_copies_are_protected(self):
+        # Each card is uploaded several times with a sort-key prefix so it
+        # interleaves with the flyers; every copy must be spared.
+        for name in ('1-Upcoming-Service.png', 'E-Upcoming-Service.png',
+                     'A-LA-Weather-Forecast.png', 'W-LA-Weather-Forecast.png',
+                     'C-Events-At-A-Glance.png', 'N-Events-At-A-Glance.png'):
+            with self.subTest(name=name):
+                self.assertTrue(is_protected_flyer(name))
 
 
 if __name__ == "__main__":

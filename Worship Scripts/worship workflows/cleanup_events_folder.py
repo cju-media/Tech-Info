@@ -94,11 +94,12 @@ SUSPECT_MISREAD_DAYS = 180
 # those thumbnails print the service date -- so the vision read would trash
 # it the day after the service, which is exactly when the next stream's card
 # is about to replace it anyway.
-# These three deliberately don't share a prefix. Content Display plays the
-# folder in filename order, so an "FCCLA-Upcoming-*" family sorted together
-# and the three generated cards ran back to back between the event flyers.
-# The names are chosen to interleave instead -- see the generators.
-PROTECTED_NAME_PREFIXES = (
+# Content Display plays the folder in filename order, so each generated card
+# is uploaded several times under different sort-key prefixes ("A-", "E-",
+# "L-" ...) to interleave with the event flyers -- see the generators. That
+# means matching a *fragment* of the name rather than a prefix: one entry
+# here covers every copy of a card, however it's sorted into the rotation.
+PROTECTED_NAME_FRAGMENTS = (
     'events-at-a-glance',
     'la-weather-forecast',
     'upcoming-service',
@@ -106,10 +107,16 @@ PROTECTED_NAME_PREFIXES = (
 
 
 def is_protected_flyer(name):
-    """True for standing graphics that must never be auto-trashed, matched on
-    the filename stem (see PROTECTED_NAME_PREFIXES)."""
+    """True for standing graphics that must never be auto-trashed.
+
+    Matched as a substring of the filename stem, so every sort-key-prefixed
+    copy of a card ("A-LA-Weather-Forecast", "L-LA-Weather-Forecast") is
+    covered by one entry, as are Drive's collision suffixes ("... (1)").
+    The trade is that a human flyer happening to contain one of these
+    phrases would also be spared; they're specific enough that that's the
+    safer way to be wrong."""
     stem = os.path.splitext(name or '')[0].strip().lower()
-    return stem.startswith(PROTECTED_NAME_PREFIXES)
+    return any(fragment in stem for fragment in PROTECTED_NAME_FRAGMENTS)
 
 
 class FlyerDateReadError(Exception):

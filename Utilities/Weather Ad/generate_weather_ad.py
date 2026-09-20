@@ -58,7 +58,18 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # the vision read would trash it the day after whichever one it picked.
 # Matching that list also makes upload_to_drive() replace the card in place
 # rather than stacking a new copy every hour.
-CARD_FILENAME = 'LA-Weather-Forecast.png'
+# Published several times over, under sort-key prefixes. Content Display
+# plays the folder in filename order, so one copy of a card appears once per
+# lap; these land between the event flyers so an info card comes up roughly
+# every other poster. The prefixes are fitted to the flyers currently in the
+# folder -- as those come and go the interleave drifts, and the fix is to
+# re-pick these letters. cleanup_events_folder.py matches the descriptive
+# part as a fragment, so every copy is protected without listing them all.
+CARD_FILENAMES = (
+    'A-LA-Weather-Forecast.png',
+    'L-LA-Weather-Forecast.png',
+    'W-LA-Weather-Forecast.png',
+)
 
 TZ = zoneinfo.ZoneInfo('America/Los_Angeles')
 LAT, LON = 34.0614, -118.2839          # 540 S Commonwealth Ave
@@ -467,13 +478,14 @@ def upload_to_drive(png_path, dry_run):
     of git objects that can never be pruned without rewriting history.
     Nothing here touches the repo.
 
-    upload_to_drive() replaces the file in place because CARD_FILENAME
+    upload_to_drive() replaces the file in place because CARD_FILENAMES
     matches cleanup_events_folder.py's protected list; skip_if_exists means
     a byte-identical render (the forecast genuinely not having moved) costs
     no Drive write at all.
     """
     if dry_run:
-        print(f'  DRY RUN: would upload {CARD_FILENAME} to Drive.')
+        for name in CARD_FILENAMES:
+            print(f'  DRY RUN: would upload {name} to Drive.')
         return True
 
     if UPLOADER_DIR not in sys.path:
@@ -486,9 +498,15 @@ def upload_to_drive(png_path, dry_run):
             'No Drive credentials: set GDRIVE_OAUTH_JSON or '
             'GDRIVE_SERVICE_ACCOUNT_JSON.')
 
-    if not push(service, png_path, CARD_FILENAME, EVENTS_FOLDER_ID,
-                skip_if_exists=True):
-        raise RuntimeError('Drive upload failed; see the error above.')
+    # One upload per copy. skip_if_exists means a copy whose bytes haven't
+    # changed costs nothing, so a steady forecast is a listing call per name
+    # rather than a re-upload.
+    failed = [name for name in CARD_FILENAMES
+              if not push(service, png_path, name, EVENTS_FOLDER_ID,
+                          skip_if_exists=True)]
+    if failed:
+        raise RuntimeError(f"Drive upload failed for {', '.join(failed)}; "
+                           f'see the error above.')
     return True
 
 

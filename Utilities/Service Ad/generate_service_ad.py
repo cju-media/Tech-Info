@@ -57,7 +57,18 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # thumbnail prints a service date, so the vision read would trash this card
 # the day after the service it advertises -- exactly when the next one is
 # about to replace it anyway.
-CARD_FILENAME = 'Upcoming-Service.png'
+# Published several times over, under sort-key prefixes. Content Display
+# plays the folder in filename order, so one copy of a card appears once per
+# lap; these land between the event flyers so an info card comes up roughly
+# every other poster. The prefixes are fitted to the flyers currently in the
+# folder -- as those come and go the interleave drifts, and the fix is to
+# re-pick these letters. cleanup_events_folder.py matches the descriptive
+# part as a fragment, so every copy is protected without listing them all.
+CARD_FILENAMES = (
+    '1-Upcoming-Service.png',
+    'E-Upcoming-Service.png',
+    'T-Upcoming-Service.png',
+)
 
 # A broadcast stays on the card until this long after its scheduled start, so
 # the screen keeps advertising the service while it's actually happening
@@ -515,7 +526,8 @@ def upload_to_drive(png_path, dry_run):
     """Straight to Drive -- see the weather card for why this doesn't use the
     git-backed upload queue."""
     if dry_run:
-        print(f'  DRY RUN: would upload {CARD_FILENAME} to Drive.')
+        for name in CARD_FILENAMES:
+            print(f'  DRY RUN: would upload {name} to Drive.')
         return True
     if UPLOADER_DIR not in sys.path:
         sys.path.insert(0, UPLOADER_DIR)
@@ -525,9 +537,15 @@ def upload_to_drive(png_path, dry_run):
     if not drive:
         raise RuntimeError('No Drive credentials: set GDRIVE_OAUTH_JSON or '
                            'GDRIVE_SERVICE_ACCOUNT_JSON.')
-    if not push(drive, png_path, CARD_FILENAME, EVENTS_FOLDER_ID,
-                skip_if_exists=True):
-        raise RuntimeError('Drive upload failed; see the error above.')
+    # One upload per copy. skip_if_exists means a copy whose bytes haven't
+    # changed costs nothing, so a steady forecast is still a single listing
+    # call per name rather than a re-upload.
+    failed = [name for name in CARD_FILENAMES
+              if not push(drive, png_path, name, EVENTS_FOLDER_ID,
+                          skip_if_exists=True)]
+    if failed:
+        raise RuntimeError(f"Drive upload failed for {', '.join(failed)}; "
+                           f'see the error above.')
     return True
 
 

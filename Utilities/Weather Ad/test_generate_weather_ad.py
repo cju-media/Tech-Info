@@ -13,7 +13,7 @@ import unittest
 from unittest import mock
 
 from generate_weather_ad import (
-    CARD_FILENAME,
+    CARD_FILENAMES,
     EVENTS_FOLDER_ID,
     ICONS,
     TZ,
@@ -168,24 +168,26 @@ class CanonicalCardName(unittest.TestCase):
         if workflows not in sys.path:
             sys.path.insert(0, workflows)
 
-    def test_cleanup_never_trashes_the_forecast(self):
+    def test_cleanup_never_trashes_any_copy(self):
         from cleanup_events_folder import is_protected_flyer
-        self.assertTrue(
-            is_protected_flyer(CARD_FILENAME),
-            f'cleanup_events_folder.py would auto-trash {CARD_FILENAME}')
+        for name in CARD_FILENAMES:
+            with self.subTest(name=name):
+                self.assertTrue(is_protected_flyer(name),
+                                f'cleanup_events_folder.py would auto-trash {name}')
 
-    def test_uploader_replaces_the_forecast_in_place(self):
+    def test_uploader_replaces_every_copy_in_place(self):
         from upload_queue_to_drive import is_protected_flyer
-        self.assertTrue(
-            is_protected_flyer(CARD_FILENAME),
-            f'upload_queue_to_drive.py would stack copies of {CARD_FILENAME}')
+        for name in CARD_FILENAMES:
+            with self.subTest(name=name):
+                self.assertTrue(is_protected_flyer(name),
+                                f'upload_queue_to_drive.py would stack copies of {name}')
 
     def test_forecast_and_events_cards_are_distinct_files(self):
         # Same folder, so a shared name would have one card overwrite the other.
         sys.path.insert(0, os.path.abspath(os.path.join(
             os.path.dirname(__file__), os.pardir, 'Events Ad')))
-        from generate_events_ad import CARD_FILENAME as events_card
-        self.assertNotEqual(CARD_FILENAME, events_card)
+        from generate_events_ad import CARD_FILENAMES as events_cards
+        self.assertFalse(set(CARD_FILENAMES) & set(events_cards))
 
 
 class DriveUpload(unittest.TestCase):

@@ -16,7 +16,7 @@ from unittest import mock
 
 from generate_events_ad import (
     CALENDAR_URL,
-    CARD_FILENAME,
+    CARD_FILENAMES,
     EVENTS_FOLDER_ID,
     TZ,
     build_html,
@@ -224,19 +224,21 @@ class CanonicalCardName(unittest.TestCase):
 
     def test_cleanup_protects_the_name_the_generator_writes(self):
         from cleanup_events_folder import is_protected_flyer
-        self.assertTrue(
-            is_protected_flyer(CARD_FILENAME),
-            f"cleanup_events_folder.py would auto-trash {CARD_FILENAME}",
-        )
+        for name in CARD_FILENAMES:
+            with self.subTest(name=name):
+                self.assertTrue(
+                    is_protected_flyer(name),
+                    f"cleanup_events_folder.py would auto-trash {name}")
 
     def test_uploader_replaces_the_name_the_generator_writes(self):
         # The uploader reuses cleanup's predicate; assert the wiring holds
         # rather than trusting the import.
         from upload_queue_to_drive import is_protected_flyer as uploader_predicate
-        self.assertTrue(
-            uploader_predicate(CARD_FILENAME),
-            f"upload_queue_to_drive.py would stack copies of {CARD_FILENAME}",
-        )
+        for name in CARD_FILENAMES:
+            with self.subTest(name=name):
+                self.assertTrue(
+                    uploader_predicate(name),
+                    f"upload_queue_to_drive.py would stack copies of {name}")
 
     def test_generator_targets_the_events_ads_drop_zone(self):
         from upload_queue_to_drive import main  # noqa: F401  (import sanity)

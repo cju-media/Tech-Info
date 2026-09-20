@@ -13,7 +13,7 @@ import unittest
 from unittest import mock
 
 from generate_service_ad import (
-    CARD_FILENAME,
+    CARD_FILENAMES,
     build_qr_data_uri,
     mini_channel,
     subscribe_url,
@@ -192,15 +192,19 @@ class CanonicalCardName(unittest.TestCase):
         if workflows not in sys.path:
             sys.path.insert(0, workflows)
 
-    def test_cleanup_never_trashes_the_service_card(self):
+    def test_cleanup_never_trashes_any_copy(self):
         from cleanup_events_folder import is_protected_flyer
-        self.assertTrue(is_protected_flyer(CARD_FILENAME),
-                        f'cleanup_events_folder.py would auto-trash {CARD_FILENAME}')
+        for name in CARD_FILENAMES:
+            with self.subTest(name=name):
+                self.assertTrue(is_protected_flyer(name),
+                                f'cleanup_events_folder.py would auto-trash {name}')
 
-    def test_uploader_replaces_it_in_place(self):
+    def test_uploader_replaces_every_copy_in_place(self):
         from upload_queue_to_drive import is_protected_flyer
-        self.assertTrue(is_protected_flyer(CARD_FILENAME),
-                        f'upload_queue_to_drive.py would stack copies of {CARD_FILENAME}')
+        for name in CARD_FILENAMES:
+            with self.subTest(name=name):
+                self.assertTrue(is_protected_flyer(name),
+                                f'upload_queue_to_drive.py would stack copies of {name}')
 
     def test_all_three_cards_have_distinct_filenames(self):
         # They share one Drive folder, so a collision would have one card
@@ -208,9 +212,11 @@ class CanonicalCardName(unittest.TestCase):
         base = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
         for sub in ('Events Ad', 'Weather Ad'):
             sys.path.insert(0, os.path.join(base, sub))
-        from generate_events_ad import CARD_FILENAME as events
-        from generate_weather_ad import CARD_FILENAME as weather
-        self.assertEqual(len({CARD_FILENAME, events, weather}), 3)
+        from generate_events_ad import CARD_FILENAMES as events
+        from generate_weather_ad import CARD_FILENAMES as weather
+        every = list(CARD_FILENAMES) + list(events) + list(weather)
+        self.assertEqual(len(every), len(set(every)),
+                         'two cards would publish under the same filename')
 
 
 class SubscribeQr(unittest.TestCase):

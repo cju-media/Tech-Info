@@ -79,7 +79,17 @@ EVENTS_FOLDER_ID = '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz'
 # Stable on purpose -- see the module docstring. cleanup_events_folder.py's
 # PROTECTED_NAME_PREFIXES matches this stem, so renaming it here without
 # renaming it there would let the card get auto-trashed.
-CARD_FILENAME = 'Events-At-A-Glance.png'
+# Published several times over, under sort-key prefixes. Content Display
+# plays the folder in filename order, so one copy of a card appears once per
+# lap; these land between the event flyers so an info card comes up roughly
+# every other poster. The prefixes are fitted to the flyers currently in the
+# folder -- as those come and go the interleave drifts, and the fix is to
+# re-pick these letters. cleanup_events_folder.py matches the descriptive
+# part as a fragment, so every copy is protected without listing them all.
+CARD_FILENAMES = (
+    'C-Events-At-A-Glance.png',
+    'N-Events-At-A-Glance.png',
+)
 
 TZ = zoneinfo.ZoneInfo('America/Los_Angeles')
 WINDOW_DAYS = 120          # how far ahead to advertise
@@ -528,20 +538,23 @@ def queue_card(png_path, dry_run):
     # Clear any earlier card still waiting in the queue -- if two runs land
     # before process_uploads.yml drains it, only the newest should upload.
     for stale in os.listdir(QUEUE_DIR):
-        if stale.endswith(f'---{CARD_FILENAME}'):
+        if any(stale.endswith(f'---{name}') for name in CARD_FILENAMES):
             print(f"  Replacing card still queued from an earlier run: {stale}")
             if not dry_run:
                 os.remove(os.path.join(QUEUE_DIR, stale))
 
-    ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-    dest = os.path.join(QUEUE_DIR, f'{ts}---{EVENTS_FOLDER_ID}---{CARD_FILENAME}')
-    if dry_run:
-        print(f"  DRY RUN: would queue {os.path.basename(dest)}")
-        return None
-    with open(png_path, 'rb') as src, open(dest, 'wb') as out:
-        out.write(src.read())
-    print(f"  Queued {os.path.basename(dest)}")
-    return dest
+    queued = []
+    for name in CARD_FILENAMES:
+        ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+        dest = os.path.join(QUEUE_DIR, f'{ts}---{EVENTS_FOLDER_ID}---{name}')
+        if dry_run:
+            print(f"  DRY RUN: would queue {os.path.basename(dest)}")
+            continue
+        with open(png_path, 'rb') as src, open(dest, 'wb') as out:
+            out.write(src.read())
+        print(f"  Queued {os.path.basename(dest)}")
+        queued.append(dest)
+    return queued
 
 
 def main():
