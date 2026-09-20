@@ -100,7 +100,8 @@ GEMINI_MODEL = 'gemini-3.5-flash'
 #   3  QR caption dropped; banner text centred on the y-axis
 #   4  "Events through <date>" dropped from the footer
 #   5  empty-state card for when the calendar has nothing on it
-RENDER_VERSION = 5
+#   6  empty-state wording: no "coming soon", no subtext
+RENDER_VERSION = 6
 CHROME_CANDIDATES = [
     os.environ.get('CHROME_BIN') or '',
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -445,8 +446,7 @@ QR_TEMPLATE = """<div class="qr">
 
 
 EMPTY_BODY = """    <div class="empty-cta">
-      <div class="empty-lead">More Events Coming Soon</div>
-      <div class="empty-sub">Concerts, author talks and special events are being planned.</div>
+      <div class="empty-lead">Check Out Upcoming Events at The Cathedral</div>
       {qr}
       <div class="empty-url">fccla.org/calendar</div>
     </div>"""
@@ -491,11 +491,10 @@ HTML_SHELL = """<!DOCTYPE html>
   main.empty{{display:flex;align-items:center;justify-content:center;
     padding-bottom:40px;}}
   .empty-cta{{display:flex;flex-direction:column;align-items:center;text-align:center}}
-  .empty-lead{{font-family:Cinzel,Georgia,serif;font-size:66px;font-weight:700;
-    color:var(--ink);letter-spacing:.01em;}}
-  .empty-sub{{font-size:29px;color:var(--muted);margin-top:14px;letter-spacing:.02em}}
+  .empty-lead{{font-family:Cinzel,Georgia,serif;font-size:58px;font-weight:700;
+    color:var(--ink);letter-spacing:.01em;line-height:1.15;}}
   .empty-qr{{width:300px;height:300px;background:#fff;border-radius:8px;
-    padding:0;margin-top:38px;box-shadow:0 4px 18px rgba(26,26,26,.18)}}
+    padding:0;margin-top:46px;box-shadow:0 4px 18px rgba(26,26,26,.18)}}
   .empty-url{{font-family:Cinzel,Georgia,serif;font-size:34px;font-weight:700;
     color:var(--crimson);letter-spacing:.05em;margin-top:22px}}
   .card{{background:#fff;border:1px solid var(--rule);border-top:5px solid var(--crimson);

@@ -297,9 +297,14 @@ class QrCode(unittest.TestCase):
         """With nothing to list, the card used to be left untouched -- and
         since these cards are exempt from the cleanup sweep, nothing would
         ever expire it. A quiet stretch meant the screens advertised events
-        that had all already happened."""
+        that had all already happened.
+
+        The wording points people at the calendar rather than announcing an
+        empty one: "coming soon" told passers-by there was nothing on."""
         out = build_html([])
-        self.assertIn('More Events Coming Soon', out)
+        self.assertIn('Check Out Upcoming Events at The Cathedral', out)
+        self.assertNotIn('Coming Soon', out)
+        self.assertNotIn('being planned', out)
         self.assertIn('fccla.org/calendar', out)
         self.assertIn('QR code linking to fccla.org/calendar', out)
         self.assertIn('class="empty"', out)
@@ -311,7 +316,7 @@ class QrCode(unittest.TestCase):
                 '_dt': datetime.datetime(2026, 12, 4, 19, 30, tzinfo=TZ)}
         out = build_html([card])
         self.assertIn('class="grid"', out)
-        self.assertNotIn('More Events Coming Soon', out)
+        self.assertNotIn('Check Out Upcoming Events', out)
 
     def test_empty_card_has_a_stable_fingerprint(self):
         # It has to publish once and then stop, like any other card state.
