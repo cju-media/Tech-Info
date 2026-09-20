@@ -1,6 +1,6 @@
 # Tech-Info
 
-Automation and dashboards for the production / A-V team at First Congregational
+Automation and dashboards for the AV team at First Congregational
 Church of Los Angeles (540 S Commonwealth Ave). The repo is one part public
 web app (served from GitHub Pages), one part a fleet of GitHub Actions
 workflows that run the weekly Sunday-content pipeline, crew scheduling and
