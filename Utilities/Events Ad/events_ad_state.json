@@ -161,6 +161,10 @@
       "category": "WORSHIP",
       "recurring": true
     },
+    "Sunday Worship Service|2027-01-17T10:30:00-08:00": {
+      "category": "WORSHIP",
+      "recurring": true
+    },
     "Susan Orlean discusses and signs \"Joyride: A Memoir\"|2026-10-26T19:00:00-07:00": {
       "category": "AUTHOR TALK",
       "recurring": false
@@ -211,5 +215,5 @@
     }
   },
   "page_fingerprint": "382dcf400be6631c078fa0ab9d3985c7b69b237313c15a09e4ea0fd4c936eb3f",
-  "updated_at": "2026-09-18T09:30:52-07:00"
+  "updated_at": "2026-09-19T20:33:17-07:00"
 }
