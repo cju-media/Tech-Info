@@ -14,7 +14,16 @@ name: Renumber Screen Rotation
 
 on:
   schedule:
+    # The backstop: catches flyers dragged straight into Drive, which never
+    # touch process_uploads and so never fire the trigger below.
     - cron: '51 * * * *'
+  workflow_run:
+    # A dashboard upload reaches Drive through process_uploads, so chain off
+    # it: otherwise a new flyer keeps its uploader's filename until the next
+    # hourly run, and since every rotation file starts with a digit and most
+    # filenames don't, it plays dead last until then.
+    workflows: ["Process Uploads Queue"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -36,6 +45,11 @@ concurrency:
 jobs:
   renumber-rotation:
     runs-on: ubuntu-latest
+    # workflow_run fires on failure too, and there's nothing to place if the
+    # upload didn't land. The first clause matters: github.event.workflow_run
+    # is null for schedule and workflow_dispatch, so testing the conclusion
+    # alone would skip every cron and manual run as well.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     env:
       DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
     steps:
