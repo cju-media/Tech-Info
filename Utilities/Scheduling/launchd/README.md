@@ -26,7 +26,7 @@ in Los Angeles year round. The cron entries had to list both `17:xx` and
 | `org.fccla.service-card` | `generate_service_ad.yml` | hourly `:27`, plus Sun 10:42 / 10:57 / 11:12 |
 | `org.fccla.weather-card` | `generate_weather_ad.yml` | hourly `:37` |
 | `org.fccla.rotation` | `renumber_rotation.yml` | every 15 min |
-| `org.fccla.events-card` | `generate_events_ad.yml` | daily 01:45 |
+| `org.fccla.events-card` | `generate_events_ad.yml` | hourly `:47` |
 
 All four call the same `dispatch_workflow.py`; they differ only in label,
 workflow name, log path and schedule.
@@ -89,6 +89,9 @@ Measured 2026-09-20:
 | `renumber_rotation.yml` | every 15 min | ~1 in 14 (gaps of 3.3h and 4.4h) |
 | `generate_events_ad.yml` | daily 08:45 UTC | arrived, ~4h late |
 
+The events card has since been moved to hourly, so that gap now applies to
+the "new event on the calendar" text as well as the card itself.
+
 The rotation was hit hardest by a wide margin: 96 requested runs a day,
 about seven delivered. That gap is how long a newly uploaded flyer sat at
 the back of the lap instead of in its slot.
@@ -96,13 +99,21 @@ the back of the lap instead of in its slot.
 Leave the `schedule:` blocks in the workflows as they are. They cost nothing
 when they do fire and are a useful backstop if the Mac is off.
 
-## Cadence note
+## Minutes in use
 
-The events card runs daily, matching the cron it replaces — but it is also
-what sends the "new event on the calendar" text, so that text can be up to a
-day behind. Hourly would make it near immediate and costs almost nothing: an
-unchanged calendar skips both the Gemini call and the Drive write. The change
-is one line in `org.fccla.events-card.plist`, noted in its comment.
+Each timer sits on its own minute so they never fire together:
+
+| Minute | Timer |
+| --- | --- |
+| `:11` `:26` `:41` `:56` | rotation |
+| `:27` | service card |
+| `:37` | weather card |
+| `:47` | events card |
+
+The events card is hourly rather than daily because it also sends the "new
+event on the calendar" text, and daily meant that text could be a day behind.
+An unchanged calendar skips the Gemini call, the Drive write and the state
+commit, so an idle hourly run is one scrape and a fingerprint comparison.
 
 ## Caveats
 

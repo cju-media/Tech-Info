@@ -3,14 +3,14 @@
 <!--
   Fires the events-card workflow on a clock that doesn't drop timers.
 
-  Daily at 01:45 local, matching the 08:45 UTC cron it replaces (which was
-  arriving around 13:00 UTC, four hours late, though it did arrive).
+  Hourly at :47, on a minute nothing else here uses (:27 service, :37
+  weather, :11/:26/:41/:56 rotation).
 
-  Worth knowing: this workflow also sends the "new event on the calendar"
-  text, so daily means that text can be up to a day behind. Running it
-  hourly would make it near immediate and costs almost nothing, because an
-  unchanged calendar skips both the Gemini call and the Drive write. To do
-  that, replace the single entry below with {'Minute': 47}.
+  Hourly rather than daily because this workflow also sends the "new event
+  on the calendar" text, and daily meant that text could be a day behind.
+  It costs almost nothing: an unchanged calendar skips the Gemini call, the
+  Drive write and the state commit, leaving one scrape and a fingerprint
+  comparison.
 
   Install: see README.md in this directory.
 -->
@@ -33,10 +33,8 @@
 	<key>StartCalendarInterval</key>
 	<array>
 		<dict>
-			<key>Hour</key>
-			<integer>1</integer>
 			<key>Minute</key>
-			<integer>45</integer>
+			<integer>47</integer>
 		</dict>
 	</array>
 </dict>

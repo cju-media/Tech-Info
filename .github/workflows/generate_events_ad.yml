@@ -12,7 +12,8 @@ name: Generate Events Ad
 
 on:
   schedule:
-    - cron: '45 8 * * *'  # Daily at 8:45 UTC (~1-2 AM Pacific)
+    - cron: '47 * * * *'  # Hourly. A backstop for the launchd timer; see
+                          # Utilities/Scheduling/launchd/README.md.
   workflow_dispatch:
     inputs:
       force_refresh:
