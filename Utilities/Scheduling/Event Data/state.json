@@ -24,7 +24,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "su-9-20-2026-worship-service",
             "sa-9-26-2026-pcj-event-mother-agapia",
             "su-9-27-2026-worship-service",
             "sa-10-3-2026-wedding-ceremony",
@@ -35,7 +34,6 @@
             "su-11-01-2026-wedding-ceremony"
         ],
         "Saad": [
-            "su-9-20-2026-worship-service",
             "fr-9-25-2026-organ-concert",
             "sa-9-26-2026-music-in-the-garden",
             "su-9-27-2026-worship-service",
@@ -151,11 +149,6 @@
             "date": "2026-09-25",
             "name": "Organ Concert",
             "call_time": "5:00pm-9:00pm"
-        },
-        "su-9-20-2026-worship-service": {
-            "date": "2026-09-20",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
