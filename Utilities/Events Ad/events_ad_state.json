@@ -3,6 +3,7 @@
     "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"|2026-11-16T19:00:00-08:00",
     "Book Soup: Devon Rodriguez presents \"Work in Progress: A Memoir\"|2026-09-30T19:00:00-07:00",
     "Min Jin Lee discusses \"American Hagwon\"|2026-10-13T19:00:00-07:00",
+    "Music in the Gardens|2026-09-26T16:00:00-07:00",
     "Susan Orlean discusses and signs \"Joyride: A Memoir\"|2026-10-26T19:00:00-07:00",
     "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience|2026-10-30T19:30:00-07:00",
     "The Resonance Collective presents Lithic Breathing with Julia Edith Rigby|2026-09-27T19:00:00-07:00",
@@ -10,7 +11,7 @@
     "The Resonance Collective presents Rumi\u2019s Wedding Night with Yuval Ron Ensemble|2026-12-13T19:00:00-08:00",
     "Yamandu Costa: The Brazilian Guitar|2026-12-04T19:30:00-08:00"
   ],
-  "card_fingerprint": "dd63a672fcaeba73b39ed282dbb29516b397d7bd400a00aefc56b2806091699e",
+  "card_fingerprint": "5e03e363041d424aa3dcacb54bfe7a92233e1fd86e8f5728dc23b602e7bcdc3c",
   "classified": {
     "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"|2026-11-16T19:00:00-08:00": {
       "category": "AUTHOR TALK",
@@ -34,6 +35,10 @@
     },
     "Min Jin Lee discusses \"American Hagwon\"|2026-10-14T02:00:00+00:00": {
       "category": "AUTHOR TALK",
+      "recurring": false
+    },
+    "Music in the Gardens|2026-09-26T16:00:00-07:00": {
+      "category": "CONCERT",
       "recurring": false
     },
     "Sunday Worship Service|2026-09-20T10:30:00-07:00": {
@@ -225,6 +230,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "ccf4f1e900d187cc834077bd2dd4fcd52c7bf0ba6a956927475816a49fd78d65",
-  "updated_at": "2026-09-19T21:10:24-07:00"
+  "page_fingerprint": "fe8efb6aba7a72e8d39083ccf492d98538e78f1816ac185418fcc25d30e40764",
+  "updated_at": "2026-09-21T14:47:29-07:00"
 }
