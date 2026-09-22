@@ -17,7 +17,6 @@
         ],
         "Jaffe": [
             "we-9-30-2026-book-soup",
-            "sa-10-17-2026-wedding-ceremony",
             "su-10-18-2026-worship-service",
             "su-10-18-2026-worship-service",
             "su-10-25-2026-worship-service"
@@ -29,6 +28,7 @@
             "sa-10-3-2026-wedding-ceremony",
             "su-10-4-2026-worship-service",
             "tu-10-13-2026-reception-and-book-talk-diesel-bookstore-min-jin-lee",
+            "sa-10-17-2026-wedding-ceremony",
             "su-10-18-2026-worship-service",
             "su-10-25-2026-resonance-collective",
             "su-11-01-2026-wedding-ceremony"
@@ -79,6 +79,11 @@
             "date": "2026-10-25",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
+        },
+        "sa-10-24-2026-la-choral-lab-recording": {
+            "date": "2026-10-24",
+            "name": "LA Choral Lab Recording",
+            "call_time": "12:00pm-6:00pm"
         },
         "su-10-18-2026-worship-service": {
             "date": "2026-10-18",
