@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-21T16:02:01+00:00",
+  "generated": "2026-09-22T14:13:04+00:00",
   "window": {
-    "start": "2026-09-21",
-    "end": "2026-12-22"
+    "start": "2026-09-22",
+    "end": "2026-12-23"
   },
   "columns": [
     "Date",
@@ -58,7 +58,7 @@
         "SU 12/13/2026",
         "Smith & Rawlings Wedding",
         "Sanctuary/Forecourt",
-        "",
+        "TBD",
         "Wedding",
         "1",
         "",
@@ -68,23 +68,6 @@
         "Weddings"
       ],
       "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 12/13/2026",
-        "Resonance Collective Concert",
-        "Shatto",
-        "4:00pm-10:00pm",
-        "Concert",
-        "1",
-        "",
-        "",
-        "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
-        "",
-        ""
-      ],
-      "note": "from calendar: Resonance Collective Concert"
     },
     {
       "kind": "event",
@@ -109,7 +92,7 @@
         "SA 12/12/2026",
         "Kang & Kim Wedding",
         "Sanctuary/Forecourt",
-        "",
+        "TBD",
         "Wedding",
         "1",
         "",
@@ -245,7 +228,7 @@
         "SA 11/21/2026",
         "Uribe & Aimaq Wedding",
         "Sanctuary/Forecourt/Stuart Hall",
-        "",
+        "TBD",
         "Wedding",
         "1",
         "",
@@ -311,14 +294,14 @@
       "kind": "event",
       "cells": [
         "TH 11/5/2026",
-        "\"Groundswell\" Screening",
+        "Groundswell Documentary Screening",
         "Shatto",
         "7:00pm",
         "Screening",
         "1",
         "",
         "",
-        "7:00pm start",
+        "TBD\n7:00pm start",
         "",
         ""
       ],
@@ -326,8 +309,8 @@
     }
   ],
   "counts": {
-    "events": 16,
+    "events": 15,
     "worship": 7,
-    "from_calendar": 9
+    "from_calendar": 8
   }
 }

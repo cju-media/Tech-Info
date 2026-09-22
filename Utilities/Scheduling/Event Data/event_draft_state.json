@@ -25,7 +25,7 @@
       "venue": "Sanctuary"
     },
     "040000008200E00074C5B7101A82E00800000000640A4C5486B1DC01000000000000000010000000BEA81B405584644EBB935795740D09E9::2026-11-21": {
-      "call_times": "",
+      "call_times": "TBD",
       "count": 1,
       "name": "Uribe & Aimaq Wedding",
       "schedule": "",
@@ -41,23 +41,15 @@
       "venue": "Sanctuary/Stuart Hall/Forecourt"
     },
     "040000008200E00074C5B7101A82E00800000000B8724E9D9893DC0100000000000000001000000001F5C7B20EF9C549BB619796E18EBEBE::2026-12-13": {
-      "call_times": "",
+      "call_times": "TBD",
       "count": 1,
       "name": "Smith & Rawlings Wedding",
       "schedule": "",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt"
     },
-    "040000008200E00074C5B7101A82E00800000000BC34ED37D817DD010000000000000000100000003417AB522A577847972012826DB0A36C::2026-12-13": {
-      "call_times": "4:00pm-10:00pm",
-      "count": 1,
-      "name": "Resonance Collective Concert",
-      "schedule": "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
-      "type": "Concert",
-      "venue": "Shatto"
-    },
     "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
-      "call_times": "",
+      "call_times": "TBD",
       "count": 1,
       "name": "Kang & Kim Wedding",
       "schedule": "",
@@ -67,12 +59,12 @@
     "040000008200E00074C5B7101A82E00800000000EAEFDEF04A19DD010000000000000000100000009AD8CA85476F094EA332A26BF1EDF785::2026-11-05": {
       "call_times": "7:00pm",
       "count": 1,
-      "name": "\"Groundswell\" Screening",
-      "schedule": "7:00pm start",
+      "name": "Groundswell Documentary Screening",
+      "schedule": "TBD\n7:00pm start",
       "type": "Screening",
       "venue": "Shatto"
     }
   },
-  "fingerprint": "cea3954b5f4b4d62e612ec694b200df0e7fbb27019e53b317872dee51a9316ec",
-  "gemini_at": "2026-09-17T14:28:23+00:00"
+  "fingerprint": "7f60893cc4f6a5b3ec650756d0485ab48e9632e89eccc0dd3dfa524913caa50b",
+  "gemini_at": "2026-09-22T14:13:04+00:00"
 }
