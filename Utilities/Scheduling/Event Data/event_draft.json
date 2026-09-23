@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-22T14:13:04+00:00",
+  "generated": "2026-09-23T14:27:57+00:00",
   "window": {
-    "start": "2026-09-22",
-    "end": "2026-12-23"
+    "start": "2026-09-23",
+    "end": "2026-12-24"
   },
   "columns": [
     "Date",
@@ -56,23 +56,6 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Smith & Rawlings Wedding",
-        "Sanctuary/Forecourt",
-        "TBD",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 12/13/2026",
         "Worship Service",
         "Sanctuary",
         "8:45am-12:30pm",
@@ -85,40 +68,6 @@
         "Leave Blank"
       ],
       "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 12/12/2026",
-        "Kang & Kim Wedding",
-        "Sanctuary/Forecourt",
-        "TBD",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 12/6/2026",
-        "HoLAdays Synesthesia Sinfonietta Concert",
-        "Sanctuary/Stuart Hall/Forecourt",
-        "2:00pm-10:00pm",
-        "Concert",
-        "2",
-        "",
-        "",
-        "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
-        "",
-        ""
-      ],
-      "note": "from calendar: HoLAdays Synesthesia Sinfonietta concert"
     },
     {
       "kind": "event",
@@ -136,40 +85,6 @@
         "Leave Blank"
       ],
       "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 12/5/2026",
-        "Bernal & Barnett Wedding",
-        "Sanctuary/Forecourt",
-        "3:00pm-11:00pm",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Elizabeth Bernal & Izett Barnett"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "FR 12/4/2026",
-        "Yamandu Costa Concert",
-        "Sanctuary",
-        "5:30pm-9:30pm",
-        "Concert",
-        "1",
-        "",
-        "",
-        "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
-        "",
-        ""
-      ],
-      "note": "from calendar: Concert: Yamandu Costa"
     },
     {
       "kind": "divider",
@@ -225,25 +140,8 @@
     {
       "kind": "event",
       "cells": [
-        "SA 11/21/2026",
-        "Uribe & Aimaq Wedding",
-        "Sanctuary/Forecourt/Stuart Hall",
-        "TBD",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Sofia Uribe & Robin Aimaq"
-    },
-    {
-      "kind": "event",
-      "cells": [
         "MO 11/16/2026",
-        "Boy Meets World Podcast",
+        "\"Boy Meets World\" Podcast",
         "Sanctuary",
         "5:00pm-9:00pm",
         "Talk",
@@ -294,14 +192,14 @@
       "kind": "event",
       "cells": [
         "TH 11/5/2026",
-        "Groundswell Documentary Screening",
+        "\"Groundswell\" Screening",
         "Shatto",
         "7:00pm",
         "Screening",
         "1",
         "",
         "",
-        "TBD\n7:00pm start",
+        "7:00pm start",
         "",
         ""
       ],
@@ -309,8 +207,8 @@
     }
   ],
   "counts": {
-    "events": 15,
+    "events": 9,
     "worship": 7,
-    "from_calendar": 8
+    "from_calendar": 2
   }
 }
