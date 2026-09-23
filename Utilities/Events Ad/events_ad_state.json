@@ -11,6 +11,44 @@
     "The Resonance Collective presents Rumi\u2019s Wedding Night with Yuval Ron Ensemble|2026-12-13T19:00:00-08:00",
     "Yamandu Costa: The Brazilian Guitar|2026-12-04T19:30:00-08:00"
   ],
+  "card_events": [
+    {
+      "name": "Music in the Gardens",
+      "start": "2026-09-26T16:00:00-07:00"
+    },
+    {
+      "name": "The Resonance Collective presents Lithic Breathing with Julia Edith Rigby",
+      "start": "2026-09-27T19:00:00-07:00"
+    },
+    {
+      "name": "Book Soup: Devon Rodriguez presents \"Work in Progress: A Memoir\"",
+      "start": "2026-09-30T19:00:00-07:00"
+    },
+    {
+      "name": "Min Jin Lee discusses \"American Hagwon\"",
+      "start": "2026-10-13T19:00:00-07:00"
+    },
+    {
+      "name": "The Resonance Collective presents Mayab\u2019: Live Folktr\u00f3nica with Aurora Nohemi",
+      "start": "2026-10-25T19:00:00-07:00"
+    },
+    {
+      "name": "Susan Orlean discusses and signs \"Joyride: A Memoir\"",
+      "start": "2026-10-26T19:00:00-07:00"
+    },
+    {
+      "name": "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience",
+      "start": "2026-10-30T19:30:00-07:00"
+    },
+    {
+      "name": "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"",
+      "start": "2026-11-16T19:00:00-08:00"
+    },
+    {
+      "name": "Yamandu Costa: The Brazilian Guitar",
+      "start": "2026-12-04T19:30:00-08:00"
+    }
+  ],
   "card_fingerprint": "5e03e363041d424aa3dcacb54bfe7a92233e1fd86e8f5728dc23b602e7bcdc3c",
   "classified": {
     "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"|2026-11-16T19:00:00-08:00": {
