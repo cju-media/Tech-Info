@@ -6,7 +6,7 @@ on:
       - main
   # Also deploy when the hourly updater runs and commits changes
   workflow_run:
-    workflows: ["Check Worship Scripts"]
+    workflows: ["Check Worship Scripts", "Weekly RF Coordination"]
     types:
       - completed
   workflow_dispatch:
