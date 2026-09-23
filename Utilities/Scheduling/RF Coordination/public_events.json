@@ -1,1 +1,29 @@
-[]
+[
+  {
+    "name": "LA KOREAN FESTIVAL",
+    "date": "2026-09-26",
+    "location": "3250 W SAN MARINO ST 90006",
+    "type": "Expected - recurs yearly (2023, 2024, 2025), no permit yet; verify",
+    "distance_mi": 1.17,
+    "permit": "",
+    "source": "Projected from prior-year LA City permits"
+  },
+  {
+    "name": "FESTIVAL CHAPIN",
+    "date": "2026-10-01",
+    "location": "Lafayette Park, 625 S Lafayette Park Pl, Los Angeles 90057",
+    "type": "Expected - recurs yearly (2021, 2025), no permit yet; verify",
+    "distance_mi": 0.23,
+    "permit": "",
+    "source": "Projected from prior-year LA City permits"
+  },
+  {
+    "name": "LA GREEK FEST",
+    "date": "2026-10-03",
+    "location": "1324 S NORMANDIE AVE 90006",
+    "type": "Expected - recurs yearly (2018, 2019, 2025), no permit yet; verify",
+    "distance_mi": 1.47,
+    "permit": "",
+    "source": "Projected from prior-year LA City permits"
+  }
+]
