@@ -224,12 +224,13 @@ class Markup(unittest.TestCase):
         worse card; a card advertising a talk that already happened is a
         wrong one, and this is what makes falling back safe."""
         out = build_html(None, [])
-        self.assertIn('Subscribe for Weekly News', out)
+        self.assertIn('Read the Full Issue', out)
+        self.assertIn('subscribe', out)
         self.assertIn('data:image/svg+xml', out)
         self.assertNotIn('Inside This Week', out)
 
     def test_the_old_no_argument_call_still_renders(self):
-        self.assertIn('Subscribe for Weekly News', build_html())
+        self.assertIn('Read the Full Issue', build_html())
 
     def test_item_text_is_html_escaped(self):
         out = build_html(None, [item(title='Tea & Toast',
@@ -241,6 +242,18 @@ class Markup(unittest.TestCase):
         out = build_html({'date': None}, [item()])
         self.assertIn('Inside This Week', out)
         self.assertNotIn('class="issue"', out)
+
+    def test_both_layouts_offer_reading_as_well_as_subscribing(self):
+        """One code does both jobs, because SIGNUP_URL is the archive of past
+        issues and the sign-up form on the same page. If that page is ever
+        split in two, the card is making a promise it can't keep."""
+        for label, out in (('items', build_html({'date': TODAY}, [item()])),
+                           ('static', build_html())):
+            with self.subTest(layout=label):
+                self.assertIn('Read the', out)
+                self.assertIn('subscribe', out.lower())
+                self.assertIn('read the meetinghouse newsletter and subscribe',
+                              out.lower())
 
     def test_the_card_renders_without_segno(self):
         # No QR is a worse card, not a failed run.

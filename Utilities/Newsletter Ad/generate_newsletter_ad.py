@@ -545,13 +545,15 @@ def build_html(issue=None, items=()):
     """The card. With no items this is the static sign-up card it always was."""
     items = list(items)
     qr_uri = build_qr_data_uri(SIGNUP_URL)
+    # One code for both jobs: SIGNUP_URL is the archive of past issues and
+    # the sign-up form on the same page, which is why the card can promise
+    # reading and subscribing without a second code.
+    alt = 'QR code to read the Meetinghouse Newsletter and subscribe'
     if not items:
-        qr = (f'<img class="qr" src="{qr_uri}" alt="QR code to subscribe to the '
-              f'Meetinghouse Newsletter">') if qr_uri else ''
+        qr = (f'<img class="qr" src="{qr_uri}" alt="{alt}">') if qr_uri else ''
         return STATIC_SHELL.format(qr=qr)
 
-    qr = (f'<img class="side-qr" src="{qr_uri}" alt="QR code to subscribe to the '
-          f'Meetinghouse Newsletter">') if qr_uri else ''
+    qr = (f'<img class="side-qr" src="{qr_uri}" alt="{alt}">') if qr_uri else ''
     dated = format_issue_date((issue or {}).get('date'))
     stamp = f'<div class="issue">{esc(dated)}</div>' if dated else ''
     return ISSUE_SHELL.format(items=build_items_html(items), qr=qr, issue=stamp)
@@ -649,8 +651,10 @@ ISSUE_SHELL = """<!DOCTYPE html>
     box-shadow:0 2px 12px rgba(110,0,19,.08);}}
   aside .ask{{font-family:Cinzel,Georgia,serif;font-size:37px;font-weight:700;
     line-height:1.16;color:var(--ink);}}
+  aside .sub{{font-size:25px;line-height:1.3;color:var(--muted);
+    margin-top:10px;letter-spacing:.02em;}}
   .side-qr{{width:286px;height:286px;background:#fff;border-radius:8px;
-    margin:26px 0 20px;box-shadow:0 4px 18px rgba(26,26,26,.16);}}
+    margin:22px 0 20px;box-shadow:0 4px 18px rgba(26,26,26,.16);}}
   aside .url{{font-size:23px;font-weight:700;color:var(--crimson);
     letter-spacing:.03em;line-height:1.3;}}
 </style>
@@ -670,7 +674,8 @@ ISSUE_SHELL = """<!DOCTYPE html>
     </ul>
   </div>
   <aside>
-    <div class="ask">Get It Every Week</div>
+    <div class="ask">Read the<br>Full Issue</div>
+    <div class="sub">&amp; subscribe for next week</div>
 {qr}
     <div class="url">fccla.org/<br>meetinghouse-newsletter</div>
   </aside>
@@ -696,7 +701,9 @@ STATIC_SHELL = """<!DOCTYPE html>
   .lead{{font-family:Cinzel,Georgia,serif;font-size:58px;font-weight:700;
     color:var(--ink);letter-spacing:.01em;line-height:1.15;}}
   .qr{{width:300px;height:300px;background:#fff;border-radius:8px;
-    margin-top:46px;box-shadow:0 4px 18px rgba(26,26,26,.18);}}
+    margin-top:38px;box-shadow:0 4px 18px rgba(26,26,26,.18);}}
+  .sub{{font-size:34px;line-height:1.3;color:var(--muted);
+    margin-top:16px;letter-spacing:.02em;}}
   .url{{font-family:Cinzel,Georgia,serif;font-size:32px;font-weight:700;
     color:var(--crimson);letter-spacing:.04em;margin-top:22px}}
 </style>
@@ -707,7 +714,8 @@ STATIC_SHELL = """<!DOCTYPE html>
 
 <main>
   <div class="cta">
-    <div class="lead">Subscribe for Weekly News &amp; Events</div>
+    <div class="lead">Read the Full Issue</div>
+    <div class="sub">&amp; subscribe for weekly news &amp; events</div>
     {qr}
     <div class="url">fccla.org/meetinghouse-newsletter</div>
   </div>
