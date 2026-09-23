@@ -222,6 +222,21 @@ def card_fingerprint(cards):
     return hashlib.sha256('\n'.join(payload).encode('utf-8')).hexdigest()
 
 
+def card_events(cards):
+    """What this card is currently advertising, for the other cards to read.
+
+    The newsletter card puts items from the week's newsletter on screen, and
+    the newsletter writes up the same concerts and talks that are on this
+    calendar. Two cards in one rotation showing the same event is a waste of
+    a slot, so this is published in the state file -- which is committed --
+    and generate_newsletter_ad.py reads it to steer around what's here.
+
+    Only what's actually on the grid: an event past MAX_CARDS isn't being
+    advertised here, so the newsletter is welcome to it.
+    """
+    return [{'name': c['name'], 'start': c['start']} for c in cards]
+
+
 def heuristic_recurring(name):
     """Fallback when Gemini can't be reached: the weekly service is the only
     recurring series this calendar has ever carried. Deliberately narrow --
@@ -725,7 +740,8 @@ def main():
         print('Card contents identical to the last run; nothing to re-render or upload.')
         # The page fingerprint may still have moved (an event outside the
         # window changed), so persist it to keep the Gemini gate accurate.
-        state.update({'page_fingerprint': fp, 'classified': classified})
+        state.update({'page_fingerprint': fp, 'classified': classified,
+                      'card_events': card_events(cards)})
         save_state(state)
         return
 
@@ -746,6 +762,7 @@ def main():
             'page_fingerprint': fp,
             'card_fingerprint': card_fp,
             'classified': classified,
+            'card_events': card_events(cards),
             'updated_at': now.isoformat(timespec='seconds'),
         })
         save_state(state)

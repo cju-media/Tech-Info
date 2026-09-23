@@ -20,7 +20,8 @@ weekly, so that is about one model call a week however often this runs.
 
 Two things keep a stale card off the screens. Items the newsletter gives a
 date to are dropped once that date has passed, so a Saturday workday stops
-being advertised on Sunday. And if nothing survives that -- or the archive
+being advertised on Sunday. Items the at-a-glance card is already showing
+are dropped too, so one event doesn't take two slots in the rotation. And if nothing survives that -- or the archive
 fetch, the issue fetch, or the model fails, or there's no API key -- the card
 falls back to the static sign-up design it used to be. A plain card is a
 worse card; a card still advertising last Saturday is a wrong one.
@@ -68,6 +69,16 @@ MAX_ITEMS = 4
 # Below this the highlights column looks broken rather than sparse, and the
 # static card is the better answer.
 MIN_ITEMS = 2
+
+# The events card's state file, which lists what that card is advertising.
+# It's committed, so a checkout has it; it's at most an hour stale, since
+# both cards run hourly.
+EVENTS_STATE_PATH = os.path.join(REPO_ROOT, 'Utilities', 'Events Ad',
+                                 'events_ad_state.json')
+# Two titles this long or longer count as the same happening when one
+# contains the other. Short titles ("Men's Group") are too generic for
+# containment to mean anything.
+CONTAINMENT_FLOOR = 12
 
 LOCAL_TZ_NAME = 'America/Los_Angeles'
 
@@ -197,16 +208,95 @@ def issue_text(raw_html):
     return '\n'.join(line for line in lines if line)
 
 
-def text_fingerprint(text):
-    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+def events_on_the_other_card():
+    """The event names the at-a-glance card is currently showing.
+
+    The newsletter writes up the same concerts and talks that are on the
+    church calendar, so without this the rotation shows the same event twice
+    in four slots. Missing or unreadable state means no exclusions rather
+    than a failed run -- a duplicate is a wasted slot, not a wrong card.
+    """
+    try:
+        with open(EVENTS_STATE_PATH, encoding='utf-8') as f:
+            state = json.load(f)
+    except (OSError, ValueError):
+        print('  No events-card state to read; not excluding anything.')
+        return []
+    names = [str(e.get('name') or '').strip()
+             for e in (state.get('card_events') or [])]
+    return [n for n in names if n]
+
+
+def normalise_title(title):
+    """A title reduced to what's worth comparing across two sources.
+
+    The calendar and the newsletter name the same event differently -- "A
+    Conversation with Mother Agapia" against "Conversation With Mother
+    Agapia" -- so case, punctuation and leading articles all go.
+    """
+    text = re.sub(r"[^a-z0-9 ]+", ' ', (title or '').lower())
+    text = re.sub(r'\s+', ' ', text).strip()
+    for article in ('the ', 'a ', 'an '):
+        if text.startswith(article):
+            text = text[len(article):]
+            break
+    return text
+
+
+def same_happening(one, other):
+    one, other = normalise_title(one), normalise_title(other)
+    if not one or not other:
+        return False
+    if one == other:
+        return True
+    short, long = sorted((one, other), key=len)
+    return len(short) >= CONTAINMENT_FLOOR and short in long
+
+
+def drop_duplicates(items, excluded):
+    """Items the at-a-glance card is already advertising, removed.
+
+    The prompt asks Gemini to steer around these, and it mostly does. This is
+    the backstop for the cases it can't see: items cached from before an
+    event was added to the calendar.
+    """
+    kept = []
+    for item in items:
+        match = next((e for e in excluded if same_happening(item['title'], e)), None)
+        if match:
+            print(f"  Already on the events card, dropping: {item['title']}")
+            continue
+        kept.append(item)
+    return kept
+
+
+def text_fingerprint(text, excluded=()):
+    """The cache key: the issue's text, plus what the events card is showing.
+
+    The exclusions belong in here rather than only in the post-filter. When
+    an event is added to the calendar, filtering alone would just shrink this
+    card from four items to three; re-asking lets Gemini pick a replacement.
+    The calendar changes a few times a week, so this stays roughly one model
+    call a week.
+    """
+    payload = '\n'.join([text, '--', *sorted(excluded)])
+    return hashlib.sha256(payload.encode('utf-8')).hexdigest()
 
 
 # --------------------------------------------------------------------------
 # Gemini
 # --------------------------------------------------------------------------
 
-def build_highlights_prompt(issue, text, today):
+def build_highlights_prompt(issue, text, today, excluded=()):
     body = text[:14000]
+    avoid = ''
+    if excluded:
+        listing = '\n'.join(f'  - {name}' for name in excluded)
+        avoid = (
+            '\nAnother card in the same rotation is already advertising these '
+            'events, so skip any newsletter item that is the same happening -- '
+            'even if the newsletter names it differently. Showing it twice '
+            'wastes a slot:\n' + listing + '\n')
     return f"""This is one issue of a church's weekly email newsletter, "The Meetinghouse". It went out on {issue.get('date') or 'an unknown date'}. Today is {today}.
 
 The church shows a rotating set of cards on screens around its campus. One of those cards advertises this newsletter, and should carry a few of its items so passers-by can see what's actually in it.
@@ -220,7 +310,7 @@ For each item give:
   "blurb": one plain sentence of at most 85 characters saying what it is. No exclamation marks. Don't repeat the title.
 
 Order them soonest first.
-
+{avoid}
 Newsletter:
 {body}
 
@@ -228,7 +318,7 @@ Respond with ONLY compact JSON, no markdown fences, no commentary, matching exac
 {{"items": [{{"title": "Braiding Sweetgrass Book Group", "when": "Tuesdays | 7pm | Zoom", "date": "2026-09-23", "blurb": "Rev. Michael leads a weekly conversation on Robin Wall Kimmerer's book."}}]}}"""
 
 
-def gemini_highlights(issue, text, api_key, today):
+def gemini_highlights(issue, text, api_key, today, excluded=()):
     """The items to put on the card, as Gemini picked them.
 
     Returns [] on anything unexpected rather than raising: the caller's
@@ -247,7 +337,7 @@ def gemini_highlights(issue, text, api_key, today):
     try:
         resp = client.models.generate_content(
             model=GEMINI_MODEL,
-            contents=build_highlights_prompt(issue, text, today))
+            contents=build_highlights_prompt(issue, text, today, excluded))
     except Exception as exc:                      # noqa: BLE001 - see docstring
         print(f'  Gemini call failed ({exc.__class__.__name__}); '
               f'falling back to the static card.')
@@ -614,10 +704,10 @@ def gather_items(state, today, force):
         issues = parse_archive(dump_dom(ARCHIVE_URL))
     except Exception as exc:                      # noqa: BLE001
         print(f'  Could not read the archive ({exc}); falling back.')
-        return None, []
+        return None, [], []
     if not issues:
         print('  No issues linked from the archive page; falling back.')
-        return None, []
+        return None, [], []
 
     issue = issues[0]
     print(f"  Latest issue: {issue['title']}")
@@ -626,31 +716,34 @@ def gather_items(state, today, force):
         text = issue_text(fetch_issue(issue['url']))
     except Exception as exc:                      # noqa: BLE001
         print(f'  Could not read the issue ({exc}); falling back.')
-        return issue, []
+        return issue, [], []
     if len(text) < 500:
         print(f'  Issue body was only {len(text)} characters; falling back.')
-        return issue, []
+        return issue, [], []
 
-    fingerprint = text_fingerprint(text)
+    excluded = events_on_the_other_card()
+    if excluded:
+        print(f'  {len(excluded)} event(s) already on the events card.')
+    fingerprint = text_fingerprint(text, excluded)
     cached = state.get('items') or []
     if (not force and cached
             and state.get('issue_url') == issue['url']
             and state.get('issue_fingerprint') == fingerprint):
         print(f'  Issue unchanged; reusing {len(cached)} cached item(s).')
-        return issue, [clean_item(c) for c in cached if clean_item(c)]
+        return issue, [clean_item(c) for c in cached if clean_item(c)], excluded
 
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         print('  GEMINI_API_KEY not set; falling back to the static card.')
-        return issue, []
+        return issue, [], excluded
 
-    items = gemini_highlights(issue, text, api_key, today)[:MAX_ITEMS]
+    items = gemini_highlights(issue, text, api_key, today, excluded)[:MAX_ITEMS]
     if items:
         state.update({'issue_url': issue['url'],
                       'issue_fingerprint': fingerprint,
                       'issue_title': issue['title'],
                       'items': items})
-    return issue, items
+    return issue, items, excluded
 
 
 def local_today():
@@ -675,9 +768,10 @@ def main():
 
     print('Rendering the newsletter card...')
     state = load_state()
-    issue, items = gather_items(state, today, force)
+    issue, items, excluded = gather_items(state, today, force)
 
-    items = order_items(drop_past(items, today))[:MAX_ITEMS]
+    items = drop_duplicates(drop_past(items, today), excluded)
+    items = order_items(items)[:MAX_ITEMS]
     if 0 < len(items) < MIN_ITEMS:
         print(f'  Only {len(items)} item(s) left; using the static card.')
         items = []

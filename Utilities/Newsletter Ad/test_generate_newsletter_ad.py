@@ -19,6 +19,9 @@ from unittest import mock
 
 import generate_newsletter_ad as g
 from generate_newsletter_ad import (
+    drop_duplicates,
+    normalise_title,
+    same_happening,
     CARD_FRAGMENT,
     MAX_ITEMS,
     MIN_ITEMS,
@@ -313,19 +316,22 @@ class Resilience(unittest.TestCase):
         self.state = {'issue_url': None, 'issue_fingerprint': None, 'items': []}
 
     def test_an_unreachable_archive_falls_back(self):
-        with mock.patch.object(g, 'dump_dom', side_effect=RuntimeError('no chrome')):
-            issue, items = g.gather_items(self.state, TODAY, force=False)
+        with mock.patch.object(g, 'dump_dom', side_effect=RuntimeError('no chrome')), \
+             mock.patch.object(g, 'events_on_the_other_card', return_value=[]):
+            issue, items, _ = g.gather_items(self.state, TODAY, force=False)
         self.assertEqual(items, [])
 
     def test_an_archive_with_no_issues_falls_back(self):
-        with mock.patch.object(g, 'dump_dom', return_value='<html></html>'):
-            issue, items = g.gather_items(self.state, TODAY, force=False)
+        with mock.patch.object(g, 'dump_dom', return_value='<html></html>'), \
+             mock.patch.object(g, 'events_on_the_other_card', return_value=[]):
+            issue, items, _ = g.gather_items(self.state, TODAY, force=False)
         self.assertEqual(items, [])
 
     def test_an_unreachable_issue_falls_back(self):
         with mock.patch.object(g, 'dump_dom', return_value=ARCHIVE_DOM), \
-             mock.patch.object(g, 'fetch_issue', side_effect=OSError('timeout')):
-            issue, items = g.gather_items(self.state, TODAY, force=False)
+             mock.patch.object(g, 'fetch_issue', side_effect=OSError('timeout')), \
+             mock.patch.object(g, 'events_on_the_other_card', return_value=[]):
+            issue, items, _ = g.gather_items(self.state, TODAY, force=False)
         self.assertEqual(items, [])
         self.assertEqual(issue['url'], 'https://conta.cc/aaa')
 
@@ -333,16 +339,18 @@ class Resilience(unittest.TestCase):
         # A redirect to an error page would parse fine and read as an issue
         # with nothing in it, which is worse than no items at all.
         with mock.patch.object(g, 'dump_dom', return_value=ARCHIVE_DOM), \
-             mock.patch.object(g, 'fetch_issue', return_value='<p>Not found</p>'):
-            _, items = g.gather_items(self.state, TODAY, force=False)
+             mock.patch.object(g, 'fetch_issue', return_value='<p>Not found</p>'), \
+             mock.patch.object(g, 'events_on_the_other_card', return_value=[]):
+            _, items, _ = g.gather_items(self.state, TODAY, force=False)
         self.assertEqual(items, [])
 
     def test_no_api_key_falls_back_without_calling_gemini(self):
         with mock.patch.object(g, 'dump_dom', return_value=ARCHIVE_DOM), \
              mock.patch.object(g, 'fetch_issue', return_value='<p>' + 'copy ' * 300 + '</p>'), \
              mock.patch.object(g, 'gemini_highlights') as gem, \
+             mock.patch.object(g, 'events_on_the_other_card', return_value=[]), \
              mock.patch.dict(os.environ, {'GEMINI_API_KEY': ''}, clear=False):
-            _, items = g.gather_items(self.state, TODAY, force=False)
+            _, items, _ = g.gather_items(self.state, TODAY, force=False)
         self.assertEqual(items, [])
         gem.assert_not_called()
 
@@ -355,11 +363,106 @@ class Resilience(unittest.TestCase):
         with mock.patch.object(g, 'dump_dom', return_value=ARCHIVE_DOM), \
              mock.patch.object(g, 'fetch_issue', return_value='<p>' + 'new ' * 300 + '</p>'), \
              mock.patch.object(g, 'gemini_highlights', return_value=[]), \
+             mock.patch.object(g, 'events_on_the_other_card', return_value=[]), \
              mock.patch.dict(os.environ, {'GEMINI_API_KEY': 'k'}, clear=False):
-            _, items = g.gather_items(self.state, TODAY, force=False)
+            _, items, _ = g.gather_items(self.state, TODAY, force=False)
         self.assertEqual(items, [])
         self.assertEqual(self.state['items'][0]['title'], 'Cached Item')
         self.assertEqual(self.state['issue_fingerprint'], 'stale')
+
+
+class Deduplication(unittest.TestCase):
+    """The newsletter writes up the same concerts and talks that are on the
+    church calendar, so without this the rotation can show one event twice in
+    four slots. Gemini is asked to steer around them; this is the backstop
+    for items cached from before an event reached the calendar."""
+
+    def test_the_same_event_named_differently_still_matches(self):
+        # The calendar and the newsletter capitalise and article these
+        # differently, which is exactly the case that has to work.
+        self.assertTrue(same_happening('A Conversation with Mother Agapia',
+                                       'Conversation With Mother Agapia'))
+
+    def test_punctuation_and_spacing_do_not_defeat_it(self):
+        self.assertTrue(same_happening('Music in the Gardens!',
+                                       'Music  in the  Gardens'))
+
+    def test_a_longer_calendar_title_containing_the_item_matches(self):
+        self.assertTrue(same_happening(
+            'Music in the Gardens',
+            'Music in the Gardens: A Fall Afternoon Concert'))
+
+    def test_unrelated_events_do_not_match(self):
+        self.assertFalse(same_happening("FCCLA Men's Group",
+                                        'Cathedral Choir Rehearsal'))
+
+    def test_a_short_generic_title_does_not_match_by_containment(self):
+        """"Men's Group" inside "Young Men's Group Retreat" is a coincidence
+        this filter must not act on -- dropping a real item is worse than
+        showing a duplicate."""
+        self.assertFalse(same_happening("Men's Group", "Young Men's Group Retreat"))
+
+    def test_an_empty_title_never_matches(self):
+        self.assertFalse(same_happening('', 'Music in the Gardens'))
+        self.assertFalse(same_happening('Music in the Gardens', ''))
+
+    def test_normalise_strips_articles_case_and_punctuation(self):
+        self.assertEqual(normalise_title('The Great Organs: A Recital!'),
+                         'great organs a recital')
+
+    def test_a_duplicate_item_is_dropped(self):
+        kept = drop_duplicates(
+            [item(title='Conversation With Mother Agapia'), item(title='Garden Workday')],
+            ['A Conversation with Mother Agapia'])
+        self.assertEqual([i['title'] for i in kept], ['Garden Workday'])
+
+    def test_nothing_is_dropped_when_the_events_card_is_empty(self):
+        items = [item(title='Anything At All')]
+        self.assertEqual(drop_duplicates(items, []), items)
+
+    def test_a_missing_events_state_file_excludes_nothing(self):
+        # A checkout without that file, or a first run before the events card
+        # has written one. Not excluding is the safe direction.
+        with mock.patch.object(g, 'EVENTS_STATE_PATH', '/nonexistent/state.json'):
+            self.assertEqual(g.events_on_the_other_card(), [])
+
+    def test_a_corrupt_events_state_file_excludes_nothing(self):
+        import tempfile
+        with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as fh:
+            fh.write('{ not json')
+            path = fh.name
+        try:
+            with mock.patch.object(g, 'EVENTS_STATE_PATH', path):
+                self.assertEqual(g.events_on_the_other_card(), [])
+        finally:
+            os.unlink(path)
+
+    def test_it_reads_the_names_the_events_card_publishes(self):
+        import json as _json
+        import tempfile
+        payload = {'card_events': [{'name': 'Music in the Gardens', 'start': 'x'},
+                                   {'name': '', 'start': 'y'}]}
+        with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as fh:
+            _json.dump(payload, fh)
+            path = fh.name
+        try:
+            with mock.patch.object(g, 'EVENTS_STATE_PATH', path):
+                self.assertEqual(g.events_on_the_other_card(),
+                                 ['Music in the Gardens'])
+        finally:
+            os.unlink(path)
+
+    def test_the_events_card_writes_what_this_reads(self):
+        """The two cards agree via one key in one file. If the events card
+        stops writing card_events, this silently stops excluding anything."""
+        sys.path.insert(0, os.path.abspath(
+            os.path.join(os.path.dirname(__file__), os.pardir, 'Events Ad')))
+        import generate_events_ad as events
+        published = events.card_events(
+            [{'name': 'Music in the Gardens', 'start': '2026-09-26T16:00:00-07:00',
+              'venue': 'Gardens', 'category': 'CONCERT'}])
+        self.assertEqual([e['name'] for e in published], ['Music in the Gardens'])
+        self.assertIn('start', published[0])
 
 
 class Caching(unittest.TestCase):
@@ -373,13 +476,15 @@ class Caching(unittest.TestCase):
                       'issue_fingerprint': self.fingerprint,
                       'items': [item(title='Cached Item')]}
 
-    def _run(self, force=False, gem=None):
+    def _run(self, force=False, gem=None, excluded=()):
         with mock.patch.object(g, 'dump_dom', return_value=ARCHIVE_DOM), \
              mock.patch.object(g, 'fetch_issue', return_value=self.body), \
              mock.patch.object(g, 'gemini_highlights',
                                return_value=gem if gem is not None else []) as spy, \
+             mock.patch.object(g, 'events_on_the_other_card',
+                               return_value=list(excluded)), \
              mock.patch.dict(os.environ, {'GEMINI_API_KEY': 'k'}, clear=False):
-            issue, items = g.gather_items(self.state, TODAY, force=force)
+            issue, items, _ = g.gather_items(self.state, TODAY, force=force)
         return issue, items, spy
 
     def test_an_unchanged_issue_reuses_the_cache(self):
@@ -400,6 +505,20 @@ class Caching(unittest.TestCase):
         spy.assert_called_once()
         self.assertEqual([i['title'] for i in items], ['Fresh Item'])
         self.assertEqual(self.state['issue_fingerprint'], self.fingerprint)
+
+    def test_a_changed_events_card_asks_again(self):
+        """Filtering alone would drop this card from four items to three.
+        Re-asking lets Gemini pick a replacement for the one it loses."""
+        _, _, spy = self._run(gem=[item(title='Fresh Item')],
+                              excluded=['Music in the Gardens'])
+        spy.assert_called_once()
+
+    def test_the_same_events_card_still_uses_the_cache(self):
+        self.state['issue_fingerprint'] = g.text_fingerprint(
+            g.issue_text(self.body), ['Music in the Gardens'])
+        _, items, spy = self._run(excluded=['Music in the Gardens'])
+        spy.assert_not_called()
+        self.assertEqual([i['title'] for i in items], ['Cached Item'])
 
     def test_a_new_issue_url_asks_again_even_at_the_same_fingerprint(self):
         self.state['issue_url'] = 'https://conta.cc/older'
