@@ -715,6 +715,15 @@
             return res.json();
         }
 
+        // Projected recurring events carry a plain-text source, not a URL.
+        function rfSource(src) {
+            if (!src) return '';
+            if (/^https?:\/\//.test(src)) {
+                return ' &middot; <a href="' + escapeHtml(src) + '" target="_blank" rel="noopener noreferrer">source</a>';
+            }
+            return ' &middot; ' + escapeHtml(src);
+        }
+
         function renderRfConflicts(events) {
             const host = document.getElementById('rf-conflicts');
             const note = document.getElementById('rf-conflicts-note');
@@ -733,7 +742,7 @@
                     <h4>${escapeHtml(e.name)}</h4>
                     <p class="rf-when">${escapeHtml(fmtDate(e.date))}${e.distance_mi != null ? ' &middot; ~' + escapeHtml(e.distance_mi) + ' mi from the church' : ''}</p>
                     <p>${escapeHtml(e.location || 'Location unknown')}</p>
-                    <p>${escapeHtml(e.type || '')}${e.permit ? ' &middot; permit ' + escapeHtml(e.permit) : ''}${e.source ? ' &middot; <a href="' + escapeHtml(e.source) + '" target="_blank" rel="noopener noreferrer">source</a>' : ''}</p>
+                    <p>${escapeHtml(e.type || '')}${e.permit ? ' &middot; permit ' + escapeHtml(e.permit) : ''}${rfSource(e.source)}</p>
                 </div>
             `).join('');
         }

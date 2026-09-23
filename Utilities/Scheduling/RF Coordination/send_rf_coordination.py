@@ -742,6 +742,39 @@ def fetch_maccla_concerts(today):
     return out
 
 
+def expected_event_dicts(lafayette_expected, recurring_gaps, today, horizon):
+    """Projected recurring events (no permit yet) as event dicts for the dashboard.
+
+    The email lists these in its CHECK NOW / Lafayette Park / recurring sections,
+    but they were never exported, so the dashboard showed no warning for them.
+    Only projections from today through the horizon are kept."""
+    events = []
+    for x in list(lafayette_expected) + list(recurring_gaps):
+        p = x["projected"]
+        if not (today <= p <= horizon):
+            continue
+        name = x.get("label") or x.get("name") or "Recurring event"
+        if x.get("location"):
+            location = str(x["location"]).replace('\n', ', ')
+            dist = x.get("distance_mi")
+        else:
+            location = "Lafayette Park, 625 S Lafayette Park Pl, Los Angeles 90057"
+            dist = round(haversine(LAT_540, LON_540, LAFAYETTE_PARK_LAT, LAFAYETTE_PARK_LON), 2)
+        yrs = ", ".join(str(y) for y in x["years"])
+        events.append({
+            "name": name,
+            "date": p.strftime('%Y-%m-%d'),
+            "location": location,
+            "type": f"Expected - recurs yearly ({yrs}), no permit yet; verify",
+            "distance_mi": dist,
+            "permit": "",
+            "source": "Projected from prior-year LA City permits",
+            "start_dt": p,
+            "end_dt": p.replace(hour=23, minute=59),
+        })
+    return events
+
+
 def merge_nearby(*lists):
     """Combine event dicts from several sources, newest-source-wins on dupes."""
     merged = {}
@@ -1148,7 +1181,12 @@ def main():
 
     # 6. Export JSON snapshots.
     export_json(all_future, os.path.join(SCRIPT_DIR, "all_la_events.json"))
-    export_json(combined_nearby, os.path.join(SCRIPT_DIR, "public_events.json"))
+    # The dashboard reads public_events.json, so it also gets the projected
+    # recurring events that the email flags (merge_nearby keeps confirmed
+    # events over a projection of the same name in the same month).
+    expected = expected_event_dicts(lafayette["expected"], recurring_gaps, today, horizon)
+    export_json(merge_nearby(combined_nearby, expected),
+                os.path.join(SCRIPT_DIR, "public_events.json"))
 
     # 7. Overlap section (kept for continuity), now across all nearby sources.
     overlapping = get_overlapping_events(fccla_events, combined_nearby)

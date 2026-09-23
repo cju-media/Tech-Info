@@ -810,7 +810,12 @@
             // Find if any public event is on the same day for RF coordination overlap checking
             let overlappingPublicEvents = [];
             if (dateKey && typeof publicEvents !== 'undefined' && publicEvents.length > 0) {
-                overlappingPublicEvents = publicEvents.filter(pe => pe.date === dateKey || pe.date.startsWith(dateKey));
+                // Multi-day events carry end_date; match every day in the range.
+                overlappingPublicEvents = publicEvents.filter(pe => {
+                    const start = (pe.date || '').slice(0, 10);
+                    const end = (pe.end_date || pe.date || '').slice(0, 10);
+                    return start <= dateKey && dateKey <= end;
+                });
             }
 
             let defaultRfWarning = '';
