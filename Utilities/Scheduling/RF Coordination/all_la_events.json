@@ -1,74 +1,11 @@
 [
   {
-    "name": "ASLA CONFERENCE & EXPO",
-    "date": "2026-09-16",
-    "location": "1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001326",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "ASLA 2026",
-    "date": "2026-09-16",
-    "location": "1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001284",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "ASLA_BERLINER 2026_ KAHEYO",
-    "date": "2026-09-16",
-    "location": "1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001197",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "GREENFIELDS OUTDOOR FITNESS BOOTH #838",
-    "date": "2026-09-16",
-    "location": "1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001206",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "RIFTBOUND REGIONAL QUALIFIER",
-    "date": "2026-09-25",
-    "location": "West Hall A 1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001199",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "2026 ASLA",
-    "date": "2026-09-15",
-    "location": "Booth 339 of Convention Center 1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001263",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "RUN, WALK & ROLL 26",
-    "date": "2026-09-27",
-    "location": "Griffith Park, Shane's Inspiration Playground near Merry-Go-Round 4730 N CRYSTAL SPRINGS DR 90027",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 5.02,
-    "permit": "264109000001255",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "ALL IN SUMMIT",
-    "date": "2026-09-13",
-    "location": "649 W JEFFERSON BLVD 90007",
+    "name": "JAY PARK",
+    "date": "2026-09-26",
+    "location": "Stage in Expo Hall 649 W JEFFERSON BLVD 90007",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 2.9,
-    "permit": "264109000001287",
+    "permit": "264109000001364",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -81,15 +18,6 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "Greek Family Weekend",
-    "date": "2026-09-25",
-    "location": "688W. 28th St, 90007",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264101000001331",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "RETINA SOCIETY MEETING",
     "date": "2026-09-23",
     "location": "Santa Monica Ballroom 2025 S AVENUE OF THE STARS 90067",
@@ -99,12 +27,93 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "CARNIVAL",
-    "date": "2026-09-18",
-    "location": "1380 N. Avalon Blvd., Wilmington, CA 90744",
+    "name": "COMMUNITY BUILD",
+    "date": "2026-09-23",
+    "location": "The location is the base camp for Habitat LA's Community Build. 887 N TOYOPA DR 90272",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 18.97,
-    "permit": "264109000001059",
+    "distance_mi": 13.73,
+    "permit": "264109000001234",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "COMPLEX CON",
+    "date": "2026-10-03",
+    "location": "Sculpture in South Hall 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001383",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CARNIVAL",
+    "date": "2026-09-26",
+    "location": "13360 Valley Heart Dr, Sherman Oaks CA,91423",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 9.95,
+    "permit": "264109000001265",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "COMPLEXCON",
+    "date": "2026-10-03",
+    "location": "1201 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.89,
+    "permit": "264109000001332",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "DODGER RUN",
+    "date": "2026-09-26",
+    "location": "Dodger Stadium Lot G",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001346",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "WESTWOOD VILLAGE FARMERS' MARKET",
+    "date": "2026-07-02",
+    "location": "Broxton Plaza 1036 S BROXTON AVE 90024",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 9.21,
+    "permit": "264109000000967",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "FRANK MAZA MUSICAL SHOWCASE",
+    "date": "2026-09-25",
+    "location": "The event will be held in our own parking lot which will have no cars that day. 3375 N BARHAM BLVD 90068",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 5.78,
+    "permit": "264109000001069",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "Our Lady of the HolyRosary Annual Fiesta",
+    "date": "2026-10-02",
+    "location": "7800 Vineland Ave, 91352",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264101000001396",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "SIDEPIECE",
+    "date": "2026-10-03",
+    "location": "parking lot at this address 1749 N VINE ST 90028",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.55,
+    "permit": "264109000001232",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LOGITECH 2026",
+    "date": "2026-09-23",
+    "location": "57 Windward Ave, 90291",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264101000001356",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
