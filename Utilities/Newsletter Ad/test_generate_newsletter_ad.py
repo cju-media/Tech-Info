@@ -19,9 +19,12 @@ from unittest import mock
 
 import generate_newsletter_ad as g
 from generate_newsletter_ad import (
+    OVERLAP_FLOOR,
     drop_duplicates,
     normalise_title,
     same_happening,
+    significant_tokens,
+    token_overlap,
     CARD_FRAGMENT,
     MAX_ITEMS,
     MIN_ITEMS,
@@ -395,6 +398,55 @@ class Deduplication(unittest.TestCase):
     def test_unrelated_events_do_not_match(self):
         self.assertFalse(same_happening("FCCLA Men's Group",
                                         'Cathedral Choir Rehearsal'))
+
+    def test_a_reworded_title_matches_on_shared_vocabulary(self):
+        """Neither contains the other; only the shared words connect them.
+        This is the shape the two house styles actually differ in."""
+        self.assertTrue(same_happening(
+            'Min Jin Lee discusses "American Hagwon"',
+            'A Conversation with Min Jin Lee about American Hagwon'))
+
+    def test_possessives_do_not_create_shared_vocabulary(self):
+        """Stripping punctuation turns every possessive into a stray "s".
+        Counting those matched these two, which are different events."""
+        self.assertNotIn('s', significant_tokens("Men's Group"))
+        self.assertFalse(same_happening("Men's Group", "Young Men's Group Retreat"))
+
+    def test_events_sharing_one_word_are_left_alone(self):
+        for one, other in [('Cathedral Choir Rehearsal', 'Cathedral Ringers Rehearsal'),
+                           ('Book Study', 'Bible Study'),
+                           ('Garden Workday', 'Garden Tour'),
+                           ('Coffee Hour', 'Happy Hour'),
+                           ('Harvesting Sunday', 'Sunday Worship Service')]:
+            with self.subTest(one=one, other=other):
+                self.assertFalse(same_happening(one, other))
+
+    def test_one_shared_word_is_never_enough(self):
+        # A single word in common is a coincidence, and acting on it would
+        # drop real items off the card.
+        self.assertEqual(token_overlap('Garden Workday', 'Garden Tour'), 0.0)
+
+    def test_a_prefixed_partner_event_is_a_known_miss(self):
+        """The calendar prefixes some events with the partner's name ("Book
+        Soup: ..."), which dilutes the shared vocabulary below the floor.
+        Gemini is what catches these -- the exclusions go in the prompt for
+        exactly this reason. Recorded so a future threshold change shows up
+        here rather than silently."""
+        overlap = token_overlap(
+            'Book Soup: Devon Rodriguez presents "Work in Progress: A Memoir"',
+            'Devon Rodriguez on Work in Progress')
+        self.assertLess(overlap, OVERLAP_FLOOR)
+        self.assertGreater(overlap, 0.4)
+
+    def test_the_floor_leaves_room_between_the_real_cases(self):
+        # The nearest true pair and the nearest false pair, so a threshold
+        # tweak can't quietly cross one of them.
+        true_pair = token_overlap('Min Jin Lee discusses "American Hagwon"',
+                                  'A Conversation with Min Jin Lee about American Hagwon')
+        false_pair = token_overlap('Cathedral Choir Rehearsal',
+                                   'Cathedral Ringers Rehearsal')
+        self.assertGreaterEqual(true_pair, OVERLAP_FLOOR)
+        self.assertLess(false_pair, OVERLAP_FLOOR)
 
     def test_a_short_generic_title_does_not_match_by_containment(self):
         """"Men's Group" inside "Young Men's Group Retreat" is a coincidence

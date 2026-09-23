@@ -79,6 +79,20 @@ EVENTS_STATE_PATH = os.path.join(REPO_ROOT, 'Utilities', 'Events Ad',
 # contains the other. Short titles ("Men's Group") are too generic for
 # containment to mean anything.
 CONTAINMENT_FLOOR = 12
+# Failing that, the share of meaningful words two titles have in common that
+# makes them the same event. The calendar and the newsletter rephrase around
+# each other -- "Min Jin Lee discusses 'American Hagwon'" against "A
+# Conversation with Min Jin Lee about American Hagwon" -- and neither
+# contains the other. 0.6 clears that pair and still leaves "Men's Group" and
+# "Young Men's Group Retreat" apart, which is the direction to err in:
+# dropping a real item costs a slot, a duplicate only wastes one.
+OVERLAP_FLOOR = 0.6
+# Connective and announcement words, which say nothing about which event this
+# is. Stripping them is most of what lets two house styles line up.
+STOPWORDS = frozenset(
+    'a an the and or of in on at to for with from by is its our we this '
+    'presents present discusses discuss signs sign talks talk about '
+    'featuring feat live plus night day'.split())
 
 LOCAL_TZ_NAME = 'America/Los_Angeles'
 
@@ -243,14 +257,43 @@ def normalise_title(title):
     return text
 
 
+def significant_tokens(title):
+    """The words in a title that say which event it is.
+
+    Single characters go with the stopwords: stripping punctuation turns
+    every possessive into a stray "s", and counting those as shared
+    vocabulary matched "Men's Group" to "Young Men's Group Retreat".
+    """
+    return {w for w in normalise_title(title).split()
+            if len(w) > 1 and w not in STOPWORDS}
+
+
+def token_overlap(one, other):
+    """How much of two titles' meaningful vocabulary is shared, 0 to 1.
+
+    Two words have to match before this says anything at all: a single shared
+    word is a coincidence, and acting on it would drop real items.
+    """
+    first, second = significant_tokens(one), significant_tokens(other)
+    if len(first) < 2 or len(second) < 2:
+        return 0.0
+    shared = first & second
+    if len(shared) < 2:
+        return 0.0
+    return len(shared) / len(first | second)
+
+
 def same_happening(one, other):
-    one, other = normalise_title(one), normalise_title(other)
-    if not one or not other:
+    """Whether two titles name the same event, across two house styles."""
+    left, right = normalise_title(one), normalise_title(other)
+    if not left or not right:
         return False
-    if one == other:
+    if left == right:
         return True
-    short, long = sorted((one, other), key=len)
-    return len(short) >= CONTAINMENT_FLOOR and short in long
+    short, long = sorted((left, right), key=len)
+    if len(short) >= CONTAINMENT_FLOOR and short in long:
+        return True
+    return token_overlap(one, other) >= OVERLAP_FLOOR
 
 
 def drop_duplicates(items, excluded):
