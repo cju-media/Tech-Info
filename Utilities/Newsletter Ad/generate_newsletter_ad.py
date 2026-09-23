@@ -681,8 +681,15 @@ def main():
     if 0 < len(items) < MIN_ITEMS:
         print(f'  Only {len(items)} item(s) left; using the static card.')
         items = []
-    print(f'  {len(items)} item(s) on the card.' if items
-          else '  Static sign-up card.')
+    # The run log is the only record of what actually went up on the screens,
+    # so say what was chosen rather than just how many.
+    if items:
+        print(f'  {len(items)} item(s) on the card:')
+        for it in items:
+            when = f" [{it['when']}]" if it['when'] else ''
+            print(f"    - {it['title']}{when}")
+    else:
+        print('  Static sign-up card.')
 
     with open(HTML_PATH, 'w', encoding='utf-8') as f:
         f.write(build_html(issue, items))
