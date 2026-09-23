@@ -127,6 +127,14 @@ event on the calendar" text, and daily meant that text could be a day behind.
 An unchanged calendar skips the Gemini call, the Drive write and the state
 commit, so an idle hourly run is one scrape and a fingerprint comparison.
 
+The **newsletter card has no timer here on purpose.** It runs on GitHub's
+hourly cron at `:53` and nothing else. Its content changes twice: when a new
+issue goes out on Thursday, and at midnight, when an item whose date has
+passed drops off. Neither is tied to a minute the way the Sunday service is,
+and at roughly a one-in-four delivery rate an hourly cron still lands about
+six runs a day. Add a timer for it here only if the card is seen carrying a
+stale item into a second day.
+
 ## Caveats
 
 - A **LaunchAgent** runs only while that user is logged in. The Mac already

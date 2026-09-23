@@ -17,3 +17,9 @@ Utilities/Weather Ad/weather-at-a-glance.html
 # the render is build output rather than anything worth keeping in history.
 Utilities/Service Ad/service-ad.png
 Utilities/Service Ad/service-ad.html
+
+# The newsletter card now carries the week's actual items and is re-rendered
+# hourly, so the render is build output like the weather and service cards.
+# newsletter_ad_state.json (the Gemini cache) is what's worth keeping.
+Utilities/Newsletter Ad/newsletter-ad.png
+Utilities/Newsletter Ad/newsletter-ad.html

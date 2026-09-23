@@ -1,20 +1,33 @@
 name: Generate Newsletter Ad
 
-# Renders the Meetinghouse Newsletter sign-up card and uploads it to the
-# Events_Ads Drive folder.
+# Reads the latest issue of The Meetinghouse, puts a few of its items on a
+# card beside the sign-up code, and uploads it to the Events_Ads Drive folder.
 #
-# Daily rather than hourly: the card is static, so a run only does anything
-# when the wording or the sign-up URL changes, or when a copy has been
-# deleted from Drive and needs to come back. publish_card() skips copies
-# whose bytes already match, so an ordinary run is one listing and no writes.
+# Hourly rather than daily, for two reasons: a new issue goes out on Thursday
+# and should reach the screens that day, and items are dropped from the card
+# once their date is past, which happens at midnight. GitHub's scheduler
+# drops most scheduled runs -- measured at roughly one in four on this repo
+# -- so an hourly cron is what buys a handful of real runs a day.
+#
+# That costs almost nothing. Gemini is only asked when the issue's text
+# changes, so an ordinary run is one page render, one fetch and a Drive
+# listing; publish_card() skips copies whose bytes already match.
 
 on:
   schedule:
-    - cron: '7 7 * * *'
+    - cron: '53 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Dry run (render, but upload nothing)'
+        description: 'Dry run (render, but upload and commit nothing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      force_refresh:
+        description: 'Re-ask Gemini even if the issue has not changed'
         required: false
         default: 'false'
         type: choice
@@ -23,7 +36,7 @@ on:
           - 'false'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: generate-newsletter-ad
@@ -34,9 +47,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+      FORCE_REFRESH: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.force_refresh == 'true') && '1' || '0' }}
 
     steps:
       - uses: actions/checkout@v4
+        # The default token is enough: this commits its Gemini cache and
+        # nothing downstream keys off that push. The card goes straight to
+        # Drive rather than through the git-backed upload queue.
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -44,10 +62,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-api-python-client google-auth requests segno
+          # segno: the inlined sign-up QR. google-genai: picking the items.
+          # The Drive libraries are for the generator's upload and for the
+          # test that asserts the cleanup sweep still protects this card.
+          pip install google-genai segno \
+                      google-api-python-client google-auth requests
 
       - name: Locate Chrome
         run: |
+          # The archive list is injected client-side -- the served HTML has no
+          # issue links at all -- and the card itself is screenshotted, so
+          # both halves need a real browser.
           for candidate in google-chrome google-chrome-stable chromium-browser chromium; do
             if command -v "$candidate" >/dev/null 2>&1; then
               resolved="$(command -v "$candidate")"
@@ -66,6 +91,36 @@ jobs:
 
       - name: Generate and upload the card
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
         run: cd "Utilities/Newsletter Ad" && python generate_newsletter_ad.py
+
+      - name: Commit the card state
+        if: ${{ env.DRY_RUN == '0' }}
+        run: |
+          # Only the Gemini cache: the render is build output and gitignored.
+          git add "Utilities/Newsletter Ad/newsletter_ad_state.json" 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Same issue as last run; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: Update newsletter card state"
+          # Other scheduled workflows push to this branch on the same
+          # schedule, so the ref can move between our fetch and our push.
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} || true
+            if git push origin HEAD:${{ github.ref_name }}; then
+              pushed=true
+              break
+            fi
+            echo "Push attempt $attempt failed (ref moved?); retrying in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+          if [ "$pushed" != "true" ]; then
+            echo "::error::Failed to push the newsletter card state after 5 attempts."
+            exit 1
+          fi
