@@ -13,10 +13,15 @@ The chain:
       -> Gemini picks the items worth putting on a screen
       -> 1920x1080 PNG -> every copy of the card in Drive
 
-Gemini runs once per issue rather than once per run: newsletter_ad_state.json
-remembers the issue's URL and a fingerprint of its text, and the workflow
-commits that cache the way the events card commits its own. The newsletter is
-weekly, so that is about one model call a week however often this runs.
+Gemini runs once per issue and nothing else moves that: the cache key is the
+issue's URL and a fingerprint of its text, and the workflow commits that
+cache the way the events card commits its own. The newsletter is weekly, so
+that is one model call a week however often this runs.
+
+That one call picks PICK_ITEMS items and caches all of them, though only
+MAX_ITEMS are shown. The spares are what keep the card full between issues:
+an item is dropped when its date passes, or when the events card starts
+advertising the same thing, and the next one moves up in its place.
 
 Two things keep a stale card off the screens. Items the newsletter gives a
 date to are dropped once that date has passed, so a Saturday workday stops
@@ -66,6 +71,12 @@ GEMINI_MODEL = 'gemini-3.5-flash'
 
 # How many items fit on the screen and still read from across a room.
 MAX_ITEMS = 4
+# How many to ask for and cache. Gemini is only asked when a new issue goes
+# out, so the spares are what keep the card full for the rest of the week:
+# items drop off as their dates pass, and again if the events card starts
+# advertising one of them. Without a bench each of those would shrink the
+# card with nothing to put in the gap.
+PICK_ITEMS = 6
 # Below this the highlights column looks broken rather than sparse, and the
 # static card is the better answer.
 MIN_ITEMS = 2
@@ -313,17 +324,17 @@ def drop_duplicates(items, excluded):
     return kept
 
 
-def text_fingerprint(text, excluded=()):
-    """The cache key: the issue's text, plus what the events card is showing.
+def text_fingerprint(text):
+    """The cache key: the issue's text, and nothing else.
 
-    The exclusions belong in here rather than only in the post-filter. When
-    an event is added to the calendar, filtering alone would just shrink this
-    card from four items to three; re-asking lets Gemini pick a replacement.
-    The calendar changes a few times a week, so this stays roughly one model
-    call a week.
+    A new Meetinghouse is the only thing that costs a model call. What the
+    events card happens to be advertising deliberately stays out of this --
+    the calendar moves several times a week and the newsletter doesn't, so
+    keying on it would turn one call a week into several. The exclusions are
+    applied by the post-filter instead, and PICK_ITEMS is what covers the
+    gap a filtered item leaves.
     """
-    payload = '\n'.join([text, '--', *sorted(excluded)])
-    return hashlib.sha256(payload.encode('utf-8')).hexdigest()
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 
 # --------------------------------------------------------------------------
@@ -344,7 +355,7 @@ def build_highlights_prompt(issue, text, today, excluded=()):
 
 The church shows a rotating set of cards on screens around its campus. One of those cards advertises this newsletter, and should carry a few of its items so passers-by can see what's actually in it.
 
-Pick the {MAX_ITEMS} items most worth a stranger's attention as they walk past a screen. Prefer things somebody could still turn up to or act on: upcoming gatherings, classes, concerts, volunteer calls, drives. Skip anything that already happened -- recaps, thank-yous, "last Sunday we..." -- and skip the weekly Sunday worship service, which has a card of its own. Skip pure administrative notices.
+Pick the {PICK_ITEMS} items most worth a stranger's attention as they walk past a screen. Only the first few are shown at a time -- the rest are held in reserve and move up as earlier ones pass, so all {PICK_ITEMS} should be worth showing on their own. Prefer things somebody could still turn up to or act on: upcoming gatherings, classes, concerts, volunteer calls, drives. Skip anything that already happened -- recaps, thank-yous, "last Sunday we..." -- and skip the weekly Sunday worship service, which has a card of its own. Skip pure administrative notices.
 
 For each item give:
   "title": the item's name, 40 characters or fewer, in title case. No trailing punctuation.
@@ -767,7 +778,7 @@ def gather_items(state, today, force):
     excluded = events_on_the_other_card()
     if excluded:
         print(f'  {len(excluded)} event(s) already on the events card.')
-    fingerprint = text_fingerprint(text, excluded)
+    fingerprint = text_fingerprint(text)
     cached = state.get('items') or []
     if (not force and cached
             and state.get('issue_url') == issue['url']
@@ -780,7 +791,7 @@ def gather_items(state, today, force):
         print('  GEMINI_API_KEY not set; falling back to the static card.')
         return issue, [], excluded
 
-    items = gemini_highlights(issue, text, api_key, today, excluded)[:MAX_ITEMS]
+    items = gemini_highlights(issue, text, api_key, today, excluded)[:PICK_ITEMS]
     if items:
         state.update({'issue_url': issue['url'],
                       'issue_fingerprint': fingerprint,
@@ -813,6 +824,9 @@ def main():
     state = load_state()
     issue, items, excluded = gather_items(state, today, force)
 
+    # Filter first, then take the four that survive. The cache holds up to
+    # PICK_ITEMS, so an item that has passed or is already on the events card
+    # is replaced by the next one rather than leaving a gap.
     items = drop_duplicates(drop_past(items, today), excluded)
     items = order_items(items)[:MAX_ITEMS]
     if 0 < len(items) < MIN_ITEMS:

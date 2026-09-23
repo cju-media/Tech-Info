@@ -9,9 +9,10 @@ name: Generate Newsletter Ad
 # drops most scheduled runs -- measured at roughly one in four on this repo
 # -- so an hourly cron is what buys a handful of real runs a day.
 #
-# That costs almost nothing. Gemini is only asked when the issue's text
-# changes, so an ordinary run is one page render, one fetch and a Drive
-# listing; publish_card() skips copies whose bytes already match.
+# That costs almost nothing. Gemini is asked only when the issue's text
+# changes -- a new Meetinghouse, so once a week however often this runs, and
+# nothing else moves it. An ordinary run is one page render, one fetch and a
+# Drive listing; publish_card() skips copies whose bytes already match.
 
 on:
   schedule:

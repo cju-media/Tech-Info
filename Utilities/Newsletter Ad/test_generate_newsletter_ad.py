@@ -27,6 +27,7 @@ from generate_newsletter_ad import (
     token_overlap,
     CARD_FRAGMENT,
     MAX_ITEMS,
+    PICK_ITEMS,
     MIN_ITEMS,
     SIGNUP_URL,
     build_html,
@@ -273,6 +274,61 @@ class Thresholds(unittest.TestCase):
         # Four items at the drawn type sizes fill the column; more would
         # overflow it, and the overflow wouldn't be visible in a PNG.
         self.assertEqual(MAX_ITEMS, 4)
+
+
+class Bench(unittest.TestCase):
+    """Gemini is only asked when a new Meetinghouse goes out, so the card has
+    to survive a whole week on one answer. It's asked for more items than fit
+    and the spares move up as earlier ones are filtered out -- otherwise
+    every expiry and every duplicate would shrink the card with nothing to
+    put in the gap."""
+
+    def setUp(self):
+        self.cached = [
+            item(title='Monday Thing', date='2026-09-21'),     # past
+            item(title='Music in the Gardens', date='2026-09-26'),  # on events card
+            item(title='Tuesday Thing', date='2026-09-22'),
+            item(title='Wednesday Thing', date='2026-09-23'),
+            item(title='Thursday Thing', date='2026-09-24'),
+            item(title='Friday Thing', date='2026-09-25'),
+        ]
+
+    def shown(self, excluded=()):
+        kept = drop_duplicates(drop_past(self.cached, TODAY), list(excluded))
+        return [i['title'] for i in order_items(kept)[:MAX_ITEMS]]
+
+    def test_the_bench_is_bigger_than_the_card(self):
+        self.assertGreater(PICK_ITEMS, MAX_ITEMS)
+
+    def test_a_spare_replaces_a_past_item(self):
+        # Monday has gone; the card is still full.
+        self.assertEqual(len(self.shown()), MAX_ITEMS)
+        self.assertNotIn('Monday Thing', self.shown())
+
+    def test_a_spare_replaces_an_item_the_events_card_took(self):
+        shown = self.shown(['Music in the Gardens'])
+        self.assertEqual(len(shown), MAX_ITEMS)
+        self.assertNotIn('Music in the Gardens', shown)
+        self.assertEqual(shown, ['Tuesday Thing', 'Wednesday Thing',
+                                 'Thursday Thing', 'Friday Thing'])
+
+    def test_the_card_shrinks_only_once_the_bench_is_used_up(self):
+        late = [item(title=f'Thing {n}', date='2026-09-20') for n in range(5)]
+        self.assertEqual(drop_past(late, TODAY), [])
+
+    def test_the_bench_does_not_promise_a_full_card_all_week(self):
+        """It reduces shrinkage rather than eliminating it: items bunched
+        early in the week still thin the card out by Thursday. What it does
+        guarantee is that the card stays a card. A four-item cache would be
+        down to one item here -- below MIN_ITEMS, so the screens would fall
+        back to the plain sign-up design."""
+        two_days_on = TODAY + datetime.timedelta(days=2)
+        with_bench = drop_past(self.cached, two_days_on)
+        without_bench = drop_past(self.cached[:MAX_ITEMS], two_days_on)
+        self.assertLess(len(with_bench), MAX_ITEMS)
+        self.assertGreater(len(with_bench), len(without_bench))
+        self.assertGreaterEqual(len(with_bench), MIN_ITEMS)
+        self.assertLess(len(without_bench), MIN_ITEMS)
 
 
 class Registration(unittest.TestCase):
@@ -558,30 +614,29 @@ class Caching(unittest.TestCase):
         self.assertEqual([i['title'] for i in items], ['Fresh Item'])
         self.assertEqual(self.state['issue_fingerprint'], self.fingerprint)
 
-    def test_a_changed_events_card_asks_again(self):
-        """Filtering alone would drop this card from four items to three.
-        Re-asking lets Gemini pick a replacement for the one it loses."""
+    def test_a_changed_events_card_does_not_ask_again(self):
+        """A new Meetinghouse is the only thing that costs a model call.
+        The calendar moves several times a week and the newsletter doesn't,
+        so keying on it would turn one call a week into several. A filtered
+        item is covered by the cached spares instead."""
         _, _, spy = self._run(gem=[item(title='Fresh Item')],
                               excluded=['Music in the Gardens'])
-        spy.assert_called_once()
-
-    def test_the_same_events_card_still_uses_the_cache(self):
-        self.state['issue_fingerprint'] = g.text_fingerprint(
-            g.issue_text(self.body), ['Music in the Gardens'])
-        _, items, spy = self._run(excluded=['Music in the Gardens'])
         spy.assert_not_called()
-        self.assertEqual([i['title'] for i in items], ['Cached Item'])
+
+    def test_the_cache_key_is_the_issue_text_alone(self):
+        self.assertEqual(g.text_fingerprint(g.issue_text(self.body)),
+                         self.fingerprint)
 
     def test_a_new_issue_url_asks_again_even_at_the_same_fingerprint(self):
         self.state['issue_url'] = 'https://conta.cc/older'
         _, _, spy = self._run(gem=[item(title='Fresh Item')])
         spy.assert_called_once()
 
-    def test_a_long_model_answer_is_capped_at_what_fits(self):
+    def test_a_long_model_answer_is_capped_at_the_bench_size(self):
         self.state['issue_fingerprint'] = 'something else'
         fresh = [item(title=f'Item {n}') for n in range(10)]
         _, items, _ = self._run(gem=fresh)
-        self.assertEqual(len(items), MAX_ITEMS)
+        self.assertEqual(len(items), PICK_ITEMS)
 
 
 if __name__ == '__main__':
