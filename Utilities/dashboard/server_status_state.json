@@ -2,25 +2,25 @@
   "qr": {
     "down": false,
     "consecutive_fail": 0,
-    "last_detail": "HTTP 200 in 18 ms",
-    "last_checked": "2026-09-23T11:34:11+00:00"
+    "last_detail": "HTTP 200 in 17 ms",
+    "last_checked": "2026-09-23T11:44:16+00:00"
   },
   "vertical-stream": {
     "down": false,
     "consecutive_fail": 0,
     "last_detail": "HTTP 200 in 2 ms",
-    "last_checked": "2026-09-23T11:34:11+00:00"
+    "last_checked": "2026-09-23T11:44:16+00:00"
   },
   "content-display": {
     "down": false,
     "consecutive_fail": 0,
-    "last_detail": "HTTP 200 in 1 ms",
-    "last_checked": "2026-09-23T11:34:11+00:00"
+    "last_detail": "HTTP 200 in 2 ms",
+    "last_checked": "2026-09-23T11:44:16+00:00"
   },
   "osc": {
     "down": false,
     "consecutive_fail": 0,
-    "last_detail": "HTTP 200 in 3 ms",
-    "last_checked": "2026-09-23T11:34:11+00:00"
+    "last_detail": "HTTP 200 in 15 ms",
+    "last_checked": "2026-09-23T11:44:16+00:00"
   }
 }
