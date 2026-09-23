@@ -1,31 +1,43 @@
 {
-  "issue_fingerprint": "98c6ed51d22b328b02ebece43189c1ea4870dd1aff4c065a8eb3bd42d392d5ef",
+  "issue_fingerprint": "b7e210afe1b88e877b48a194cb3fe77db39966451ac9da822cbb1685f507465d",
   "issue_title": "The Meetinghouse This Week - September 17th, 2026",
   "issue_url": "https://conta.cc/4yVbjNX",
   "items": [
     {
-      "blurb": "Discuss Robin Wall Kimmerer's book about the wisdom of the living world.",
+      "blurb": "Explore the gifts of nature in this weekly Zoom discussion led by Rev. Michael.",
       "date": "2026-09-22",
       "title": "Braiding Sweetgrass Book Group",
       "when": "Tuesdays | 7pm | Zoom"
     },
     {
-      "blurb": "Connect with others for contemplation, discovery, and community on campus.",
+      "blurb": "Join a welcoming evening of connection, contemplation, and fun.",
       "date": "2026-09-23",
       "title": "FCCLA Men's Group",
       "when": "Wednesday, Sept 23 | 7pm"
     },
     {
-      "blurb": "Engage in an exciting and meaningful study of scripture in person or on Zoom.",
+      "blurb": "Dive into an exciting and meaningful study of the scriptures.",
       "date": "2026-09-24",
       "title": "Not Your Grandma's Bible Study",
       "when": "Thursday, Sept 24 | 6pm"
     },
     {
-      "blurb": "Hear a Russian Orthodox nun discuss the experiences of Christians in the Holy Land.",
+      "blurb": "Hear a Russian Orthodox nun share about Christian life in the Holy Land.",
       "date": "2026-09-26",
       "title": "Conversation With Mother Agapia",
       "when": "Saturday, Sept 26 | 11am"
+    },
+    {
+      "blurb": "Kick off the new year of justice, community, and spirituality groups with a meal.",
+      "date": "2026-09-27",
+      "title": "Collaboratives Kickoff Lunch",
+      "when": "Sunday, Sept 27 | 1pm"
+    },
+    {
+      "blurb": "Help harvest fresh produce in the community gardens to feed local families.",
+      "date": "2026-10-04",
+      "title": "Harvesting Sundays",
+      "when": "1st & 3rd Sundays | 8:30am"
     }
   ]
 }
