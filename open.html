@@ -36,14 +36,15 @@
   var rules = [
     { re: /^sms:\+?[0-9]{7,15}$/, app: "Messages" },
     { re: /^message:\/\/%3C[A-Za-z0-9!#$&'*+\-.\/=?^_`{|}~@%]{3,300}%3E$/, app: "Mail" },
-    { re: /^x-apple-reminderkit:\/\/REMCDReminder\/[0-9A-Fa-f-]{36}$/, app: "Reminders" }
+    { re: /^x-apple-reminderkit:\/\/REMCDReminder\/[0-9A-Fa-f-]{36}$/, app: "Reminders" },
+    { re: /^calshow:[0-9]{9,10}$/, app: "Calendar" }
   ];
   var match = null;
   for (var i = 0; i < rules.length; i++) if (rules[i].re.test(target)) { match = rules[i]; break; }
   var title = document.getElementById("title"), sub = document.getElementById("sub");
   if (!match) {
     title.textContent = "This link can't be opened";
-    sub.textContent = "Only Messages, Mail and Reminders links are supported.";
+    sub.textContent = "Only Messages, Mail, Reminders and Calendar links are supported.";
     sub.className = "err";
     return;
   }
