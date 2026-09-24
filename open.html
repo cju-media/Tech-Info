@@ -53,9 +53,24 @@
   go.href = target;
   go.textContent = "Open in " + match.app;
   go.hidden = false;
-  document.getElementById("hint").hidden = false;
+  var hint = document.getElementById("hint");
+  hint.hidden = false;
+  // Once the app takes over, this page goes to the background; close it then.
+  // Browsers only let a page close itself if it was opened as a new tab/window,
+  // so if it's still here when the user comes back, say it can be closed.
+  var launched = false;
+  go.addEventListener("click", function () { launched = true; });
+  document.addEventListener("visibilitychange", function () {
+    if (!launched) return;
+    if (document.hidden) {
+      window.close();
+    } else {
+      title.textContent = "Opened in " + match.app;
+      hint.textContent = "You can close this tab.";
+    }
+  });
   // Try right away; Safari may ask "Open in …?" first.
-  setTimeout(function () { location.href = target; }, 50);
+  setTimeout(function () { launched = true; location.href = target; }, 50);
 })();
 </script>
 </body>
