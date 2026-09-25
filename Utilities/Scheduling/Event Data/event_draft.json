@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-24T14:28:14+00:00",
+  "generated": "2026-09-25T14:45:50+00:00",
   "window": {
-    "start": "2026-09-24",
-    "end": "2026-12-25"
+    "start": "2026-09-25",
+    "end": "2026-12-26"
   },
   "columns": [
     "Date",
@@ -56,7 +56,7 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Smith & Rawlings Wedding Ceremony",
+        "Sarah Smith & Elijah Rawlings Wedding",
         "Sanctuary/Forecourt",
         "TBD",
         "Wedding",
@@ -90,7 +90,7 @@
       "kind": "event",
       "cells": [
         "SA 12/12/2026",
-        "Kang & Kim Wedding Ceremony",
+        "Gloria Kang & Daniel Kim Wedding",
         "Sanctuary/Forecourt",
         "TBD",
         "Wedding",
@@ -141,14 +141,14 @@
       "kind": "event",
       "cells": [
         "SA 12/5/2026",
-        "Bernal & Barnett Wedding Ceremony",
+        "Elizabeth Bernal & Izett Barnett Wedding",
         "Sanctuary/Forecourt",
         "3:00pm-11:00pm",
         "Wedding",
         "1",
         "",
         "",
-        "",
+        "3pm - 11pm Event Guard",
         "",
         "Weddings"
       ],
@@ -158,7 +158,7 @@
       "kind": "event",
       "cells": [
         "FR 12/4/2026",
-        "Yamandu Costa Concert",
+        "\"Yamandu Costa\" Concert",
         "Sanctuary",
         "5:30pm-9:30pm",
         "Concert",
@@ -226,7 +226,7 @@
       "kind": "event",
       "cells": [
         "SA 11/21/2026",
-        "Uribe & Aimaq Wedding Ceremony",
+        "Sofia Uribe & Robin Aimaq Wedding",
         "Sanctuary/Forecourt/Stuart Hall",
         "TBD",
         "Wedding",
@@ -243,7 +243,7 @@
       "kind": "event",
       "cells": [
         "MO 11/16/2026",
-        "Book Soup: Boy Meets World Podcast",
+        "Boy Meets World Podcast",
         "Sanctuary",
         "5:00pm-9:00pm",
         "Talk",
@@ -294,14 +294,14 @@
       "kind": "event",
       "cells": [
         "TH 11/5/2026",
-        "Screening, Q&A, Reception",
+        "\"Groundswell\" Screening & Q&A",
         "Shatto",
-        "7:00pm",
+        "7:00pm-9:00pm",
         "Screening",
         "1",
         "",
         "",
-        "7:00pm start",
+        "TBD\n7:00pm start",
         "",
         ""
       ],

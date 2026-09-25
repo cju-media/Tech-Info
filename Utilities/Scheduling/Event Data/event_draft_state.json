@@ -3,15 +3,15 @@
     "040000008200E00074C5B7101A82E008000000000E49EF75F06DDC01000000000000000010000000E5BDCE4BF492044FA758FB7F08FB19C0::2026-12-05": {
       "call_times": "3:00pm-11:00pm",
       "count": 1,
-      "name": "Bernal & Barnett Wedding Ceremony",
-      "schedule": "",
+      "name": "Elizabeth Bernal & Izett Barnett Wedding",
+      "schedule": "3pm - 11pm Event Guard",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt"
     },
     "040000008200E00074C5B7101A82E0080000000052498EA9FEF1DC01000000000000000010000000ABE2267440E71A42833B61FCF04435CF::2026-12-04": {
       "call_times": "5:30pm-9:30pm",
       "count": 1,
-      "name": "Yamandu Costa Concert",
+      "name": "\"Yamandu Costa\" Concert",
       "schedule": "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
       "type": "Concert",
       "venue": "Sanctuary"
@@ -19,7 +19,7 @@
     "040000008200E00074C5B7101A82E008000000005347C5B61B08DD010000000000000000100000007B90D9B3B2A29B4A91B7AF09424C8442::2026-11-16": {
       "call_times": "5:00pm-9:00pm",
       "count": 1,
-      "name": "Book Soup: Boy Meets World Podcast",
+      "name": "Boy Meets World Podcast",
       "schedule": "5:00pm Set-up\n5:30pm Artist arrives\n6:15pm Doors\n7:00-8:30 Show\n9:00pm Off Campus",
       "type": "Talk",
       "venue": "Sanctuary"
@@ -27,7 +27,7 @@
     "040000008200E00074C5B7101A82E00800000000640A4C5486B1DC01000000000000000010000000BEA81B405584644EBB935795740D09E9::2026-11-21": {
       "call_times": "TBD",
       "count": 1,
-      "name": "Uribe & Aimaq Wedding Ceremony",
+      "name": "Sofia Uribe & Robin Aimaq Wedding",
       "schedule": "",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt/Stuart Hall"
@@ -43,7 +43,7 @@
     "040000008200E00074C5B7101A82E00800000000B8724E9D9893DC0100000000000000001000000001F5C7B20EF9C549BB619796E18EBEBE::2026-12-13": {
       "call_times": "TBD",
       "count": 1,
-      "name": "Smith & Rawlings Wedding Ceremony",
+      "name": "Sarah Smith & Elijah Rawlings Wedding",
       "schedule": "",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt"
@@ -51,20 +51,20 @@
     "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
       "call_times": "TBD",
       "count": 1,
-      "name": "Kang & Kim Wedding Ceremony",
+      "name": "Gloria Kang & Daniel Kim Wedding",
       "schedule": "",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt"
     },
     "040000008200E00074C5B7101A82E00800000000EAEFDEF04A19DD010000000000000000100000009AD8CA85476F094EA332A26BF1EDF785::2026-11-05": {
-      "call_times": "7:00pm",
+      "call_times": "7:00pm-9:00pm",
       "count": 1,
-      "name": "Screening, Q&A, Reception",
-      "schedule": "7:00pm start",
+      "name": "\"Groundswell\" Screening & Q&A",
+      "schedule": "TBD\n7:00pm start",
       "type": "Screening",
       "venue": "Shatto"
     }
   },
-  "fingerprint": "a9a775fcdf5ca92f3e56d7db85855cdf1036c3021e1f7a9bce5dd206fbf68c3e",
-  "gemini_at": "2026-09-24T14:28:14+00:00"
+  "fingerprint": "0f7f640cf5e7898cc551c0b2272c7725c4467f8523394551f799422aa66a4973",
+  "gemini_at": "2026-09-25T14:45:50+00:00"
 }
