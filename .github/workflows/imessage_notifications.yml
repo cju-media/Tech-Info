@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '0 * * * *'  # Runs every hour, relies on python script to filter
   repository_dispatch:
-    types: [drive_upload_complete, youtube_stream_created, youtube_stream_thumbnail_retrying, youtube_stream_thumbnail_failed, sermon_series_video_uploaded, sermon_series_title_description_uploaded, worship_title_description_uploaded, video_migration_upload_skipped, video_migration_placeholder_link, events_folder_manual_deletion_needed, events_folder_cleanup_failed, calendar_event_added, rtmp_watchdog_restart, rtmp_watchdog_restart_failed, montage_folder_reminder]
+    types: [drive_upload_complete, youtube_stream_created, youtube_stream_thumbnail_retrying, youtube_stream_thumbnail_failed, sermon_series_video_uploaded, sermon_series_title_description_uploaded, worship_title_description_uploaded, video_migration_upload_skipped, video_migration_placeholder_link, events_folder_manual_deletion_needed, events_folder_cleanup_failed, calendar_event_added, rtmp_watchdog_restart, rtmp_watchdog_restart_failed, montage_folder_reminder, newsletter_card_stale]
   workflow_dispatch:
     inputs:
       run_mode:
@@ -84,6 +84,12 @@ jobs:
 
           # Only commit and push if state files have changed
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update schedule states" && git pull --rebase origin ${{ github.ref_name }} && git push)
+
+      - name: Send Newsletter Card Stale Notification
+        if: github.event_name == 'repository_dispatch' && github.event.action == 'newsletter_card_stale'
+        env:
+          SUMMARY: ${{ github.event.client_payload.summary }}
+        run: python3 "Utilities/Scheduling/Event Data/send_imessage.py" "⚠️ ${SUMMARY:-The Meetinghouse card on the screens needs a look.} Check the Generate Newsletter Ad workflow."
 
       - name: Send Drive Upload Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'drive_upload_complete'

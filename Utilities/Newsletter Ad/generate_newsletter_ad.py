@@ -732,6 +732,25 @@ STATIC_SHELL = """<!DOCTYPE html>
 # Publishing
 # --------------------------------------------------------------------------
 
+def published_record(png_path, items, today):
+    """What this run actually put on the screens.
+
+    The audit needs to check the card people are looking at, not recompute
+    what today's card ought to be -- that would just run the same filter over
+    the same data and agree with itself. The md5 ties this record to the
+    bytes in Drive, so the audit can tell whether the record still describes
+    what's up there.
+    """
+    with open(png_path, 'rb') as fh:
+        digest = hashlib.md5(fh.read()).hexdigest()
+    return {
+        'md5': digest,
+        'at': today.isoformat(),
+        'items': [{'title': i['title'], 'when': i['when'], 'date': i['date']}
+                  for i in items],
+    }
+
+
 def publish(png_path, dry_run):
     """Refresh every copy of this card in Drive, found by fragment."""
     if UPLOADER_DIR not in sys.path:
@@ -857,6 +876,7 @@ def main():
 
     publish(PNG_PATH, dry_run)
     if not dry_run:
+        state['published'] = published_record(PNG_PATH, items, today)
         save_state(state)
     print('Done.')
 
