@@ -22,6 +22,7 @@ Repo: `cju-media/Tech-Info` · Pages site: <https://cju-media.github.io/Tech-Inf
 - [Server health monitoring](#server-health-monitoring)
 - [RTMP display watchdog (Raspberry Pi fleet)](#rtmp-display-watchdog-raspberry-pi-fleet)
 - [Google Drive housekeeping](#google-drive-housekeeping)
+- [Montage photos](#montage-photos)
 - [Video migration](#video-migration)
 - [GitHub Actions workflows](#github-actions-workflows)
 - [Repository layout](#repository-layout)
@@ -256,6 +257,31 @@ half of an auto-recovery + notification system layered on top of those Pis.
   YouTube stream directly or defers it to `pending_stream/`. Serialized by a
   concurrency gate so a batch upload can't double-send.
 
+## Montage photos
+
+`Utilities/Montage Photos/collect_montage_photos.py`
+(`collect_montage_photos.yml`, every 6 hours). Collects photos for the
+annual-meeting montage video. It reads each Meetinghouse issue from Constant
+Contact's archive API, which goes back years, unlike the ten issues on the
+fccla.org page. Gemini looks at each image where it sits in the issue's text,
+keeps only real photographs of church life, and picks a category and an
+occasion for each. The original file is uploaded to
+`<category>/<occasion>/` in the montage Drive folder, named
+`<issue date> <description>`.
+
+- **Categories** are the montage folder's top-level folders, read on every
+  run. Adding a folder in Drive adds a category. A photo that fits none of
+  them goes to `Other`.
+- **Subfolders** (`Worship/Easter`, `Gardens/Saturday Workday`) are created
+  as needed. Existing ones are shown to Gemini so later photos reuse them.
+- **No duplicates.** Images are keyed by a hash of their bytes, so a photo the
+  newsletter reruns is neither re-asked nor re-uploaded. Uploads carry the
+  hash in Drive `appProperties` as a backstop. The state lives in
+  `montage_photos_state.json`.
+- **Each year:** create the new year's folder, then update
+  `DEFAULT_FOLDER_ID` and `DEFAULT_SINCE` in the script. The current values
+  are the "2027 Assets" folder and issues from 2026-05-01 onward.
+
 ## Video migration
 
 `Utilities/Video Migration/migrate_videos.py` (`video_migration.yml`, Mondays
@@ -292,6 +318,7 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `process_uploads.yml` | push to `Utilities/uploads_queue/**` | ubuntu |
 | `rf_coordination.yml` | Wed 17:00 UTC | ubuntu |
 | `video_migration.yml` | Mon 17:00 UTC | ubuntu |
+| `collect_montage_photos.yml` | every 6 hours | ubuntu |
 | `server_health.yml` | every 10 min | self-hosted macOS |
 | `server_health_watchdog.yml` | every 30 min | ubuntu |
 | `pages_deployment.yml` | push to `main`; after *Check Worship Scripts* | ubuntu |

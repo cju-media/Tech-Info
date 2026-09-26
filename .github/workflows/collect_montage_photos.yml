@@ -1,0 +1,103 @@
+name: Collect Montage Photos
+
+# Reads each issue of The Meetinghouse, keeps the real photographs, and files
+# them by category and occasion into the montage folder in Drive, for the
+# video shown at the annual meeting.
+#
+# Every six hours, though a new issue only goes out on Thursday. GitHub drops
+# most scheduled runs on this repo (roughly three in four), and a backfill
+# is spread over several runs at MAX_ISSUES_PER_RUN each, so this needs
+# more than one attempt a day. A run with no new issue is one archive fetch.
+#
+# Next year: make the new year's folder, then change DEFAULT_FOLDER_ID and
+# DEFAULT_SINCE in collect_montage_photos.py.
+
+on:
+  schedule:
+    - cron: '41 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (ask Gemini and print where each photo would go, but upload and commit nothing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      max_issues:
+        description: 'Issues to process this run (blank for the default)'
+        required: false
+        default: ''
+      since:
+        description: 'Only issues on or after this date, YYYY-MM-DD (blank for the default)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect-montage-photos
+  cancel-in-progress: false
+
+jobs:
+  collect-montage-photos:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+      MAX_ISSUES: ${{ github.event.inputs.max_issues }}
+      MONTAGE_SINCE: ${{ github.event.inputs.since }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # pillow: the smaller copies Gemini looks at. The originals go to Drive.
+          pip install google-genai pillow google-api-python-client google-auth requests
+
+      - name: Run collector tests
+        run: cd "Utilities/Montage Photos" && python -m unittest discover -p 'test_*.py' -v
+
+      - name: Collect photos
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: cd "Utilities/Montage Photos" && python collect_montage_photos.py
+
+      - name: Commit the collector state
+        # Even when an issue failed: the state is saved after every issue, and
+        # what did get uploaded must be recorded so the retry doesn't redo it.
+        if: ${{ !cancelled() && env.DRY_RUN == '0' }}
+        run: |
+          git add "Utilities/Montage Photos/montage_photos_state.json" 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No new issues; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: Update montage photos state"
+          # Other scheduled workflows push to this branch on the same
+          # schedule, so the ref can move between our fetch and our push.
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} || true
+            if git push origin HEAD:${{ github.ref_name }}; then
+              pushed=true
+              break
+            fi
+            echo "Push attempt $attempt failed (ref moved?); retrying in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+          if [ "$pushed" != "true" ]; then
+            echo "::error::Failed to push the montage photos state after 5 attempts."
+            exit 1
+          fi
