@@ -1,0 +1,70 @@
+name: Refile Montage Photos
+
+# Moves montage photos to the folders listed in
+# Utilities/Montage Photos/montage_refile.json, for when Gemini filed one in
+# the wrong place. Safe to re-run: a photo already in its folder is skipped.
+# See refile_montage_photos.py.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (print the moves, change nothing)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+
+concurrency:
+  # Shares the collector's group so a move never races an upload's state commit.
+  group: collect-montage-photos
+  cancel-in-progress: false
+
+jobs:
+  refile:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '0' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install google-api-python-client google-auth requests
+
+      - name: Run tests
+        run: cd "Utilities/Montage Photos" && python -m unittest test_refile_montage_photos -v
+
+      - name: Move the photos
+        env:
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: cd "Utilities/Montage Photos" && python refile_montage_photos.py
+
+      - name: Commit the collector state
+        if: ${{ !cancelled() && env.DRY_RUN == '0' }}
+        run: |
+          git add "Utilities/Montage Photos/montage_photos_state.json" 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Nothing moved; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: Refile montage photos"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }} && exit 0
+            sleep $((attempt * 5))
+          done
+          echo "::error::Failed to push the montage photos state after 5 attempts."
+          exit 1
