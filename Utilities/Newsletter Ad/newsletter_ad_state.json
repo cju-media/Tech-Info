@@ -39,5 +39,26 @@
       "title": "Harvesting Sundays",
       "when": "1st & 3rd Sundays | 8:30am"
     }
-  ]
+  ],
+  "published": {
+    "at": "2026-09-26",
+    "items": [
+      {
+        "date": "2026-09-26",
+        "title": "Conversation With Mother Agapia",
+        "when": "Saturday, Sept 26 | 11am"
+      },
+      {
+        "date": "2026-09-27",
+        "title": "Collaboratives Kickoff Lunch",
+        "when": "Sunday, Sept 27 | 1pm"
+      },
+      {
+        "date": "2026-10-04",
+        "title": "Harvesting Sundays",
+        "when": "1st & 3rd Sundays | 8:30am"
+      }
+    ],
+    "md5": "480a1241cceab592629ebf454feebc44"
+  }
 }
