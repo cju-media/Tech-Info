@@ -1,0 +1,77 @@
+name: Montage Folder Reminder
+
+# Each July, after the annual meeting, emails and texts Cameron to point the
+# montage photo collector at next year's Drive folder. Runs every day in
+# July because GitHub drops most scheduled runs on this repo; the script
+# sends once per year, and not at all if the collector has already been
+# moved on. See montage_folder_reminder.py.
+
+on:
+  schedule:
+    - cron: '23 16 * 7 *'   # daily in July, ~9am Pacific
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (print the email and text, send nothing)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      force:
+        description: 'Send even outside July or if already sent this year'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+      FORCE: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true') && '1' || '0' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Send the reminder if it's due
+        env:
+          PAT: ${{ secrets.PAT }}
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+        run: cd "Utilities/Montage Photos" && python montage_folder_reminder.py
+
+      - name: Commit the reminder state
+        if: ${{ env.DRY_RUN == '0' }}
+        run: |
+          git add "Utilities/Montage Photos/montage_reminder_state.json" 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No reminder sent; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: Record montage folder reminder"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }} && exit 0
+            sleep $((attempt * 5))
+          done
+          echo "::error::Failed to push the reminder state after 5 attempts."
+          exit 1

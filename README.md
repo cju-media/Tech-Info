@@ -281,6 +281,8 @@ occasion for each. The original file is uploaded to
 - **Each year:** create the new year's folder, then update
   `DEFAULT_FOLDER_ID` and `DEFAULT_SINCE` in the script. The current values
   are the "2027 Assets" folder and issues from 2026-05-01 onward.
+  `montage_folder_reminder.yml` emails and texts Cameron once each July until
+  that change is made.
 
 ## Video migration
 
@@ -319,6 +321,7 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `rf_coordination.yml` | Wed 17:00 UTC | ubuntu |
 | `video_migration.yml` | Mon 17:00 UTC | ubuntu |
 | `collect_montage_photos.yml` | every 6 hours | ubuntu |
+| `montage_folder_reminder.yml` | daily in July (sends once a year) | ubuntu |
 | `server_health.yml` | every 10 min | self-hosted macOS |
 | `server_health_watchdog.yml` | every 30 min | ubuntu |
 | `pages_deployment.yml` | push to `main`; after *Check Worship Scripts* | ubuntu |
