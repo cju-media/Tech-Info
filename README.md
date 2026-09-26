@@ -278,6 +278,11 @@ occasion for each. The original file is uploaded to
   newsletter reruns is neither re-asked nor re-uploaded. Uploads carry the
   hash in Drive `appProperties` as a backstop. The state lives in
   `montage_photos_state.json`.
+- **Fixing a misfiled photo:** add it to `montage_refile.json` (Drive id and
+  target `Category/Subfolder`) and run `refile_montage_photos.yml`. It makes
+  missing folders, trashes subfolders it empties, and updates the state.
+  Moving a file by hand in Drive also works; it just leaves the state file
+  out of date.
 - **Each year:** create the new year's folder, then update
   `DEFAULT_FOLDER_ID` and `DEFAULT_SINCE` in the script. The current values
   are the "2027 Assets" folder and issues from 2026-05-01 onward.
@@ -322,6 +327,7 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `video_migration.yml` | Mon 17:00 UTC | ubuntu |
 | `collect_montage_photos.yml` | every 6 hours | ubuntu |
 | `montage_folder_reminder.yml` | daily in July (sends once a year) | ubuntu |
+| `refile_montage_photos.yml` | manual | ubuntu |
 | `server_health.yml` | every 10 min | self-hosted macOS |
 | `server_health_watchdog.yml` | every 30 min | ubuntu |
 | `pages_deployment.yml` | push to `main`; after *Check Worship Scripts* | ubuntu |

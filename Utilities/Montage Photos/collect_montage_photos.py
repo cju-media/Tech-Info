@@ -264,9 +264,15 @@ Keep a picture only if it is a real photograph of this church's life: people at 
 
 Categories (use one of these names exactly):
 {describe_categories(tree)}
-  - "{OTHER_CATEGORY}": only if a kept photo fits none of the above.
+  - "{OTHER_CATEGORY}": a last resort, for a kept photo that truly fits none of the above -- a staff portrait, the building on an ordinary day. Almost everything the church does fits one of the categories; look again before using this.
 
-When a photo could fit more than one, choose by who or what it is mainly about: children and youth doing anything go in the children's program category; a food distribution goes in the food distribution category even if the produce came from the gardens.
+When a photo could fit more than one, choose by who or what it is mainly about:
+  - Children and youth doing anything -- crafts, bake sales, Pride activities, play, a youth-led service -- go in the children's program category, with the activity as the subcategory.
+  - A food or clothing distribution goes in the food distribution category, even if the produce came from the gardens.
+  - Pride (the flag on the building, the parade, Pride Sunday) goes in the events category under "Pride", unless it is children or youth doing it.
+  - Anything else the church hosts or takes part in outside worship goes in the events category.
+
+Use a subcategory only when the photo is actually from that occasion. Newsletters put one section's photos next to another's, so a photo of the weekly food distribution beside a clothing-drive write-up is still the food distribution, with no subcategory.
 
 A subcategory is the specific occasion, holiday or named event a photo is from -- "Easter", "Christmas Eve", "Pride", "Blessing of the Animals", "Summer Camp", "Saturday Workday". If the category already has a subcategory for it, use that name exactly. Otherwise make one: 1 to 4 words, Title Case, the name people at the church would use, no dates or years. Leave it empty for a photo from an ordinary week that isn't tied to any particular occasion.
 
