@@ -33,7 +33,6 @@
             "su-11-01-2026-wedding-ceremony"
         ],
         "Saad": [
-            "fr-9-25-2026-organ-concert",
             "sa-9-26-2026-music-in-the-garden",
             "su-9-27-2026-worship-service",
             "su-10-4-2026-worship-service",
@@ -149,11 +148,6 @@
             "date": "2026-09-26",
             "name": "PCJ event: Mother Agapia",
             "call_time": "9:30am-2:00pm"
-        },
-        "fr-9-25-2026-organ-concert": {
-            "date": "2026-09-25",
-            "name": "Organ Concert",
-            "call_time": "5:00pm-9:00pm"
         }
     }
 }
