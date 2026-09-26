@@ -68,6 +68,10 @@ WHEN_DATE = re.compile(
     re.IGNORECASE)
 
 
+def plural(count, singular, plural_form=None):
+    return f'{count} {singular if count == 1 else (plural_form or singular + "s")}'
+
+
 def nearest_year(month, day, today):
     """The occurrence of month/day closest to today.
 
@@ -150,14 +154,14 @@ def audit_publication(published, copies, today):
             age = None
         if age is not None and age >= STALE_AFTER_DAYS:
             problems.append(
-                f'the card was last published {age} days ago ({published_at}); '
-                f'the hourly runs have stopped landing')
+                f'It was last published {plural(age, "day")} ago '
+                f'({published_at}), so the hourly runs have stopped landing')
 
     if copies is None:
         print('  Drive unreachable; skipping the published-bytes check.')
         return problems
     if not copies:
-        problems.append('no copy of the card is in the Events_Ads folder')
+        problems.append('No copy of the card is in the Events_Ads folder')
         return problems
 
     expected = published.get('md5')
@@ -165,21 +169,27 @@ def audit_publication(published, copies, today):
                if expected and f.get('md5Checksum') != expected]
     if drifted:
         problems.append(
-            f"{len(drifted)} copy/copies in Drive are not the card the "
-            f"generator last published: {', '.join(sorted(drifted))}")
+            f"{plural(len(drifted), 'copy', 'copies')} in Drive "
+            f"{'is' if len(drifted) == 1 else 'are'} not what the generator "
+            f"last published: {', '.join(sorted(drifted))}")
     return problems
 
 
 def describe(stale, problems):
-    """One text's worth of what's wrong."""
+    """One text's worth of what's wrong.
+
+    Read on a phone, so each finding is its own sentence and the items are
+    named -- "something is stale" would just mean opening the Actions log to
+    find out what.
+    """
     parts = []
     if stale:
         listed = '; '.join(f"{i['title']} ({i['when']})" for i, _ in stale)
         parts.append(
-            f"{len(stale)} item(s) on the Meetinghouse card have already "
-            f"passed: {listed}")
-    parts.extend(problems)
-    return '. '.join(parts)
+            f"{plural(len(stale), 'item')} on the Meetinghouse card "
+            f"{'has' if len(stale) == 1 else 'have'} already passed: {listed}")
+    parts.extend(p[0].upper() + p[1:] if p else p for p in problems)
+    return '. '.join(parts) + '.' 
 
 
 def notify(summary, dry_run):

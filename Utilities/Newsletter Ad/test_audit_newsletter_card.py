@@ -156,13 +156,13 @@ class Publication(unittest.TestCase):
     def test_drive_holding_something_else_is_flagged(self):
         problems = audit_publication(self.published(),
                                      self.copies('abc', 'different'), TODAY)
-        self.assertTrue(any('not the card' in p for p in problems))
+        self.assertTrue(any('not what the generator' in p for p in problems))
         self.assertTrue(any('02 - Meetinghouse-Newsletter.png' in p
                             for p in problems))
 
     def test_the_card_missing_from_the_folder_is_flagged(self):
         problems = audit_publication(self.published(), [], TODAY)
-        self.assertTrue(any('no copy' in p for p in problems))
+        self.assertTrue(any('No copy' in p for p in problems))
 
     def test_drive_being_unreachable_is_not_an_alert(self):
         """An outage on Google's side is not a stale card, and texting about
@@ -182,7 +182,7 @@ class Message(unittest.TestCase):
         summary = describe(stale, ['no copy of the card is in the folder'])
         self.assertIn('Workday', summary)
         self.assertIn('Saturday, Sept 19 | 9am', summary)
-        self.assertIn('no copy', summary)
+        self.assertIn('No copy', summary)  # each finding is its own sentence
 
     def test_it_is_short_enough_for_a_text(self):
         stale = [(item(f'Item Number {n}', f'Saturday, Sept {n} | 9am'),
