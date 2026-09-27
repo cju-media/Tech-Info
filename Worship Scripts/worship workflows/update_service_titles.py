@@ -96,7 +96,12 @@ def main():
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
 
-    if now_pt.weekday() == 6:
+    # OW_FILENAME pins an exact PDF in cju-media/OW/OWs (manual dispatch), for
+    # when the upload isn't named for the coming Sunday or a rerun is needed on
+    # Sunday itself. It skips both the Sunday guard and the date matching.
+    ow_filename = (os.environ.get("OW_FILENAME") or "").strip()
+
+    if now_pt.weekday() == 6 and not ow_filename:
         print("Today is Sunday. Do not update text files. Exiting.")
         return
 
@@ -139,12 +144,19 @@ def main():
     # 6. Find the target file
     target_file_info = None
     for item in ows_contents:
-        if target_pattern.match(item["name"]) and item["name"].endswith(".pdf"):
+        if ow_filename:
+            if item["name"] == ow_filename:
+                target_file_info = item
+                break
+        elif target_pattern.match(item["name"]) and item["name"].endswith(".pdf"):
             target_file_info = item
             break
 
     if not target_file_info:
-        print(f"No PDF found for coming Sunday ({target_prefix}). Exiting.")
+        if ow_filename:
+            print(f"No PDF named {ow_filename} in OWs. Exiting.")
+        else:
+            print(f"No PDF found for coming Sunday ({target_prefix}). Exiting.")
         return
 
     target_filename = target_file_info["name"]

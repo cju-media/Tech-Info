@@ -10,6 +10,11 @@ on:
         required: false
         type: boolean
         default: false
+      ow_filename:
+        description: 'Exact OW PDF name in cju-media/OW/OWs to process (skips the Sunday guard and date match)'
+        required: false
+        type: string
+        default: ''
   # Fired by the upload dashboard (Utilities/uploads/index.html) right after a
   # new OW PDF is pushed to cju-media/OW, so the Gemini run happens immediately
   # instead of waiting up to an hour (often longer -- GitHub's cron lags) for
@@ -56,6 +61,7 @@ jobs:
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update }}
+          OW_FILENAME: ${{ github.event.inputs.ow_filename }}
         run: cd "Worship Scripts" && python "worship workflows/update_service_titles.py"
 
       - name: Trigger Notification
