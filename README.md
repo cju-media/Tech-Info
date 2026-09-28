@@ -304,6 +304,11 @@ The lobby screens loop the videos in the Display Videos Drive folder
     the code rather than stacking a second one, and a name like
     `3D Tour.mov` keeps its `3D`.
   - Run it by hand for a new order. It also runs daily in `new` mode.
+  - Similar clips are kept apart. Clips are grouped by name without the
+    number or "night" (`rose3`, `nightRose2`), each group is spaced evenly
+    around the loop, and the order with the fewest same-group neighbours
+    wins, counting the last-to-first wrap. `new` places each arrival at a
+    free code whose neighbours aren't from its group.
 - **Uploading:** the upload dashboard's Display Videos zone can't reach
   Drive itself, since the Drive credentials are Actions secrets. Instead it
   commits each batch to its own short-lived `video-upload/<timestamp>`
