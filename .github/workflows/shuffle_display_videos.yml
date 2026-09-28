@@ -1,0 +1,63 @@
+name: Shuffle Display Videos
+
+# The lobby display plays its Drive folder in alphanumeric order, so this
+# puts a random code at the front of each video's name ("3F building 2.mov")
+# to shuffle the loop. See shuffle_display_videos.py.
+#
+# Run by hand with mode "all" for a new order. Mode "new" gives only videos
+# without a code one, so they land at random points in the loop instead of
+# at the end, and nothing else moves. Dashboard uploads are shuffled in by
+# upload_display_videos.yml as they arrive; the daily run catches videos
+# added straight in Drive.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'all = reshuffle every video; new = only give codes to videos without one'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'new'
+      dry_run:
+        description: 'Dry run (print the new names, rename nothing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+  schedule:
+    - cron: '17 12 * * *'   # daily, ~5am Pacific; mode "new"
+
+concurrency:
+  group: shuffle-display-videos
+  cancel-in-progress: false
+
+jobs:
+  shuffle:
+    runs-on: ubuntu-latest
+    env:
+      MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'new' }}
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install google-api-python-client google-auth requests
+
+      - name: Run tests
+        run: cd "Utilities/Display Videos" && python -m unittest test_shuffle_display_videos -v
+
+      - name: Shuffle
+        env:
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: cd "Utilities/Display Videos" && python shuffle_display_videos.py

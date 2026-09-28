@@ -23,6 +23,7 @@ Repo: `cju-media/Tech-Info` · Pages site: <https://cju-media.github.io/Tech-Inf
 - [RTMP display watchdog (Raspberry Pi fleet)](#rtmp-display-watchdog-raspberry-pi-fleet)
 - [Google Drive housekeeping](#google-drive-housekeeping)
 - [Montage photos](#montage-photos)
+- [Display videos](#display-videos)
 - [Video migration](#video-migration)
 - [GitHub Actions workflows](#github-actions-workflows)
 - [Repository layout](#repository-layout)
@@ -289,6 +290,35 @@ occasion for each. The original file is uploaded to
   `montage_folder_reminder.yml` emails and texts Cameron once each July until
   that change is made.
 
+## Display videos
+
+The lobby screens loop the videos in the Display Videos Drive folder
+(`1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V`) in alphanumeric order.
+
+- **Shuffling:** `Utilities/Display Videos/shuffle_display_videos.py`
+  (`shuffle_display_videos.yml`) puts a random code such as `3F` at the
+  front of each name, so the codes set the order. Mode `all` reshuffles the
+  whole loop. Mode `new` only gives codes to videos that don't have one, so
+  they land at random points and nothing else moves.
+  - Each file's own name is kept in Drive `appProperties`. A reshuffle swaps
+    the code rather than stacking a second one, and a name like
+    `3D Tour.mov` keeps its `3D`.
+  - Run it by hand for a new order. It also runs daily in `new` mode.
+- **Uploading:** the upload dashboard's Display Videos zone can't reach
+  Drive itself, since the Drive credentials are Actions secrets. Instead it
+  commits each batch to its own short-lived `video-upload/<timestamp>`
+  branch, never `main`, so videos don't stay in the history every clone
+  downloads.
+  - GitHub's API rejects large blobs (a 57 MB video came back "too large"),
+    so each video goes up in 10 MB parts plus a `manifest.json` with its
+    size and SHA-256.
+  - `upload_display_videos.py` (`upload_display_videos.yml`, on push to
+    `video-upload/**`, plus a daily sweep) rebuilds and verifies each video,
+    uploads it (skipping one already in the folder byte-for-byte), shuffles
+    it in with mode `new`, and deletes the branch. A branch that fails is
+    kept for the next run.
+  - The five path-filtered push workflows ignore `video-upload/**`.
+
 ## Video migration
 
 `Utilities/Video Migration/migrate_videos.py` (`video_migration.yml`, Mondays
@@ -328,6 +358,8 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `collect_montage_photos.yml` | every 6 hours | ubuntu |
 | `montage_folder_reminder.yml` | daily in July (sends once a year) | ubuntu |
 | `refile_montage_photos.yml` | manual | ubuntu |
+| `shuffle_display_videos.yml` | manual; daily (`new` mode) | ubuntu |
+| `upload_display_videos.yml` | push to `video-upload/**`; daily sweep | ubuntu |
 | `server_health.yml` | every 10 min | self-hosted macOS |
 | `server_health_watchdog.yml` | every 30 min | ubuntu |
 | `pages_deployment.yml` | push to `main`; after *Check Worship Scripts* | ubuntu |

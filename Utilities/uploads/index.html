@@ -288,6 +288,14 @@
             <p class="last-upload" data-folder="17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz">Last upload: checking&hellip;</p>
         </div>
 
+        <div class="drop-zone" data-folder="1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V">
+            <h3 class="folder-name">Loading folder name...</h3>
+            <p>Drop videos here or click to browse</p>
+            <p style="font-size: 12px; color: #888; margin-top: 4px;">Appears in Drive a few minutes after uploading, shuffled into a random spot in the loop.</p>
+            <input type="file" class="file-input" accept="video/*" multiple>
+            <p class="last-upload" data-folder="1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V"></p>
+        </div>
+
         <div class="drop-zone" data-folder="OW">
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
@@ -318,6 +326,9 @@
         </a>
         <a href="https://drive.google.com/drive/folders/17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz?usp=share_link" target="_blank" class="drive-btn">
             Open Events Ads
+        </a>
+        <a href="https://drive.google.com/drive/folders/1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V?usp=share_link" target="_blank" class="drive-btn">
+            Open Display Videos
         </a>
         <a href="https://github.com/cju-media/tech-info/blob/main/Youtube%20Processing/timings.txt" target="_blank" class="drive-btn">
             View timings.txt
@@ -527,6 +538,8 @@
                         zone.querySelector('.folder-name').textContent = "Order of Worship (OW) Upload";
                     } else if (folderId === '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz') {
                         zone.querySelector('.folder-name').textContent = "Events Ad Upload";
+                    } else if (folderId === DISPLAY_VIDEOS_FOLDER_ID) {
+                        zone.querySelector('.folder-name').textContent = "Display Videos Upload";
                     } else {
                         zone.querySelector('.folder-name').textContent = "Unknown Folder";
                     }
@@ -546,6 +559,8 @@
                     zone.querySelector('.folder-name').textContent = "Order of Worship (OW) Upload";
                 } else if (folderId === '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz') {
                     zone.querySelector('.folder-name').textContent = "Events Ad Upload";
+                } else if (folderId === DISPLAY_VIDEOS_FOLDER_ID) {
+                    zone.querySelector('.folder-name').textContent = "Display Videos Upload";
                 } else {
                     zone.querySelector('.folder-name').textContent = "Google Drive Folder";
                 }
@@ -709,6 +724,10 @@
             e.preventDefault();
             zone.classList.remove('dragover');
             if (e.dataTransfer.files.length) {
+                if (targetFolder === DISPLAY_VIDEOS_FOLDER_ID) {
+                    await uploadDisplayVideos(Array.from(e.dataTransfer.files), fileInput);
+                    return;
+                }
                 for (const file of Array.from(e.dataTransfer.files)) {
                     await handleFile(file, targetFolder, fileInput);
                 }
@@ -724,12 +743,124 @@
 
         fileInput.addEventListener('change', async () => {
             if (fileInput.files.length) {
+                if (targetFolder === DISPLAY_VIDEOS_FOLDER_ID) {
+                    await uploadDisplayVideos(Array.from(fileInput.files), fileInput);
+                    return;
+                }
                 for (const file of Array.from(fileInput.files)) {
                     await handleFile(file, targetFolder, fileInput);
                 }
             }
         });
     });
+
+    // ---- Display Videos: via a short-lived branch ----
+    // Like the other zones, a video has to pass through GitHub on its way to
+    // Drive -- the Drive credentials only exist in Actions. But not through
+    // main: everything committed there stays in the history every clone
+    // downloads, and one lobby video is most of the size of the repo. So
+    // each batch is committed to its own video-upload/<timestamp> branch,
+    // which upload_display_videos.yml moves to Drive and then deletes.
+    // GitHub's API rejects big blobs (a 57 MB video came back "too large"),
+    // so each video goes up in 10 MB parts with a manifest to rebuild it.
+    const DISPLAY_VIDEOS_FOLDER_ID = '1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V';
+    const VIDEO_QUEUE_PATH = 'Utilities/display_video_queue';
+    const VIDEO_PART_BYTES = 10 * 1024 * 1024;
+
+    async function ghApi(path, pat, options = {}) {
+        const resp = await fetch(`https://api.github.com/repos/${REPO}/${path}`, {
+            ...options,
+            headers: {
+                'Authorization': `token ${pat}`,
+                'Accept': 'application/vnd.github.v3+json',
+                ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+            },
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(`${err.message || resp.statusText} (HTTP ${resp.status})`);
+        }
+        return resp.json();
+    }
+
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = () => reject(new Error('Error reading file.'));
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function sha256Hex(file) {
+        const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+        return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function uploadDisplayVideos(files, inputElement) {
+        const pat = localStorage.getItem('GITHUB_PAT');
+        if (!pat) {
+            setStatus('Error: GitHub PAT is required. Please enter it below.', 'error');
+            return;
+        }
+        const videos = files.filter(f => (f.type || '').startsWith('video/') || /\.(mov|mp4|m4v)$/i.test(f.name));
+        if (videos.length !== files.length) {
+            setStatus('Error: only video files can go in Display Videos.', 'error');
+            return;
+        }
+
+        try {
+            const totalBytes = videos.reduce((sum, f) => sum + f.size, 0);
+            let sentBytes = 0;
+            const tree = [];
+            for (const [i, file] of videos.entries()) {
+                const dir = `${VIDEO_QUEUE_PATH}/video-${i + 1}`;
+                setStatus(`Preparing ${file.name}...`, 'info');
+                const parts = Math.max(1, Math.ceil(file.size / VIDEO_PART_BYTES));
+                const manifest = { name: file.name, size: file.size, sha256: await sha256Hex(file), parts };
+                for (let n = 1; n <= parts; n++) {
+                    const slice = file.slice((n - 1) * VIDEO_PART_BYTES, n * VIDEO_PART_BYTES);
+                    const blob = await ghApi('git/blobs', pat, {
+                        method: 'POST',
+                        body: JSON.stringify({ content: await blobToBase64(slice), encoding: 'base64' }),
+                    });
+                    tree.push({ path: `${dir}/part-${String(n).padStart(4, '0')}`, mode: '100644', type: 'blob', sha: blob.sha });
+                    sentBytes += slice.size;
+                    setStatus(`Uploading ${file.name}... ${Math.round(sentBytes / totalBytes * 100)}%`, 'info');
+                }
+                tree.push({ path: `${dir}/manifest.json`, mode: '100644', type: 'blob',
+                            content: JSON.stringify(manifest, null, 2) + '\n' });
+            }
+
+            setStatus('Handing the upload over to GitHub Actions...', 'info');
+            // Branch off main so the push runs main's copy of the workflow.
+            const main = await ghApi('git/ref/heads/main', pat);
+            const mainCommit = await ghApi(`git/commits/${main.object.sha}`, pat);
+            const newTree = await ghApi('git/trees', pat, {
+                method: 'POST',
+                body: JSON.stringify({ base_tree: mainCommit.tree.sha, tree }),
+            });
+            const names = videos.map(f => f.name).join(', ');
+            const commit = await ghApi('git/commits', pat, {
+                method: 'POST',
+                body: JSON.stringify({ message: `Upload display videos via web UI: ${names}`,
+                                       tree: newTree.sha, parents: [main.object.sha] }),
+            });
+            await ghApi('git/refs', pat, {
+                method: 'POST',
+                body: JSON.stringify({ ref: `refs/heads/video-upload/${Date.now()}`, sha: commit.sha }),
+            });
+
+            setLastUpload(DISPLAY_VIDEOS_FOLDER_ID, new Date().toISOString());
+            const one = videos.length === 1;
+            setStatus(`Uploaded ${videos.length} video${one ? '' : 's'}. ${one ? 'It' : 'They'} will appear in the `
+                      + 'Display Videos folder, shuffled into the loop, in a few minutes.', 'success');
+        } catch (err) {
+            setStatus(`Error uploading to Display Videos: ${err.message}`, 'error');
+        } finally {
+            if (inputElement) inputElement.value = '';
+        }
+    }
 
     async function handleFile(file, targetFolder, inputElement) {
         const pat = localStorage.getItem('GITHUB_PAT');

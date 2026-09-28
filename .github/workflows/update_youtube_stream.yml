@@ -11,6 +11,8 @@ on:
     types:
       - completed
   push:
+    # Dashboard video batches; handled by upload_display_videos.yml.
+    branches-ignore: ['video-upload/**']
     paths:
       - 'Youtube Processing/timings.txt'
   workflow_dispatch:
