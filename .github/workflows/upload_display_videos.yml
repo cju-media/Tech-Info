@@ -1,0 +1,67 @@
+name: Upload Display Videos
+
+# Moves videos dropped on the upload dashboard into the Display Videos Drive
+# folder. The dashboard commits each batch, split into 10 MB parts, to its
+# own short-lived video-upload/* branch -- never main, so the videos don't
+# end up in the history every clone downloads. This reassembles them,
+# uploads them, shuffles them into the loop, and deletes the branch. See
+# upload_display_videos.py.
+#
+# The daily run and the manual one sweep every video-upload/* branch, to
+# retry one that failed or whose push didn't start a run.
+
+on:
+  push:
+    branches: ['video-upload/**']
+  schedule:
+    - cron: '47 12 * * *'   # daily, ~6am Pacific
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (check the queued videos, upload and delete nothing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write   # to delete the upload branch
+
+concurrency:
+  # Shared with the shuffle, which renames files in the same folder.
+  group: shuffle-display-videos
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    env:
+      # A push run handles just its own branch; the others sweep them all.
+      BRANCH: ${{ github.event_name == 'push' && github.ref_name || '' }}
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '1' || '0' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The scripts, from main. The videos are read from the upload
+          # branch through the API, so they're never checked out.
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install google-api-python-client google-auth requests
+
+      - name: Run tests
+        run: cd "Utilities/Display Videos" && python -m unittest discover -p 'test_*.py' -v
+
+      - name: Upload to Drive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: cd "Utilities/Display Videos" && python upload_display_videos.py

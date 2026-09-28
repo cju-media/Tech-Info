@@ -2,6 +2,8 @@ name: Generate Sermon Series File
 
 on:
   push:
+    # Dashboard video batches; handled by upload_display_videos.yml.
+    branches-ignore: ['video-upload/**']
     paths:
       - 'Worship Scripts/service-titles/sermon-title.txt'
       - 'Worship Scripts/service-titles/sermon-minister.txt'

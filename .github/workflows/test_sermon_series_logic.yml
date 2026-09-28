@@ -9,6 +9,8 @@ name: Test Worship Workflow Logic
 
 on:
   push:
+    # Dashboard video batches; handled by upload_display_videos.yml.
+    branches-ignore: ['video-upload/**']
     paths:
       - 'Worship Scripts/worship workflows/create_sermon_series.py'
       - 'Worship Scripts/worship workflows/test_create_sermon_series.py'

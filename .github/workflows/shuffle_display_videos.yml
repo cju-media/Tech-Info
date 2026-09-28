@@ -6,9 +6,9 @@ name: Shuffle Display Videos
 #
 # Run by hand with mode "all" for a new order. Mode "new" gives only videos
 # without a code one, so they land at random points in the loop instead of
-# at the end, and nothing else moves. The upload dashboard starts a "new" run
-# after every batch it uploads; the daily run catches videos added straight
-# in Drive.
+# at the end, and nothing else moves. Dashboard uploads are shuffled in by
+# upload_display_videos.yml as they arrive; the daily run catches videos
+# added straight in Drive.
 
 on:
   workflow_dispatch:

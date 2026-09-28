@@ -304,14 +304,20 @@ The lobby screens loop the videos in the Display Videos Drive folder
     the code rather than stacking a second one, and a name like
     `3D Tour.mov` keeps its `3D`.
   - Run it by hand for a new order. It also runs daily in `new` mode.
-- **Uploading:** the upload dashboard's Display Videos zone uploads straight
-  to Drive with Google sign-in, bypassing the git upload queue, since every
-  queued file stays in the repo's history for good. After a batch it starts a
-  `new` shuffle using the dashboard's GitHub PAT.
-  - The page needs `DRIVE_CLIENT_ID` in `Utilities/uploads/index.html` set to
-    an OAuth *Web application* client with `https://cju-media.github.io` as an
-    authorized JavaScript origin.
-  - Whoever uploads needs edit access to the folder.
+- **Uploading:** the upload dashboard's Display Videos zone can't reach
+  Drive itself, since the Drive credentials are Actions secrets. Instead it
+  commits each batch to its own short-lived `video-upload/<timestamp>`
+  branch, never `main`, so videos don't stay in the history every clone
+  downloads.
+  - GitHub's API rejects large blobs (a 57 MB video came back "too large"),
+    so each video goes up in 10 MB parts plus a `manifest.json` with its
+    size and SHA-256.
+  - `upload_display_videos.py` (`upload_display_videos.yml`, on push to
+    `video-upload/**`, plus a daily sweep) rebuilds and verifies each video,
+    uploads it (skipping one already in the folder byte-for-byte), shuffles
+    it in with mode `new`, and deletes the branch. A branch that fails is
+    kept for the next run.
+  - The five path-filtered push workflows ignore `video-upload/**`.
 
 ## Video migration
 
@@ -352,7 +358,8 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `collect_montage_photos.yml` | every 6 hours | ubuntu |
 | `montage_folder_reminder.yml` | daily in July (sends once a year) | ubuntu |
 | `refile_montage_photos.yml` | manual | ubuntu |
-| `shuffle_display_videos.yml` | manual; daily (`new` mode); after dashboard video uploads | ubuntu |
+| `shuffle_display_videos.yml` | manual; daily (`new` mode) | ubuntu |
+| `upload_display_videos.yml` | push to `video-upload/**`; daily sweep | ubuntu |
 | `server_health.yml` | every 10 min | self-hosted macOS |
 | `server_health_watchdog.yml` | every 30 min | ubuntu |
 | `pages_deployment.yml` | push to `main`; after *Check Worship Scripts* | ubuntu |
