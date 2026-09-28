@@ -1,12 +1,10 @@
 {
     "assignments": {
         "Cameron": [
-            "su-9-27-2026-resonance-collective",
             "su-10-11-2026-worship-service",
             "su-10-18-2026-worship-service"
         ],
         "Danny": [
-            "su-9-27-2026-resonance-collective",
             "su-10-11-2026-wedding-ceremony",
             "su-10-11-2026-worship-service",
             "su-10-18-2026-wedding-ceremony",
@@ -21,7 +19,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "su-9-27-2026-worship-service",
             "sa-10-3-2026-wedding-ceremony",
             "su-10-4-2026-worship-service",
             "tu-10-13-2026-reception-and-book-talk-diesel-bookstore-min-jin-lee",
@@ -31,7 +28,6 @@
             "su-11-01-2026-wedding-ceremony"
         ],
         "Saad": [
-            "su-9-27-2026-worship-service",
             "su-10-4-2026-worship-service",
             "su-10-25-2026-resonance-collective",
             "su-10-25-2026-worship-service",
@@ -125,16 +121,6 @@
             "date": "2026-09-30",
             "name": "Book Soup",
             "call_time": "5:00pm-9:00pm"
-        },
-        "su-9-27-2026-resonance-collective": {
-            "date": "2026-09-27",
-            "name": "Resonance Collective",
-            "call_time": "4:00pm-9:00pm"
-        },
-        "su-9-27-2026-worship-service": {
-            "date": "2026-09-27",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
