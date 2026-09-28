@@ -91,18 +91,50 @@ def upload_to_drive(service, file_path, filename):
             print(f"Error uploading {filename} to Google Drive: {e}")
 
 
+def is_stream_live():
+    """Return True if a YouTube broadcast is live right now, False if not,
+    or None when YouTube can't be asked (no credentials, API error)."""
+    creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
+    if not creds_json:
+        print("YOUTUBE_CREDENTIALS_JSON not set; can't check for a live stream.")
+        return None
+    try:
+        creds = Credentials.from_authorized_user_info(json.loads(creds_json))
+        youtube = build('youtube', 'v3', credentials=creds)
+        response = youtube.liveBroadcasts().list(
+            part='id,snippet,status',
+            broadcastStatus='active',
+            broadcastType='all',
+            maxResults=5
+        ).execute()
+    except Exception as e:
+        print(f"Error checking YouTube for a live stream: {e}")
+        return None
+    items = response.get('items', [])
+    for b in items:
+        print(f"Live broadcast in progress: {b['snippet'].get('title')} ({b['id']})")
+    return bool(items)
+
+
 def main():
     # 1. Check if today is Sunday
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
 
     # OW_FILENAME pins an exact PDF in cju-media/OW/OWs (manual dispatch), for
-    # when the upload isn't named for the coming Sunday or a rerun is needed on
-    # Sunday itself. It skips both the Sunday guard and the date matching.
+    # when the upload isn't named for the coming Sunday. It skips the date
+    # matching below.
     ow_filename = (os.environ.get("OW_FILENAME") or "").strip()
 
-    if now_pt.weekday() == 6 and not ow_filename:
-        print("Today is Sunday. Do not update text files. Exiting.")
+    # Never swap the title files out while the service is streaming live.
+    # Outside a stream (including the rest of Sunday) updates run freely. If YouTube can't be asked, fall back
+    # to the old blanket "no updates on Sunday" rule.
+    live = is_stream_live()
+    if live:
+        print("A live stream is in progress. Not updating text files. Exiting.")
+        return
+    if live is None and now_pt.weekday() == 6:
+        print("Couldn't confirm the stream is off and today is Sunday. Not updating text files. Exiting.")
         return
 
     # 2. Calculate the coming Sunday's date to check if PDF is titled for it
@@ -335,8 +367,15 @@ def main():
     # this week's not-yet-live stream description every hour - the operator's
     # local timings server is the only thing that should repopulate it, once
     # this week's service actually happens.
+    #
+    # Only do this when the target Sunday actually changes. Reprocessing the
+    # same week's OW (e.g. a corrected upload on Sunday after the stream) must
+    # keep the timings osc_server.js just pushed for that service.
     timings_path = "../Youtube Processing/timings.txt"
-    if os.path.exists(timings_path):
+    same_week = state_data.get("target_date") == sunday.date().isoformat()
+    if same_week:
+        print("Same target Sunday as last run; keeping timings.txt.")
+    elif os.path.exists(timings_path):
         try:
             with open(timings_path, "w") as f:
                 f.write("")

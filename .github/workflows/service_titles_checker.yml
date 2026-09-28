@@ -11,7 +11,7 @@ on:
         type: boolean
         default: false
       ow_filename:
-        description: 'Exact OW PDF name in cju-media/OW/OWs to process (skips the Sunday guard and date match)'
+        description: 'Exact OW PDF name in cju-media/OW/OWs to process (skips the date match)'
         required: false
         type: string
         default: ''
@@ -60,6 +60,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
           FORCE_UPDATE: ${{ github.event.inputs.force_update }}
           OW_FILENAME: ${{ github.event.inputs.ow_filename }}
         run: cd "Worship Scripts" && python "worship workflows/update_service_titles.py"
