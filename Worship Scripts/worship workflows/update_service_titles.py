@@ -117,7 +117,6 @@ def is_stream_live():
 
 
 def main():
-    # 1. Check if today is Sunday
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
 
@@ -127,8 +126,8 @@ def main():
     ow_filename = (os.environ.get("OW_FILENAME") or "").strip()
 
     # Never swap the title files out while the service is streaming live.
-    # Outside a stream (including the rest of Sunday) updates run freely. If YouTube can't be asked, fall back
-    # to the old blanket "no updates on Sunday" rule.
+    # Outside a stream (including the rest of Sunday) updates run freely. If
+    # YouTube can't be asked, fall back to the old "no updates on Sunday" rule.
     live = is_stream_live()
     if live:
         print("A live stream is in progress. Not updating text files. Exiting.")
