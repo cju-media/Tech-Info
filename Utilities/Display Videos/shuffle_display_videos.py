@@ -19,6 +19,10 @@ Two modes:
     new   only files without a code get one, at random free codes, so they
           land at random points in the loop and nothing else moves
 
+Either way similar clips are kept apart: "rose3", "rose7" and "nightRose2"
+are one group (see group_key), and the order spreads each group evenly
+around the loop so two of them rarely play back to back.
+
 Env:
     GDRIVE_OAUTH_JSON / GDRIVE_SERVICE_ACCOUNT_JSON   required
     DISPLAY_VIDEOS_FOLDER_ID   overrides FOLDER_ID
@@ -79,6 +83,96 @@ def current_code(current, props):
     return None
 
 
+def group_key(name):
+    """Which clips count as similar: the name without its number, and
+    without "night", so "nightRose3.MP4", "rose7.MP4" and "Rose 2.mov" are
+    one group -- the same subject, which shouldn't play back to back.
+    "organKeys" stays apart from "organ": different words, different shot.
+    """
+    stem = os.path.splitext(name)[0].lower()
+    stem = re.sub(r'[\d\s_()\-]+$', '', stem)
+    stem = re.sub(r'^night[\s_\-]*', '', stem)
+    stem = re.sub(r'[^a-z0-9]+', '', stem)
+    return stem or name.lower()
+
+
+def adjacent_repeats(keys):
+    """How many neighbouring pairs share a group, counting the last clip
+    against the first -- the display loops, so that pair plays too."""
+    if len(keys) < 2:
+        return 0
+    return sum(keys[i] == keys[(i + 1) % len(keys)] for i in range(len(keys)))
+
+
+# More tries find better orders but it's already good at a few hundred, and
+# each is a sort of a few dozen items.
+ARRANGE_TRIES = 400
+
+
+def arrange(files, rng=random):
+    """The files in a random play order that spreads each group out.
+
+    Each group's clips get evenly spaced slots around the loop -- seven rose
+    clips in 43 land roughly every sixth -- from a random start, with some
+    jitter so it isn't a fixed pattern. Of ARRANGE_TRIES such orders, the
+    one with the fewest same-group neighbours wins.
+    """
+    n = len(files)
+    groups = {}
+    for f in files:
+        groups.setdefault(group_key(base_name(f['name'], f.get('appProperties'))), []).append(f)
+
+    best, best_score = None, None
+    for _ in range(ARRANGE_TRIES):
+        slots = []
+        for members in groups.values():
+            members = members[:]
+            rng.shuffle(members)
+            step = n / len(members)
+            start = rng.random() * step
+            for i, f in enumerate(members):
+                slots.append((start + i * step + rng.uniform(-0.35, 0.35) * step, rng.random(), f))
+        order = [f for *_, f in sorted(slots, key=lambda s: (s[0] % n, s[1]))]
+        score = adjacent_repeats(
+            [group_key(base_name(f['name'], f.get('appProperties'))) for f in order])
+        if best is None or score < best_score:
+            best, best_score = order, score
+            if score == 0:
+                break
+    return best
+
+
+def pick_new_codes(files, rng=random):
+    """{file id: code} for files without a code, each at a free code whose
+    neighbours in the current loop aren't from its group, where there is
+    one."""
+    coded = sorted(((current_code(f['name'], f.get('appProperties')), f) for f in files
+                    if current_code(f['name'], f.get('appProperties'))), key=lambda c: c[0])
+    fresh = [f for f in files if not current_code(f['name'], f.get('appProperties'))]
+    rng.shuffle(fresh)
+    order = [(code, group_key(base_name(f['name'], f.get('appProperties')))) for code, f in coded]
+
+    picked = {}
+    for f in fresh:
+        key = group_key(base_name(f['name'], f.get('appProperties')))
+        taken = {code for code, _ in order}
+        free = [c for c in CODES if c not in taken]
+        good = []
+        for c in free:
+            before = [k for code, k in order if code < c]
+            after = [k for code, k in order if code > c]
+            # The loop wraps: before the first clip is the last, and after
+            # the last is the first.
+            prev = (before or after or [None])[-1]
+            nxt = (after or before or [None])[0]
+            if key not in (prev, nxt):
+                good.append(c)
+        code = rng.choice(good or free)
+        picked[f['id']] = code
+        order = sorted(order + [(code, key)])
+    return picked
+
+
 def plan(files, mode, rng=random):
     """[(file, new name)] for every file whose name should change.
 
@@ -88,14 +182,13 @@ def plan(files, mode, rng=random):
         raise ValueError(f'{len(files)} videos but only {len(CODES)} codes.')
 
     if mode == 'all':
-        codes = rng.sample(CODES, len(files))
-        assignments = list(zip(files, codes))
+        # Codes sorted in the order arrange() chose, so the codes -- which are
+        # what the display sorts by -- play the files in that order.
+        codes = sorted(rng.sample(CODES, len(files)))
+        assignments = list(zip(arrange(files, rng), codes))
     elif mode == 'new':
-        taken = {current_code(f['name'], f.get('appProperties')) for f in files}
-        taken.discard(None)
-        fresh = [f for f in files if not current_code(f['name'], f.get('appProperties'))]
-        free = [c for c in CODES if c not in taken]
-        assignments = list(zip(fresh, rng.sample(free, len(fresh))))
+        picked = pick_new_codes(files, rng)
+        assignments = [(f, picked[f['id']]) for f in files if f['id'] in picked]
     else:
         raise ValueError(f'Unknown mode {mode!r}; use "all" or "new".')
 
