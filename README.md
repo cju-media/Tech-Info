@@ -23,6 +23,7 @@ Repo: `cju-media/Tech-Info` · Pages site: <https://cju-media.github.io/Tech-Inf
 - [RTMP display watchdog (Raspberry Pi fleet)](#rtmp-display-watchdog-raspberry-pi-fleet)
 - [Google Drive housekeeping](#google-drive-housekeeping)
 - [Montage photos](#montage-photos)
+- [Display videos](#display-videos)
 - [Video migration](#video-migration)
 - [GitHub Actions workflows](#github-actions-workflows)
 - [Repository layout](#repository-layout)
@@ -289,6 +290,29 @@ occasion for each. The original file is uploaded to
   `montage_folder_reminder.yml` emails and texts Cameron once each July until
   that change is made.
 
+## Display videos
+
+The lobby screens loop the videos in the Display Videos Drive folder
+(`1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V`) in alphanumeric order.
+
+- **Shuffling:** `Utilities/Display Videos/shuffle_display_videos.py`
+  (`shuffle_display_videos.yml`) puts a random code such as `3F` at the
+  front of each name, so the codes set the order. Mode `all` reshuffles the
+  whole loop. Mode `new` only gives codes to videos that don't have one, so
+  they land at random points and nothing else moves.
+  - Each file's own name is kept in Drive `appProperties`. A reshuffle swaps
+    the code rather than stacking a second one, and a name like
+    `3D Tour.mov` keeps its `3D`.
+  - Run it by hand for a new order. It also runs daily in `new` mode.
+- **Uploading:** the upload dashboard's Display Videos zone uploads straight
+  to Drive with Google sign-in, bypassing the git upload queue, since every
+  queued file stays in the repo's history for good. After a batch it starts a
+  `new` shuffle using the dashboard's GitHub PAT.
+  - The page needs `DRIVE_CLIENT_ID` in `Utilities/uploads/index.html` set to
+    an OAuth *Web application* client with `https://cju-media.github.io` as an
+    authorized JavaScript origin.
+  - Whoever uploads needs edit access to the folder.
+
 ## Video migration
 
 `Utilities/Video Migration/migrate_videos.py` (`video_migration.yml`, Mondays
@@ -328,6 +352,7 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `collect_montage_photos.yml` | every 6 hours | ubuntu |
 | `montage_folder_reminder.yml` | daily in July (sends once a year) | ubuntu |
 | `refile_montage_photos.yml` | manual | ubuntu |
+| `shuffle_display_videos.yml` | manual; daily (`new` mode); after dashboard video uploads | ubuntu |
 | `server_health.yml` | every 10 min | self-hosted macOS |
 | `server_health_watchdog.yml` | every 30 min | ubuntu |
 | `pages_deployment.yml` | push to `main`; after *Check Worship Scripts* | ubuntu |

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FCCLA Upload Dashboard</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -288,6 +289,14 @@
             <p class="last-upload" data-folder="17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz">Last upload: checking&hellip;</p>
         </div>
 
+        <div class="drop-zone" data-folder="1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V">
+            <h3 class="folder-name">Loading folder name...</h3>
+            <p>Drop videos here or click to browse</p>
+            <p style="font-size: 12px; color: #888; margin-top: 4px;">Goes straight to Drive &mdash; sign in with Google when asked. New videos are shuffled into the loop automatically.</p>
+            <input type="file" class="file-input" accept="video/*" multiple>
+            <p class="last-upload" data-folder="1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V"></p>
+        </div>
+
         <div class="drop-zone" data-folder="OW">
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
@@ -318,6 +327,9 @@
         </a>
         <a href="https://drive.google.com/drive/folders/17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz?usp=share_link" target="_blank" class="drive-btn">
             Open Events Ads
+        </a>
+        <a href="https://drive.google.com/drive/folders/1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V?usp=share_link" target="_blank" class="drive-btn">
+            Open Display Videos
         </a>
         <a href="https://github.com/cju-media/tech-info/blob/main/Youtube%20Processing/timings.txt" target="_blank" class="drive-btn">
             View timings.txt
@@ -527,6 +539,8 @@
                         zone.querySelector('.folder-name').textContent = "Order of Worship (OW) Upload";
                     } else if (folderId === '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz') {
                         zone.querySelector('.folder-name').textContent = "Events Ad Upload";
+                    } else if (folderId === DISPLAY_VIDEOS_FOLDER_ID) {
+                        zone.querySelector('.folder-name').textContent = "Display Videos Upload";
                     } else {
                         zone.querySelector('.folder-name').textContent = "Unknown Folder";
                     }
@@ -546,6 +560,8 @@
                     zone.querySelector('.folder-name').textContent = "Order of Worship (OW) Upload";
                 } else if (folderId === '17-0kiqBKa0k5ofW6gOPrVbHl7nqanuQz') {
                     zone.querySelector('.folder-name').textContent = "Events Ad Upload";
+                } else if (folderId === DISPLAY_VIDEOS_FOLDER_ID) {
+                    zone.querySelector('.folder-name').textContent = "Display Videos Upload";
                 } else {
                     zone.querySelector('.folder-name').textContent = "Google Drive Folder";
                 }
@@ -709,6 +725,10 @@
             e.preventDefault();
             zone.classList.remove('dragover');
             if (e.dataTransfer.files.length) {
+                if (targetFolder === DISPLAY_VIDEOS_FOLDER_ID) {
+                    await uploadDisplayVideos(Array.from(e.dataTransfer.files), fileInput);
+                    return;
+                }
                 for (const file of Array.from(e.dataTransfer.files)) {
                     await handleFile(file, targetFolder, fileInput);
                 }
@@ -724,12 +744,160 @@
 
         fileInput.addEventListener('change', async () => {
             if (fileInput.files.length) {
+                if (targetFolder === DISPLAY_VIDEOS_FOLDER_ID) {
+                    await uploadDisplayVideos(Array.from(fileInput.files), fileInput);
+                    return;
+                }
                 for (const file of Array.from(fileInput.files)) {
                     await handleFile(file, targetFolder, fileInput);
                 }
             }
         });
     });
+
+    // ---- Display Videos: straight to Drive ----
+    // Videos skip the git upload queue the other zones use: every file sent
+    // that way is a commit, so a 50 MB video would live in the repo's history
+    // forever, and GitHub refuses anything over 100 MB. This signs the
+    // uploader in with Google and sends the file straight to the folder.
+    const DISPLAY_VIDEOS_FOLDER_ID = '1-0rdd-NWDB9Tfv59HqlWYd0O3Y-g117V';
+    // OAuth "Web application" client from Google Cloud, with
+    // https://cju-media.github.io as an authorized JavaScript origin. Not a
+    // secret -- it only identifies this page to Google's sign-in.
+    const DRIVE_CLIENT_ID = '';
+    // Full Drive scope: drive.file can't upload into a folder the page didn't
+    // create, which is what this zone is for.
+    const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
+    const SHUFFLE_WORKFLOW = 'shuffle_display_videos.yml';
+
+    let driveToken = null;        // { token, expiresAt }
+    let driveTokenClient = null;
+
+    function getDriveToken() {
+        if (driveToken && Date.now() < driveToken.expiresAt - 60000) {
+            return Promise.resolve(driveToken.token);
+        }
+        if (!DRIVE_CLIENT_ID) {
+            return Promise.reject(new Error('Display Videos uploads are not set up yet (no Google client ID in the dashboard).'));
+        }
+        if (!(window.google && google.accounts && google.accounts.oauth2)) {
+            return Promise.reject(new Error('Google sign-in did not load. Reload the page and try again.'));
+        }
+        return new Promise((resolve, reject) => {
+            if (!driveTokenClient) {
+                driveTokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: DRIVE_CLIENT_ID,
+                    scope: DRIVE_SCOPE,
+                    callback: () => {},
+                });
+            }
+            driveTokenClient.callback = (resp) => {
+                if (resp.error) return reject(new Error(`Google sign-in failed: ${resp.error}`));
+                driveToken = { token: resp.access_token, expiresAt: Date.now() + resp.expires_in * 1000 };
+                resolve(driveToken.token);
+            };
+            driveTokenClient.error_callback = (err) =>
+                reject(new Error(`Google sign-in was not completed (${err.type || 'closed'}).`));
+            // Must run inside the drop/click that started this, or the
+            // browser blocks the sign-in popup.
+            driveTokenClient.requestAccessToken({ prompt: '' });
+        });
+    }
+
+    async function uploadToDriveDirect(file, token) {
+        // Resumable upload: one request for the metadata, then the bytes in
+        // a PUT that reports progress.
+        const init = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json; charset=UTF-8',
+                'X-Upload-Content-Type': file.type || 'application/octet-stream',
+                'X-Upload-Content-Length': String(file.size),
+            },
+            body: JSON.stringify({ name: file.name, parents: [DISPLAY_VIDEOS_FOLDER_ID] }),
+        });
+        if (!init.ok) {
+            const err = await init.json().catch(() => ({}));
+            const msg = (err.error && err.error.message) || init.statusText;
+            if (init.status === 404 || init.status === 403) {
+                throw new Error(`${msg} -- the Google account you signed in with needs edit access to the Display Videos folder.`);
+            }
+            throw new Error(msg);
+        }
+        const location = init.headers.get('Location');
+        if (!location) throw new Error('Drive did not return an upload URL.');
+
+        await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', location);
+            xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    setStatus(`Uploading ${file.name} to Drive... ${Math.round(e.loaded / e.total * 100)}%`, 'info');
+                }
+            };
+            xhr.onload = () => (xhr.status === 200 || xhr.status === 201)
+                ? resolve()
+                : reject(new Error(`Drive upload failed (HTTP ${xhr.status}).`));
+            xhr.onerror = () => reject(new Error('Network error during the Drive upload.'));
+            xhr.send(file);
+        });
+    }
+
+    async function shuffleNewVideos() {
+        // Give the new videos random codes so they land at random points in
+        // the loop instead of all at the end. Nothing else moves.
+        const pat = localStorage.getItem('GITHUB_PAT');
+        if (!pat) return 'Add a GitHub PAT to have new videos shuffled in automatically; until then run "Shuffle Display Videos" by hand.';
+        const resp = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${SHUFFLE_WORKFLOW}/dispatches`, {
+            method: 'POST',
+            headers: { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json' },
+            body: JSON.stringify({ ref: 'main', inputs: { mode: 'new', dry_run: 'false' } }),
+        });
+        return resp.status === 204
+            ? 'They will be shuffled into the loop within a couple of minutes.'
+            : `Could not start the shuffle (HTTP ${resp.status}); run "Shuffle Display Videos" by hand.`;
+    }
+
+    async function uploadDisplayVideos(files, inputElement) {
+        const videos = files.filter(f => (f.type || '').startsWith('video/') || /\.(mov|mp4|m4v)$/i.test(f.name));
+        if (videos.length !== files.length) {
+            setStatus('Error: only video files can go in Display Videos.', 'error');
+            return;
+        }
+        let token;
+        try {
+            token = await getDriveToken();
+        } catch (err) {
+            setStatus(`Error: ${err.message}`, 'error');
+            return;
+        }
+        let done = 0, failure = null;
+        for (const file of videos) {
+            try {
+                await uploadToDriveDirect(file, token);
+                done++;
+            } catch (err) {
+                failure = `${file.name} failed: ${err.message}`;
+                break;
+            }
+        }
+        if (inputElement) inputElement.value = '';
+        if (!done) {
+            setStatus(`Error: ${failure}`, 'error');
+            return;
+        }
+        setLastUpload(DISPLAY_VIDEOS_FOLDER_ID, new Date().toISOString());
+        let note;
+        try { note = await shuffleNewVideos(); } catch (e) { note = 'Could not start the shuffle; run "Shuffle Display Videos" by hand.'; }
+        const uploaded = `Uploaded ${done} of ${videos.length} video${videos.length === 1 ? '' : 's'} to Display Videos.`;
+        if (failure) {
+            setStatus(`${uploaded} ${failure} ${note}`, 'error');
+        } else {
+            setStatus(`${uploaded} ${note}`, 'success');
+        }
+    }
 
     async function handleFile(file, targetFolder, inputElement) {
         const pat = localStorage.getItem('GITHUB_PAT');
