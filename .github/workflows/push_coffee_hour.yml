@@ -1,11 +1,18 @@
 name: Push Coffee Hour to Content Display
 
 on:
+  # Primary trigger: right after each worship-script check, so a newly parsed
+  # (or edited) script reaches the display within the hour. The push script
+  # no-ops when the text hasn't changed since its last push.
+  workflow_run:
+    workflows: ['Check Worship Scripts']
+    types: [completed]
   schedule:
-    # Sunday mornings only, every 15 min from ~8:00am-11:45am Pacific.
-    # 15-18 UTC covers 8am-noon PDT (UTC-7); shifts an hour earlier in
-    # standard time (PST, UTC-8), which is an acceptable slop for this.
-    - cron: '0,15,30,45 15-18 * * 0'
+    # Sunday-morning backstop (forced push), ~7:30-10:30am Pacific.
+    # Off-the-hour minutes because GitHub drops many :00/:15/:30/:45 runs
+    # (on 2026-09-27 only 1 of 16 old slots fired). 14-17 UTC = 7-10am PDT;
+    # an hour earlier in PST, which is fine for this.
+    - cron: '7,37 14-17 * * 0'
   workflow_dispatch:
 
 concurrency:
@@ -15,10 +22,14 @@ concurrency:
 jobs:
   push:
     runs-on: [self-hosted, macOS]
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # workflow_run's SHA can predate the checker's own JSON commit.
+          ref: main
 
       - name: Push Coffee Hour text to Content Display server
-        run: python3 "Worship Scripts/worship workflows/push_coffee_hour.py"
+        run: python3 "Worship Scripts/worship workflows/push_coffee_hour.py" ${{ github.event_name != 'workflow_run' && '--force' || '' }}

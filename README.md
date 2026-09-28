@@ -66,7 +66,7 @@ reports freshness for each stage.
 | **Sermon series description** | `create_sermon_series.py` | `sermon_series.yml` (on push to `sermon-title.txt` / `sermon-minister.txt`) | Generates the Sermon Series title + description files, uploads to Drive, adds the video to the sermon-series playlist |
 | **Backfill stream link** | `backfill_sermon_series_link.py` | `backfill_sermon_series_link.yml` (`youtube_stream_created` repository_dispatch) | Replaces the `YOUTUBE SERVICE LINK` placeholder in the sermon-series description once the livestream URL is known |
 | **Archive** | `archive_service_files.yml` | Mondays 05:00 UTC | Snapshots `chapters.txt` / `description.txt` / `timings.txt` / `title.txt` into `Utilities/Archives/<date>/` |
-| **Coffee Hour push** | `push_coffee_hour.py` | `push_coffee_hour.yml` (Sunday mornings, every 15 min) | Reads `coffeeHourRoom` from `worship_scripts.json` and POSTs the on-screen text to the [Content Display](https://github.com/cju-media/content-display) control server's `/api/coffee-hour` endpoint, so the display matches the printed script |
+| **Coffee Hour push** | `push_coffee_hour.py` | `push_coffee_hour.yml` (after each `worship_scripts_checker.yml` run, plus a forced Sunday-morning backstop) | Reads the next upcoming `coffeeHourRoom` from `worship_scripts.json` and POSTs the on-screen text to the [Content Display](https://github.com/cju-media/content-display) control server's `/api/coffee-hour` endpoint, so the display matches the printed script. Only re-pushes when the text changes (last push recorded in `~/.cache/content-display-coffee-hour.txt` on the runner), so manual edits in the control app survive until the next script change |
 
 Gemini reads are cached (per Drive file id / per content hash) so unchanged
 inputs don't cost repeated API calls.
@@ -349,7 +349,7 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `sermon_series.yml` | push to `sermon-title.txt` / `sermon-minister.txt` | ubuntu |
 | `backfill_sermon_series_link.yml` | `youtube_stream_created` dispatch | ubuntu |
 | `archive_service_files.yml` | Mon 05:00 UTC | ubuntu |
-| `push_coffee_hour.yml` | Sun 15:00-18:45 UTC (~8am-noon PT), every 15 min | self-hosted macOS |
+| `push_coffee_hour.yml` | After each `Check Worship Scripts` run; Sun 14:07-17:37 UTC (~7-10:30am PT), every 30 min | self-hosted macOS |
 | `schedule_notifications.yml` | hourly | ubuntu |
 | `imessage_notifications.yml` | hourly; many `repository_dispatch` types | self-hosted macOS |
 | `mark_past_sheet_events.yml` | daily 09:00 UTC | ubuntu |
