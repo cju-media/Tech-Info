@@ -5,11 +5,13 @@
 """
 
 import datetime
+import json
 import os
 import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import auto_build as ab  # noqa: E402
@@ -132,7 +134,16 @@ class DriveTiming(unittest.TestCase):
     """Drive files the Sermon Series thumbnail under the next Sunday strictly after today."""
 
     def ctx(self, today, root):
-        return type("Ctx", (), {"today": today, "root": root, "queue_dir": os.path.join(root, "queue")})()
+        now = datetime.datetime.combine(today, datetime.time(12), ab.TZ)
+        return type("Ctx", (), {"today": today, "now": now, "root": root, "queue_dir": os.path.join(root, "queue")})()
+
+    def sidecars(self, root):
+        q, metas = os.path.join(root, "queue"), []
+        for n in sorted(os.listdir(q)):
+            if n.endswith(".meta.json"):
+                with open(os.path.join(q, n)) as fh:
+                    metas.append(json.load(fh))
+        return metas
 
     def week_with_jpgs(self, week):
         root = tempfile.mkdtemp()
@@ -147,37 +158,117 @@ class DriveTiming(unittest.TestCase):
 
     def test_this_weeks_pick_is_queued_like_a_dashboard_upload(self):
         root = self.week_with_jpgs("10-4-26")
-        drive, _ = ab.send_to_drive(self.ctx(datetime.date(2026, 9, 29), root), {"week": "10-4-26", "dateText": "October 4, 2026"}, False)
+        ctx = self.ctx(datetime.date(2026, 9, 29), root)
+        drive, _ = ab.send_to_drive(ctx, {"week": "10-4-26", "dateText": "October 4, 2026"}, ctx.now)
         self.assertEqual(drive, "sent")
-        names = sorted(os.listdir(os.path.join(root, "queue")))
+        names = sorted(n for n in os.listdir(os.path.join(root, "queue")) if not n.endswith(".meta.json"))
         self.assertEqual(len(names), 2)
         self.assertTrue(names[0].endswith("---1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f---Service_Title_10-4-26.jpg"))
         self.assertTrue(names[1].endswith("---1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4---Sermon_Title_10-4-26.jpg"))
 
-    def test_a_changed_pick_asks_drive_to_replace(self):
+    def test_every_pick_replaces_under_the_dashboards_date_folder(self):
+        # The dashboard files a Sunday under MM-DD-YYYY; a pick must land in the same Drive
+        # folder, or a later dashboard upload can't replace it.
         root = self.week_with_jpgs("10-4-26")
-        ab.send_to_drive(self.ctx(datetime.date(2026, 9, 29), root), {"week": "10-4-26", "dateText": "October 4, 2026"}, True)
-        metas = [n for n in os.listdir(os.path.join(root, "queue")) if n.endswith(".meta.json")]
+        ctx = self.ctx(datetime.date(2026, 9, 29), root)
+        ab.send_to_drive(ctx, {"week": "10-4-26", "dateText": "October 4, 2026"}, ctx.now)
+        metas = self.sidecars(root)
         self.assertEqual(len(metas), 2)
+        for m in metas:
+            self.assertEqual(m["date"], "10-04-2026")
+            self.assertTrue(m["replace"])
+            self.assertEqual(m["chosen_at"], "2026-09-29T19:00:00+00:00")     # noon Pacific, in UTC
 
     def test_next_weeks_pick_waits(self):
         root = self.week_with_jpgs("10-11-26")
-        drive, msg = ab.send_to_drive(self.ctx(datetime.date(2026, 9, 29), root), {"week": "10-11-26", "dateText": "October 11, 2026"}, False)
+        ctx = self.ctx(datetime.date(2026, 9, 29), root)
+        drive, msg = ab.send_to_drive(ctx, {"week": "10-11-26", "dateText": "October 11, 2026"}, ctx.now)
         self.assertEqual(drive, "waiting")
         self.assertIn("Monday, October 5", msg)
         self.assertFalse(os.path.exists(os.path.join(root, "queue")))
 
     def test_picking_on_the_day_is_too_late_for_drive(self):
         root = self.week_with_jpgs("10-4-26")
-        drive, _ = ab.send_to_drive(self.ctx(datetime.date(2026, 10, 4), root), {"week": "10-4-26", "dateText": "October 4, 2026"}, False)
+        ctx = self.ctx(datetime.date(2026, 10, 4), root)
+        drive, _ = ab.send_to_drive(ctx, {"week": "10-4-26", "dateText": "October 4, 2026"}, ctx.now)
         self.assertEqual(drive, "not sent")
 
     def test_schedule_sends_a_waiting_pick_when_its_week_comes_up(self):
         root = self.week_with_jpgs("10-11-26")
-        state = {"build": {"week": "10-11-26", "dateText": "October 11, 2026", "pick": {"hex": "#385261", "drive": "waiting"}}}
+        state = {"build": {"week": "10-11-26", "dateText": "October 11, 2026",
+                           "pick": {"hex": "#385261", "drive": "waiting", "at": "2026-09-29T15:30:00-07:00"}}}
         self.assertIsNone(ab.send_waiting(self.ctx(datetime.date(2026, 10, 2), root), state))    # Friday before
         self.assertIn("Sent to Drive", ab.send_waiting(self.ctx(datetime.date(2026, 10, 5), root), state))
         self.assertEqual(state["build"]["pick"]["drive"], "sent")
+        # a dashboard upload made after the pick (and before this) must win, so the time is the pick's
+        self.assertEqual({m["chosen_at"] for m in self.sidecars(root)}, {"2026-09-29T22:30:00+00:00"})
+
+    def test_schedule_never_sends_a_pick_kept_out_of_drive(self):
+        root = self.week_with_jpgs("10-11-26")
+        state = {"build": {"week": "10-11-26", "dateText": "October 11, 2026",
+                           "pick": {"hex": "#385261", "drive": "held", "at": "2026-09-29T15:30:00-07:00"}}}
+        self.assertIsNone(ab.send_waiting(self.ctx(datetime.date(2026, 10, 5), root), state))
+        self.assertFalse(os.path.exists(os.path.join(root, "queue")))
+        self.assertEqual(state["build"]["pick"]["drive"], "held")
+
+
+class UsePick(unittest.TestCase):
+    """The picker's two buttons: "Use this one" and "Use, don't send to Drive"."""
+
+    WEEK = "10-4-26"
+
+    def setUp(self):
+        self.base = tempfile.mkdtemp()
+        root, staging = os.path.join(self.base, "icloud"), os.path.join(self.base, "staging")
+        staged = os.path.join(staging, self.WEEK, "option-1", self.WEEK)
+        for _, sub, name, _ in ab.GRAPHICS:
+            os.makedirs(os.path.join(staged, "%s %s" % (sub, self.WEEK)))
+            for ext in ("ai", "jpg"):
+                open(os.path.join(staged, "%s %s" % (sub, self.WEEK), "%s_%s.%s" % (name, self.WEEK, ext)), "w").close()
+        with open(os.path.join(staged, "log.txt"), "w") as fh:
+            fh.write("UpdateWeek: test\n")
+        open(os.path.join(staging, self.WEEK, "ow.pdf"), "w").close()
+        os.makedirs(root)
+        self.data = os.path.join(self.base, "week-data.txt")
+        open(self.data, "w").close()
+        now = datetime.datetime(2026, 9, 29, 12, 0, tzinfo=ab.TZ)
+        self.ctx = type("Ctx", (), {"root": root, "staging": staging, "queue_dir": os.path.join(self.base, "queue"),
+                                    "now": now, "today": now.date()})()
+
+    def state(self, earlier=None):
+        build = {"week": self.WEEK, "dateText": "October 4, 2026", "fields": {},
+                 "options": [{"n": 1, "hex": "#1C304B", "label": "blue, 65%", "problems": []},
+                             {"n": 2, "hex": "#6E6127", "label": "gold, 79%", "problems": []}]}
+        if earlier:
+            build["pick"] = earlier
+        return {"build": build}
+
+    def pick(self, state, send):
+        with mock.patch.object(ab.pw, "prepare", return_value={"data_path": self.data}):
+            return ab.use_pick(self.ctx, state, "1", False, send=send)
+
+    def test_use_this_one_sends_to_drive(self):
+        state = self.state()
+        msg, link = self.pick(state, True)
+        self.assertEqual(state["build"]["pick"]["drive"], "sent")
+        self.assertEqual(len(os.listdir(self.ctx.queue_dir)), 4)         # two JPGs and their sidecars
+        self.assertIsNone(link)
+        self.assertIn("Sent to Drive", msg)
+
+    def test_dont_send_keeps_it_in_icloud_only(self):
+        state = self.state()
+        msg, link = self.pick(state, False)
+        self.assertEqual(state["build"]["pick"]["drive"], "held")
+        self.assertFalse(os.path.exists(self.ctx.queue_dir))
+        self.assertTrue(os.path.exists(os.path.join(self.ctx.root, self.WEEK, "Worship Service 10-4-26",
+                                                    "Service Title_10-4-26.jpg")))
+        self.assertIn("upload dashboard", msg)
+        self.assertEqual(link, ab.DASHBOARD_URL)                        # texted on its own, to tap
+
+    def test_dont_send_says_drive_keeps_the_earlier_pick(self):
+        state = self.state({"n": 2, "hex": "#6E6127", "label": "gold", "drive": "sent", "at": "2026-09-28T10:00:00-07:00"})
+        msg, _ = self.pick(state, False)
+        self.assertIn("keep #6E6127", msg)
 
 
 if __name__ == "__main__":

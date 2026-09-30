@@ -32,19 +32,37 @@ repo is the source. Each automatic build copies any changed scripts there, and
    nothing goes into iCloud yet.
 3. **You get a text with a link** to the [picker](https://cju-media.github.io/Tech-Info/Utilities/title-graphics/),
    which shows both graphics in each color. Tap **Use this one**, or build and use a color of
-   your own. Picking needs the GitHub token the upload dashboard uses; the page asks for it once
+   your own. To fix something by hand first, tap **Use, don't send to Drive** instead (see
+   below). Picking needs the GitHub token the upload dashboard uses; the page asks for it once
    per device.
 4. **Studio Mini finishes** in under a minute:
    - It copies that version into `Worship and Sermon Series/<week>/` (with `log.txt` and
      `week-data.txt`).
    - It queues both JPGs for Drive exactly like the dashboard's Worship Service and Sermon
-     Series thumbnail zones. The Worship Service one creates the livestream (or waits for it,
-     as a manual upload would).
+     Series thumbnail zones. The Worship Service one creates the livestream, or waits until
+     that week's title and description are ready (the description comes from the worship
+     script), as a manual upload would.
    - You get a second text saying where it went.
 
-Changing your mind later is fine: pick again. The new files replace the old ones in iCloud and
-in Drive, and the livestream's thumbnail is re-uploaded. `upload_queue_to_drive.py` does this
-for queued thumbnails with a `{"replace": true}` sidecar.
+**Editing before it goes out.** **Use, don't send to Drive** copies the version into iCloud only
+and texts you a link to the upload dashboard. Edit the `.ai` files, export the JPGs, and drop them
+on the dashboard's Worship Service and Sermon Series thumbnail zones. The schedule never sends a
+pick like this.
+
+**Replacing.** Every thumbnail dropped on the dashboard, and every pick, replaces that Sunday's
+thumbnail instead of adding a second one:
+- In Drive, the image in the Sunday's folder is overwritten in place (earlier versions stay in
+  its version history) and any other images there go to the Drive trash. The sermon video
+  (`migrate_videos.py`) uses the one image it finds there.
+- An existing livestream's thumbnail is re-uploaded (`create_youtube_stream.py --reconcile`).
+- A pick waiting for its week never replaces something uploaded on the dashboard after the pick.
+
+`upload_queue_to_drive.py` does this for queued thumbnails whose `.meta.json` sidecar has
+`{"replace": true}` (a pick also sends its date and `chosen_at`). Changing your mind is fine:
+pick again, or upload on the dashboard.
+
+The Sermon Series zone always files under the coming Sunday. An edited sermon graphic reaches
+that week's video only if it's uploaded before the Monday video upload.
 
 Details:
 - **Hand-made graphics are safe.** A week in iCloud that was made or edited by hand is never

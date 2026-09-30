@@ -304,12 +304,70 @@ def identical_file_in_folder(service, folder_id, name, local_path):
         return False
 
 
+def images_in_folder(service, folder_id):
+    """The non-trashed images in folder_id, newest first ({id, name, modifiedTime})."""
+    results = service.files().list(
+        q=f"'{folder_id}' in parents and mimeType contains 'image/' and trashed=false",
+        spaces='drive', fields='files(id, name, modifiedTime)', orderBy='modifiedTime desc',
+        supportsAllDrives=True, includeItemsFromAllDrives=True,
+    ).execute()
+    return results.get('files', [])
+
+
+def parse_drive_time(value):
+    """An RFC 3339 time from Drive ("...Z") or an ISO time with an offset, as an aware datetime."""
+    return datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
+
+
+def newer_image_in_folder(service, folder_id, chosen_at):
+    """Name of an image in folder_id changed after chosen_at, or None. A title-graphics pick
+    that waited for its week must not replace a thumbnail uploaded on the dashboard after it
+    was picked."""
+    try:
+        chosen = parse_drive_time(chosen_at)
+        for f in images_in_folder(service, folder_id):
+            if f.get('modifiedTime') and parse_drive_time(f['modifiedTime']) > chosen:
+                return f['name']
+    except Exception as e:
+        print(f"Could not check {folder_id} for a newer thumbnail (replacing anyway): {e}")
+    return None
+
+
+def replace_images(service, folder_id, original_filename, media):
+    """This Sunday's thumbnail is the new one: overwrite the folder's image in place (a same-named
+    one first, else the newest) and move any others to the trash. migrate_videos.py gives the
+    sermon video the first image it finds there, so there must be only one. Returns False when
+    the folder holds no image yet (the caller creates one)."""
+    images = images_in_folder(service, folder_id)
+    if not images:
+        return False
+    keep = next((f for f in images if f['name'] == original_filename), images[0])
+    service.files().update(
+        fileId=keep['id'],
+        body={'name': original_filename},
+        media_body=media,
+        supportsAllDrives=True,
+    ).execute()
+    print(f"Replaced '{keep['name']}' in Drive with '{original_filename}' in place ({keep['id']}); "
+          f"earlier versions stay in its version history.")
+    for f in images:
+        if f is keep:
+            continue
+        try:
+            service.files().update(fileId=f['id'], body={'trashed': True}, supportsAllDrives=True).execute()
+            print(f"Moved the older thumbnail '{f['name']}' to the Drive trash.")
+        except Exception as e:
+            print(f"Could not move '{f['name']}' to the trash: {e}")
+    return True
+
+
 def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_exists=False, replace=False):
-    """replace: overwrite a same-named file in folder_id in place instead of adding a second copy
-    (a changed title-graphics pick sends {"replace": true} in its .meta.json sidecar)."""
+    """replace: this image replaces every image in folder_id, a Sunday's dated thumbnail folder
+    (see replace_images). Dashboard thumbnail uploads and title-graphics picks send
+    {"replace": true} in their .meta.json sidecar."""
     print(f"Uploading {original_filename} to Google Drive folder {folder_id}...")
 
-    if skip_if_exists and identical_file_in_folder(service, folder_id, original_filename, file_path):
+    if skip_if_exists and not replace and identical_file_in_folder(service, folder_id, original_filename, file_path):
         print(f"An identical '{original_filename}' already exists in {folder_id}; skipping (already processed).")
         return True
 
@@ -322,7 +380,15 @@ def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_ex
 
         media = MediaIoBaseUpload(io.BytesIO(open(file_path, "rb").read()), mimetype=mime_type, resumable=True)
 
-        if replace or is_protected_flyer(original_filename):
+        if replace:
+            try:
+                if replace_images(service, folder_id, original_filename, media):
+                    return True
+            except Exception as e:
+                # Fall through to a plain create rather than losing the upload.
+                print(f"Could not replace the thumbnail in {folder_id}: {e}")
+
+        if is_protected_flyer(original_filename):
             existing_id = find_file_id_by_name(service, folder_id, original_filename)
             if existing_id:
                 service.files().update(
@@ -417,9 +483,9 @@ def main():
                 date_str = None
                 stream_meta = None
                 # Optional sidecar metadata: the upload dashboard's settings panel writes one
-                # for worship service thumbnails (date/time/title/description), and the
-                # title-graphics picker (fccla/auto_build.py) writes {"replace": true} for
-                # either kind when a pick is changed.
+                # for worship service thumbnails (date/time/title/description). The dashboard
+                # (both thumbnail zones) and the title-graphics picker (fccla/auto_build.py)
+                # add {"replace": true}; the picker also sends "chosen_at", when it was picked.
                 worship_meta_path = file_path + '.meta.json'
                 if os.path.exists(worship_meta_path):
                     try:
@@ -461,7 +527,18 @@ def main():
             # means "already done" -- don't create a duplicate. Only the
             # queued upload itself is guarded; the title.txt / Description.txt
             # uploads below are meant to refresh in place.
-            replace = bool(stream_meta and stream_meta.get('replace'))
+            # replace only ever applies inside a Sunday's dated subfolder: never to a parent
+            # folder, where it would put every other image in the trash.
+            replace = bool(stream_meta and stream_meta.get('replace')) and folder_id != parts[1]
+            chosen_at = stream_meta.get('chosen_at') if replace else None
+            newer = newer_image_in_folder(drive_service, folder_id, chosen_at) if chosen_at else None
+            if newer:
+                print(f"Not using {original_filename}: '{newer}' was uploaded for {date_str} after it "
+                      f"was picked ({chosen_at}), so that one stays.")
+                os.remove(file_path)
+                if worship_meta_path and os.path.exists(worship_meta_path):
+                    os.remove(worship_meta_path)
+                continue
             if upload_to_drive(drive_service, file_path, original_filename, folder_id, skip_if_exists=True, replace=replace):
                 deferred = False
 
@@ -615,9 +692,9 @@ def main():
                                 # rather than re-checking title.txt state.
                                 cmd += ["--title", meta_title, "--description", meta_desc]
                             if replace:
-                                # A changed title-graphics pick: the stream probably
-                                # exists already with the first thumbnail, so have
-                                # it re-uploaded rather than just skipped.
+                                # A replacement thumbnail: the stream may exist already
+                                # with the earlier one, so have it re-uploaded rather
+                                # than just skipped.
                                 cmd.append("--reconcile")
                             try:
                                 result = subprocess.run(cmd)

@@ -45,7 +45,7 @@ GitHub Gist, and the GitHub API — there is no backend.
 | `Utilities/dashboard/index.html` | **Tech Info Dashboard** — hub page: this week's Sunday info, RF coordination conflicts, the Weekly Content Pipeline freshness panel, a "Draft Upcoming Events" button, and a link to the workflows dashboard. |
 | `Utilities/dashboard/workflows.html` | **Automated Workflows Dashboard** — live view of every GitHub Actions workflow (last run, next scheduled run, trigger type) drawn as a Mermaid dependency flowchart. Optionally authenticated with a GitHub PAT stored in `localStorage`. |
 | `Utilities/uploads/index.html` | **FCCLA Upload Dashboard** — drag-and-drop upload zones for weekly assets: Order of Worship PDF, worship-service and sermon-series thumbnails, event ad flyers, sermon recordings, a `timings.txt` fallback, and livestream settings. Files are committed to an uploads queue (or pushed to the `cju-media/OW` repo) and picked up by workflows. |
-| `Utilities/title-graphics/index.html` | **Title graphics picker** — the week's Service/Sermon Title graphics in each suggested panel color; "Use this one" sends it to iCloud, Drive and the livestream (see `fccla/README.md`). Linked from the text Studio Mini sends. |
+| `Utilities/title-graphics/index.html` | **Title graphics picker** — the week's Service/Sermon Title graphics in each suggested panel color; "Use this one" sends it to iCloud, Drive and the livestream, "Use, don't send to Drive" puts it in iCloud only for editing (see `fccla/README.md`). Linked from the text Studio Mini sends. |
 | `event-draft.html` | Renders `event_draft.json` — a copy-paste draft of upcoming events for the Tech Availability sheet. |
 | `event-notes.html` | Renders calendar notes pulled from the published Outlook calendar. |
 | `Worship Scripts/upcoming_script.html` | Renders the parsed run-of-show / worship script for the upcoming service. |
@@ -347,9 +347,11 @@ starts `title_graphics.yml` on Studio Mini (`fccla/auto_build.py`), which:
 
 Picking one there (`title_graphics_pick`) copies it into the iCloud week folder and queues both
 JPGs through `Utilities/uploads_queue/` like a dashboard thumbnail upload, so the Worship
-Service one creates the livestream. A changed pick replaces them in Drive and on the stream
-(`upload_queue_to_drive.py`'s `{"replace": true}` sidecar). Graphics made or edited by hand
-are only replaced on request. The by-hand route (Gemini CLI + `fccla/GEMINI.md`) uses the same
+Service one creates the livestream. "Use, don't send to Drive" copies it into iCloud only, to be
+edited and uploaded on the dashboard. Every pick and every dashboard Worship Service / Sermon
+Series thumbnail replaces that Sunday's thumbnail in Drive and on the stream instead of adding
+a second one (`upload_queue_to_drive.py`'s `{"replace": true}` sidecar). Graphics in iCloud
+made or edited by hand are only replaced on request. The by-hand route (Gemini CLI + `fccla/GEMINI.md`) uses the same
 script from the iCloud "Worship and Sermon Series/Scripts" folder. Details, setup and tests are
 in `fccla/README.md`.
 

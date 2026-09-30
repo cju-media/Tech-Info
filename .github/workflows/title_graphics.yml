@@ -5,7 +5,8 @@ name: Title Graphics
 #  - ow_uploaded (the upload dashboard, same dispatch as the Service Titles Checker): build one
 #    version per suggested panel color and text Cameron a link to Utilities/title-graphics/.
 #  - title_graphics_pick (that page): copy the chosen version into iCloud and queue its JPGs
-#    for Drive (Utilities/uploads_queue/ -> process_uploads.yml -> livestream).
+#    for Drive (Utilities/uploads_queue/ -> process_uploads.yml -> livestream), or, with
+#    client_payload.drive false, only copy it into iCloud to be edited first.
 #  - schedule: send a pick that was waiting for its week to come up, and build for an OW that
 #    reached cju-media/OW without the dashboard. No builds on Sundays.
 on:
@@ -30,6 +31,11 @@ on:
         required: false
         type: boolean
         default: false
+      send_to_drive:
+        description: 'With a pick: also send it to Drive and the livestream (untick to edit it first)'
+        required: false
+        type: boolean
+        default: true
       probe:
         description: 'Only check that Studio Mini is set up (Illustrator, iCloud folder, Gemini)'
         required: false
@@ -67,6 +73,9 @@ jobs:
           OW_FILENAME: ${{ github.event.client_payload.filename || github.event.inputs.ow_filename }}
           PICK: ${{ github.event.client_payload.pick || github.event.inputs.pick }}
           REPLACE_HAND_EDITS: ${{ github.event.client_payload.replace_hand_edits || github.event.inputs.replace_hand_edits }}
+          # false only when the picker's "don't send to Drive" button (or the unticked input) says so.
+          # toJSON because a missing value loosely equals false in an expression.
+          SEND_TO_DRIVE: ${{ toJSON(github.event.client_payload.drive) == 'false' && 'false' || github.event.inputs.send_to_drive }}
           PROBE: ${{ github.event.inputs.probe }}
           TITLE_GRAPHICS_ROOT: ${{ vars.TITLE_GRAPHICS_ROOT }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

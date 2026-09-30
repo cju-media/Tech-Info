@@ -10,12 +10,15 @@ When one is picked there (title_graphics_pick):
   4. copy it into the iCloud week folder. Graphics made or edited by hand are never replaced
      unless asked;
   5. queue both JPGs for Drive the way a dashboard upload does (Utilities/uploads_queue/). The
-     Worship Service one creates the livestream. A changed pick replaces them in place. Drive only
-     takes the coming Sunday's thumbnails, so an earlier pick waits and the schedule sends it
-     when its week comes up.
+     Worship Service one creates the livestream. They replace that Sunday's thumbnails in Drive
+     and on the livestream. Drive only takes the coming Sunday's thumbnails, so an earlier pick
+     waits and the schedule sends it when its week comes up. A pick made with --no-drive (the
+     picker's "don't send" button) only goes into iCloud, to be edited and then uploaded on the
+     dashboard, which replaces the thumbnails the same way.
 
   python3 fccla/auto_build.py [--ow 10.4.26_OW_Draft.pdf]          # build the options
   python3 fccla/auto_build.py --pick 2    |   --pick '#325673'       # use one (a new hex is built first)
+  python3 fccla/auto_build.py --pick 2 --no-drive                    # use it in iCloud only
   python3 fccla/auto_build.py --probe                                # is this Mac set up?
 """
 
@@ -43,6 +46,7 @@ from illustrator import IllustratorError, do_javascript, run_updateweek  # noqa:
 
 OW_API = "https://api.github.com/repos/cju-media/OW/contents/OWs"
 PICKER_URL = "https://cju-media.github.io/Tech-Info/Utilities/title-graphics/"
+DASHBOARD_URL = "https://cju-media.github.io/Tech-Info/Utilities/uploads/"
 GEMINI_MODEL = "gemini-3.5-flash"          # same model as update_service_titles.py
 FIELDS = ["heading", "dateText", "preacher"]              # heading: its lines joined with " | " while merging
 SCRIPT_FILES = ["UpdateWeek.jsx", "prepare_week.py", "GEMINI.md", "README.md"]
@@ -350,28 +354,34 @@ def clean_up(ctx, keep_id):
 
 # ---------------------------------------------------------------- using a pick
 
-def queue_for_drive(week_dir, week, replace, queue_dir):
-    """Queue both JPGs like the upload dashboard's thumbnail drop zones (TIMESTAMP---FOLDER---NAME)."""
+def queue_for_drive(week_dir, week, sunday, chosen_at, queue_dir):
+    """Queue both JPGs like the upload dashboard's thumbnail drop zones (TIMESTAMP---FOLDER---NAME).
+
+    The .meta.json sidecar carries the Sunday the way the dashboard writes it (MM-DD-YYYY), so both
+    file under the same dated Drive folder. It asks Drive to replace whatever thumbnail that Sunday
+    already has (and the livestream's), unless something was uploaded after chosen_at: an upload
+    made on the dashboard after the pick wins over a pick that waited for its week."""
     os.makedirs(queue_dir, exist_ok=True)
     stamp, queued = int(time.time() * 1000), []
+    chosen = chosen_at.astimezone(datetime.timezone.utc).isoformat(timespec="seconds")
     for i, (_, sub, name, folder) in enumerate(GRAPHICS):
         src = os.path.join(week_dir, "%s %s" % (sub, week), "%s_%s.jpg" % (name, week))
         safe = re.sub(r"[^a-zA-Z0-9.-]", "_", os.path.basename(src))
         dst = os.path.join(queue_dir, "%d---%s---%s" % (stamp + i, folder, safe))
         shutil.copyfile(src, dst)
-        if replace:
-            with open(dst + ".meta.json", "w") as fh:
-                json.dump({"replace": True}, fh)
+        with open(dst + ".meta.json", "w") as fh:
+            json.dump({"date": sunday.strftime("%m-%d-%Y"), "replace": True, "chosen_at": chosen}, fh)
         queued.append(dst)
     return queued
 
 
-def send_to_drive(ctx, build, replace):
+def send_to_drive(ctx, build, chosen_at):
     """Queue the picked graphics for Drive if their week is the one Drive files under now."""
     date = pw.parse_date_text(build["dateText"])
     if date == drive_sunday(ctx.today):
-        queue_for_drive(os.path.join(ctx.root, build["week"]), build["week"], replace, ctx.queue_dir)
-        return "sent", "Sent to Drive for the livestream (Worship Service + Sermon Series)."
+        queue_for_drive(os.path.join(ctx.root, build["week"]), build["week"], date, chosen_at, ctx.queue_dir)
+        return "sent", ("Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this "
+                        "week's title and description are ready (the description needs the worship script).")
     if date < ctx.today:
         return "not sent", "Not sent to Drive: that Sunday has passed."
     if date == ctx.today:
@@ -380,7 +390,10 @@ def send_to_drive(ctx, build, replace):
     return "waiting", "Drive gets them on %s (it only takes the coming Sunday's)." % long_date(send_on)
 
 
-def use_pick(ctx, state, sel, replace_hand_edits):
+def use_pick(ctx, state, sel, replace_hand_edits, send=True):
+    """Copies the chosen version into iCloud, and sends it to Drive unless send is False (the
+    picker's "don't send" button: edit it first, then upload it on the dashboard).
+    Returns (message, link for a second text or None)."""
     build = state.get("build")
     if not build:
         raise Stop("failed", "Title graphics: nothing has been built yet to pick from.", code=1)
@@ -428,14 +441,23 @@ def use_pick(ctx, state, sel, replace_hand_edits):
     sync_scripts(ctx.root)
 
     earlier = build.get("pick") or build.get("previous_pick") or {}
-    replace = earlier.get("drive") == "sent"
-    drive, drive_msg = send_to_drive(ctx, build, replace)
+    link = None
+    if send:
+        drive, drive_msg = send_to_drive(ctx, build, ctx.now)
+    elif earlier.get("drive") == "sent" and earlier.get("hex") != option["hex"]:
+        drive, link = "held", DASHBOARD_URL
+        drive_msg = ("Not sent to Drive: Drive and the livestream keep %s until you upload the edited JPGs on "
+                     "the upload dashboard (Worship Service and Sermon Series thumbnails)." % earlier["hex"])
+    else:
+        drive, link = "held", DASHBOARD_URL
+        drive_msg = ("Not sent to Drive, so you can edit them first. When they're ready, upload the JPGs on the "
+                     "upload dashboard (Worship Service and Sermon Series thumbnails).")
     build["pick"] = {"n": option["n"], "hex": option["hex"], "label": option["label"],
                      "at": ctx.now.isoformat(timespec="seconds"), "drive": drive}
     name = (option["label"] or "").split(",")[0]
     date = pw.parse_date_text(build["dateText"])
     return "Using %s%s for %s. Saved to iCloud (%s). %s" % (
-        option["hex"], " (%s)" % name if name else "", long_date(date), week, drive_msg)
+        option["hex"], " (%s)" % name if name else "", long_date(date), week, drive_msg), link
 
 
 def send_waiting(ctx, state):
@@ -444,7 +466,8 @@ def send_waiting(ctx, state):
     pick = build.get("pick") or {}
     if pick.get("drive") != "waiting":
         return None
-    drive, msg = send_to_drive(ctx, build, replace=False)
+    at = pick.get("at")
+    drive, msg = send_to_drive(ctx, build, datetime.datetime.fromisoformat(at) if at else ctx.now)
     if drive == "waiting":
         return None
     pick["drive"] = drive
@@ -533,7 +556,8 @@ def build_message(build, notes_prefix=""):
 def run(a, ctx, state):
     """Does the work for one trigger; returns (status, message, notify, link) or raises Stop."""
     if a.pick:
-        return "picked", use_pick(ctx, state, a.pick, a.replace_hand_edits), True, None
+        message, link = use_pick(ctx, state, a.pick, a.replace_hand_edits, send=not a.no_drive)
+        return "picked", message, True, link
 
     waiting = send_waiting(ctx, state) if a.trigger == "schedule" else None
     if a.trigger == "schedule" and ctx.today.weekday() == 6:
@@ -581,6 +605,9 @@ def main():
     ap.add_argument("--pick", default=os.environ.get("PICK") or None, help="option number, or '#RRGGBB'")
     ap.add_argument("--replace-hand-edits", action="store_true",
                     default=os.environ.get("REPLACE_HAND_EDITS", "").lower() == "true")
+    ap.add_argument("--no-drive", action="store_true",
+                    default=os.environ.get("SEND_TO_DRIVE", "").lower() == "false",
+                    help="with --pick: copy it into iCloud only, to edit before uploading it on the dashboard")
     ap.add_argument("--trigger", default=os.environ.get("TRIGGER", "manual"),
                     choices=["upload", "pick", "manual", "schedule"])
     ap.add_argument("--root", default=root_folder())

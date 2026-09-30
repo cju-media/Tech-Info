@@ -324,7 +324,7 @@
         <h2>Title graphics</h2>
         <p class="tg-status" id="tg-status">Loading&hellip;</p>
         <a class="drive-btn" href="../title-graphics/index.html">Open the color picker</a>
-        <p class="tg-hint">After an OW is uploaded, Studio Mini builds the Service and Sermon Title graphics in each suggested panel color and texts you a link to the picker. The one you pick goes into the iCloud week folder and to Drive for the livestream.</p>
+        <p class="tg-hint">After an OW is uploaded, Studio Mini builds the Service and Sermon Title graphics in each suggested panel color and texts you a link to the picker. The one you pick goes into the iCloud week folder and to Drive for the livestream. A Worship Service or Sermon Series thumbnail dropped above replaces it in Drive, on the livestream and for the sermon video.</p>
     </div>
 
     <div class="button-group">
@@ -395,6 +395,7 @@
 
     // ---- Worship Service Thumbnail: livestream settings (date/time/title/description) ----
     const WORSHIP_FOLDER_ID = '1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f';
+    const SERMON_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4';
 
     const settingsBtn = document.getElementById('worship-settings-btn');
     const settingsModal = document.getElementById('worship-settings-modal');
@@ -505,10 +506,20 @@
             date: toBackendDate(streamDateInput.value || toDateInputValue(getUpcomingSunday())),
             time: streamTimeInput.value || '10:30',
             title: titleVal && titleVal !== fetchedDefaultTitle.trim() ? titleVal : '',
-            description: descVal && descVal !== fetchedDefaultDescription.trim() ? descVal : ''
+            description: descVal && descVal !== fetchedDefaultDescription.trim() ? descVal : '',
+            replace: true
         };
+        await putQueueSidecar(timestamp, WORSHIP_FOLDER_ID, safeFilename, meta, pat,
+                              `Upload livestream settings for ${safeFilename} via web UI`);
+    }
 
-        const path = `Utilities/uploads_queue/${timestamp}---${WORSHIP_FOLDER_ID}---${safeFilename}.meta.json`;
+    // A thumbnail dropped here is that Sunday's thumbnail: {"replace": true}
+    // has the backend overwrite whatever is already in its Drive folder (the
+    // title-graphics pick, or an earlier upload) and re-upload it to the
+    // livestream, rather than adding a second image. The Sermon Series video
+    // uses the one image in that folder.
+    async function putQueueSidecar(timestamp, folderId, safeFilename, meta, pat, message) {
+        const path = `Utilities/uploads_queue/${timestamp}---${folderId}---${safeFilename}.meta.json`;
         const content = btoa(unescape(encodeURIComponent(JSON.stringify(meta, null, 2))));
 
         const response = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
@@ -518,10 +529,7 @@
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.github.v3+json'
             },
-            body: JSON.stringify({
-                content: content,
-                message: `Upload livestream settings for ${safeFilename} via web UI`
-            })
+            body: JSON.stringify({ content: content, message: message })
         });
 
         if (!response.ok) {
@@ -712,7 +720,9 @@
         if (busy) lines.push('Studio Mini is working on them now…');
         if (build) {
             lines.push(`${build.dateText}: ${(build.heading || [build.title]).join(' / ')}.`);
-            lines.push(build.pick ? `In use: ${build.pick.hex}. ${build.pick.drive === 'sent' ? 'Sent to Drive.' : build.pick.drive === 'waiting' ? 'Waiting to go to Drive.' : 'Not sent to Drive.'}`
+            const drive = { sent: 'Sent to Drive.', waiting: 'Waiting to go to Drive.',
+                            held: 'Kept out of Drive for editing: drop the edited JPGs in the thumbnail boxes above.' }[build.pick && build.pick.drive] || 'Not sent to Drive.';
+            lines.push(build.pick ? `In use: ${build.pick.hex}. ${drive}`
                                   : `${(build.options || []).length} colors ready to pick.`);
         }
         const last = state && state.last_run;
@@ -1150,6 +1160,14 @@
                 } catch (e) {
                     console.error('Could not save livestream settings, continuing with upload:', e);
                     setStatus(`Warning: could not save livestream settings (${e.message}). Continuing with upload...`, 'info');
+                }
+            } else if (targetFolder === SERMON_FOLDER_ID) {
+                try {
+                    await putQueueSidecar(timestamp, SERMON_FOLDER_ID, safeFilename, { replace: true }, pat,
+                                          `Replace the Sermon Series thumbnail with ${safeFilename} via web UI`);
+                } catch (e) {
+                    console.error('Could not mark the sermon thumbnail as a replacement, continuing with upload:', e);
+                    setStatus(`Warning: ${filename} may be added next to the current Sermon Series thumbnail instead of replacing it (${e.message}). Continuing with upload...`, 'info');
                 }
             }
         }

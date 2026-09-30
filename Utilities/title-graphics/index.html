@@ -8,7 +8,9 @@
       Picker for the week's Service Title / Sermon Title graphics. Studio Mini builds one version
       per suggested panel color after an OW upload (title_graphics.yml, fccla/auto_build.py) and
       texts a link here. "Use this one" sends title_graphics_pick, which copies that version into
-      the iCloud week folder and queues its JPGs for Drive and the livestream.
+      the iCloud week folder and queues its JPGs for Drive and the livestream. "Use, don't send to
+      Drive" (client_payload.drive false) only copies it into iCloud, to be edited and then
+      uploaded on the upload dashboard, which replaces the thumbnails in Drive and on the livestream.
     -->
     <style>
         :root { --accent: #3498db; --accent-dark: #2980b9; --ink: #2c3e50; --muted: #777; --line: #e5e7eb; }
@@ -36,6 +38,10 @@
         .btn:hover { background: var(--accent-dark); }
         .btn:disabled { background: #aab7c4; cursor: default; }
         .btn.secondary { background: #7f8c8d; }
+        .btn.secondary:hover { background: #6c7a7b; }
+        .btn.secondary:disabled { background: #c3cbcf; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+        .actions .btn { margin-top: 0; }
         details { margin-top: 8px; color: #555; }
         summary { cursor: pointer; color: var(--accent-dark); }
         .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
@@ -63,6 +69,7 @@
         <div class="row">
             <input type="text" id="hex" placeholder="#325673" maxlength="7" aria-label="Panel color">
             <button type="button" class="btn secondary" id="custom">Build and use this color</button>
+            <button type="button" class="btn secondary" id="custom-hold">Build it, don't send to Drive</button>
         </div>
         <label><input type="checkbox" id="replace"> Replace graphics in iCloud that were made or edited by hand</label>
     </details>
@@ -164,10 +171,13 @@
         if (busy || waitingSince !== null) lines.push('Studio Mini is working on it… this page updates by itself.');
         if (build.pick) {
             const drive = { sent: 'Sent to Drive for the livestream.', waiting: 'Drive gets it early in that week.',
-                            'not sent': 'Not sent to Drive (too late); upload by hand if needed.' }[build.pick.drive] || '';
+                            'not sent': 'Not sent to Drive (too late); upload by hand if needed.',
+                            held: 'Not sent to Drive: edit it in iCloud, then upload the JPGs on the upload dashboard (they replace the thumbnails in Drive and on the livestream).'
+                          }[build.pick.drive] || '';
             lines.push(`In use: ${build.pick.hex}${build.pick.label ? ' (' + build.pick.label.split(',')[0] + ')' : ''}, picked ${when(build.pick.at)}. ${drive}`);
         } else {
-            lines.push('Pick the version to use. It goes into the iCloud week folder and to Drive for the livestream.');
+            lines.push('Pick the version to use. It goes into the iCloud week folder and to Drive for the livestream. ' +
+                       'To edit it first, use "Don\'t send to Drive" and upload your edited JPGs on the upload dashboard.');
             if (build.previous_pick) lines.push(`The OW changed after you picked ${build.previous_pick.hex}; pick again.`);
         }
         const lastBad = last && (last.status === 'failed' || last.status === 'skipped');
@@ -178,6 +188,7 @@
 
         for (const o of build.options || []) {
             const picked = build.pick && build.pick.n === o.n;
+            const held = picked && build.pick.drive === 'held';
             const card = document.createElement('section');
             card.className = 'option' + (picked ? ' picked' : '');
             const head = document.createElement('header');
@@ -192,7 +203,7 @@
             if (picked) {
                 const tag = document.createElement('span');
                 tag.className = 'tag';
-                tag.textContent = 'In use';
+                tag.textContent = held ? 'In use · not in Drive' : 'In use';
                 head.append(tag);
             }
             const shots = document.createElement('div');
@@ -212,32 +223,53 @@
                 p.textContent = 'Check: ' + o.problems.join('; ');
                 card.append(p);
             }
+            const working = busy || waitingSince !== null;
+            const what = `option ${o.n} (${o.hex} ${shortLabel(o)})`;
+            const actions = document.createElement('div');
+            actions.className = 'actions';
             const use = document.createElement('button');
             use.type = 'button';
             use.className = 'btn';
-            use.textContent = picked ? 'In use' : 'Use this one';
-            use.disabled = picked || busy || waitingSince !== null;
-            use.addEventListener('click', () => pick(String(o.n), `option ${o.n} (${o.hex} ${shortLabel(o)})`));
-            card.append(use);
+            // A version kept out of Drive can still be sent as it is.
+            use.textContent = held ? 'Send it to Drive' : picked ? 'In use' : 'Use this one';
+            use.disabled = (picked && !held) || working;
+            use.addEventListener('click', () => pick(String(o.n), what, true));
+            actions.append(use);
+            if (!picked) {
+                const hold = document.createElement('button');
+                hold.type = 'button';
+                hold.className = 'btn secondary';
+                hold.textContent = "Use, don't send to Drive";
+                hold.title = 'Save it to the iCloud week folder only, to edit it before uploading it on the upload dashboard';
+                hold.disabled = working;
+                hold.addEventListener('click', () => pick(String(o.n), what, false));
+                actions.append(hold);
+            }
+            card.append(actions);
             optionsDiv.append(card);
         }
     }
 
-    async function pick(value, description) {
+    // send false: iCloud only (the "don't send to Drive" buttons).
+    async function pick(value, description, send) {
         if (!pat()) {
             patBox.hidden = false;
             show('Save your GitHub token below first.', 'error');
             return;
         }
         const replace = replaceBox.checked;
-        const question = `Use ${description}? It goes into the iCloud week folder and to Drive for the livestream.` +
+        const question = (send
+            ? `Use ${description}? It goes into the iCloud week folder and to Drive for the livestream.`
+            : `Use ${description} without sending it to Drive? It goes into the iCloud week folder only. ` +
+              'Edit it there, then upload the JPGs on the upload dashboard; they replace the thumbnails in Drive and on the livestream.') +
             (replace ? '\n\nGraphics in iCloud that were made or edited by hand will be replaced.' : '');
         if (!confirm(question)) return;
         try {
             const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
                 method: 'POST',
                 headers: Object.assign(headers(), { 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ event_type: 'title_graphics_pick', client_payload: { pick: value, replace_hand_edits: replace } })
+                body: JSON.stringify({ event_type: 'title_graphics_pick',
+                                       client_payload: { pick: value, replace_hand_edits: replace, drive: send } })
             });
             if (!res.ok) throw new Error(res.status === 401 ? 'the GitHub token was refused' : `GitHub said ${res.status}`);
         } catch (e) {
@@ -250,14 +282,16 @@
         poll = setTimeout(refresh, 8000);
     }
 
-    document.getElementById('custom').addEventListener('click', () => {
+    function pickCustom(send) {
         const hex = hexInput.value.trim().toUpperCase().replace(/^([0-9A-F]{6})$/, '#$1');
         if (!/^#[0-9A-F]{6}$/.test(hex)) {
             show('Type a color like #325673.', 'error');
             return;
         }
-        pick(hex, `${hex} (Studio Mini builds it first, about a minute more)`);
-    });
+        pick(hex, `${hex} (Studio Mini builds it first, about a minute more)`, send);
+    }
+    document.getElementById('custom').addEventListener('click', () => pickCustom(true));
+    document.getElementById('custom-hold').addEventListener('click', () => pickCustom(false));
     document.getElementById('save-pat').addEventListener('click', () => {
         const value = document.getElementById('pat').value.trim();
         try { value ? localStorage.setItem('GITHUB_PAT', value) : localStorage.removeItem('GITHUB_PAT'); } catch (e) { /* private mode */ }
