@@ -1,66 +1,66 @@
 {
   "build": {
-    "id": "9-27-26_0929-1733",
-    "week": "9-27-26",
-    "dateText": "September 27, 2026",
+    "id": "10-4-26_0930-1558",
+    "week": "10-4-26",
+    "dateText": "October 4, 2026",
     "fields": {
-      "series": "Fall Series 4",
-      "seriesName": "Painting the Stars",
-      "title": "An Anticipatory Universe",
-      "dateText": "September 27, 2026",
-      "preacher": "Rev. Laura Vail Fregin"
+      "heading": [
+        "Fall Series 5",
+        "Painting the Stars",
+        "An Anticipatory Universe"
+      ],
+      "dateText": "October 4, 2026",
+      "preacher": "Rev. Laura Vail Fregin",
+      "title": "An Anticipatory Universe"
     },
     "ow": {
-      "name": "9.27.26_OW_Draft.pdf",
-      "sha": "9e3f718bc381d15d7190ef0be6af2b853e7ab92c"
+      "name": "10.4.26_OW_Draft.pdf",
+      "sha": "8dbbb719e1420a793efb76a2bf8609db51b10c08"
     },
-    "built_at": "2026-09-29T17:33:12-07:00",
+    "built_at": "2026-09-30T15:58:26-07:00",
     "notes": [
-      "dateText: Gemini read '27 September 2026'; used the PDF's 'September 27, 2026'"
+      "sermon row title 'We are Stories & Stardust' differs from page-1 title 'An Anticipatory Universe'"
     ],
     "options": [
       {
         "n": 1,
-        "hex": "#6E6127",
-        "label": "gold, 79% of the photo's color",
+        "hex": "#1C304B",
+        "label": "blue, 65% of the photo's color",
         "problems": [],
-        "service": "fccla/status/9-27-26_0929-1733/1-service.jpg",
-        "sermon": "fccla/status/9-27-26_0929-1733/1-sermon.jpg"
+        "service": "fccla/status/10-4-26_0930-1558/1-service.jpg",
+        "sermon": "fccla/status/10-4-26_0930-1558/1-sermon.jpg"
       },
       {
         "n": 2,
-        "hex": "#385261",
-        "label": "blue, 16% of the photo's color",
+        "hex": "#0D4035",
+        "label": "teal, 24% of the photo's color",
         "problems": [],
-        "service": "fccla/status/9-27-26_0929-1733/2-service.jpg",
-        "sermon": "fccla/status/9-27-26_0929-1733/2-sermon.jpg"
+        "service": "fccla/status/10-4-26_0930-1558/2-service.jpg",
+        "sermon": "fccla/status/10-4-26_0930-1558/2-sermon.jpg"
       },
       {
         "n": 3,
-        "hex": "#4D441B",
-        "label": "deeper gold",
+        "hex": "#132135",
+        "label": "deeper blue",
         "problems": [],
-        "service": "fccla/status/9-27-26_0929-1733/3-service.jpg",
-        "sermon": "fccla/status/9-27-26_0929-1733/3-sermon.jpg"
+        "service": "fccla/status/10-4-26_0930-1558/3-service.jpg",
+        "sermon": "fccla/status/10-4-26_0930-1558/3-sermon.jpg"
       }
     ],
-    "pick": {
-      "n": 2,
-      "hex": "#385261",
-      "label": "blue, 16% of the photo's color",
-      "at": "2026-09-29T17:45:10-07:00",
-      "drive": "not sent"
-    },
-    "series": "Fall Series 4",
-    "seriesName": "Painting the Stars",
+    "pick": null,
+    "heading": [
+      "Fall Series 5",
+      "Painting the Stars",
+      "An Anticipatory Universe"
+    ],
     "title": "An Anticipatory Universe",
     "preacher": "Rev. Laura Vail Fregin",
-    "cover": "fccla/status/9-27-26_0929-1733/cover.jpg"
+    "cover": "fccla/status/10-4-26_0930-1558/cover.jpg"
   },
   "last_run": {
-    "at": "2026-09-29T17:45:10-07:00",
-    "trigger": "pick",
-    "status": "picked",
-    "message": "Using #385261 (blue) for Sunday, September 27. Saved to iCloud (9-27-26). Not sent to Drive: that Sunday has passed."
+    "at": "2026-09-30T15:58:26-07:00",
+    "trigger": "upload",
+    "status": "built",
+    "message": "Title graphics for Sunday, October 4 are ready to pick (link below).\n1 blue #1C304B \u00b7 2 teal #0D4035 \u00b7 3 deeper blue #132135\nNote: sermon row title 'We are Stories & Stardust' differs from page-1 title 'An Anticipatory Universe'"
   }
 }
