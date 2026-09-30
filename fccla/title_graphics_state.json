@@ -1,0 +1,60 @@
+{
+  "build": {
+    "id": "9-27-26_0929-1733",
+    "week": "9-27-26",
+    "dateText": "September 27, 2026",
+    "fields": {
+      "series": "Fall Series 4",
+      "seriesName": "Painting the Stars",
+      "title": "An Anticipatory Universe",
+      "dateText": "September 27, 2026",
+      "preacher": "Rev. Laura Vail Fregin"
+    },
+    "ow": {
+      "name": "9.27.26_OW_Draft.pdf",
+      "sha": "9e3f718bc381d15d7190ef0be6af2b853e7ab92c"
+    },
+    "built_at": "2026-09-29T17:33:12-07:00",
+    "notes": [
+      "dateText: Gemini read '27 September 2026'; used the PDF's 'September 27, 2026'"
+    ],
+    "options": [
+      {
+        "n": 1,
+        "hex": "#6E6127",
+        "label": "gold, 79% of the photo's color",
+        "problems": [],
+        "service": "fccla/status/9-27-26_0929-1733/1-service.jpg",
+        "sermon": "fccla/status/9-27-26_0929-1733/1-sermon.jpg"
+      },
+      {
+        "n": 2,
+        "hex": "#385261",
+        "label": "blue, 16% of the photo's color",
+        "problems": [],
+        "service": "fccla/status/9-27-26_0929-1733/2-service.jpg",
+        "sermon": "fccla/status/9-27-26_0929-1733/2-sermon.jpg"
+      },
+      {
+        "n": 3,
+        "hex": "#4D441B",
+        "label": "deeper gold",
+        "problems": [],
+        "service": "fccla/status/9-27-26_0929-1733/3-service.jpg",
+        "sermon": "fccla/status/9-27-26_0929-1733/3-sermon.jpg"
+      }
+    ],
+    "pick": null,
+    "series": "Fall Series 4",
+    "seriesName": "Painting the Stars",
+    "title": "An Anticipatory Universe",
+    "preacher": "Rev. Laura Vail Fregin",
+    "cover": "fccla/status/9-27-26_0929-1733/cover.jpg"
+  },
+  "last_run": {
+    "at": "2026-09-29T17:33:12-07:00",
+    "trigger": "manual",
+    "status": "built",
+    "message": "Title graphics for Sunday, September 27 are ready to pick: https://cju-media.github.io/Tech-Info/Utilities/title-graphics/\n1 gold #6E6127 \u00b7 2 blue #385261 \u00b7 3 deeper gold #4D441B\nNote: dateText: Gemini read '27 September 2026'; used the PDF's 'September 27, 2026'"
+  }
+}
