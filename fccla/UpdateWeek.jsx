@@ -141,12 +141,13 @@ function span(line) {
 }
 
 // Scale the type size of a range, and its line spacing with it: the heading's leading is fixed (e.g.
-// 74pt type on 114pt leading), so shrinking only the type would leave the lines spread apart.
-function scaleChars(tf, start, len, k) {
+// 74pt type on 114pt leading), so shrinking only the type would leave the lines spread apart. The top
+// line keeps its leading (keepLeading): that sets where its baseline sits, and the top line stays put.
+function scaleChars(tf, start, len, k, keepLeading) {
     for (var i = start; i < start + len; i++) {
         var a = tf.characters[i].characterAttributes;
         a.size = a.size * k;
-        if (!a.autoLeading) a.leading = a.leading * k;
+        if (!a.autoLeading && !keepLeading) a.leading = a.leading * k;
     }
 }
 
@@ -154,10 +155,10 @@ function scaleChars(tf, start, len, k) {
 // carry into next week's short one. Each shrink is recorded in the frame's note (Attributes panel),
 // per line ("UpdateWeek shrink title 0.8000"), and undone before the next week's text is fitted.
 function shrinkRe(label) { return new RegExp("\\s*UpdateWeek shrink " + label + " ([\\d.]+)"); }
-function unshrink(tf, start, len, label) {
+function unshrink(tf, start, len, label, keepLeading) {
     var re = shrinkRe(label), m = re.exec(tf.note || "");
     if (!m) return;
-    scaleChars(tf, start, len, 1 / parseFloat(m[1]));
+    scaleChars(tf, start, len, 1 / parseFloat(m[1]), keepLeading);
     tf.note = tf.note.replace(re, "");
 }
 function markShrink(tf, k, label) { tf.note = (tf.note || "").replace(shrinkRe(label), "") + " UpdateWeek shrink " + label + " " + k.toFixed(4); }
@@ -178,17 +179,20 @@ function fitWidth(tf, maxW) {
 // Area text wraps instead of growing, and a line that wraps pushes the lines below it down and out
 // of the box. So each changed line is fitted on its own, top to bottom: shrink just that line
 // until it takes no more lines than it did last week (at least one) and isn't pushed out.
+// Illustrator's paragraphs collection starts a new "paragraph" at a forced line break (\u0003) as well
+// as at a real one, so a line split in two is two of them; count the same way.
 function paraOf(tf, offset) {
     var c = tf.contents, n = 0;
-    for (var i = 0; i < offset; i++) if (c.charAt(i) == "\r") n++;
+    for (var i = 0; i < offset; i++) if (c.charAt(i) == "\r" || c.charAt(i) == "\u0003") n++;
     return n;
 }
+function linesOfRange(tf, start, len) {                    // visual lines of each part of a line
+    var out = [];
+    for (var p = paraOf(tf, start); p <= paraOf(tf, start + Math.max(len, 1) - 1); p++) out.push(paraLines(tf, p));
+    return out;
+}
+function anyHidden(counts) { for (var i = 0; i < counts.length; i++) if (counts[i] == 0) return true; return false; }
 function paraLines(tf, p) { try { return tf.paragraphs[p].lines.length; } catch (e) { return -1; } }   // 0 = pushed out
-function linesPerParagraph(tf) {
-    var n = [];
-    for (var p = 0; p < tf.paragraphs.length; p++) n.push(paraLines(tf, p));
-    return n;
-}
 // The space nearest the middle of a line, to break it into two halves of about the same length.
 function balancedBreak(text) {
     var best = -1;
@@ -197,19 +201,26 @@ function balancedBreak(text) {
     return best;
 }
 
-function fitArea(tf, start, len, label, before, name) {
-    if (tf.kind != TextType.AREATEXT) return;
-    unshrink(tf, start, len, label);
+// top: the top line, which is never split with a line break (see updateHeading) and keeps its leading.
+// Returns how much it shrank the line (1 = not at all).
+function fitArea(tf, start, len, label, before, name, top) {
+    if (tf.kind != TextType.AREATEXT) return 1;
+    unshrink(tf, start, len, label, top);
     var p = paraOf(tf, start), allowed = Math.max(1, before[p] || 1), k = 1;
-    if (paraLines(tf, p) < 0) return;                       // Illustrator can't say; leave it
-    function over() { var n = paraLines(tf, p); return n == 0 || n > allowed; }
-    function shrinkTo(floor) { while (over() && k > floor) { scaleChars(tf, start, len, 0.95); k *= 0.95; } }
+    if (paraLines(tf, p) < 0) return 1;                     // Illustrator can't say; leave it
+    function over() {                                       // a part pushed out, or more lines than allowed
+        var parts = linesOfRange(tf, start, len), sum = 0;
+        if (anyHidden(parts)) return true;
+        for (var q = 0; q < parts.length; q++) sum += parts[q];
+        return sum > allowed;
+    }
+    function shrinkTo(floor) { while (over() && k > floor) { scaleChars(tf, start, len, 0.95, top); k *= 0.95; } }
     shrinkTo(0.8);
-    if (over() && allowed == 1) {
+    if (over() && allowed == 1 && !top) {
         // too long for one line: split it in two at the middle, as done by hand, back at full size
         var cut = balancedBreak(tf.contents.substr(start, len));
         if (cut > 0) {
-            scaleChars(tf, start, len, 1 / k);
+            scaleChars(tf, start, len, 1 / k, top);
             k = 1;
             replaceAt(tf, start + cut, 1, "\u0003");
             allowed = 2;
@@ -223,6 +234,7 @@ function fitArea(tf, start, len, label, before, name) {
         if (k < 0.75) P("the " + name + " had to shrink to " + Math.round(k * 100) + "%; consider a shorter line or splitting it by hand");
     }
     if (over()) P("the " + name + " still doesn't fit; shorten or resize it by hand");
+    return k;
 }
 
 // ---------- the rules beside the series line and the date ("—— Fall Series 4 ——") ----------
@@ -240,15 +252,7 @@ function textExtent(tf, firstLineOnly) {
         top = Math.max(top, b2[1]); bottom = Math.min(bottom, b2[3]);
         left = Math.min(left, b2[0]); right = Math.max(right, b2[2]);
     }
-    return { left: left, right: right, cy: (top + bottom) / 2 };
-}
-
-// Top, bottom and middle of all the visible text in a frame.
-function blockExtent(tf) {
-    var leaves = glyphBounds(tf), top = -1e9, bottom = 1e9;
-    if (!leaves.length) return null;
-    for (var k = 0; k < leaves.length; k++) { top = Math.max(top, leaves[k][1]); bottom = Math.min(bottom, leaves[k][3]); }
-    return { top: top, bottom: bottom, cy: (top + bottom) / 2 };
+    return { left: left, right: right, top: top, bottom: bottom, cy: (top + bottom) / 2 };
 }
 
 // Bounds of each glyph of a text frame, top line first, from an outlined copy that is then removed.
@@ -300,7 +304,7 @@ function fitBetweenRules(tf, start, len, label, name, rules, before, after) {
     var k = ruleRoom(rules, before, after), m = shrinkRe(label).exec(tf.note || "");
     if (k >= 1) return after;
     var total = k * (m ? parseFloat(m[1]) : 1);             // with any shrink to keep it on one line
-    scaleChars(tf, start, len, k);
+    scaleChars(tf, start, len, k, true);
     markShrink(tf, total, label);
     L("  shrank the " + name + " to " + Math.round(k * 100) + "% so the rules beside it stay at least " + MIN_RULE + "pt");
     if (total < 0.75) P("the " + name + " had to shrink to " + Math.round(total * 100) + "% in all; consider a shorter line or splitting it by hand");
@@ -443,7 +447,8 @@ function findHeading(frames, dateTF, midX) {
     return best;
 }
 
-// Undo every shrink recorded on the heading's lines ("line 2", or the older names) before its text changes.
+// Undo every shrink recorded on the heading's lines ("line 2", or the older names) before its text
+// changes. The top line was shrunk keeping its leading, so it's restored the same way.
 function unshrinkAll(tf, lines) {
     var re = /\s*UpdateWeek shrink (line (\d+)|series line|series name|title) ([\d.]+)/g, note = tf.note || "", m;
     while ((m = re.exec(note)) != null) {
@@ -451,9 +456,25 @@ function unshrinkAll(tf, lines) {
         if (m[2]) idx = parseInt(m[2], 10) - 1;
         else if (m[1] == "title") idx = lines.length - 1;
         else if (m[1] == "series line") idx = 0;
-        if (lines[idx]) { var s = span(lines[idx]); scaleChars(tf, s.start, s.len, 1 / parseFloat(m[3])); }
+        if (lines[idx]) { var s = span(lines[idx]); scaleChars(tf, s.start, s.len, 1 / parseFloat(m[3]), idx == 0); }
     }
-    tf.note = note.replace(/\s*UpdateWeek shrink (line \d+|series line|series name|title) [\d.]+/g, "");
+    tf.note = note.replace(/\s*UpdateWeek shrink (line \d+|series line|series name|title) [\d.]+/g, "")
+                  .replace(/\s*UpdateWeek center [-\d.]+/g, "");      // from the version that moved the whole block
+}
+
+// Take back last week's centering (the leading added to the second line's first visual line), so the
+// lines' own leading is what gets measured, remembered and reused.
+function undoLift(tf, lines) {
+    var m = /UpdateWeek lead (-?[\d.]+)/.exec(tf.note || "");
+    if (!m) return;
+    if (lines.length >= 2) {
+        var fl = firstVisualLine(tf, lines[1]), d = parseFloat(m[1]);
+        for (var i = fl.start; i < fl.start + fl.len; i++) {
+            var a = tf.characters[i].characterAttributes;
+            a.leading = a.leading - d;
+        }
+    }
+    tf.note = tf.note.replace(/\s*UpdateWeek lead [-\d.]+/g, "");
 }
 
 function removeLine(tf, i) {
@@ -461,11 +482,36 @@ function removeLine(tf, i) {
     for (var k = 0; k < n; k++) tf.characters[l.start].remove();
 }
 
-// A placeholder line just above the title, in the style of the line above it (or of the only line).
-function insertLineBeforeLast(tf) {
-    var ls = splitLines(tf.contents), m = ls.length;
-    if (m >= 2) replaceAt(tf, ls[m - 2].start + ls[m - 2].text.length, 1, "\r#\r");
-    else replaceAt(tf, 0, 1, "#\r" + tf.contents.charAt(0));
+// The type size and leading of the lines under the top one, remembered in the frame's note so a week
+// with only a top line can still give next week's lines the right style.
+function middleStyle(tf) {
+    var m = /UpdateWeek middle ([\d.]+) ([\d.]+)/.exec(tf.note || "");
+    return m ? { size: parseFloat(m[1]), leading: parseFloat(m[2]) } : null;
+}
+function rememberMiddleStyle(tf, lines) {
+    if (lines.length < 2) return;
+    var a = tf.characters[span(lines[1]).start].characterAttributes;
+    tf.note = (tf.note || "").replace(/\s*UpdateWeek middle [\d.]+ [\d.]+/g, "") +
+              " UpdateWeek middle " + a.size.toFixed(2) + " " + a.leading.toFixed(2);
+}
+function applyMiddleStyle(tf, start, len, style) {
+    if (!style) return;
+    for (var i = start; i < start + len; i++) {
+        var a = tf.characters[i].characterAttributes;
+        a.size = style.size;
+        if (!a.autoLeading) a.leading = style.leading;
+    }
+}
+
+// A placeholder line under the top one: above the title in the title's style, or, when the top line is
+// all there is, right under it in the remembered middle style.
+function insertMiddleLine(tf, style) {
+    var ls = splitLines(tf.contents), c = ls.length;
+    if (c >= 2) { replaceAt(tf, ls[c - 1].start, 1, "#\r" + tf.contents.charAt(ls[c - 1].start)); return; }
+    var e = ls[0].start + ls[0].text.length;
+    if (tf.contents.charAt(e) == "\r") replaceAt(tf, e, 1, "\r#\r");
+    else replaceAt(tf, e - 1, 1, tf.contents.charAt(e - 1) + "\r#");
+    applyMiddleStyle(tf, e + 1, 1, style);
 }
 
 // The heading lines: "heading = Fall Series 4 | Painting the Stars | An Anticipatory Universe", or the
@@ -476,48 +522,131 @@ function headingOf(d) {
     return out;
 }
 
-// A heading too tall for the space between the header bar and the date (four lines, or a line split
-// in two) is shrunk evenly until it fits, a line at a time recorded so next week can undo it.
-// Points kept clear under the header bar and above the date. The Fall layout leaves 38 and 72; a four-line
-// heading done by hand (Lent 2026) about 50 and 60.
-var MARGIN_TOP = 34, MARGIN_BOTTOM = 60;
-function fitBlock(tf, headerTF, dateTF, n) {
-    if (!headerTF || !dateTF || tf.kind != TextType.AREATEXT) return;
-    var room = (headerTF.geometricBounds[3] - MARGIN_TOP) - (dateTF.geometricBounds[1] + MARGIN_BOTTOM), total = 1;
-    for (var tries = 0; tries < 8; tries++) {
-        var ext = blockExtent(tf), hidden = false, lines = linesPerParagraph(tf);
-        for (var h = 0; h < n; h++) if (lines[h] == 0) hidden = true;
-        if (!ext || (ext.top - ext.bottom <= room && !hidden) || total < 0.6) break;
-        var kb = Math.max(0.6 / total, hidden ? 0.93 : room / (ext.top - ext.bottom)), cur = splitLines(tf.contents);
-        for (var i = 0; i < n && i < cur.length; i++) {
-            var s = span(cur[i]), m = shrinkRe("line " + (i + 1)).exec(tf.note || "");
-            scaleChars(tf, s.start, s.len, kb);
-            markShrink(tf, kb * (m ? parseFloat(m[1]) : 1), "line " + (i + 1));
-        }
-        total *= kb;
+// The top line's glyphs and those of everything under it ([top, bottom] each; rest is null when the top
+// line is all there is), and the top of the date's glyphs.
+function headingParts(tf) {
+    var leaves = glyphBounds(tf), first = null, rest = null;
+    for (var k = 0; k < leaves.length; k++) {
+        var b = leaves[k], cy = (b[1] + b[3]) / 2;
+        if (!first || (!rest && (first.cy - cy) <= 15)) {
+            if (!first) first = { top: b[1], bottom: b[3], cy: cy };
+            else { first.top = Math.max(first.top, b[1]); first.bottom = Math.min(first.bottom, b[3]); }
+        } else if (!rest) rest = { top: b[1], bottom: b[3] };
+        else { rest.top = Math.max(rest.top, b[1]); rest.bottom = Math.min(rest.bottom, b[3]); }
     }
-    if (total < 1) L("  shrank the whole heading to " + Math.round(total * 100) + "% so it fits between the header and the date");
-    if (total < 0.75) P("the heading had to shrink to " + Math.round(total * 100) + "% to fit; check it");
+    return { first: first, rest: rest };
+}
+function glyphTop(tf) {
+    var leaves = glyphBounds(tf), top = -1e9;
+    for (var k = 0; k < leaves.length; k++) top = Math.max(top, leaves[k][1]);
+    return leaves.length ? top : tf.geometricBounds[1];
+}
+
+// The lines under the top one sit centered between it and the date. They're moved with the leading of
+// their first line (the distance from the top line's baseline), which can pull them up as well as push
+// them down; the top line's own leading, and so its place, isn't touched. If they don't fit with at
+// least MIN_GAP above and below, they're shrunk evenly first (type and leading), a line at a time
+// recorded so next week can undo it.
+var MIN_GAP = 30;
+function firstVisualLine(tf, line) {                   // chars of a line up to a forced line break
+    var sp = span(line), cut = tf.contents.substr(sp.start, sp.len).indexOf("\u0003");
+    return { start: sp.start, len: cut < 0 ? sp.len : cut };
+}
+function setLeading(tf, range, value) {
+    for (var i = range.start; i < range.start + range.len; i++) {
+        var a = tf.characters[i].characterAttributes;
+        a.autoLeading = false;
+        a.leading = Math.max(a.size * 0.5, value);
+    }
+}
+function centerMiddle(tf, n, dateTF, roles) {
+    var paras = tf.paragraphs.length, i;
+    for (i = 1; i < paras; i++) { try { tf.paragraphs[i].paragraphAttributes.spaceBefore = 0; } catch (e) {} }
+    if (n < 2 || !dateTF || tf.kind != TextType.AREATEXT) return;
+    var dateTop = glyphTop(dateTF), total = 1, parts, gap = 0, free = 0;
+    // Pull the lines up under the top one while they're fitted: at their usual spacing, the last of a
+    // long heading can drop out of the bottom of the text box, which would look like it doesn't fit.
+    var fl0 = firstVisualLine(tf, splitLines(tf.contents)[1]), a0 = tf.characters[fl0.start].characterAttributes, was0 = a0.leading;
+    setLeading(tf, fl0, a0.size);
+    function measure() {
+        parts = headingParts(tf);
+        if (!parts.first || !parts.rest) return false;
+        free = (parts.first.bottom - dateTop) - (parts.rest.top - parts.rest.bottom);
+        gap = free / 2;
+        return true;
+    }
+    function middleCounts() {
+        var ls = splitLines(tf.contents), a = span(ls[1]).start, z = span(ls[n - 1]);
+        return linesOfRange(tf, a, z.start + z.len - a);
+    }
+    for (var tries = 0; tries < 14; tries++) {
+        if (!measure()) break;
+        var hidden = anyHidden(middleCounts());
+        if ((!hidden && gap >= MIN_GAP) || total < 0.5) break;
+        var cur = splitLines(tf.contents);
+        for (i = 1; i < n && i < cur.length; i++) {
+            var sp = span(cur[i]), m = shrinkRe("line " + (i + 1)).exec(tf.note || "");
+            scaleChars(tf, sp.start, sp.len, 0.95);
+            markShrink(tf, 0.95 * (m ? parseFloat(m[1]) : 1), "line " + (i + 1));
+        }
+        total *= 0.95;
+    }
+    if (total < 1) L("  shrank the lines under the top one to " + Math.round(total * 100) + "% so they fit above the date");
+    if (total < 0.75) P("the lines under the top one had to shrink to " + Math.round(total * 100) + "%; check them");
+    var fl = firstVisualLine(tf, splitLines(tf.contents)[1]);
+    for (tries = 0; tries < 4 && parts && parts.rest; tries++) {
+        var move = gap - (parts.first.bottom - parts.rest.top);   // + moves them down
+        if (Math.abs(move) < 0.5) break;
+        setLeading(tf, fl, tf.characters[fl.start].characterAttributes.leading + move);
+        if (!measure()) break;
+    }
+    // How far the second line's leading is from its own (shrunk) leading, recorded so next week starts
+    // from the lines' own leading (see undoLift).
+    var lift = tf.characters[fl.start].characterAttributes.leading - was0 * total;
+    tf.note = (tf.note || "").replace(/\s*UpdateWeek lead [-\d.]+/g, "") + " UpdateWeek lead " + lift.toFixed(3);
+    if (!parts || !parts.rest) return;
+    var above = parts.first.bottom - parts.rest.top, below = parts.rest.bottom - dateTop;
+    L("  centered the " + (n == 2 ? roles[1] : "lines under the top one") + " between the top line and the date (" +
+      Math.round(above) + "pt above, " + Math.round(below) + "pt below)");
+    if (Math.abs(above - below) > 3) P("couldn't center the lines under the top one (" + Math.round(above) + "pt above, " +
+                                        Math.round(below) + "pt below); check the spacing");
+    if (anyHidden(middleCounts())) P("part of the heading is pushed out of its box; shorten the heading or fix it by hand");
 }
 
 function updateHeading(doc, tf, D, maxW, headerTF, dateTF) {
-    var want = headingOf(D), roles = [], i;
-    for (i = 0; i < want.length; i++) {                     // no nested ?: - ExtendScript misparses it
-        if (i == want.length - 1) roles.push("title");
-        else if (i == 0) roles.push("first heading line");
-        else roles.push("heading line " + (i + 1));
-    }
-    var old = splitLines(tf.contents), m = old.length, n = want.length, oldText = [];
+    var want = headingOf(D), i;
+    var old = splitLines(tf.contents), m = old.length, oldText = [];
     if (!m) { P("the heading above the date is empty"); return; }
     for (i = 0; i < m; i++) oldText.push(strip(old[i].text));
 
     // measured as it looked last week
-    var before = linesPerParagraph(tf), block0 = blockExtent(tf), ext0 = textExtent(tf, true);
+    var ext0 = textExtent(tf, true);
     var rules = ext0 ? rulesBeside(doc, ext0) : [];
+    undoLift(tf, old);                                      // before unshrinking: it was applied after
     unshrinkAll(tf, old);
+    rememberMiddleStyle(tf, old);
+    var style = middleStyle(tf);
 
-    for (i = m - 2; i >= n - 1 && i >= 0; i--) removeLine(tf, i);
-    for (i = m; i < n; i++) insertLineBeforeLast(tf);
+    // A lone line (a title and nothing else) too long to sit beside its rules is split into a top
+    // line and one under it, as done by hand for "Fulfilling The Dream / For Freedom".
+    if (want.length == 1 && rules.length && tf.kind == TextType.AREATEXT) {
+        var probe = want[0], cut = balancedBreak(probe);
+        if (cut > 0 && tooWideForTop(tf, old, probe, rules, ext0)) {
+            want = [probe.substring(0, cut), probe.substring(cut + 1)];
+            L("  split the title over two lines to leave room for the rules beside it");
+        }
+    }
+    var n = want.length, roles = [];
+    for (i = 0; i < n; i++) {                               // no nested ?: - ExtendScript misparses it
+        if (i == n - 1) roles.push("title");
+        else if (i == 0) roles.push("first heading line");
+        else roles.push("heading line " + (i + 1));
+    }
+
+    // the same number of lines: the top line stays (its place is fixed), lines under it are removed,
+    // or added above the title in the title's style
+    for (i = 0; i < m - n; i++) removeLine(tf, 1);
+    for (i = m; i < n; i++) insertMiddleLine(tf, style);
     var cur = splitLines(tf.contents);
     for (i = n - 1; i >= 0; i--) {                              // from the end so earlier offsets stay put
         var s = span(cur[i]);
@@ -529,60 +658,28 @@ function updateHeading(doc, tf, D, maxW, headerTF, dateTF) {
     if (n != m) L("  heading: " + m + " line" + (m == 1 ? "" : "s") + " -> " + n + " (was " + oldText.join(" / ") + ")");
 
     // fit every line again (all were put back to full size), top to bottom
-    if (tf.kind != TextType.AREATEXT) fitWidth(tf, maxW);
-    else {
-        cur = splitLines(tf.contents);
-        for (i = 0; i < n; i++) { var s1 = span(cur[i]); fitArea(tf, s1.start, s1.len, "line " + (i + 1), n == m ? before : [], roles[i]); }
-    }
-    // The first line has the rules. If keeping them at MIN_RULE would squeeze it below 80% (counting any
-    // shrink that kept it on one line), split it in two instead, as done by hand for "Fulfilling The
-    // Dream / For Freedom". Decided before the whole block is fitted, which shrinks every line alike.
-    if (rules.length && tf.kind == TextType.AREATEXT) {
-        var l1 = span(splitLines(tf.contents)[0]), ext1 = textExtent(tf, true), m1 = shrinkRe("line 1").exec(tf.note || "");
-        var line1 = tf.contents.substr(l1.start, l1.len), cut = balancedBreak(line1);
-        if (ext1 && cut > 0 && line1.indexOf("\u0003") < 0 && ruleRoom(rules, ext0, ext1) * (m1 ? parseFloat(m1[1]) : 1) < 0.8) {
-            unshrink(tf, l1.start, l1.len, "line 1");
-            replaceAt(tf, l1.start + cut, 1, "\u0003");
-            L("  split the " + roles[0] + " over two lines to leave room for the rules beside it");
-            fitArea(tf, l1.start, l1.len, "line 1", [2], roles[0]);
-        }
-    }
-    fitBlock(tf, headerTF, dateTF, n);
+    if (tf.kind != TextType.AREATEXT) { fitWidth(tf, maxW); return; }
+    cur = splitLines(tf.contents);
+    for (i = 0; i < n; i++) { var s1 = span(cur[i]); fitArea(tf, s1.start, s1.len, "line " + (i + 1), [], roles[i], i == 0); }
     if (rules.length && ext0) {
         var s0 = span(splitLines(tf.contents)[0]), ext2 = textExtent(tf, true);
         if (ext2) moveRules(rules, ext0, fitBetweenRules(tf, s0.start, s0.len, "line 1", roles[0], rules, ext0, ext2), roles[0]);
     }
+    centerMiddle(tf, n, dateTF, roles);
+}
 
-    // Where the heading sits. A one-line heading (a title and nothing else) goes in the middle, halfway
-    // between the header bar and the date, even when it's split over two lines to fit. Otherwise, when
-    // the heading takes a different number of lines, it's centered on the design's own center: recorded
-    // in the frame's note the first time from a multi-line week, so it can't drift week to week.
-    // Either way it stays clear of the header bar and the date.
-    var after = linesPerParagraph(tf), was = 0, now = 0;
-    for (i = 0; i < before.length; i++) was += Math.max(0, before[i]);
-    for (i = 0; i < after.length; i++) now += Math.max(0, after[i]);
-    var block1 = blockExtent(tf);
-    if (!block1 || !block0) return;
-    var middle = n == 1 && headerTF && dateTF;
-    if (!middle && n == m && was == now) return;
-    var cm = /UpdateWeek center (-?[\d.]+)/.exec(tf.note || "");
-    if (!cm && m > 1) tf.note = (tf.note || "") + " UpdateWeek center " + block0.cy.toFixed(1);
-    var target = cm ? parseFloat(cm[1]) : block0.cy;
-    if (middle) target = (headerTF.geometricBounds[3] + dateTF.geometricBounds[1]) / 2;
-    var dy = target - block1.cy;
-    if (headerTF && block1.top + dy > headerTF.geometricBounds[3] - MARGIN_TOP) dy = headerTF.geometricBounds[3] - MARGIN_TOP - block1.top;
-    if (dateTF && block1.bottom + dy < dateTF.geometricBounds[1] + MARGIN_BOTTOM) dy = dateTF.geometricBounds[1] + MARGIN_BOTTOM - block1.bottom;
-    if (Math.abs(dy) > 1) {
-        unlock(tf);
-        tf.translate(0, dy);
-        for (i = 0; i < rules.length; i++) { unlock(rules[i].path); rules[i].path.translate(0, dy); }
-        L("  moved the heading " + (dy > 0 ? "up " : "down ") + Math.round(Math.abs(dy)) + "pt to " +
-          (middle ? "center it between the header bar and the date" : "keep it centered"));
-    }
-    var shown = linesPerParagraph(tf);
-    for (i = 0; i < n; i++) if (shown[i] == 0) P("the " + roles[i] + " is pushed out of the heading box; shorten the heading or fix it by hand");
-    if (headerTF && block1.top + dy > headerTF.geometricBounds[3] - 4) P("the heading runs into the header bar; check the spacing");
-    if (dateTF && block1.bottom + dy < dateTF.geometricBounds[1] + 4) P("the heading runs into the date; check the spacing");
+// Would this text, as the top line, shrink below 80% to fit the panel and keep its rules at MIN_RULE?
+// Tried on a copy of the frame, which is then removed.
+function tooWideForTop(tf, old, text, rules, ext0) {
+    var dup = tf.duplicate(), result = false;
+    try {
+        var l0 = span(splitLines(dup.contents)[0]);
+        replaceAt(dup, l0.start, l0.len, text);
+        var k = fitArea(dup, l0.start, text.length, "probe", [1], "title", true), ext = textExtent(dup, true);
+        result = !ext || k * ruleRoom(rules, ext0, ext) < 0.8;
+    } catch (e) {}
+    try { dup.remove(); } catch (e2) {}
+    return result;
 }
 
 function updateText(doc, job, D, ab) {

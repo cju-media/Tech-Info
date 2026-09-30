@@ -105,17 +105,17 @@ checklist: the folder, Illustrator installed and answering, Gemini, `brctl`. Not
   and "pdt"/"pst" after the service times.
 - **The heading** is page 1's lines above the date, one to four of them (`heading = Fall Series 4 |
   Painting the Stars | An Anticipatory Universe`; Lent, Pentecost, name-and-title and title-only
-  weeks all work). Last week's heading is found by position, so any of those can follow any other:
-  lines are added above the title or removed below the first line, each keeping a line's style.
-  A one-line heading (a title and nothing else) sits halfway between the header bar and the date,
-  even when it's split over two lines to fit. Otherwise, when the number of lines changes, the block
-  is centered on the design's own center (recorded in the frame's note). Either way it's kept at
-  least 34pt under the header bar and 60pt above the date.
-- **Long lines.** A line too long for the panel is split in two at its middle (as done by hand for
-  "Fulfilling The Dream / For Freedom"), a heading too tall for its space is shrunk evenly, line
-  spacing included, and anything below 75% is flagged. Every shrink is noted on the frame and
-  undone the next week, so a short heading comes back at full size. A long date or preacher is
-  shrunk to fit the panel.
+  weeks all work). Last week's heading is found by position, so any of those can follow any other.
+- **Layout:** the top line (with the rules) stays exactly where the design has it, and the lines
+  under it are centered between it and the date, moved by the leading of the first of them
+  (recorded in the frame's note and undone the next week). Lines are added above the title in the
+  title's style, or removed from under the top line. A title on its own is just the top line; one
+  too long to sit beside its rules is split into a top line and a centered line under it (as done
+  by hand for "Fulfilling The Dream / For Freedom").
+- **Long lines.** A line under the top one that's too long is split in two at its middle; if they
+  still don't fit above the date with 30pt to spare, they shrink evenly, line spacing included, and
+  anything below 75% is flagged. Every shrink is noted on the frame and undone the next week, so a
+  short heading comes back at full size. A long date or preacher is shrunk to fit the panel.
 - **The rules beside the first line and the date** keep last week's gap: they grow when the text
   gets shorter and shrink when it gets longer, and their outer ends never move. If a longer first
   line would leave them under 60pt, it's split or shrunk instead so they stay 60pt.
@@ -158,13 +158,14 @@ python3 fccla/test/test_formats.py
 
 Chains two made-up weeks onto that output: a landscape photo, a title long enough to split, a new series,
 a preacher without "Rev.", PST, and out-of-range photo nudges. Then a short title the following
-week. `test_formats.py` chains real OWs through every heading shape (3, 2, 1, 1, 3, 3, 4 and back to 3
-lines), measures that one-line headings are centered, and writes a review sheet, `fccla/test/out/formats/formats.jpg`. Run both after changing
+week. `test_formats.py` chains real OWs through every heading shape (3, 2, 2, 1, 3, 3, 4 and back to 3
+lines), measures in Illustrator that the top line never moves and the lines under it are centered,
+and writes a review sheet, `fccla/test/out/formats/formats.jpg`. Run both after changing
 `UpdateWeek.jsx`. `python3 -m unittest fccla/test/test_prepare_week.py` checks the PDF reading
 against real OWs of each layout.
 
 Illustrator scripting notes learned the hard way (the script's comments cover the rest): the
 script is ES3 (no `let`, `JSON`, `trim`, or `Array.indexOf`); ExtendScript misparses nested
-`a ? b : c ? d : e` (use if/else); the heading's leading is fixed, so shrink it with the type; `move()` returns nothing;
+`a ? b : c ? d : e` (use if/else); the heading's leading is fixed, so shrink it with the type; the paragraphs collection starts a new one at a forced line break; `move()` returns nothing;
 Illustrator keeps globals between script runs; and from AppleScript, pass the JavaScript as
 text to `do javascript`, because a file alias stops at a dialog.

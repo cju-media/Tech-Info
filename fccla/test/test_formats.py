@@ -6,8 +6,8 @@
   -> Fall Series 5 (3)
 
 Each week's text comes from its real OW via prepare_week.py (cover photo included), so this covers
-lines being added and removed, the block re-centering, the rules following the first line, and a
-one-line heading sitting halfway between the header bar and the date (measured in Illustrator).
+lines being added and removed, the top line staying put while the lines under it are centered
+between it and the date (both measured in Illustrator), and the rules following the top line.
 Writes fccla/test/out/formats/ and a review sheet, formats.jpg. Run test_9_27.py first; needs
 Illustrator and the OW PDFs in ~/Documents/Programming/OW/OWs.
 """
@@ -17,52 +17,16 @@ import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
-from test_9_27 import FCCLA, OUT, ROOT, ai_text, run, run_updateweek
+from test_9_27 import FCCLA, OUT, ROOT, ai_text, heading_layout, run, run_updateweek
 
 sys.path.insert(0, FCCLA)
 import prepare_week as pw  # noqa: E402
-from illustrator import do_javascript  # noqa: E402
-
-# Read-only: how far the heading's visible text sits from halfway between the header bar and the date.
-MIDDLE_JS = r"""
-(function () {
-    function glyphs(tf) {
-        var d = tf.duplicate(), g = d.createOutline(), top = -1e9, bottom = 1e9;
-        (function walk(c) {
-            for (var i = 0; i < c.pageItems.length; i++)
-                if (c.pageItems[i].typename == "GroupItem") walk(c.pageItems[i]);
-                else { var b = c.pageItems[i].geometricBounds; top = Math.max(top, b[1]); bottom = Math.min(bottom, b[3]); }
-        })(g);
-        g.remove();
-        return (top + bottom) / 2;
-    }
-    var prev = app.userInteractionLevel;
-    app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
-    var doc = app.open(new File("%s")), header = null, date = null, head = null, most = 0, out;
-    for (var i = 0; i < doc.textFrames.length; i++) {
-        var tf = doc.textFrames[i], t = tf.contents.replace(/^\s+|\s+$/g, ""), b = tf.geometricBounds;
-        if (tf.hidden || t == "") continue;
-        if (/^(Sunday|Sermon)$/.test(t)) header = tf;
-        else if (/^[A-Z][a-z]+ \d{1,2}, \d{4}$/.test(t)) date = tf;
-        else if (b[0] > 900 && b[1] > 600 && t.length > most) { most = t.length; head = tf; }
-    }
-    out = (header.geometricBounds[3] + date.geometricBounds[1]) / 2 - glyphs(head);
-    doc.close(SaveOptions.DONOTSAVECHANGES);
-    app.userInteractionLevel = prev;
-    return out;
-})();
-"""
-
-
-def middle_offset(ai):
-    return float(do_javascript(MIDDLE_JS % ai.replace('"', '\\"'), timeout=300))
-
 OW = os.path.expanduser("~/Documents/Programming/OW/OWs")
 DIR = os.path.join(OUT, "formats")
 WEEKS = [   # (name, OW, heading lines expected, change in line count for the log)
     ("june", "6.7.26 OW.pdf", 2, "heading: 3 lines -> 2"),
-    ("mlk", "1.18.26_OW.pdf", 1, "heading: 2 lines -> 1"),
-    ("christmas", "12.24.25 8pm.pdf", 1, None),
+    ("mlk", "1.18.26_OW.pdf", 1, None),                   # split into a top line and one under it: still 2
+    ("christmas", "12.24.25 8pm.pdf", 1, "heading: 2 lines -> 1"),
     ("lent", "3.15.26 OW.pdf", 3, "heading: 1 line -> 3"),
     ("pentecost", "8.16.26_OW_Draft.pdf", 3, None),
     ("four", "8.10.25_OW.pdf", 4, "heading: 3 lines -> 4"),
@@ -76,6 +40,8 @@ def main():
         sys.exit("run test_9_27.py first")
     os.makedirs(DIR, exist_ok=True)
     failures, shots = [], [("9/27 (start)", prev_dir, prev)]
+    first = heading_layout(os.path.join(prev_dir, "Sermon Series " + prev, "Sermon Title_%s.ai" % prev))
+    start = first["anchor"]
     for name, ow, n_lines, change in WEEKS:
         pdf = os.path.join(OW, ow)
         f, _ = pw.parse_pdf(pdf)
@@ -102,13 +68,16 @@ def main():
                                       "\n".join(l for l in log.splitlines() if "image candidate" not in l and "template:" not in l)))
         if change and log.count(change) != 2:
             failures.append("%s: log should say '%s' for both graphics" % (name, change))
-        if change and log.count("to keep it centered") + log.count("to center it between") != 2:
-            failures.append("%s: the heading should have been re-centered" % name)
-        if n_lines == 1:
-            off = middle_offset(os.path.join(DIR, name, "Sermon Series " + name, "Sermon Title_%s.ai" % name))
-            print("  one-line heading: %.1fpt from the middle between the header bar and the date" % off)
-            if abs(off) > 3:
-                failures.append("%s: the one-line heading is %.1fpt off the middle" % (name, off))
+        layout = heading_layout(os.path.join(DIR, name, "Sermon Series " + name, "Sermon Title_%s.ai" % name))
+        print("  measured: heading box top %.1f, top line leading %.1f (start %.1f, %.1f)%s" % (layout["anchor"] + start + (
+              "; lines under it %.1fpt above, %.1fpt below" % layout["gaps"] if layout["gaps"] else "; nothing under it",)))
+        if max(abs(a - b) for a, b in zip(layout["anchor"], start)) > 0.1:
+            failures.append("%s: the top line moved (box top %.1f, leading %.1f)" % ((name,) + layout["anchor"]))
+        if name == "fall" and abs(layout["gaps"][0] - first["gaps"][0]) > 1.5:
+            failures.append("fall: back to the starting layout, the gaps should match it (%.1f, was %.1f); "
+                            "something carried over from an earlier week" % (layout["gaps"][0], first["gaps"][0]))
+        if layout["gaps"] and abs(layout["gaps"][0] - layout["gaps"][1]) > 2:
+            failures.append("%s: the lines under the top line aren't centered (%.1f above, %.1f below)" % ((name,) + layout["gaps"]))
         for line in log.splitlines():
             if line.startswith("  !! ") and "had to shrink" not in line:
                 failures.append("%s: %s" % (name, line.strip()))
