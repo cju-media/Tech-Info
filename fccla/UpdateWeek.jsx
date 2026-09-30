@@ -145,45 +145,57 @@ function scaleChars(tf, start, len, k) {
 }
 
 // New text inherits the size of the text it replaces, so a shrink made to fit a long line would
-// carry into next week's short one. Each shrink is recorded in the frame's note (Attributes panel)
-// and undone before the next week's text is fitted.
-var SHRINK_RE = /\s*UpdateWeek shrink ([\d.]+)/;
-function unshrink(tf, start, len) {
-    var m = SHRINK_RE.exec(tf.note || "");
+// carry into next week's short one. Each shrink is recorded in the frame's note (Attributes panel),
+// per line ("UpdateWeek shrink title 0.8000"), and undone before the next week's text is fitted.
+function shrinkRe(label) { return new RegExp("\\s*UpdateWeek shrink " + label + " ([\\d.]+)"); }
+function unshrink(tf, start, len, label) {
+    var re = shrinkRe(label), m = re.exec(tf.note || "");
     if (!m) return;
     scaleChars(tf, start, len, 1 / parseFloat(m[1]));
-    tf.note = tf.note.replace(SHRINK_RE, "");
+    tf.note = tf.note.replace(re, "");
 }
-function markShrink(tf, k) { tf.note = (tf.note || "").replace(SHRINK_RE, "") + " UpdateWeek shrink " + k.toFixed(4); }
+function markShrink(tf, k, label) { tf.note = (tf.note || "").replace(shrinkRe(label), "") + " UpdateWeek shrink " + label + " " + k.toFixed(4); }
 
 // Shrink point text that grew wider than maxW (keeps it centered on its own anchor).
 function fitWidth(tf, maxW) {
     if (tf.kind != TextType.POINTTEXT) return;
-    unshrink(tf, 0, tf.characters.length);
+    unshrink(tf, 0, tf.characters.length, "line");
     var w = tf.width;
     if (w > maxW) {
         var k = maxW / w;
         scaleChars(tf, 0, tf.characters.length, k);
-        markShrink(tf, k);
+        markShrink(tf, k, "line");
         L("  shrank '" + strip(tf.contents).substr(0, 30) + "' to fit (" + Math.round(k * 100) + "%)");
     }
 }
 
-// Area text wraps instead of growing: if the new text needs more lines than the old text did,
-// shrink just that range until it fits on as many lines as before.
-function visibleLines(tf) { try { return tf.lines.length; } catch (e) { return -1; } }
-function fitArea(tf, linesBefore, start, len, label) {
+// Area text wraps instead of growing, and a line that wraps pushes the lines below it down and out
+// of the box. So each changed line is fitted on its own, top to bottom: shrink just that line
+// until it takes no more lines than it did last week (at least one) and isn't pushed out.
+function paraOf(tf, offset) {
+    var c = tf.contents, n = 0;
+    for (var i = 0; i < offset; i++) if (c.charAt(i) == "\r") n++;
+    return n;
+}
+function paraLines(tf, p) { try { return tf.paragraphs[p].lines.length; } catch (e) { return -1; } }   // 0 = pushed out
+function linesPerParagraph(tf) {
+    var n = [];
+    for (var p = 0; p < tf.paragraphs.length; p++) n.push(paraLines(tf, p));
+    return n;
+}
+function fitArea(tf, start, len, label, before) {
     if (tf.kind != TextType.AREATEXT) return;
-    unshrink(tf, start, len);
-    if (linesBefore < 0) return;
-    var k = 1;
-    while (visibleLines(tf) > linesBefore && k > 0.3) { scaleChars(tf, start, len, 0.95); k *= 0.95; }
+    unshrink(tf, start, len, label);
+    var p = paraOf(tf, start), allowed = Math.max(1, before[p] || 1), k = 1;
+    if (paraLines(tf, p) < 0) return;                       // Illustrator can't say; leave it
+    function over() { var n = paraLines(tf, p); return n == 0 || n > allowed; }
+    while (over() && k > 0.3) { scaleChars(tf, start, len, 0.95); k *= 0.95; }
     if (k < 1) {
-        markShrink(tf, k);
-        L("  shrank the " + label + " to " + Math.round(k * 100) + "% so it stays on one line");
+        markShrink(tf, k, label);
+        L("  shrank the " + label + " to " + Math.round(k * 100) + "% so it fits on " + (allowed == 1 ? "one line" : allowed + " lines"));
         if (k < 0.75) P("the " + label + " had to shrink to " + Math.round(k * 100) + "%; consider a shorter line or splitting it by hand");
     }
-    if (visibleLines(tf) > linesBefore) P("the " + label + " still wraps; shorten or resize it by hand");
+    if (over()) P("the " + label + " still doesn't fit; shorten or resize it by hand");
 }
 
 // ---------- the rules beside the series line and the date ("—— Fall Series 4 ——") ----------
@@ -227,15 +239,36 @@ function rulesBeside(doc, ext) {
     return out;
 }
 
+var MIN_RULE = 60;                                        // points; shorter looks like a stray dash
+
+// A (centered) line that grew so much that the rules beside it would drop below MIN_RULE gets
+// shrunk instead, so the rules keep MIN_RULE and last week's gap. Returns the line's new extent.
+function fitBetweenRules(tf, start, len, label, rules, before, after) {
+    var slack = 1e9;
+    for (var i = 0; i < rules.length; i++) {
+        var b = rules[i].path.geometricBounds;
+        slack = Math.min(slack, (b[2] - b[0]) - MIN_RULE);      // how far this side's text may grow
+    }
+    var oldW = before.right - before.left, newW = after.right - after.left;
+    if (rules.length == 0 || newW - oldW <= 2 * slack) return after;
+    var k = Math.max(0.3, (oldW + 2 * Math.max(0, slack)) / newW), m = shrinkRe(label).exec(tf.note || "");
+    scaleChars(tf, start, len, k);
+    markShrink(tf, k * (m ? parseFloat(m[1]) : 1), label);
+    L("  shrank the " + label + " to " + Math.round(k * 100) + "% so the rules beside it stay at least " + MIN_RULE + "pt");
+    if (k < 0.75) P("the " + label + " had to shrink to " + Math.round(k * 100) + "% to leave room for the rules beside it; check it");
+    return textExtent(tf, true) || after;
+}
+
 // Keep last week's gap between the text and each rule by moving the rule's inner end.
 function moveRules(rules, before, after, label) {
-    var moved = 0;
+    var moved = 0, cramped = false;
     for (var i = 0; i < rules.length; i++) {
         var r = rules[i], pts = r.path.pathPoints, b = r.path.geometricBounds;
         var d = r.side < 0 ? after.left - before.left : after.right - before.right;
         if (Math.abs(d) < 2) continue;                    // e.g. "Series 3" -> "Series 4": leave it be
         var innerX = r.side < 0 ? b[2] : b[0], outerX = r.side < 0 ? b[0] : b[2];
         var target = r.side < 0 ? Math.max(innerX + d, outerX + 20) : Math.min(innerX + d, outerX - 20);   // keep 20pt of rule
+        if (target != innerX + d) cramped = true;
         unlock(r.path);
         for (var k = 0; k < pts.length; k++) {
             var a = pts[k].anchor;
@@ -248,6 +281,7 @@ function moveRules(rules, before, after, label) {
         moved++;
     }
     if (moved) L("  moved " + moved + " rule" + (moved == 1 ? "" : "s") + " beside the " + label + " to keep the gap");
+    if (cramped) P("the " + label + " is too wide for the rules beside it (down to 20pt, closer than last week's gap); check it");
 }
 
 // ---------- the three edits ----------
@@ -404,16 +438,23 @@ function updateText(doc, job, D, ab) {
     if (lines.length - si >= 3) {
         // series / series name / title all in one frame. Edit from the end so earlier offsets stay put.
         // A title that was split over several lines is replaced as a whole.
-        var before = visibleLines(seriesTF);
+        var before = linesPerParagraph(seriesTF);
         var t0 = span(lines[si + 2]), t1 = span(lines[lines.length - 1]), nm = span(lines[si + 1]);
         var oTitle = seriesTF.contents.substring(t0.start, t1.start + t1.len);
         replaceAt(seriesTF, t0.start, t1.start + t1.len - t0.start, D.title);
         L("  title: " + oTitle.replace(/[\r\n\u0003]/g, " / ") + " -> " + D.title);
-        if (nm.text != D.seriesName) { replaceAt(seriesTF, nm.start, nm.len, D.seriesName); L("  series name: " + nm.text + " -> " + D.seriesName); }
+        var nameChanged = nm.text != D.seriesName;
+        if (nameChanged) { replaceAt(seriesTF, nm.start, nm.len, D.seriesName); L("  series name: " + nm.text + " -> " + D.seriesName); }
         replaceAt(seriesTF, seriesAt, oldSeries.length, D.series); L("  series: " + oldSeries + " -> " + D.series);
-        var ns = splitLines(seriesTF.contents), last = span(ns[ns.length - 1]);
-        fitArea(seriesTF, before, last.start, last.len, "title");
-        if (sRules.length) moveRules(sRules, sBefore, textExtent(seriesTF, true), "series line");
+        // fit top to bottom, since a line that wraps pushes the ones below it out of the box
+        var ns = splitLines(seriesTF.contents), s0 = span(ns[si]), n1 = span(ns[si + 1]), last = span(ns[ns.length - 1]);
+        if (oldSeries != D.series) fitArea(seriesTF, s0.start, s0.len, "series line", before);
+        if (nameChanged) fitArea(seriesTF, n1.start, n1.len, "series name", before);
+        fitArea(seriesTF, last.start, last.len, "title", before);
+        if (sRules.length) {
+            var sAfter = textExtent(seriesTF, true);
+            if (sAfter) moveRules(sRules, sBefore, fitBetweenRules(seriesTF, s0.start, s0.len, "series line", sRules, sBefore, sAfter), "series line");
+        }
         return;
     }
     replaceAt(seriesTF, seriesAt, oldSeries.length, D.series); L("  series: " + oldSeries + " -> " + D.series);

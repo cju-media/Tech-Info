@@ -101,9 +101,15 @@ checklist: the folder, Illustrator installed and answering, Gemini, `brctl`. Not
   set `photoShiftY` (points, + is up) and rerun.
 - **Text:** edits only the changed characters, so each line keeps its formatting: the series
   line, series name and title (one area-text frame), the date, the preacher (sermon graphic),
-  and "pdt"/"pst" after the service times. A title too long for one line is shrunk and
-  flagged. Shrinking is undone the following week. The rules beside the series line and the
-  date move to keep their gap when the text width changes.
+  and "pdt"/"pst" after the service times.
+- **Long and short lines.** A changed line in the series/name/title box that would wrap is
+  shrunk until it fits on one line again, top to bottom, so a long series name can't push the
+  title out of the box. It's flagged below 75%. A long date or preacher is shrunk to fit the
+  panel. Each shrink is noted on the frame and undone the next week, so a short line comes back
+  at full size.
+- **The rules beside the series line and the date** keep last week's gap: they grow when the
+  text gets shorter and shrink when it gets longer, and their outer ends never move. If a longer
+  series line would leave them under 60pt, the series line is shrunk instead so they stay 60pt.
 - **Panel:** recolors the big rectangle on the right (and anything else in exactly its color).
 - **Saves** `<name>.ai` (PDF-compatible) and `<name>.jpg` (artboard, 100%), plus `log.txt` and
   a copy of `week-data.txt` in the week folder.
