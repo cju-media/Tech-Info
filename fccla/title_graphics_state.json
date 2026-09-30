@@ -47,7 +47,13 @@
         "sermon": "fccla/status/10-4-26_0930-1558/3-sermon.jpg"
       }
     ],
-    "pick": null,
+    "pick": {
+      "n": 1,
+      "hex": "#1C304B",
+      "label": "blue, 65% of the photo's color",
+      "at": "2026-09-30T16:01:13-07:00",
+      "drive": "sent"
+    },
     "heading": [
       "Fall Series 5",
       "Painting the Stars",
@@ -58,9 +64,9 @@
     "cover": "fccla/status/10-4-26_0930-1558/cover.jpg"
   },
   "last_run": {
-    "at": "2026-09-30T15:58:26-07:00",
-    "trigger": "upload",
-    "status": "built",
-    "message": "Title graphics for Sunday, October 4 are ready to pick (link below).\n1 blue #1C304B \u00b7 2 teal #0D4035 \u00b7 3 deeper blue #132135\nNote: sermon row title 'We are Stories & Stardust' differs from page-1 title 'An Anticipatory Universe'"
+    "at": "2026-09-30T16:01:13-07:00",
+    "trigger": "pick",
+    "status": "picked",
+    "message": "Using #1C304B (blue) for Sunday, October 4. Saved to iCloud (10-4-26). Sent to Drive for the livestream (Worship Service + Sermon Series)."
   }
 }
