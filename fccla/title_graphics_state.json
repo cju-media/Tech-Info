@@ -44,7 +44,13 @@
         "sermon": "fccla/status/9-27-26_0929-1733/3-sermon.jpg"
       }
     ],
-    "pick": null,
+    "pick": {
+      "n": 2,
+      "hex": "#385261",
+      "label": "blue, 16% of the photo's color",
+      "at": "2026-09-29T17:45:10-07:00",
+      "drive": "not sent"
+    },
     "series": "Fall Series 4",
     "seriesName": "Painting the Stars",
     "title": "An Anticipatory Universe",
@@ -52,9 +58,9 @@
     "cover": "fccla/status/9-27-26_0929-1733/cover.jpg"
   },
   "last_run": {
-    "at": "2026-09-29T17:43:40-07:00",
+    "at": "2026-09-29T17:45:10-07:00",
     "trigger": "pick",
-    "status": "skipped",
-    "message": "The 9-27-26 graphics in iCloud were made by hand, so #385261 wasn't copied over them. Tick \"Replace hand edits\" on the picker to use it anyway."
+    "status": "picked",
+    "message": "Using #385261 (blue) for Sunday, September 27. Saved to iCloud (9-27-26). Not sent to Drive: that Sunday has passed."
   }
 }
