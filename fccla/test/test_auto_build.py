@@ -119,6 +119,16 @@ class MergeFields(unittest.TestCase):
         self.assertEqual(len(notes), 1)
 
 
+class BuildMessage(unittest.TestCase):
+    def test_link_is_not_in_the_body(self):
+        # iMessage via osascript only makes a URL tappable when it's a message of its own
+        build = {"dateText": "October 4, 2026", "options": [{"n": 1, "label": "gold, 79%", "hex": "#6E6127", "problems": []}],
+                 "notes": []}
+        body = ab.build_message(build)
+        self.assertNotIn("http", body)
+        self.assertIn("link below", body)
+
+
 class DriveTiming(unittest.TestCase):
     """Drive files the Sermon Series thumbnail under the next Sunday strictly after today."""
 

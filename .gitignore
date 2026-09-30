@@ -27,3 +27,4 @@ Utilities/Newsletter Ad/newsletter-ad.html
 # Title-graphics test outputs (Illustrator files, rebuilt by fccla/test/*.py)
 fccla/test/out/
 fccla/.message.txt
+fccla/.message-link.txt

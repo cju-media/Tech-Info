@@ -87,8 +87,13 @@ jobs:
       - name: Text Cameron
         if: always()
         run: |
+          # The link goes on its own: iMessage sent through osascript only makes a URL tappable
+          # when it's the whole message.
           if [ -s fccla/.message.txt ]; then
             python3 "Utilities/Scheduling/Event Data/send_imessage.py" "$(cat fccla/.message.txt)"
+          fi
+          if [ -s fccla/.message-link.txt ]; then
+            python3 "Utilities/Scheduling/Event Data/send_imessage.py" "$(cat fccla/.message-link.txt)"
           fi
 
       - name: Commit state, previews and Drive uploads

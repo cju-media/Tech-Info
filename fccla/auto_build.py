@@ -56,9 +56,9 @@ GRAPHICS = [("service", "Worship Service", "Service Title", "1KI_KifGRzRnafb5Z0I
 class Stop(Exception):
     """Ends a run: status for the dashboard, message for the text, exit code."""
 
-    def __init__(self, status, message, code=0, notify=True):
+    def __init__(self, status, message, code=0, notify=True, link=None):
         super().__init__(message)
-        self.status, self.message, self.code, self.notify = status, message, code, notify
+        self.status, self.message, self.code, self.notify, self.link = status, message, code, notify, link
 
 
 def root_folder():
@@ -359,8 +359,10 @@ def send_to_drive(ctx, build, replace):
     if date == drive_sunday(ctx.today):
         queue_for_drive(os.path.join(ctx.root, build["week"]), build["week"], replace, ctx.queue_dir)
         return "sent", "Sent to Drive for the livestream (Worship Service + Sermon Series)."
-    if date <= ctx.today:
-        return "not sent", "Not sent to Drive: that Sunday is already here, so upload them by hand if they're still needed."
+    if date < ctx.today:
+        return "not sent", "Not sent to Drive: that Sunday has passed."
+    if date == ctx.today:
+        return "not sent", "Not sent to Drive: it's already that Sunday, so upload them by hand if they're still needed."
     send_on = date - datetime.timedelta(days=6)
     return "waiting", "Drive gets them on %s (it only takes the coming Sunday's)." % long_date(send_on)
 
@@ -505,7 +507,7 @@ class Context:
 def build_message(build, notes_prefix=""):
     date = pw.parse_date_text(build["dateText"])
     opts = " · ".join("%d %s %s" % (o["n"], (o["label"] or "").split(",")[0], o["hex"]) for o in build["options"])
-    lines = [notes_prefix + "Title graphics for %s are ready to pick: %s" % (long_date(date), PICKER_URL), opts]
+    lines = [notes_prefix + "Title graphics for %s are ready to pick (link below)." % long_date(date), opts]
     if build.get("previous_pick"):
         lines.append("The OW changed after you picked %s, so pick again to update iCloud and Drive."
                      % build["previous_pick"]["hex"])
@@ -516,14 +518,14 @@ def build_message(build, notes_prefix=""):
 
 
 def run(a, ctx, state):
-    """Does the work for one trigger; returns (status, message, notify) or raises Stop."""
+    """Does the work for one trigger; returns (status, message, notify, link) or raises Stop."""
     if a.pick:
-        return "picked", use_pick(ctx, state, a.pick, a.replace_hand_edits), True
+        return "picked", use_pick(ctx, state, a.pick, a.replace_hand_edits), True, None
 
     waiting = send_waiting(ctx, state) if a.trigger == "schedule" else None
     if a.trigger == "schedule" and ctx.today.weekday() == 6:
         if waiting:
-            return "sent", waiting, True
+            return "sent", waiting, True, None
         raise Stop("idle", "Sunday: the schedule doesn't build on service day.", notify=False)
 
     try:
@@ -533,16 +535,16 @@ def run(a, ctx, state):
     build = state.get("build") or {}
     if not ow:
         if waiting:
-            return "sent", waiting, True
+            return "sent", waiting, True, None
         msg = "Title graphics: no OW %s in cju-media/OW." % ("named %s" % a.ow if a.ow else "for the coming Sunday")
         raise Stop("idle" if a.trigger == "schedule" else "skipped", msg, notify=a.trigger != "schedule")
     ow = {"name": ow["name"], "sha": ow["sha"], "download_url": ow["download_url"]}
     if build.get("ow", {}).get("sha") == ow["sha"] and a.trigger in ("upload", "schedule"):
         if waiting:
-            return "sent", waiting, True
+            return "sent", waiting, True, None
         raise Stop("idle" if a.trigger == "schedule" else "skipped",
-                   "Title graphics for %s are already built from %s: %s" % (build["week"], ow["name"], PICKER_URL),
-                   notify=a.trigger != "schedule")
+                   "Title graphics for %s are already built from %s (link below)." % (build["week"], ow["name"]),
+                   notify=a.trigger != "schedule", link=PICKER_URL)
 
     work = tempfile.mkdtemp(prefix="title-graphics-")
     try:
@@ -557,7 +559,7 @@ def run(a, ctx, state):
         shutil.rmtree(work, ignore_errors=True)
     state["build"] = new
     clean_up(ctx, new["id"])
-    return "built", build_message(new, (waiting + "\n\n") if waiting else ""), True
+    return "built", build_message(new, (waiting + "\n\n") if waiting else ""), True, PICKER_URL
 
 
 def main():
@@ -573,18 +575,26 @@ def main():
     ap.add_argument("--state", default=os.path.join(HERE, "title_graphics_state.json"))
     ap.add_argument("--status-dir", default=os.path.join(HERE, "status"))
     ap.add_argument("--queue-dir", default=os.path.join(REPO, "Utilities", "uploads_queue"))
-    ap.add_argument("--message", default=os.path.join(HERE, ".message.txt"), help="iMessage text is written here")
+    ap.add_argument("--message", default=os.path.join(HERE, ".message.txt"),
+                    help="iMessage text is written here, and a link to send separately to <name>-link.txt")
     ap.add_argument("--today", help=argparse.SUPPRESS)          # tests: pretend it's this date
     ap.add_argument("--probe", action="store_true")
     a = ap.parse_args()
     ctx = Context(a)
-    if os.path.exists(a.message):
-        os.remove(a.message)
+    link_file = os.path.splitext(a.message)[0] + "-link.txt"
+    for f in (a.message, link_file):
+        if os.path.exists(f):
+            os.remove(f)
 
-    def say(msg):
-        print(msg)
+    def say(msg, link=None):
+        """iMessage sent by osascript doesn't turn URLs into links unless a message is just the URL,
+        so a link goes in a second message."""
+        print(msg + ("\n" + link if link else ""))
         with open(a.message, "w", encoding="utf-8") as fh:
             fh.write(msg)
+        if link:
+            with open(link_file, "w", encoding="utf-8") as fh:
+                fh.write(link)
 
     if a.probe:
         ok, lines = probe(ctx.root, ctx.staging)
@@ -597,16 +607,17 @@ def main():
     except (OSError, ValueError):
         state = {}
     try:
-        status, message, notify, code = run(a, ctx, state) + (0,)
+        status, message, notify, link = run(a, ctx, state)
+        code = 0
     except Stop as s:
-        status, message, notify, code = s.status, s.message, s.notify, s.code
+        status, message, notify, link, code = s.status, s.message, s.notify, s.link, s.code
     if status != "idle":                         # quiet schedule runs leave no trace (and no commit)
         state["last_run"] = {"at": ctx.now.isoformat(timespec="seconds"), "trigger": a.trigger,
                              "status": status, "message": message}
         with open(a.state, "w") as fh:
             json.dump(state, fh, indent=2)
             fh.write("\n")
-    say(message) if notify else print(message)
+    say(message, link) if notify else print(message)
     sys.exit(code)
 
 
