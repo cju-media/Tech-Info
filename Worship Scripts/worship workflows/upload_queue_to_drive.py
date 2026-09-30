@@ -194,6 +194,55 @@ def defer_stream_creation(file_path, date_str, stream_time, title=None, descript
     print(f"Stashed thumbnail for {date_str} in {PENDING_STREAM_DIR}; the stream will be created once title/description are ready.")
 
 
+def upload_title_and_description(drive_service, folder_id, date_str, title=None, description=None):
+    """Put this week's title.txt and Description.txt next to the thumbnail in its dated Drive
+    folder, and announce it. Called when the stream is created: here, or by
+    "Youtube Processing/create_pending_stream.py" when the stream had to wait for them.
+    title/description: a typed override to upload instead of the files on disk."""
+    title_path = os.path.join("Worship Scripts", "service-titles", "title.txt")
+    desc_path = os.path.join("Youtube Processing", "Description.txt")
+    if title or description:
+        import tempfile
+        work = tempfile.mkdtemp()
+        for text, name in ((title, "title.txt"), (description, "Description.txt")):
+            if text:
+                with open(os.path.join(work, name), "w") as f:
+                    f.write(text)
+        if title:
+            title_path = os.path.join(work, "title.txt")
+        if description:
+            desc_path = os.path.join(work, "Description.txt")
+    print(f"Uploading title and description to Drive...")
+
+    title_uploaded = False
+    desc_uploaded = False
+    worship_title_text = None
+
+    if os.path.exists(title_path):
+        upload_to_drive(drive_service, title_path, "title.txt", folder_id)
+        title_uploaded = True
+        try:
+            with open(title_path, "r") as f:
+                worship_title_text = f.read().strip()
+        except Exception:
+            pass
+    else:
+        print(f"Title file not found at {title_path}")
+
+    if os.path.exists(desc_path):
+        upload_to_drive(drive_service, desc_path, "Description.txt", folder_id)
+        desc_uploaded = True
+    else:
+        print(f"Description file not found at {desc_path}")
+
+    if title_uploaded and desc_uploaded:
+        dispatch_event('worship_title_description_uploaded', {
+            'date': date_str,
+            'title': worship_title_text
+        })
+    return title_uploaded and desc_uploaded
+
+
 def get_upcoming_sunday():
     tz = zoneinfo.ZoneInfo("America/Los_Angeles")
     now_pt = datetime.datetime.now(tz)
@@ -651,35 +700,8 @@ def main():
                         defer_stream_creation(file_path, date_str, stream_time)
                         deferred = True
                     else:
-                        print(f"Uploading title and description to Drive...")
                         import subprocess
-
-                        title_uploaded = False
-                        desc_uploaded = False
-                        worship_title_text = None
-
-                        if os.path.exists(title_path):
-                            upload_to_drive(drive_service, title_path, "title.txt", folder_id)
-                            title_uploaded = True
-                            try:
-                                with open(title_path, "r") as f:
-                                    worship_title_text = f.read().strip()
-                            except Exception:
-                                pass
-                        else:
-                            print(f"Title file not found at {title_path}")
-
-                        if os.path.exists(desc_path):
-                            upload_to_drive(drive_service, desc_path, "Description.txt", folder_id)
-                            desc_uploaded = True
-                        else:
-                            print(f"Description file not found at {desc_path}")
-
-                        if title_uploaded and desc_uploaded:
-                            dispatch_event('worship_title_description_uploaded', {
-                                'date': date_str,
-                                'title': worship_title_text
-                            })
+                        upload_title_and_description(drive_service, folder_id, date_str)
 
                         print(f"Launching create_youtube_stream.py for {date_str} at {stream_time}...")
                         script_path = os.path.join("Youtube Processing", "create_youtube_stream.py")

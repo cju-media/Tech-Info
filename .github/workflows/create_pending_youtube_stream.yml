@@ -55,6 +55,9 @@ jobs:
           # description keeps its YOUTUBE SERVICE LINK placeholder, nor
           # imessage_notifications.yml, so nobody is told the stream exists.
           PAT: ${{ secrets.PAT }}
+          # title.txt and Description.txt go into the week's Drive folder next to the thumbnail
+          # once the stream is created (upload_queue_to_drive.py does it for a stream made right away).
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
         run: python "Youtube Processing/create_pending_stream.py"
 
       - name: Commit and push cleanup

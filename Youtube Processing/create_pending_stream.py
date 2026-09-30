@@ -124,6 +124,27 @@ def stream_url_for(date_str):
     return ""
 
 
+def put_title_and_description_in_drive(pending, date_str, title=None, description=None):
+    """A stream made right away gets title.txt and Description.txt next to its thumbnail in the
+    week's Drive folder (upload_queue_to_drive.py). One that had to wait for them gets them here,
+    once, when it's created."""
+    if pending.get("text_in_drive"):
+        return
+    sys.path.insert(0, os.path.join("Worship Scripts", "worship workflows"))
+    try:
+        import upload_queue_to_drive as uq
+        service = uq.get_drive_service()
+        if not service:
+            print(f"No Drive credentials, so title.txt and Description.txt for {date_str} weren't put in Drive.")
+            return
+        folder_id = uq.get_or_create_date_folder(service, uq.THUMBNAILS_DEST_PARENT_FOLDER_ID, date_str)
+        if uq.upload_title_and_description(service, folder_id, date_str, title=title, description=description):
+            pending["text_in_drive"] = True
+    except Exception as e:
+        # The stream exists; a missing text file in Drive isn't worth failing over.
+        print(f"Could not put title.txt and Description.txt in Drive for {date_str}: {e}")
+
+
 def main():
     if not os.path.exists(PENDING_STREAM_META):
         print("No pending stream waiting on title/description. Exiting.")
@@ -206,11 +227,15 @@ def main():
               f"Leaving the thumbnail pending for the next run.")
         return
     if result.returncode == EXIT_THUMBNAIL_PENDING:
+        # the stream exists; only its thumbnail is outstanding (note_thumbnail_attempt saves the flag)
+        put_title_and_description_in_drive(pending, date_str, override_title or None, override_desc or None)
         note_thumbnail_attempt(pending, date_str)
         return
     if result.returncode != 0:
         print(f"create_youtube_stream.py failed (exit {result.returncode}). Leaving the thumbnail pending.")
         return
+
+    put_title_and_description_in_drive(pending, date_str, override_title or None, override_desc or None)
 
     # Clean up now that the stream has actually been created -- leave
     # nothing pending for the next run to retry unnecessarily.

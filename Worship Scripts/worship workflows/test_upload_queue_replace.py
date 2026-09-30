@@ -197,5 +197,63 @@ class QueueWithSidecar(unittest.TestCase):
         self.assertFalse(any(c.startswith(("update", "trash")) for c in drive.calls))
 
 
+class DelayedStream(unittest.TestCase):
+    """A stream that waited for its title/description (create_pending_stream.py) must still get
+    title.txt and Description.txt next to its thumbnail in the week's Drive folder."""
+
+    def run_pending(self, returncode, meta=None):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "Youtube Processing"))
+        import create_pending_stream as cps
+        work = tempfile.mkdtemp()
+        cwd = os.getcwd()
+        os.chdir(work)
+        try:
+            os.makedirs(cps.PENDING_STREAM_DIR)
+            os.makedirs(os.path.join("Worship Scripts", "service-titles"))
+            with open(os.path.join("Worship Scripts", "service-titles", "title.txt"), "w") as fh:
+                fh.write("Fall Series 5 || Painting the Stars")
+            with open(os.path.join("Youtube Processing", "Description.txt"), "w") as fh:
+                fh.write("Download this service's program: https://www.fccla.org/ows/10-04-26")
+            for name, date in (("service_titles_state.json", "2026-10-04"),):
+                with open(os.path.join("Worship Scripts", name), "w") as fh:
+                    json.dump({"target_date": date}, fh)
+            with open(os.path.join("Youtube Processing", "description_state.json"), "w") as fh:
+                json.dump({"target_date": "2026-10-04"}, fh)
+            thumb = os.path.join(cps.PENDING_STREAM_DIR, "thumbnail.jpg")
+            with open(thumb, "wb") as fh:
+                fh.write(b"jpeg")
+            pending = dict({"date": "10-04-2026", "time": "10:30", "thumbnail_path": thumb}, **(meta or {}))
+            with open(cps.PENDING_STREAM_META, "w") as fh:
+                json.dump(pending, fh)
+            drive, events, dated = FakeDrive(), [], []
+            with mock.patch.object(uq, "get_drive_service", return_value=drive), \
+                 mock.patch.object(uq, "get_or_create_date_folder",
+                                   side_effect=lambda s, parent, d: dated.append((parent, d)) or "datefolder"), \
+                 mock.patch.object(uq, "dispatch_event", side_effect=lambda kind, payload: events.append(kind)), \
+                 mock.patch.object(cps, "note_thumbnail_attempt"), \
+                 mock.patch("subprocess.run", return_value=types.SimpleNamespace(returncode=returncode)):
+                cps.main()
+            left = os.path.exists(cps.PENDING_STREAM_META)
+            return drive, events, dated, left
+        finally:
+            os.chdir(cwd)
+
+    def test_created_stream_gets_its_text_in_drive(self):
+        drive, events, dated, left = self.run_pending(0)
+        self.assertEqual(dated, [(uq.THUMBNAILS_DEST_PARENT_FOLDER_ID, "10-04-2026")])
+        self.assertEqual(drive.calls.count("create"), 2)          # title.txt and Description.txt
+        self.assertEqual(events, ["worship_title_description_uploaded"])
+        self.assertFalse(left)
+
+    def test_not_ready_puts_nothing_in_drive(self):
+        drive, events, dated, left = self.run_pending(3)
+        self.assertEqual(drive.calls, [])
+        self.assertTrue(left)
+
+    def test_a_thumbnail_retry_doesnt_upload_the_text_again(self):
+        drive, events, dated, left = self.run_pending(0, {"thumbnail_attempts": 1, "text_in_drive": True})
+        self.assertEqual(drive.calls, [])
+
+
 if __name__ == "__main__":
     unittest.main()
