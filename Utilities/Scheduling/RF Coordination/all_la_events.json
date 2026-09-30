@@ -1,11 +1,110 @@
 [
   {
-    "name": "JAY PARK",
-    "date": "2026-09-26",
-    "location": "Stage in Expo Hall 649 W JEFFERSON BLVD 90007",
+    "name": "XBOX - EDAY",
+    "date": "2026-09-28",
+    "location": "6301 Hollywood Blvd",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.9,
-    "permit": "264109000001364",
+    "distance_mi": 3.48,
+    "permit": "264109000001398",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "COMPLEXCON",
+    "date": "2026-10-03",
+    "location": "LACC South Hall Booth E41 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001387",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "COMPLEXCON",
+    "date": "2026-10-03",
+    "location": "1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001420",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CARNIVAL",
+    "date": "2026-10-09",
+    "location": "1536 Selby Ave., Los Angeles, CA 90024",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 8.73,
+    "permit": "264109000001074",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "HAUNTED HAYRIDE",
+    "date": "2026-09-25",
+    "location": "Picnic Area 4730 N CRYSTAL SPRINGS DR 90027",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 5.02,
+    "permit": "264109000001414",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LOS ANGELES EQUESTRIAN",
+    "date": "2026-10-03",
+    "location": "480 w. RIVERSIDE DRIVE , BURBANK CA,91506",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 276.81,
+    "permit": "264109000001422",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "USC SUITES",
+    "date": "2026-09-26",
+    "location": "Gate 19 & Field 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001418",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "ALL DAY I DREAM.",
+    "date": "2026-10-03",
+    "location": "532 S Olive St inside Park",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.14,
+    "permit": "264109000001320",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "BITCOIN/CASH APP BOOTH",
+    "date": "2026-10-03",
+    "location": "LACC booth A16 by ComplexCon entry signage 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001428",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "PRIVATE RECORD RELEASE",
+    "date": "2026-10-06",
+    "location": "630 S ANDERSON ST 90023",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 4.01,
+    "permit": "264109000001281",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "TUNNEL TENT",
+    "date": "2026-09-25",
+    "location": "Players Tunnel 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001417",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CHECK IN TENTS",
+    "date": "2026-09-29",
+    "location": "USC Campus",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001453",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -18,21 +117,39 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "RETINA SOCIETY MEETING",
-    "date": "2026-09-23",
-    "location": "Santa Monica Ballroom 2025 S AVENUE OF THE STARS 90067",
+    "name": "USC VS OREGON 2026",
+    "date": "2026-09-26",
+    "location": "Flying camera system attached to four light poles surrounding the LAMC 3911 S FIGUEROA ST 90037",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 7.45,
-    "permit": "264109000001139",
+    "distance_mi": 3.52,
+    "permit": "264109000001444",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "COMMUNITY BUILD",
-    "date": "2026-09-23",
-    "location": "The location is the base camp for Habitat LA's Community Build. 887 N TOYOPA DR 90272",
+    "name": "COMPLEXCON - BOOTH #P4 - WEST HALL",
+    "date": "2026-10-02",
+    "location": "1201 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 13.73,
-    "permit": "264109000001234",
+    "distance_mi": 1.89,
+    "permit": "264109000001445",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "COMPLEXCON 2026",
+    "date": "2026-10-03",
+    "location": "1201 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.89,
+    "permit": "264109000001405",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "OPEN AIR AFFAIR",
+    "date": "2026-10-03",
+    "location": "Outdoor event in parking lot/patio 630 S ANDERSON ST 90023",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 4.01,
+    "permit": "264109000001270",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -45,75 +162,30 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "CARNIVAL",
-    "date": "2026-09-26",
-    "location": "13360 Valley Heart Dr, Sherman Oaks CA,91423",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 9.95,
-    "permit": "264109000001265",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "COMPLEXCON",
+    "name": "LOOSE LEAF BOOTH N28",
     "date": "2026-10-03",
-    "location": "1201 S FIGUEROA ST 90015",
+    "location": "1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001332",
+    "distance_mi": 1.92,
+    "permit": "264109000001310",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "DODGER RUN",
-    "date": "2026-09-26",
-    "location": "Dodger Stadium Lot G",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001346",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "WESTWOOD VILLAGE FARMERS' MARKET",
-    "date": "2026-07-02",
-    "location": "Broxton Plaza 1036 S BROXTON AVE 90024",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 9.21,
-    "permit": "264109000000967",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "FRANK MAZA MUSICAL SHOWCASE",
-    "date": "2026-09-25",
-    "location": "The event will be held in our own parking lot which will have no cars that day. 3375 N BARHAM BLVD 90068",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 5.78,
-    "permit": "264109000001069",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "Our Lady of the HolyRosary Annual Fiesta",
-    "date": "2026-10-02",
-    "location": "7800 Vineland Ave, 91352",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264101000001396",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "SIDEPIECE",
+    "name": "PUFF CON",
     "date": "2026-10-03",
-    "location": "parking lot at this address 1749 N VINE ST 90028",
+    "location": "Inside studio 1201 W 5TH ST 90017",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.55,
-    "permit": "264109000001232",
+    "distance_mi": 1.64,
+    "permit": "264109000001458",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "LOGITECH 2026",
-    "date": "2026-09-23",
-    "location": "57 Windward Ave, 90291",
+    "name": "CAMERA TENT",
+    "date": "2026-09-26",
+    "location": "West end of stadium 3911 S FIGUEROA ST 90037",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264101000001356",
+    "distance_mi": 3.52,
+    "permit": "264109000001416",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
