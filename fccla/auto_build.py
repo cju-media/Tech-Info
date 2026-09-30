@@ -191,6 +191,15 @@ def gemini_fields(page1, full):
         return None, "Gemini check failed (%s)" % str(e)[:200]
 
 
+def any_date(s):
+    """A date written 'September 27, 2026' or, as Gemini sometimes copies it from the PDF, '27 September 2026'."""
+    d = pw.parse_date_text((s or "").strip())
+    m = not d and re.fullmatch(r"(\d{1,2}) (%s),? (\d{4})" % pw.MONTH_RE, (s or "").strip(), re.I)
+    if m:
+        d = datetime.date(int(m.group(3)), pw.MONTHS.index(m.group(2).capitalize()) + 1, int(m.group(1)))
+    return d
+
+
 def norm(s):
     s = (s or "").replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
     s = s.replace("–", "-").replace("—", "-")
@@ -206,7 +215,9 @@ def merge_fields(parsed, gem, full_text):
     for k in FIELDS:
         p, g = parsed.get(k, ""), (gem or {}).get(k, "")
         if k == "dateText":
-            same = pw.parse_date_text(p) == pw.parse_date_text(g)
+            gd = any_date(g)
+            g = "%s %d, %d" % (pw.MONTHS[gd.month - 1], gd.day, gd.year) if gd else g
+            same = pw.parse_date_text(p) == gd
         else:
             same = norm(p) == norm(g)
         if not g or same:

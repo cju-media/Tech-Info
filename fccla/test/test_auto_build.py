@@ -109,6 +109,11 @@ class MergeFields(unittest.TestCase):
     def test_dates_compare_as_dates(self):
         merged, notes = ab.merge_fields(PARSED, dict(PARSED, dateText="September 27, 2026"), PDF_TEXT)
         self.assertEqual(notes, [])
+        # Gemini copying the PDF's own form isn't a disagreement (it was, on Studio Mini's first run)
+        merged, notes = ab.merge_fields(PARSED, dict(PARSED, dateText="27 September 2026"), PDF_TEXT)
+        self.assertEqual(notes, [])
+        merged, notes = ab.merge_fields(dict(PARSED, dateText=""), dict(PARSED, dateText="27 September 2026"), PDF_TEXT)
+        self.assertEqual(merged["dateText"], "September 27, 2026")
         merged, notes = ab.merge_fields(PARSED, dict(PARSED, dateText="September 20, 2026"), PDF_TEXT)
         self.assertEqual(merged["dateText"], "September 27, 2026")
         self.assertEqual(len(notes), 1)
