@@ -6,6 +6,8 @@ name: Test Worship Workflow Logic
 #    broke on 2026-08-30 when an Order of Worship was processed Sunday morning).
 #  - cleanup_events_folder.py: the misread-year check that stops bogus
 #    "delete this flyer" alerts (fired four times on 2026-08-31).
+#  - upload_queue_to_drive.py: the {"replace": true} sidecar a changed title-graphics
+#    pick sends (overwrite in Drive, re-upload the stream thumbnail).
 
 on:
   push:
@@ -16,6 +18,8 @@ on:
       - 'Worship Scripts/worship workflows/test_create_sermon_series.py'
       - 'Worship Scripts/worship workflows/cleanup_events_folder.py'
       - 'Worship Scripts/worship workflows/test_cleanup_events_folder.py'
+      - 'Worship Scripts/worship workflows/upload_queue_to_drive.py'
+      - 'Worship Scripts/worship workflows/test_upload_queue_replace.py'
       - '.github/workflows/test_sermon_series_logic.yml'
   pull_request:
     paths:
@@ -23,6 +27,8 @@ on:
       - 'Worship Scripts/worship workflows/test_create_sermon_series.py'
       - 'Worship Scripts/worship workflows/cleanup_events_folder.py'
       - 'Worship Scripts/worship workflows/test_cleanup_events_folder.py'
+      - 'Worship Scripts/worship workflows/upload_queue_to_drive.py'
+      - 'Worship Scripts/worship workflows/test_upload_queue_replace.py'
   workflow_dispatch:
 
 jobs:
@@ -38,4 +44,4 @@ jobs:
           python-version: '3.10'
 
       - name: Run unit tests
-        run: cd "Worship Scripts/worship workflows" && python -m unittest test_create_sermon_series test_cleanup_events_folder -v
+        run: cd "Worship Scripts/worship workflows" && python -m unittest test_create_sermon_series test_cleanup_events_folder test_upload_queue_replace -v

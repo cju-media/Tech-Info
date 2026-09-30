@@ -304,7 +304,9 @@ def identical_file_in_folder(service, folder_id, name, local_path):
         return False
 
 
-def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_exists=False):
+def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_exists=False, replace=False):
+    """replace: overwrite a same-named file in folder_id in place instead of adding a second copy
+    (a changed title-graphics pick sends {"replace": true} in its .meta.json sidecar)."""
     print(f"Uploading {original_filename} to Google Drive folder {folder_id}...")
 
     if skip_if_exists and identical_file_in_folder(service, folder_id, original_filename, file_path):
@@ -320,7 +322,7 @@ def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_ex
 
         media = MediaIoBaseUpload(io.BytesIO(open(file_path, "rb").read()), mimetype=mime_type, resumable=True)
 
-        if is_protected_flyer(original_filename):
+        if replace or is_protected_flyer(original_filename):
             existing_id = find_file_id_by_name(service, folder_id, original_filename)
             if existing_id:
                 service.files().update(
@@ -414,7 +416,18 @@ def main():
             if folder_id in [THUMBNAILS_DEST_PARENT_FOLDER_ID, SERMON_DEST_PARENT_FOLDER_ID] and original_filename.lower().endswith(('.jpg', '.jpeg')):
                 date_str = None
                 stream_meta = None
-                worship_meta_path = None
+                # Optional sidecar metadata: the upload dashboard's settings panel writes one
+                # for worship service thumbnails (date/time/title/description), and the
+                # title-graphics picker (fccla/auto_build.py) writes {"replace": true} for
+                # either kind when a pick is changed.
+                worship_meta_path = file_path + '.meta.json'
+                if os.path.exists(worship_meta_path):
+                    try:
+                        with open(worship_meta_path, 'r') as mf:
+                            stream_meta = json.load(mf)
+                    except Exception as e:
+                        print(f"Could not parse upload settings for {filename}: {e}")
+                        stream_meta = None
 
                 if folder_id == SERMON_DEST_PARENT_FOLDER_ID:
                     # Sermon series thumbnails always target the upcoming Sunday folder
@@ -422,18 +435,8 @@ def main():
                     print(f"Sermon Series Thumbnail detected. Using upcoming Sunday date: {date_str}")
                 else:
                     # Worship service thumbnails: prefer an explicit date (and
-                    # optional time/title/description) from a sidecar metadata
-                    # file written by the upload dashboard's settings panel over
+                    # optional time/title/description) from the sidecar over
                     # guessing the date from the filename.
-                    worship_meta_path = file_path + '.meta.json'
-                    if os.path.exists(worship_meta_path):
-                        try:
-                            with open(worship_meta_path, 'r') as mf:
-                                stream_meta = json.load(mf)
-                        except Exception as e:
-                            print(f"Could not parse upload settings for {filename}: {e}")
-                            stream_meta = None
-
                     if stream_meta and stream_meta.get('date'):
                         date_str = stream_meta['date']
                         print(f"Using date from upload settings: {date_str}")
@@ -458,7 +461,8 @@ def main():
             # means "already done" -- don't create a duplicate. Only the
             # queued upload itself is guarded; the title.txt / Description.txt
             # uploads below are meant to refresh in place.
-            if upload_to_drive(drive_service, file_path, original_filename, folder_id, skip_if_exists=True):
+            replace = bool(stream_meta and stream_meta.get('replace'))
+            if upload_to_drive(drive_service, file_path, original_filename, folder_id, skip_if_exists=True, replace=replace):
                 deferred = False
 
                 # If successful, check if it's a worship service thumbnail to create stream
@@ -610,6 +614,11 @@ def main():
                                 # create_youtube_stream.py trusts it as-is
                                 # rather than re-checking title.txt state.
                                 cmd += ["--title", meta_title, "--description", meta_desc]
+                            if replace:
+                                # A changed title-graphics pick: the stream probably
+                                # exists already with the first thumbnail, so have
+                                # it re-uploaded rather than just skipped.
+                                cmd.append("--reconcile")
                             try:
                                 result = subprocess.run(cmd)
                                 rc = result.returncode

@@ -189,6 +189,12 @@
         .success { color: #2ecc71; }
         .info { color: #3498db; }
 
+        .tg-panel { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: left; }
+        .tg-panel h2 { margin: 0 0 6px; color: #2c3e50; font-size: 20px; }
+        .tg-status { margin: 0 0 12px; color: #555; white-space: pre-line; }
+        .tg-panel .drive-btn { display: inline-block; }
+        .tg-hint { font-size: 12px; color: #888; margin-bottom: 0; }
+
         .menu-btn {
             position: absolute;
             top: 20px;
@@ -313,6 +319,13 @@
     </div>
 
     <div id="status"></div>
+
+    <div class="tg-panel" id="tg-panel">
+        <h2>Title graphics</h2>
+        <p class="tg-status" id="tg-status">Loading&hellip;</p>
+        <a class="drive-btn" href="../title-graphics/index.html">Open the color picker</a>
+        <p class="tg-hint">After an OW is uploaded, Studio Mini builds the Service and Sermon Title graphics in each suggested panel color and texts you a link to the picker. The one you pick goes into the iCloud week folder and to Drive for the livestream.</p>
+    </div>
 
     <div class="button-group">
         <a href="https://drive.google.com/drive/folders/1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f?usp=share_link" target="_blank" class="drive-btn">
@@ -669,6 +682,48 @@
 
     initLastUploadTimes();
 
+    // ---- Title graphics (title_graphics.yml runs fccla/auto_build.py on Studio Mini) ----
+    // A short status; picking happens on Utilities/title-graphics/, which Studio Mini texts a link to.
+    const tgStatus = document.getElementById('tg-status');
+    let tgPoll = null;
+
+    function ghHeaders(accept) {
+        const headers = { 'Accept': accept || 'application/vnd.github.v3+json' };
+        const pat = localStorage.getItem('GITHUB_PAT');
+        if (pat) headers['Authorization'] = `token ${pat}`;
+        return headers;
+    }
+
+    async function loadTitleGraphics() {
+        clearTimeout(tgPoll);
+        let state = null, run = null;
+        try {
+            // The contents API rather than raw.githubusercontent.com, which serves a stale copy for minutes.
+            const res = await fetch(`https://api.github.com/repos/${REPO}/contents/fccla/title_graphics_state.json?ref=main`,
+                { headers: ghHeaders('application/vnd.github.raw'), cache: 'no-store' });
+            if (res.ok) state = await res.json();
+            const runs = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/title_graphics.yml/runs?per_page=1`,
+                { headers: ghHeaders(), cache: 'no-store' });
+            if (runs.ok) run = (await runs.json()).workflow_runs[0] || null;
+        } catch (e) { /* show whatever loaded */ }
+        const busy = run && (run.status === 'queued' || run.status === 'in_progress');
+        const build = state && state.build;
+        const lines = [];
+        if (busy) lines.push('Studio Mini is working on them now…');
+        if (build) {
+            lines.push(`${build.dateText}: ${build.title} (${build.series}).`);
+            lines.push(build.pick ? `In use: ${build.pick.hex}. ${build.pick.drive === 'sent' ? 'Sent to Drive.' : build.pick.drive === 'waiting' ? 'Waiting to go to Drive.' : 'Not sent to Drive.'}`
+                                  : `${(build.options || []).length} colors ready to pick.`);
+        }
+        const last = state && state.last_run;
+        if (last && (last.status === 'failed' || last.status === 'skipped') && !busy) lines.push(last.message);
+        tgStatus.textContent = lines.join('\n') || 'Nothing built yet. Upload an OW to start.';
+        tgStatus.className = 'tg-status' + (last && last.status === 'failed' && !busy ? ' error' : '');
+        if (busy) tgPoll = setTimeout(loadTitleGraphics, 20000);
+    }
+
+    loadTitleGraphics();
+
     // Load PAT on init
     const savedPat = localStorage.getItem('GITHUB_PAT');
     if (savedPat) {
@@ -986,7 +1041,9 @@
     // so a push event can't reach that workflow -- this repository_dispatch is
     // the cross-repo trigger. Best-effort: a failure here doesn't undo the
     // upload, the scheduled run is still the backstop.
-    async function triggerServiceTitlesRun(pat) {
+    // The same dispatch starts the Title Graphics workflow on Studio Mini, which uses the
+    // filename to build from exactly this OW.
+    async function triggerServiceTitlesRun(pat, filename) {
         try {
             const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
                 method: 'POST',
@@ -995,7 +1052,7 @@
                     'Content-Type': 'application/json',
                     'Accept': 'application/vnd.github.v3+json'
                 },
-                body: JSON.stringify({ event_type: 'ow_uploaded' })
+                body: JSON.stringify({ event_type: 'ow_uploaded', client_payload: { filename } })
             });
             if (!res.ok) {
                 let msg = res.statusText;
@@ -1115,13 +1172,17 @@
 
             if (targetFolder === 'OW') {
                 setStatus('File uploaded to OW repository! Starting Gemini processing...', 'success');
-                const triggered = await triggerServiceTitlesRun(pat);
+                const triggered = await triggerServiceTitlesRun(pat, safeFilename);
                 setStatus(
                     triggered
-                        ? 'File uploaded! Service Titles Checker is running now — titles update in a few minutes.'
+                        ? 'File uploaded! Service Titles Checker is running now — titles update in a few minutes, and Studio Mini builds the title graphics.'
                         : 'File uploaded to OW repository! (Processing will run on the next hourly check.)',
                     'success'
                 );
+                if (triggered) {
+                    clearTimeout(tgPoll);
+                    tgPoll = setTimeout(loadTitleGraphics, 8000);
+                }
             } else if (targetFolder === 'TIMINGS_TXT') {
                 setStatus('timings.txt updated in the repo! The YouTube description update will run shortly.', 'success');
             } else {
