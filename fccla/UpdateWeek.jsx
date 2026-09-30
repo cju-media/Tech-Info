@@ -553,16 +553,22 @@ function updateHeading(doc, tf, D, maxW, headerTF, dateTF) {
         if (ext2) moveRules(rules, ext0, fitBetweenRules(tf, s0.start, s0.len, "line 1", roles[0], rules, ext0, ext2), roles[0]);
     }
 
-    // When the heading takes a different number of lines, center it on the design's center: recorded in
-    // the frame's note the first time (from a week that was never moved), so it can't drift week to
-    // week. It also stays between the header bar and the date.
+    // Where the heading sits. A one-line heading (a title and nothing else) goes in the middle, halfway
+    // between the header bar and the date, even when it's split over two lines to fit. Otherwise, when
+    // the heading takes a different number of lines, it's centered on the design's own center: recorded
+    // in the frame's note the first time from a multi-line week, so it can't drift week to week.
+    // Either way it stays clear of the header bar and the date.
     var after = linesPerParagraph(tf), was = 0, now = 0;
     for (i = 0; i < before.length; i++) was += Math.max(0, before[i]);
     for (i = 0; i < after.length; i++) now += Math.max(0, after[i]);
     var block1 = blockExtent(tf);
-    if (!block1 || !block0 || (n == m && was == now)) return;
-    var cm = /UpdateWeek center (-?[\d.]+)/.exec(tf.note || ""), target = cm ? parseFloat(cm[1]) : block0.cy;
-    if (!cm) tf.note = (tf.note || "") + " UpdateWeek center " + target.toFixed(1);
+    if (!block1 || !block0) return;
+    var middle = n == 1 && headerTF && dateTF;
+    if (!middle && n == m && was == now) return;
+    var cm = /UpdateWeek center (-?[\d.]+)/.exec(tf.note || "");
+    if (!cm && m > 1) tf.note = (tf.note || "") + " UpdateWeek center " + block0.cy.toFixed(1);
+    var target = cm ? parseFloat(cm[1]) : block0.cy;
+    if (middle) target = (headerTF.geometricBounds[3] + dateTF.geometricBounds[1]) / 2;
     var dy = target - block1.cy;
     if (headerTF && block1.top + dy > headerTF.geometricBounds[3] - MARGIN_TOP) dy = headerTF.geometricBounds[3] - MARGIN_TOP - block1.top;
     if (dateTF && block1.bottom + dy < dateTF.geometricBounds[1] + MARGIN_BOTTOM) dy = dateTF.geometricBounds[1] + MARGIN_BOTTOM - block1.bottom;
@@ -570,7 +576,8 @@ function updateHeading(doc, tf, D, maxW, headerTF, dateTF) {
         unlock(tf);
         tf.translate(0, dy);
         for (i = 0; i < rules.length; i++) { unlock(rules[i].path); rules[i].path.translate(0, dy); }
-        L("  moved the heading " + (dy > 0 ? "up " : "down ") + Math.round(Math.abs(dy)) + "pt to keep it centered");
+        L("  moved the heading " + (dy > 0 ? "up " : "down ") + Math.round(Math.abs(dy)) + "pt to " +
+          (middle ? "center it between the header bar and the date" : "keep it centered"));
     }
     var shown = linesPerParagraph(tf);
     for (i = 0; i < n; i++) if (shown[i] == 0) P("the " + roles[i] + " is pushed out of the heading box; shorten the heading or fix it by hand");

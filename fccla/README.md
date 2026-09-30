@@ -107,8 +107,10 @@ checklist: the folder, Illustrator installed and answering, Gemini, `brctl`. Not
   Painting the Stars | An Anticipatory Universe`; Lent, Pentecost, name-and-title and title-only
   weeks all work). Last week's heading is found by position, so any of those can follow any other:
   lines are added above the title or removed below the first line, each keeping a line's style.
-  When the number of lines changes, the block is centered on the design's own center (recorded in
-  the frame's note) and kept at least 34pt under the header bar and 60pt above the date.
+  A one-line heading (a title and nothing else) sits halfway between the header bar and the date,
+  even when it's split over two lines to fit. Otherwise, when the number of lines changes, the block
+  is centered on the design's own center (recorded in the frame's note). Either way it's kept at
+  least 34pt under the header bar and 60pt above the date.
 - **Long lines.** A line too long for the panel is split in two at its middle (as done by hand for
   "Fulfilling The Dream / For Freedom"), a heading too tall for its space is shrunk evenly, line
   spacing included, and anything below 75% is flagged. Every shrink is noted on the frame and
@@ -156,8 +158,8 @@ python3 fccla/test/test_formats.py
 
 Chains two made-up weeks onto that output: a landscape photo, a title long enough to split, a new series,
 a preacher without "Rev.", PST, and out-of-range photo nudges. Then a short title the following
-week. `test_formats.py` chains real OWs through every heading shape (3, 2, 1, 3, 4 and back to 3
-lines) and writes a review sheet, `fccla/test/out/formats/formats.jpg`. Run both after changing
+week. `test_formats.py` chains real OWs through every heading shape (3, 2, 1, 1, 3, 3, 4 and back to 3
+lines), measures that one-line headings are centered, and writes a review sheet, `fccla/test/out/formats/formats.jpg`. Run both after changing
 `UpdateWeek.jsx`. `python3 -m unittest fccla/test/test_prepare_week.py` checks the PDF reading
 against real OWs of each layout.
 
