@@ -44,7 +44,7 @@ from illustrator import IllustratorError, do_javascript, run_updateweek  # noqa:
 OW_API = "https://api.github.com/repos/cju-media/OW/contents/OWs"
 PICKER_URL = "https://cju-media.github.io/Tech-Info/Utilities/title-graphics/"
 GEMINI_MODEL = "gemini-3.5-flash"          # same model as update_service_titles.py
-FIELDS = ["series", "seriesName", "title", "dateText", "preacher"]
+FIELDS = ["heading", "dateText", "preacher"]              # heading: its lines joined with " | " while merging
 SCRIPT_FILES = ["UpdateWeek.jsx", "prepare_week.py", "GEMINI.md", "README.md"]
 TZ = zoneinfo.ZoneInfo("America/Los_Angeles")
 EDIT_GRACE = 120                           # seconds between saving the .ai files and writing log.txt
@@ -148,13 +148,16 @@ def who_made(week_dir):
 
 GEMINI_PROMPT = """You are checking the text for a church's weekly title graphic, taken from its
 Order of Worship. Reply with JSON only:
-{"series": "", "seriesName": "", "title": "", "dateText": "", "preacher": ""}
+{"heading": [], "dateText": "", "preacher": ""}
 
-- series: the page-1 line "<Season> Series <N>", e.g. "Fall Series 4".
-- seriesName and title: the page-1 line "<Series Name> ~ <Sermon Title>", split on the "~".
+- heading: the lines at the top of page 1, above the date, in order, one string per line. A line
+  written "<Series Name> ~ <Sermon Title>" is two lines. For example ["Fall Series 4",
+  "Painting the Stars", "An Anticipatory Universe"], ["Lent 4", "The Only Thing More Powerful Than
+  Hate is Love", "Edge Walking"], or just ["Fulfilling The Dream For Freedom"].
 - dateText: the service date on page 1, written like "September 27, 2026".
-- preacher: the name at the end of the "Sermon" row of the order of service, with its title
-  (Rev., Dr., ...), e.g. "Rev. Laura Vail Fregin".
+- preacher: the name at the end of the "Sermon" row of the order of service (a "Reflection" or
+  "Homily" row if there's no Sermon row; never a musical reflection), with its title (Rev., Dr.,
+  ...), e.g. "Rev. Laura Vail Fregin".
 Copy words exactly as the PDF has them (spelling, capitalization, punctuation). Ignore the photo
 caption and the church address. Use "" for anything that isn't there.
 
@@ -186,7 +189,12 @@ def gemini_fields(page1, full):
             config=types.GenerateContentConfig(response_mime_type="application/json"))
         text = re.sub(r"^```(?:json)?|```$", "", (resp.text or "").strip()).strip()
         data = json.loads(text)
-        return {k: str(data.get(k) or "").strip() for k in FIELDS}, None
+        heading = data.get("heading") or []
+        if isinstance(heading, str):
+            heading = re.split(r"\s*[|\n]\s*", heading)
+        out = {k: str(data.get(k) or "").strip() for k in ("dateText", "preacher")}
+        out["heading"] = " | ".join(str(h).strip() for h in heading if str(h).strip())
+        return out, None
     except Exception as e:                       # the build goes ahead on the PDF parse alone
         return None, "Gemini check failed (%s)" % str(e)[:200]
 
@@ -194,7 +202,10 @@ def gemini_fields(page1, full):
 def any_date(s):
     """A date written 'September 27, 2026' or, as Gemini sometimes copies it from the PDF, '27 September 2026'."""
     d = pw.parse_date_text((s or "").strip())
-    m = not d and re.fullmatch(r"(\d{1,2}) (%s),? (\d{4})" % pw.MONTH_RE, (s or "").strip(), re.I)
+    m = not d and re.fullmatch(r"(\d{1,2})(?:st|nd|rd|th)? (%s),? (\d{4})" % pw.MONTH_RE, (s or "").strip(), re.I)
+    m2 = not d and not m and re.fullmatch(r"(%s) (\d{1,2})(?:st|nd|rd|th)?,? (\d{4})" % pw.MONTH_RE, (s or "").strip(), re.I)
+    if m2:
+        d = datetime.date(int(m2.group(3)), pw.MONTHS.index(m2.group(1).capitalize()) + 1, int(m2.group(2)))
     if m:
         d = datetime.date(int(m.group(3)), pw.MONTHS.index(m.group(2).capitalize()) + 1, int(m.group(1)))
     return d
@@ -225,7 +236,7 @@ def merge_fields(parsed, gem, full_text):
         elif not p:
             merged[k] = g
             notes.append("%s came from Gemini only: %s" % (k, g))
-        elif k != "dateText" and norm(g) in in_pdf:
+        elif k != "dateText" and all(norm(part) in in_pdf for part in g.split("|")):
             merged[k] = g
             notes.append("%s: the PDF parse read %r, Gemini %r; used Gemini's" % (k, p, g))
         else:
@@ -236,9 +247,12 @@ def merge_fields(parsed, gem, full_text):
 
 def read_fields(pdf):
     parsed, warn = pw.parse_pdf(pdf)
+    parsed = dict(parsed, heading=" | ".join(parsed.get("heading", [])))
     page1, full = pdf_text(pdf)
     gem, gem_note = gemini_fields(page1, full)
     fields, notes = merge_fields(parsed, gem, full)
+    fields["heading"] = pw.heading_of(fields)
+    fields["title"] = fields["heading"][-1] if fields["heading"] else ""
     notes += ([gem_note] if gem_note else []) + warn
     missing = [k for k in FIELDS if not fields.get(k)]
     if missing or not pw.parse_date_text(fields.get("dateText")):
@@ -303,8 +317,7 @@ def build_options(ctx, ow, pdf, fields, notes, previous):
     build = {"id": "%s_%s" % (week, ctx.now.strftime("%m%d-%H%M")), "week": week, "dateText": fields["dateText"],
              "fields": fields, "ow": ow, "built_at": ctx.now.isoformat(timespec="seconds"),
              "notes": notes, "options": [], "pick": None}
-    for k in ("series", "seriesName", "title", "preacher"):
-        build[k] = fields[k]
+    build["heading"], build["title"], build["preacher"] = fields["heading"], fields["title"], fields["preacher"]
     if previous and previous.get("week") == week and (previous.get("pick") or previous.get("previous_pick")):
         build["previous_pick"] = previous.get("pick") or previous.get("previous_pick")
 

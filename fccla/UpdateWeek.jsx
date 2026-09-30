@@ -7,9 +7,10 @@
 #target illustrator
 
 var MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December";
-var REQUIRED = ["root", "series", "seriesName", "title", "dateText", "preacher", "panelColor", "imagePath",
+var REQUIRED = ["root", "heading", "dateText", "preacher", "panelColor", "imagePath",
     "outputFolder", "serviceTemplate", "serviceFolder", "serviceName", "sermonTemplate", "sermonFolder", "sermonName"];
 var OPTIONAL = ["timeZone", "photoShiftX", "photoShiftY"];
+var LEGACY = ["series", "seriesName", "title"];         // the heading as three fields, before "heading"
 
 var log = [], problems = [], relock = [];
 function L(s) { log.push(s); }
@@ -49,8 +50,9 @@ function readData(f) {
 
 function validate(d) {
     var bad = [], k;
-    for (var i = 0; i < REQUIRED.length; i++) if (!d[REQUIRED[i]]) bad.push("missing " + REQUIRED[i]);
-    for (k in d) if (!has(REQUIRED, k) && !has(OPTIONAL, k)) bad.push("unknown key " + k + " (typo?)");
+    for (var i = 0; i < REQUIRED.length; i++)
+        if (!d[REQUIRED[i]] && !(REQUIRED[i] == "heading" && headingOf(d).length)) bad.push("missing " + REQUIRED[i]);
+    for (k in d) if (!has(REQUIRED, k) && !has(OPTIONAL, k) && !has(LEGACY, k)) bad.push("unknown key " + k + " (typo?)");
     if (d.panelColor && !/^#[0-9A-Fa-f]{6}$/.test(d.panelColor)) bad.push("panelColor must look like #325673, not " + d.panelColor);
     if (d.dateText && !new RegExp("^(" + MONTHS + ") \\d{1,2}, \\d{4}$").test(d.dateText))
         bad.push("dateText must look like September 27, 2026, not " + d.dateText);
@@ -122,12 +124,13 @@ function replaceAt(tf, idx, len, newStr) {
     for (var k = 1; k < len; k++) tf.characters[idx + newStr.length].remove();
 }
 
-// Lines of a frame with their character offsets (paragraphs end in \r; \u0003 is a forced line break).
+// Lines (paragraphs) of a frame with their character offsets. A forced line break (\u0003), used to
+// split a long line in two, stays inside its line.
 function splitLines(s) {
     var out = [], start = 0;
     for (var i = 0; i <= s.length; i++) {
         var ch = i < s.length ? s.charAt(i) : "\r";
-        if (ch == "\r" || ch == "\n" || ch == "\u0003") { out.push({ start: start, text: s.substring(start, i) }); start = i + 1; }
+        if (ch == "\r" || ch == "\n") { out.push({ start: start, text: s.substring(start, i) }); start = i + 1; }
     }
     while (out.length && strip(out[out.length - 1].text) == "") out.pop();   // the title frame ends in an empty line
     return out;
@@ -137,10 +140,13 @@ function span(line) {
     return { start: line.start + line.text.indexOf(t), len: t.length, text: t };
 }
 
+// Scale the type size of a range, and its line spacing with it: the heading's leading is fixed (e.g.
+// 74pt type on 114pt leading), so shrinking only the type would leave the lines spread apart.
 function scaleChars(tf, start, len, k) {
     for (var i = start; i < start + len; i++) {
         var a = tf.characters[i].characterAttributes;
         a.size = a.size * k;
+        if (!a.autoLeading) a.leading = a.leading * k;
     }
 }
 
@@ -183,19 +189,40 @@ function linesPerParagraph(tf) {
     for (var p = 0; p < tf.paragraphs.length; p++) n.push(paraLines(tf, p));
     return n;
 }
-function fitArea(tf, start, len, label, before) {
+// The space nearest the middle of a line, to break it into two halves of about the same length.
+function balancedBreak(text) {
+    var best = -1;
+    for (var i = 1; i < text.length - 1; i++)
+        if (text.charAt(i) == " " && (best < 0 || Math.abs(i - text.length / 2) < Math.abs(best - text.length / 2))) best = i;
+    return best;
+}
+
+function fitArea(tf, start, len, label, before, name) {
     if (tf.kind != TextType.AREATEXT) return;
     unshrink(tf, start, len, label);
     var p = paraOf(tf, start), allowed = Math.max(1, before[p] || 1), k = 1;
     if (paraLines(tf, p) < 0) return;                       // Illustrator can't say; leave it
     function over() { var n = paraLines(tf, p); return n == 0 || n > allowed; }
-    while (over() && k > 0.3) { scaleChars(tf, start, len, 0.95); k *= 0.95; }
+    function shrinkTo(floor) { while (over() && k > floor) { scaleChars(tf, start, len, 0.95); k *= 0.95; } }
+    shrinkTo(0.8);
+    if (over() && allowed == 1) {
+        // too long for one line: split it in two at the middle, as done by hand, back at full size
+        var cut = balancedBreak(tf.contents.substr(start, len));
+        if (cut > 0) {
+            scaleChars(tf, start, len, 1 / k);
+            k = 1;
+            replaceAt(tf, start + cut, 1, "\u0003");
+            allowed = 2;
+            L("  split the " + name + " over two lines");
+        }
+    }
+    shrinkTo(0.3);
     if (k < 1) {
         markShrink(tf, k, label);
-        L("  shrank the " + label + " to " + Math.round(k * 100) + "% so it fits on " + (allowed == 1 ? "one line" : allowed + " lines"));
-        if (k < 0.75) P("the " + label + " had to shrink to " + Math.round(k * 100) + "%; consider a shorter line or splitting it by hand");
+        L("  shrank the " + name + " to " + Math.round(k * 100) + "% so it fits on " + (allowed == 1 ? "one line" : allowed + " lines"));
+        if (k < 0.75) P("the " + name + " had to shrink to " + Math.round(k * 100) + "%; consider a shorter line or splitting it by hand");
     }
-    if (over()) P("the " + label + " still doesn't fit; shorten or resize it by hand");
+    if (over()) P("the " + name + " still doesn't fit; shorten or resize it by hand");
 }
 
 // ---------- the rules beside the series line and the date ("—— Fall Series 4 ——") ----------
@@ -204,25 +231,39 @@ function fitArea(tf, start, len, label, before) {
 // of area text from an outlined copy (area text bounds are the box, not the glyphs).
 function textExtent(tf, firstLineOnly) {
     if (!firstLineOnly) { var b = tf.geometricBounds; return { left: b[0], right: b[2], cy: (b[1] + b[3]) / 2 }; }
-    var dup = tf.duplicate(), g = null, leaves = [], ext = null;
+    var leaves = glyphBounds(tf);
+    if (!leaves.length) return null;
+    var top = leaves[0][1], bottom = leaves[0][3], left = leaves[0][0], right = leaves[0][2];
+    for (var k = 1; k < leaves.length; k++) {
+        var b2 = leaves[k];
+        if ((leaves[k - 1][1] + leaves[k - 1][3]) / 2 - (b2[1] + b2[3]) / 2 > 15) break;   // next line
+        top = Math.max(top, b2[1]); bottom = Math.min(bottom, b2[3]);
+        left = Math.min(left, b2[0]); right = Math.max(right, b2[2]);
+    }
+    return { left: left, right: right, cy: (top + bottom) / 2 };
+}
+
+// Top, bottom and middle of all the visible text in a frame.
+function blockExtent(tf) {
+    var leaves = glyphBounds(tf), top = -1e9, bottom = 1e9;
+    if (!leaves.length) return null;
+    for (var k = 0; k < leaves.length; k++) { top = Math.max(top, leaves[k][1]); bottom = Math.min(bottom, leaves[k][3]); }
+    return { top: top, bottom: bottom, cy: (top + bottom) / 2 };
+}
+
+// Bounds of each glyph of a text frame, top line first, from an outlined copy that is then removed.
+function glyphBounds(tf) {
+    var dup = tf.duplicate(), g = null, leaves = [];
     try {
         g = dup.createOutline();
         (function walk(c) {
             for (var i = 0; i < c.pageItems.length; i++)
                 if (c.pageItems[i].typename == "GroupItem") walk(c.pageItems[i]); else leaves.push(c.pageItems[i].geometricBounds);
         })(g);
-        leaves.sort(function (x, y) { return (y[1] + y[3]) - (x[1] + x[3]); });   // top line first
-        var top = leaves[0][1], bottom = leaves[0][3], left = leaves[0][0], right = leaves[0][2];
-        for (var k = 1; k < leaves.length; k++) {
-            var b2 = leaves[k];
-            if ((leaves[k - 1][1] + leaves[k - 1][3]) / 2 - (b2[1] + b2[3]) / 2 > 15) break;   // next line
-            top = Math.max(top, b2[1]); bottom = Math.min(bottom, b2[3]);
-            left = Math.min(left, b2[0]); right = Math.max(right, b2[2]);
-        }
-        ext = { left: left, right: right, cy: (top + bottom) / 2 };
     } catch (e) { L("  (couldn't measure '" + strip(tf.contents).substr(0, 20) + "': " + e + ")"); }
     try { (g || dup).remove(); } catch (e2) {}
-    return ext;
+    leaves.sort(function (x, y) { return (y[1] + y[3]) - (x[1] + x[3]); });
+    return leaves;
 }
 
 // Thin horizontal paths level with a text line, entirely to its left (side -1) or right (+1).
@@ -243,19 +284,26 @@ var MIN_RULE = 60;                                        // points; shorter loo
 
 // A (centered) line that grew so much that the rules beside it would drop below MIN_RULE gets
 // shrunk instead, so the rules keep MIN_RULE and last week's gap. Returns the line's new extent.
-function fitBetweenRules(tf, start, len, label, rules, before, after) {
+// How much a line must shrink so the rules beside it keep MIN_RULE and last week's gap (1 = not at all).
+function ruleRoom(rules, before, after) {
     var slack = 1e9;
     for (var i = 0; i < rules.length; i++) {
         var b = rules[i].path.geometricBounds;
         slack = Math.min(slack, (b[2] - b[0]) - MIN_RULE);      // how far this side's text may grow
     }
     var oldW = before.right - before.left, newW = after.right - after.left;
-    if (rules.length == 0 || newW - oldW <= 2 * slack) return after;
-    var k = Math.max(0.3, (oldW + 2 * Math.max(0, slack)) / newW), m = shrinkRe(label).exec(tf.note || "");
+    if (rules.length == 0 || newW - oldW <= 2 * slack) return 1;
+    return Math.max(0.3, (oldW + 2 * Math.max(0, slack)) / newW);
+}
+
+function fitBetweenRules(tf, start, len, label, name, rules, before, after) {
+    var k = ruleRoom(rules, before, after), m = shrinkRe(label).exec(tf.note || "");
+    if (k >= 1) return after;
+    var total = k * (m ? parseFloat(m[1]) : 1);             // with any shrink to keep it on one line
     scaleChars(tf, start, len, k);
-    markShrink(tf, k * (m ? parseFloat(m[1]) : 1), label);
-    L("  shrank the " + label + " to " + Math.round(k * 100) + "% so the rules beside it stay at least " + MIN_RULE + "pt");
-    if (k < 0.75) P("the " + label + " had to shrink to " + Math.round(k * 100) + "% to leave room for the rules beside it; check it");
+    markShrink(tf, total, label);
+    L("  shrank the " + name + " to " + Math.round(k * 100) + "% so the rules beside it stay at least " + MIN_RULE + "pt");
+    if (total < 0.75) P("the " + name + " had to shrink to " + Math.round(total * 100) + "% in all; consider a shorter line or splitting it by hand");
     return textExtent(tf, true) || after;
 }
 
@@ -375,21 +423,176 @@ function setTimeZone(tf, tz) {
     return n;
 }
 
+// ---------- the heading ("Fall Series 4" / "Painting the Stars" / "An Anticipatory Universe") ----------
+// Page 1's lines above the date, one to four of them: an optional label ("Fall Series 4",
+// "Pentecost 11", "Lent 4"), an optional series name, and the title. The first line has rules
+// beside it. When the number of lines changes from last week's, lines are added above the title or
+// removed below the first line (so each keeps a line's style, and the title keeps the title's), and
+// the block is kept centered where last week's was.
+
+// The heading = the right-panel text starting above the date with the most text in it (the header
+// bar's "Sunday"/"Sermon" is left out; hidden and empty frames were skipped already). Its box is taller
+// than its text, so after re-centering its middle can sit below the date; its top can't.
+function findHeading(frames, dateTF, midX) {
+    var best = null, most = 0, limit = dateTF ? dateTF.geometricBounds[1] : -1e9;
+    for (var i = 0; i < frames.length; i++) {
+        var tf = frames[i], b = tf.geometricBounds, t = strip(tf.contents);
+        if (tf === dateTF || center(b)[0] < midX || b[1] <= limit || /^(Sunday|Sermon)$/i.test(t)) continue;
+        if (t.length > most) { most = t.length; best = tf; }
+    }
+    return best;
+}
+
+// Undo every shrink recorded on the heading's lines ("line 2", or the older names) before its text changes.
+function unshrinkAll(tf, lines) {
+    var re = /\s*UpdateWeek shrink (line (\d+)|series line|series name|title) ([\d.]+)/g, note = tf.note || "", m;
+    while ((m = re.exec(note)) != null) {
+        var idx = 1;                                      // "series name" (no nested ?: - ExtendScript misparses it)
+        if (m[2]) idx = parseInt(m[2], 10) - 1;
+        else if (m[1] == "title") idx = lines.length - 1;
+        else if (m[1] == "series line") idx = 0;
+        if (lines[idx]) { var s = span(lines[idx]); scaleChars(tf, s.start, s.len, 1 / parseFloat(m[3])); }
+    }
+    tf.note = note.replace(/\s*UpdateWeek shrink (line \d+|series line|series name|title) [\d.]+/g, "");
+}
+
+function removeLine(tf, i) {
+    var l = splitLines(tf.contents)[i], n = l.text.length + 1;      // the line and its paragraph break
+    for (var k = 0; k < n; k++) tf.characters[l.start].remove();
+}
+
+// A placeholder line just above the title, in the style of the line above it (or of the only line).
+function insertLineBeforeLast(tf) {
+    var ls = splitLines(tf.contents), m = ls.length;
+    if (m >= 2) replaceAt(tf, ls[m - 2].start + ls[m - 2].text.length, 1, "\r#\r");
+    else replaceAt(tf, 0, 1, "#\r" + tf.contents.charAt(0));
+}
+
+// The heading lines: "heading = Fall Series 4 | Painting the Stars | An Anticipatory Universe", or the
+// older series / seriesName / title fields.
+function headingOf(d) {
+    var parts = d.heading ? d.heading.split("|") : [d.series || "", d.seriesName || "", d.title || ""], out = [];
+    for (var i = 0; i < parts.length; i++) if (strip(parts[i])) out.push(strip(parts[i]));
+    return out;
+}
+
+// A heading too tall for the space between the header bar and the date (four lines, or a line split
+// in two) is shrunk evenly until it fits, a line at a time recorded so next week can undo it.
+// Points kept clear under the header bar and above the date. The Fall layout leaves 38 and 72; a four-line
+// heading done by hand (Lent 2026) about 50 and 60.
+var MARGIN_TOP = 34, MARGIN_BOTTOM = 60;
+function fitBlock(tf, headerTF, dateTF, n) {
+    if (!headerTF || !dateTF || tf.kind != TextType.AREATEXT) return;
+    var room = (headerTF.geometricBounds[3] - MARGIN_TOP) - (dateTF.geometricBounds[1] + MARGIN_BOTTOM), total = 1;
+    for (var tries = 0; tries < 8; tries++) {
+        var ext = blockExtent(tf), hidden = false, lines = linesPerParagraph(tf);
+        for (var h = 0; h < n; h++) if (lines[h] == 0) hidden = true;
+        if (!ext || (ext.top - ext.bottom <= room && !hidden) || total < 0.6) break;
+        var kb = Math.max(0.6 / total, hidden ? 0.93 : room / (ext.top - ext.bottom)), cur = splitLines(tf.contents);
+        for (var i = 0; i < n && i < cur.length; i++) {
+            var s = span(cur[i]), m = shrinkRe("line " + (i + 1)).exec(tf.note || "");
+            scaleChars(tf, s.start, s.len, kb);
+            markShrink(tf, kb * (m ? parseFloat(m[1]) : 1), "line " + (i + 1));
+        }
+        total *= kb;
+    }
+    if (total < 1) L("  shrank the whole heading to " + Math.round(total * 100) + "% so it fits between the header and the date");
+    if (total < 0.75) P("the heading had to shrink to " + Math.round(total * 100) + "% to fit; check it");
+}
+
+function updateHeading(doc, tf, D, maxW, headerTF, dateTF) {
+    var want = headingOf(D), roles = [], i;
+    for (i = 0; i < want.length; i++) {                     // no nested ?: - ExtendScript misparses it
+        if (i == want.length - 1) roles.push("title");
+        else if (i == 0) roles.push("first heading line");
+        else roles.push("heading line " + (i + 1));
+    }
+    var old = splitLines(tf.contents), m = old.length, n = want.length, oldText = [];
+    if (!m) { P("the heading above the date is empty"); return; }
+    for (i = 0; i < m; i++) oldText.push(strip(old[i].text));
+
+    // measured as it looked last week
+    var before = linesPerParagraph(tf), block0 = blockExtent(tf), ext0 = textExtent(tf, true);
+    var rules = ext0 ? rulesBeside(doc, ext0) : [];
+    unshrinkAll(tf, old);
+
+    for (i = m - 2; i >= n - 1 && i >= 0; i--) removeLine(tf, i);
+    for (i = m; i < n; i++) insertLineBeforeLast(tf);
+    var cur = splitLines(tf.contents);
+    for (i = n - 1; i >= 0; i--) {                              // from the end so earlier offsets stay put
+        var s = span(cur[i]);
+        if (s.len == 0) replaceAt(tf, cur[i].start, 1, want[i] + tf.contents.charAt(cur[i].start));
+        else if (s.text != want[i]) replaceAt(tf, s.start, s.len, want[i]);
+    }
+    for (i = 0; i < n; i++)
+        if (n != m || oldText[i] != want[i]) L("  " + roles[i] + ": " + (n == m ? oldText[i] + " -> " : "") + want[i]);
+    if (n != m) L("  heading: " + m + " line" + (m == 1 ? "" : "s") + " -> " + n + " (was " + oldText.join(" / ") + ")");
+
+    // fit every line again (all were put back to full size), top to bottom
+    if (tf.kind != TextType.AREATEXT) fitWidth(tf, maxW);
+    else {
+        cur = splitLines(tf.contents);
+        for (i = 0; i < n; i++) { var s1 = span(cur[i]); fitArea(tf, s1.start, s1.len, "line " + (i + 1), n == m ? before : [], roles[i]); }
+    }
+    // The first line has the rules. If keeping them at MIN_RULE would squeeze it below 80% (counting any
+    // shrink that kept it on one line), split it in two instead, as done by hand for "Fulfilling The
+    // Dream / For Freedom". Decided before the whole block is fitted, which shrinks every line alike.
+    if (rules.length && tf.kind == TextType.AREATEXT) {
+        var l1 = span(splitLines(tf.contents)[0]), ext1 = textExtent(tf, true), m1 = shrinkRe("line 1").exec(tf.note || "");
+        var line1 = tf.contents.substr(l1.start, l1.len), cut = balancedBreak(line1);
+        if (ext1 && cut > 0 && line1.indexOf("\u0003") < 0 && ruleRoom(rules, ext0, ext1) * (m1 ? parseFloat(m1[1]) : 1) < 0.8) {
+            unshrink(tf, l1.start, l1.len, "line 1");
+            replaceAt(tf, l1.start + cut, 1, "\u0003");
+            L("  split the " + roles[0] + " over two lines to leave room for the rules beside it");
+            fitArea(tf, l1.start, l1.len, "line 1", [2], roles[0]);
+        }
+    }
+    fitBlock(tf, headerTF, dateTF, n);
+    if (rules.length && ext0) {
+        var s0 = span(splitLines(tf.contents)[0]), ext2 = textExtent(tf, true);
+        if (ext2) moveRules(rules, ext0, fitBetweenRules(tf, s0.start, s0.len, "line 1", roles[0], rules, ext0, ext2), roles[0]);
+    }
+
+    // When the heading takes a different number of lines, center it on the design's center: recorded in
+    // the frame's note the first time (from a week that was never moved), so it can't drift week to
+    // week. It also stays between the header bar and the date.
+    var after = linesPerParagraph(tf), was = 0, now = 0;
+    for (i = 0; i < before.length; i++) was += Math.max(0, before[i]);
+    for (i = 0; i < after.length; i++) now += Math.max(0, after[i]);
+    var block1 = blockExtent(tf);
+    if (!block1 || !block0 || (n == m && was == now)) return;
+    var cm = /UpdateWeek center (-?[\d.]+)/.exec(tf.note || ""), target = cm ? parseFloat(cm[1]) : block0.cy;
+    if (!cm) tf.note = (tf.note || "") + " UpdateWeek center " + target.toFixed(1);
+    var dy = target - block1.cy;
+    if (headerTF && block1.top + dy > headerTF.geometricBounds[3] - MARGIN_TOP) dy = headerTF.geometricBounds[3] - MARGIN_TOP - block1.top;
+    if (dateTF && block1.bottom + dy < dateTF.geometricBounds[1] + MARGIN_BOTTOM) dy = dateTF.geometricBounds[1] + MARGIN_BOTTOM - block1.bottom;
+    if (Math.abs(dy) > 1) {
+        unlock(tf);
+        tf.translate(0, dy);
+        for (i = 0; i < rules.length; i++) { unlock(rules[i].path); rules[i].path.translate(0, dy); }
+        L("  moved the heading " + (dy > 0 ? "up " : "down ") + Math.round(Math.abs(dy)) + "pt to keep it centered");
+    }
+    var shown = linesPerParagraph(tf);
+    for (i = 0; i < n; i++) if (shown[i] == 0) P("the " + roles[i] + " is pushed out of the heading box; shorten the heading or fix it by hand");
+    if (headerTF && block1.top + dy > headerTF.geometricBounds[3] - 4) P("the heading runs into the header bar; check the spacing");
+    if (dateTF && block1.bottom + dy < dateTF.geometricBounds[1] + 4) P("the heading runs into the date; check the spacing");
+}
+
 function updateText(doc, job, D, ab) {
     var abW = ab[2] - ab[0], abH = ab[1] - ab[3], midX = ab[0] + abW / 2, maxW = abW * 0.47;
     var dateRe = new RegExp("^(" + MONTHS + ")\\s+\\d{1,2},\\s*\\d{4}$", "i");
-    var seriesRe = /([A-Za-z]+[\s ]+Series[\s ]*\d+)/i;
     var titledRe = /^(The\s+)?(Rev\.|Reverend|Dr\.|Pastor|Rabbi|Minister|Elder|Chaplain)\s/i;
-    var seriesTF = null, dateTF = null, preacherTF = null, others = [], tzFrames = [];
+    var dateTF = null, preacherTF = null, headerTF = null, frames = [], others = [], tzFrames = [];
     for (var i = 0; i < doc.textFrames.length; i++) {
         var tf = doc.textFrames[i];
         if (isHidden(tf)) continue;                      // e.g. the hidden JUNETEENTH frame
         var t = strip(tf.contents);
         if (t == "") continue;
+        frames.push(tf);
         if (/\b(PDT|PST)\b/i.test(t)) tzFrames.push(tf);
-        if (!seriesTF && seriesRe.test(t)) seriesTF = tf;
-        else if (!dateTF && dateRe.test(t)) dateTF = tf;
+        if (!dateTF && dateRe.test(t)) dateTF = tf;
         else if (!preacherTF && titledRe.test(t) && t.indexOf("\r") < 0) preacherTF = tf;
+        else if (!headerTF && /^(Sunday|Sermon)$/i.test(t)) headerTF = tf;
         else others.push(tf);
     }
 
@@ -423,54 +626,9 @@ function updateText(doc, job, D, ab) {
         if (nz) L("  time zone: " + nz + " time" + (nz == 1 ? "" : "s") + " -> " + D.timeZone);
     }
 
-    if (!seriesTF) { P("series line not found"); return; }
-    var lines = splitLines(seriesTF.contents), si = 0;
-    while (si < lines.length && !seriesRe.test(lines[si].text)) si++;
-    var oldSeries = lines[si].text.match(seriesRe)[1], seriesAt = lines[si].start + lines[si].text.indexOf(oldSeries);
-
-    // the rules beside the series line only need to move when the series text changes width
-    var sBefore = null, sRules = [];
-    if (oldSeries != D.series && si == 0) {
-        sBefore = textExtent(seriesTF, true);
-        if (sBefore) sRules = rulesBeside(doc, sBefore);
-    }
-
-    if (lines.length - si >= 3) {
-        // series / series name / title all in one frame. Edit from the end so earlier offsets stay put.
-        // A title that was split over several lines is replaced as a whole.
-        var before = linesPerParagraph(seriesTF);
-        var t0 = span(lines[si + 2]), t1 = span(lines[lines.length - 1]), nm = span(lines[si + 1]);
-        var oTitle = seriesTF.contents.substring(t0.start, t1.start + t1.len);
-        replaceAt(seriesTF, t0.start, t1.start + t1.len - t0.start, D.title);
-        L("  title: " + oTitle.replace(/[\r\n\u0003]/g, " / ") + " -> " + D.title);
-        var nameChanged = nm.text != D.seriesName;
-        if (nameChanged) { replaceAt(seriesTF, nm.start, nm.len, D.seriesName); L("  series name: " + nm.text + " -> " + D.seriesName); }
-        replaceAt(seriesTF, seriesAt, oldSeries.length, D.series); L("  series: " + oldSeries + " -> " + D.series);
-        // fit top to bottom, since a line that wraps pushes the ones below it out of the box
-        var ns = splitLines(seriesTF.contents), s0 = span(ns[si]), n1 = span(ns[si + 1]), last = span(ns[ns.length - 1]);
-        if (oldSeries != D.series) fitArea(seriesTF, s0.start, s0.len, "series line", before);
-        if (nameChanged) fitArea(seriesTF, n1.start, n1.len, "series name", before);
-        fitArea(seriesTF, last.start, last.len, "title", before);
-        if (sRules.length) {
-            var sAfter = textExtent(seriesTF, true);
-            if (sAfter) moveRules(sRules, sBefore, fitBetweenRules(seriesTF, s0.start, s0.len, "series line", sRules, sBefore, sAfter), "series line");
-        }
-        return;
-    }
-    replaceAt(seriesTF, seriesAt, oldSeries.length, D.series); L("  series: " + oldSeries + " -> " + D.series);
-    fitWidth(seriesTF, maxW);
-    if (sRules.length) moveRules(sRules, sBefore, textExtent(seriesTF, true), "series line");
-    // otherwise: the title text sits in its own frame between the series line and the date line
-    if (!dateTF) return;
-    var top2 = seriesTF.geometricBounds[3], bottom = dateTF.geometricBounds[1], block = [];
-    for (var k = 0; k < others.length; k++) {
-        var cy = center(others[k].geometricBounds)[1];
-        if (cy < top2 && cy > bottom) block.push(others[k]);
-    }
-    block.sort(function (x, y) { return y.geometricBounds[1] - x.geometricBounds[1]; });
-    if (!block.length) { P("title text not found"); return; }
-    var lf = block[block.length - 1], ll = splitLines(lf.contents), ot = span(ll[ll.length - 1]);
-    replaceAt(lf, ot.start, ot.len, D.title); fitWidth(lf, maxW); L("  title: " + ot.text + " -> " + D.title);
+    var heading = findHeading(frames, dateTF, midX);
+    if (heading) updateHeading(doc, heading, D, maxW, headerTF, dateTF);
+    else P("the heading above the date wasn't found");
 }
 
 // ---------- main ----------
@@ -547,8 +705,9 @@ function UpdateWeek() {
     }
     if (!todo.length) return "nothing to do";
 
-    L("UpdateWeek: " + D.series + " / " + D.seriesName + " / " + D.title + " / " + D.dateText + " / " +
-      D.preacher + " / " + D.panelColor + (D.timeZone ? " / " + D.timeZone : ""));
+    var summary = headingOf(D).concat([D.dateText, D.preacher, D.panelColor, D.timeZone]), shown = [];
+    for (var sI = 0; sI < summary.length; sI++) if (summary[sI]) shown.push(summary[sI]);
+    L("UpdateWeek: " + shown.join(" / "));
     L("data: " + dataFile.fsName);
     L("photo: " + image);
     var outDir = new Folder(out); if (!outDir.exists) outDir.create();

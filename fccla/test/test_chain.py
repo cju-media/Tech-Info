@@ -2,7 +2,7 @@
 """Two made-up weeks chained onto the script's own 9-27 output, to cover what 9-27 alone doesn't:
 
   week A (10-4-26): template = test_9_27.py's output (clipped, embedded photo), a landscape photo,
-                    a very long title, a new series name and number, a preacher without "Rev.",
+                    a title long enough to be split over two lines, a new series name and number, a preacher without "Rev.",
                     PST, and a photo nudge the photo can't allow.
   week B (10-11-26): template = week A's output. A short title must come back at full size, the
                     preacher is found by position, and a large nudge gets limited.
@@ -25,9 +25,9 @@ WEEKS = [
         "title": "The Heavens Declare the Glory of God and the Firmament Proclaims",
         "preacher": "Sarah Fuhrmeister", "panelColor": "#853320", "photoShiftY": "40",
         "cover": "9.20.26_OW_Draft.pdf", "from": (BASE, "9-27-26")}, [
-        "(kept last week's mask)", ("time zone: 2 times -> PST", 1), "series name: Painting the Stars -> Stories of Light",
-        "moved 2 rules beside the series line", ("preacher: Rev. Laura Vail Fregin -> Sarah Fuhrmeister", 1),
-        "!! photo shift limited to 0,0", "!! the title had to shrink"]),
+        "(kept last week's mask)", ("time zone: 2 times -> PST", 1), "heading line 2: Painting the Stars -> Stories of Light",
+        "moved 2 rules beside the first heading line", ("preacher: Rev. Laura Vail Fregin -> Sarah Fuhrmeister", 1),
+        "!! photo shift limited to 0,0", "split the title over two lines"]),
     ("10-11-26", "October 11, 2026", {
         "series": "Advent Series 2", "seriesName": "Stories of Light", "title": "Hope",
         "preacher": "Rev. Michael Lehman", "panelColor": "#05293D", "photoShiftY": "5000",
@@ -67,8 +67,8 @@ def main():
         for e, times in expect:
             if log.count(e) != times:
                 failures.append("%s: log should say '%s' %d time(s), not %d" % (week, e, times, log.count(e)))
-        if week == "10-11-26" and "shrank the title" in log:
-            failures.append("10-11-26: the short title should be back at full size")
+        if week == "10-11-26" and ("shrank" in log.replace("shrank the first heading line", "") or "split" in log):
+            failures.append("10-11-26: the short title should be back on one line at full size")
         allowed = [e for e, _ in expect if e.startswith("!!")]
         for line in log.splitlines():
             if line.startswith("  !! ") and not any(a[3:] in line for a in allowed):

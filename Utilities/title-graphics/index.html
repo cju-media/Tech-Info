@@ -158,7 +158,7 @@
             show(busy ? 'Studio Mini is building the options…' : 'Nothing built yet. Upload the OW on the upload dashboard.');
             return;
         }
-        sub.textContent = [build.dateText, build.series, build.seriesName, build.title, build.preacher].filter(Boolean).join(' · ');
+        sub.textContent = [build.dateText].concat(build.heading || [build.series, build.seriesName, build.title], [build.preacher]).filter(Boolean).join(' · ');
 
         const lines = [];
         if (busy || waitingSince !== null) lines.push('Studio Mini is working on it… this page updates by itself.');

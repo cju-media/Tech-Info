@@ -74,7 +74,7 @@ class WhoMade(unittest.TestCase):
         self.assertEqual(ab.who_made(self.dir), "edited")
 
 
-PARSED = {"series": "Fall Series 4", "seriesName": "Painting the Stars", "title": "An Anticipatory Universe",
+PARSED = {"heading": "Fall Series 4 | Painting the Stars | An Anticipatory Universe",
           "dateText": "September 27, 2026", "preacher": "Rev. Laura Vail Fregin"}
 PDF_TEXT = "Fall Series 4\nPainting the Stars ~ An Anticipatory Universe\n27 September 2026\n" \
            "Sermon   An Anticipatory Universe   Rev. Laura Vail Fregin"
@@ -82,7 +82,7 @@ PDF_TEXT = "Fall Series 4\nPainting the Stars ~ An Anticipatory Universe\n27 Sep
 
 class MergeFields(unittest.TestCase):
     def test_agreement_keeps_the_pdf_text(self):
-        gem = dict(PARSED, title="An anticipatory universe", seriesName="Painting  the Stars")
+        gem = dict(PARSED, heading="Fall Series 4 |  Painting  the Stars | An anticipatory universe")
         merged, notes = ab.merge_fields(PARSED, gem, PDF_TEXT)
         self.assertEqual(merged, PARSED)
         self.assertEqual(notes, [])
@@ -96,14 +96,14 @@ class MergeFields(unittest.TestCase):
         self.assertEqual(len(notes), 1)
 
     def test_gemini_wins_with_real_pdf_text(self):
-        parsed = dict(PARSED, title="An Anticipatory Universe 27 September 2026")
+        parsed = dict(PARSED, heading="Fall Series 4 Painting the Stars | An Anticipatory Universe")
         merged, notes = ab.merge_fields(parsed, PARSED, PDF_TEXT)
-        self.assertEqual(merged["title"], "An Anticipatory Universe")
+        self.assertEqual(merged["heading"], PARSED["heading"])
         self.assertIn("used Gemini's", notes[0])
 
     def test_invented_text_loses(self):
-        merged, notes = ab.merge_fields(PARSED, dict(PARSED, title="An Expectant Cosmos"), PDF_TEXT)
-        self.assertEqual(merged["title"], "An Anticipatory Universe")
+        merged, notes = ab.merge_fields(PARSED, dict(PARSED, heading="Fall Series 4 | An Expectant Cosmos"), PDF_TEXT)
+        self.assertEqual(merged["heading"], PARSED["heading"])
         self.assertIn("used the PDF's", notes[0])
 
     def test_dates_compare_as_dates(self):
@@ -114,9 +114,8 @@ class MergeFields(unittest.TestCase):
         self.assertEqual(notes, [])
         merged, notes = ab.merge_fields(dict(PARSED, dateText=""), dict(PARSED, dateText="27 September 2026"), PDF_TEXT)
         self.assertEqual(merged["dateText"], "September 27, 2026")
-        merged, notes = ab.merge_fields(PARSED, dict(PARSED, dateText="September 20, 2026"), PDF_TEXT)
-        self.assertEqual(merged["dateText"], "September 27, 2026")
-        self.assertEqual(len(notes), 1)
+        merged, notes = ab.merge_fields(dict(PARSED, dateText=""), dict(PARSED, dateText="September 28th, 2025"), PDF_TEXT)
+        self.assertEqual(merged["dateText"], "September 28, 2025")
 
 
 class BuildMessage(unittest.TestCase):

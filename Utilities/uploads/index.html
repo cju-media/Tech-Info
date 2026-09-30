@@ -711,7 +711,7 @@
         const lines = [];
         if (busy) lines.push('Studio Mini is working on them now…');
         if (build) {
-            lines.push(`${build.dateText}: ${build.title} (${build.series}).`);
+            lines.push(`${build.dateText}: ${(build.heading || [build.title]).join(' / ')}.`);
             lines.push(build.pick ? `In use: ${build.pick.hex}. ${build.pick.drive === 'sent' ? 'Sent to Drive.' : build.pick.drive === 'waiting' ? 'Waiting to go to Drive.' : 'Not sent to Drive.'}`
                                   : `${(build.options || []).length} colors ready to pick.`);
         }

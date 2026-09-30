@@ -52,10 +52,11 @@ TITLE_PREFIX_RE = r"(?:The\s+)?(?:Rev\.|Reverend|Dr\.|Pastor|Rabbi|Minister|Elde
 # Photo frame on the left of the 1920x1080 graphic, in points (= pixels at 100%).
 FRAME_W, FRAME_H = 934, 1080
 
-REQUIRED_KEYS = ["root", "series", "seriesName", "title", "dateText", "preacher", "panelColor",
+REQUIRED_KEYS = ["root", "heading", "dateText", "preacher", "panelColor",
                  "imagePath", "outputFolder", "serviceTemplate", "serviceFolder", "serviceName",
                  "sermonTemplate", "sermonFolder", "sermonName"]
 OPTIONAL_KEYS = ["timeZone", "photoShiftX", "photoShiftY"]
+LEGACY_KEYS = ["series", "seriesName", "title"]          # the heading as three fields, before "heading"
 
 
 # ---------------------------------------------------------------- PDF text
@@ -75,6 +76,31 @@ def parse_week_name(name):
         return None
 
 
+# "27 September 2026", "September 27, 2026", "September 28th, 2025" (2025's OWs)
+DAY = r"\d{1,2}(?:st|nd|rd|th)?"
+DATE_LINE_RE = re.compile(r"\b(%s\s+(%s)\s+\d{4}|(%s)\s+%s,?\s+\d{4})\b" % (DAY, MONTH_RE, MONTH_RE, DAY), re.I)
+def split_heading(lines):
+    """Page 1's lines above the date -> the heading lines, in order, with a "Name ~ Title" line
+    counted as two. The layouts seen so far:
+        Fall Series 4 / Painting the Stars ~ An Anticipatory Universe
+        Pentecost 11 / Another Kind of Freedom ~ Healing Division
+        Lent 4 / The Only Thing More Powerful Than Hate is Love / Edge Walking
+        Another Kind of Freedom / The God Who Sees Us
+        Fulfilling The Dream For Freedom
+        Life from Death / Two Ways / Eastertide 1                          (2025)"""
+    return [p.strip() for l in lines for p in l.split("~") if p.strip()]
+
+
+def heading_of(fields):
+    """The heading lines of a week: "heading", or the older series / seriesName / title fields."""
+    h = fields.get("heading")
+    if isinstance(h, str):
+        h = [p.strip() for p in h.split("|")]
+    if h is None:
+        h = [fields.get(k, "") for k in ("series", "seriesName", "title")]
+    return [p.strip() for p in h if p and p.strip()]
+
+
 def parse_pdf(pdf):
     """Returns (fields, warnings). Fields hold the raw values the graphics need."""
     reader = PdfReader(pdf)
@@ -83,31 +109,21 @@ def parse_pdf(pdf):
     lines = [l for l in lines if l]
     f, warn = {}, []
 
-    for l in lines:
-        m = re.search(r"\b([A-Z][A-Za-z]+\s+Series\s+\d+)\b", l)
-        if m:
-            f["series"] = m.group(1)
-            break
-    else:
-        warn.append("no '<Season> Series <N>' line on page 1")
-
-    for l in lines:
-        if "~" in l:
-            name, _, title = l.partition("~")
-            f["seriesName"], f["title"] = name.strip(), title.strip()
-            # the series line sometimes shares the text line with the name
-            if f.get("series") and f["seriesName"].startswith(f["series"]):
-                f["seriesName"] = f["seriesName"][len(f["series"]):].strip()
-            break
-    else:
-        warn.append("no 'Series Name ~ Sermon Title' line on page 1")
+    date_at = next((i for i, l in enumerate(lines) if DATE_LINE_RE.search(l)), None)
+    heading = lines[:date_at] if date_at is not None else []
+    f["heading"] = split_heading(heading)
+    f["title"] = f["heading"][-1] if f["heading"] else ""
+    if not f["heading"]:
+        warn.append("no heading lines above the date on page 1")
+    elif len(f["heading"]) > 4:
+        warn.append("page 1 has %d heading lines; the graphic has room for about four" % len(f["heading"]))
 
     text1 = " ".join(lines)
-    m = re.search(r"\b(\d{1,2})\s+(%s)\s+(\d{4})\b" % MONTH_RE, text1, re.I)
+    m = re.search(r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(%s)\s+(\d{4})\b" % MONTH_RE, text1, re.I)
     if m:
         day, mon, year = int(m.group(1)), m.group(2).capitalize(), int(m.group(3))
     else:
-        m = re.search(r"\b(%s)\s+(\d{1,2}),?\s+(\d{4})\b" % MONTH_RE, text1, re.I)
+        m = re.search(r"\b(%s)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b" % MONTH_RE, text1, re.I)
         if m:
             mon, day, year = m.group(1).capitalize(), int(m.group(2)), int(m.group(3))
     if m:
@@ -116,16 +132,29 @@ def parse_pdf(pdf):
     else:
         warn.append("no date like '27 September 2026' on page 1")
 
-    # "Sermon   <title>   Rev. Laura Vail Fregin" in the order of service
-    for page in reader.pages[1:]:
-        t = page.extract_text()
-        m = re.search(r"\bSermon\s{2,}(.+?)\s{2,}(%s\s*[^\n]+?)(?=\s{2,}|\n|$)" % TITLE_PREFIX_RE, t)
-        if m:
-            f["preacher"] = re.sub(r"\s+", " ", m.group(2)).strip()
-            row_title = re.sub(r"\s+", " ", m.group(1)).strip()
-            if f.get("title") and row_title.lower() != f["title"].lower():
-                warn.append("sermon row title '%s' differs from page-1 title '%s'" % (row_title, f["title"]))
+    # The sermon row of the order of service: "Sermon   <title>   Rev. Laura Vail Fregin". Some weeks it's
+    # a Reflection or Homily instead, has no title ("Sermon   Rev. Michael Lehman"), or names two people.
+    # Read with the page layout kept, so a row ends at its line; a real Sermon row wins over a Reflection
+    # (and a "Musical Reflection" is music, not the sermon).
+    pages = [p.extract_text(extraction_mode="layout") for p in reader.pages[1:]]
+    row = None
+    for kind in ("Sermon", "Reflection", "Homily"):
+        for t in pages:
+            row = re.search(r"(?m)^\s*(?<!Musical )%s\s{2,}(?:(.+?)\s{2,})?(%s[^\n]*?)\s*$" % (kind, TITLE_PREFIX_RE), t)
+            if row:
+                break
+        if row:
             break
+    if not row:                                   # the plain-text search this started with
+        for page in reader.pages[1:]:
+            row = re.search(r"\bSermon\s{2,}(.+?)\s{2,}(%s\s*[^\n]+?)(?=\s{2,}|\n|$)" % TITLE_PREFIX_RE, page.extract_text())
+            if row:
+                break
+    if row:
+        f["preacher"] = re.sub(r"\s+", " ", row.group(2)).strip()
+        row_title = re.sub(r"\s+", " ", row.group(1) or "").strip()
+        if row_title and f.get("title") and row_title.lower() != f["title"].lower():
+            warn.append("sermon row title '%s' differs from page-1 title '%s'" % (row_title, f["title"]))
     else:
         warn.append("no 'Sermon  <title>  Rev. <name>' row found; set preacher by hand")
     return f, warn
@@ -277,8 +306,7 @@ def color_preview(img, picks, fields, path):
     sheet = Image.new("RGB", (len(picks) * (W + pad) + pad, H + 70), "white")
     photo = cover_crop(img, W * FRAME_W // 1920, H)
     d = ImageDraw.Draw(sheet)
-    lines = [(fields.get("series", ""), 15), (fields.get("seriesName", ""), 17),
-             (fields.get("title", ""), 17), (fields.get("dateText", "").upper(), 11)]
+    lines = [(t, 17) for t in heading_of(fields)] + [(fields.get("dateText", "").upper(), 11)]
     for i, (_, hexc) in enumerate(picks):
         x0 = pad + i * (W + pad)
         sheet.paste(photo, (x0, pad))
@@ -362,9 +390,7 @@ def build_data(root, out_root, f, color, week, svc, ser, image_rel, pdf, output_
                            tzinfo=zoneinfo.ZoneInfo("America/Los_Angeles")).tzname()
     rows = [
         ("root", tilde(root)),
-        ("series", f.get("series", "")),
-        ("seriesName", f.get("seriesName", "")),
-        ("title", f.get("title", "")),
+        ("heading", " | ".join(heading_of(f))),
         ("dateText", f.get("dateText", "")),
         ("preacher", f.get("preacher", "")),
         ("panelColor", color or "CHOOSE"),
@@ -409,10 +435,10 @@ def check(path):
         return ["%s does not exist" % path]
     d, bad = read_data(path), []
     for k in REQUIRED_KEYS:
-        if not d.get(k):
+        if not d.get(k) and not (k == "heading" and heading_of(d)):
             bad.append("missing %s" % k)
     for k in d:
-        if k not in REQUIRED_KEYS + OPTIONAL_KEYS:
+        if k not in REQUIRED_KEYS + OPTIONAL_KEYS + LEGACY_KEYS:
             bad.append("unknown key %s (typo?)" % k)
     if bad:
         return bad
@@ -434,10 +460,8 @@ def check(path):
                 bad.append("%s %r should end with %s" % (k, d[k], week))
         if os.path.basename(d["outputFolder"].rstrip("/")) != week:
             bad.append("outputFolder %r should be the %s week folder" % (d["outputFolder"], week))
-    if not re.fullmatch(r"[A-Z][A-Za-z]+ Series \d+", d["series"]):
-        bad.append("series should look like 'Fall Series 4', got %r" % d["series"])
-    if "~" in d["seriesName"] or "~" in d["title"]:
-        bad.append("seriesName/title still contain '~' (split the page-1 line on it)")
+    if any("~" in h for h in heading_of(d)):
+        bad.append("heading still contains '~' (a 'Name ~ Title' line is two heading lines)")
     if d.get("timeZone", "PDT") not in ("PDT", "PST"):
         bad.append("timeZone must be PDT or PST")
     for k in ("photoShiftX", "photoShiftY"):
@@ -474,6 +498,7 @@ def prepare(pdf, root=DEFAULT_ROOT, out_root=None, data_path=DEFAULT_DATA, color
     for kv in sets:
         k, _, v = kv.partition("=")
         f[k.strip()] = v.strip()
+    f["heading"] = heading_of(f)
     f["date"] = parse_date_text(f.get("dateText"))
     if not f["date"]:
         raise PrepareError("couldn't read the service date; pass --set dateText='September 27, 2026'")

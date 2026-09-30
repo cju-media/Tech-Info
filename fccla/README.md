@@ -3,7 +3,8 @@
 Builds the week's two 1920×1080 title graphics from the Order of Worship PDF by updating last
 week's Illustrator files:
 
-- **Service Title**: header "Sunday", series / series name / sermon title, date, service times.
+- **Service Title**: header "Sunday", the heading (page 1's lines above the date: series, series
+  name, sermon title, however that week has them), the date, service times.
 - **Sermon Title**: header "Sermon", same block, the preacher instead of the times.
 
 | File | What it is |
@@ -99,17 +100,23 @@ checklist: the folder, Illustrator installed and answering, Gemini, `brctl`. Not
   the photo sits above the panel and a wide photo would otherwise cover it, then embeds it so
   the `.ai` has no links to break. To reposition it, double-click into the clipping group, or
   set `photoShiftY` (points, + is up) and rerun.
-- **Text:** edits only the changed characters, so each line keeps its formatting: the series
-  line, series name and title (one area-text frame), the date, the preacher (sermon graphic),
+- **Text:** edits only the changed characters, so each line keeps its formatting: the heading
+  (one area-text frame), the date, the preacher (sermon graphic),
   and "pdt"/"pst" after the service times.
-- **Long and short lines.** A changed line in the series/name/title box that would wrap is
-  shrunk until it fits on one line again, top to bottom, so a long series name can't push the
-  title out of the box. It's flagged below 75%. A long date or preacher is shrunk to fit the
-  panel. Each shrink is noted on the frame and undone the next week, so a short line comes back
-  at full size.
-- **The rules beside the series line and the date** keep last week's gap: they grow when the
-  text gets shorter and shrink when it gets longer, and their outer ends never move. If a longer
-  series line would leave them under 60pt, the series line is shrunk instead so they stay 60pt.
+- **The heading** is page 1's lines above the date, one to four of them (`heading = Fall Series 4 |
+  Painting the Stars | An Anticipatory Universe`; Lent, Pentecost, name-and-title and title-only
+  weeks all work). Last week's heading is found by position, so any of those can follow any other:
+  lines are added above the title or removed below the first line, each keeping a line's style.
+  When the number of lines changes, the block is centered on the design's own center (recorded in
+  the frame's note) and kept at least 34pt under the header bar and 60pt above the date.
+- **Long lines.** A line too long for the panel is split in two at its middle (as done by hand for
+  "Fulfilling The Dream / For Freedom"), a heading too tall for its space is shrunk evenly, line
+  spacing included, and anything below 75% is flagged. Every shrink is noted on the frame and
+  undone the next week, so a short heading comes back at full size. A long date or preacher is
+  shrunk to fit the panel.
+- **The rules beside the first line and the date** keep last week's gap: they grow when the text
+  gets shorter and shrink when it gets longer, and their outer ends never move. If a longer first
+  line would leave them under 60pt, it's split or shrunk instead so they stay 60pt.
 - **Panel:** recolors the big rectangle on the right (and anything else in exactly its color).
 - **Saves** `<name>.ai` (PDF-compatible) and `<name>.jpg` (artboard, 100%), plus `log.txt` and
   a copy of `week-data.txt` in the week folder.
@@ -144,13 +151,18 @@ nudged by hand.
 
 ```bash
 python3 fccla/test/test_chain.py
+python3 fccla/test/test_formats.py
 ```
 
-Chains two made-up weeks onto that output: a landscape photo, a very long title, a new series,
+Chains two made-up weeks onto that output: a landscape photo, a title long enough to split, a new series,
 a preacher without "Rev.", PST, and out-of-range photo nudges. Then a short title the following
-week. Run it after changing `UpdateWeek.jsx`.
+week. `test_formats.py` chains real OWs through every heading shape (3, 2, 1, 3, 4 and back to 3
+lines) and writes a review sheet, `fccla/test/out/formats/formats.jpg`. Run both after changing
+`UpdateWeek.jsx`. `python3 -m unittest fccla/test/test_prepare_week.py` checks the PDF reading
+against real OWs of each layout.
 
 Illustrator scripting notes learned the hard way (the script's comments cover the rest): the
-script is ES3 (no `let`, `JSON`, `trim`, or `Array.indexOf`); `move()` returns nothing;
+script is ES3 (no `let`, `JSON`, `trim`, or `Array.indexOf`); ExtendScript misparses nested
+`a ? b : c ? d : e` (use if/else); the heading's leading is fixed, so shrink it with the type; `move()` returns nothing;
 Illustrator keeps globals between script runs; and from AppleScript, pass the JavaScript as
 text to `do javascript`, because a file alias stops at a dialog.

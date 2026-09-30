@@ -71,16 +71,29 @@ Open the PDF and compare. The helper is usually right, but you are the check.
 
 | Field | Where in the PDF | Example | Rule |
 | --- | --- | --- | --- |
-| `series` | page 1, the line `<Season> Series <N>` | `Fall Series 4` | As written. |
-| `seriesName` | page 1, the line with `~`, **before** the `~` | `Painting the Stars` | Trim spaces. |
-| `title` | page 1, the line with `~`, **after** the `~` | `An Anticipatory Universe` | Trim spaces. Keep the PDF's capitalization and punctuation (curly apostrophes included). |
-| `dateText` | page 1, e.g. `27 September 2026` | `September 27, 2026` | Rewrite as `Month D, YYYY`: full month name, no leading zero, comma. It must be a Sunday. |
-| `preacher` | the **Sermon** row of the order of service: `Sermon   <title>   Rev. Laura Vail Fregin` | `Rev. Laura Vail Fregin` | The name at the end of that row, with its title (Rev., Dr., ...). Only the sermon graphic uses it, but it is always required. |
+| `heading` | page 1, **every line above the date**, in order | `Fall Series 4 \| Painting the Stars \| An Anticipatory Universe` | Lines joined with ` \| `. A line written `Name ~ Title` is two lines (split on the `~`). Copy each line exactly: capitalization, punctuation, curly apostrophes. |
+| `dateText` | page 1, e.g. `27 September 2026` or `September 28th, 2025` | `September 27, 2026` | Rewrite as `Month D, YYYY`: full month name, no leading zero, no "th", comma. It must be a Sunday. |
+| `preacher` | the **Sermon** row of the order of service: `Sermon   <title>   Rev. Laura Vail Fregin` | `Rev. Laura Vail Fregin` | The name at the end of that row, with its title (Rev., Dr., ...). No Sermon row? Use the Reflection or Homily row, never a *musical* reflection. Only the sermon graphic uses it, but it is always required. |
+
+The heading changes shape through the church year. All of these are right:
+
+| Page 1 above the date | `heading` |
+| --- | --- |
+| Fall Series 4 / Painting the Stars ~ An Anticipatory Universe | `Fall Series 4 \| Painting the Stars \| An Anticipatory Universe` |
+| Pentecost 11 / Another Kind of Freedom ~ Healing Division | `Pentecost 11 \| Another Kind of Freedom \| Healing Division` |
+| Lent 4 / The Only Thing More Powerful Than Hate is Love / Edge Walking | `Lent 4 \| The Only Thing More Powerful Than Hate is Love \| Edge Walking` |
+| Another Kind of Freedom / The God Who Sees Us | `Another Kind of Freedom \| The God Who Sees Us` |
+| Fulfilling The Dream For Freedom | `Fulfilling The Dream For Freedom` |
+
+The script lays out one to four lines. The first line gets the rules beside it, and a line too
+long for the panel is split in two or shrunk. Don't rewrite or shorten lines yourself.
 
 - Ignore the photo caption (e.g. "Andromeda Galaxy / NASA James Webb Space Telescope") and the
   church address.
-- The sermon row's title should match page 1. If it doesn't, ask which is right.
-- If a field is wrong, correct it with `--set` in step 4, e.g. `--set title="Imagining a Future"`.
+- The sermon row's title should match the last heading line. If it doesn't, say so. It happens
+  (MLK Sunday's page 1 differs from its sermon row), and page 1 wins unless the user says otherwise.
+- If a field is wrong, correct it with `--set` in step 4, e.g.
+  `--set heading="Lent 4 | The Only Thing More Powerful Than Hate is Love | Edge Walking"`.
 
 The other fields are computed; don't change them unless the user asks:
 
@@ -143,9 +156,7 @@ No quotes around values.
 ```
 # week-data.txt for UpdateWeek.jsx: week of 9-27-26, from 9.27.26_OW_Draft.pdf
 root            = ~/Library/Mobile Documents/com~apple~CloudDocs/FCCLA/Worship and Sermon Series
-series          = Fall Series 4
-seriesName      = Painting the Stars
-title           = An Anticipatory Universe
+heading         = Fall Series 4 | Painting the Stars | An Anticipatory Universe
 dateText        = September 27, 2026
 preacher        = Rev. Laura Vail Fregin
 panelColor      = #325673
@@ -163,13 +174,14 @@ sermonName      = Sermon Title_9-27-26
 ```
 
 Required: every key above except `timeZone`, `photoShiftX`, `photoShiftY`. `panelColor` is
-`#` plus six hex digits. Unknown keys are rejected, so check spelling.
+`#` plus six hex digits. Unknown keys are rejected, so check spelling. (Older files have
+`series`, `seriesName` and `title` instead of `heading`; those still work, but write `heading`.)
 
 ## If the user reports a problem after running the script
 
 - `log.txt` lists what the script found and changed; lines with `!!` are problems.
-- "the title had to shrink": the title is long. Suggest a shorter wording, or they can split it
-  by hand in Illustrator.
+- "had to shrink", "split … over two lines", "shrank the whole heading": a long heading. The script
+  fits it on its own; below 75% it asks for a look. A shorter wording is the fix if it looks too small.
 - "photo shift limited": the photo has no room to move that way; use a smaller value.
 - "template not found": check the week folders (maybe last week was moved or named oddly) and
   fix the template path in `week-data.txt`.
