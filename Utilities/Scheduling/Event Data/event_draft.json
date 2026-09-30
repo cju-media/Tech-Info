@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-29T16:08:49+00:00",
+  "generated": "2026-09-30T16:07:36+00:00",
   "window": {
-    "start": "2026-09-29",
-    "end": "2026-12-30"
+    "start": "2026-09-30",
+    "end": "2026-12-31"
   },
   "columns": [
     "Date",
@@ -73,23 +73,6 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Wedding Ceremony",
-        "Sanctuary/Forecourt",
-        "TBD",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 12/13/2026",
         "Resonance Collective Concert",
         "Shatto",
         "4:00pm-10:00pm",
@@ -97,7 +80,7 @@
         "1",
         "",
         "",
-        "4:00pm Load in\n7:00pm Concert\n8:30pm Reception\n10:00pm Off campus",
+        "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
         "",
         ""
       ],
@@ -123,23 +106,6 @@
     {
       "kind": "event",
       "cells": [
-        "SA 12/12/2026",
-        "Wedding Ceremony",
-        "Sanctuary/Forecourt",
-        "TBD",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
-    },
-    {
-      "kind": "event",
-      "cells": [
         "SU 12/6/2026",
         "HoLAdays Synesthesia Sinfonietta Concert",
         "Sanctuary/Stuart Hall/Forecourt",
@@ -148,7 +114,7 @@
         "2",
         "",
         "",
-        "2:00pm Load-in\n6:30pm Doors\n7:00pm Concert\n10:00pm Off campus",
+        "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
         "",
         ""
       ],
@@ -174,23 +140,6 @@
     {
       "kind": "event",
       "cells": [
-        "SA 12/5/2026",
-        "Wedding Ceremony",
-        "Sanctuary/Forecourt",
-        "3:00pm-11:00pm",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Elizabeth Bernal & Izett Barnett"
-    },
-    {
-      "kind": "event",
-      "cells": [
         "FR 12/4/2026",
         "\"Yamandu Costa\" Concert",
         "Sanctuary",
@@ -199,7 +148,7 @@
         "1",
         "",
         "",
-        "5:30pm Load-in\n7:30pm Concert\n9:30pm Off campus",
+        "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
         "",
         ""
       ],
@@ -259,19 +208,19 @@
     {
       "kind": "event",
       "cells": [
-        "SA 11/21/2026",
-        "Wedding Ceremony",
-        "Sanctuary/Forecourt/Stuart Hall",
-        "TBD",
-        "Wedding",
+        "MO 11/16/2026",
+        "Boy Meets World Podcast",
+        "Sanctuary",
+        "5:00pm-9:00pm",
+        "Talk",
         "1",
         "",
         "",
+        "5:00pm Set-up\n5:30pm Artist arrives\n6:15pm Doors\n7:00-8:30 Show\n9:00pm Off Campus",
         "",
-        "",
-        "Weddings"
+        ""
       ],
-      "note": "from calendar: Ceremony: Sofia Uribe & Robin Aimaq"
+      "note": "from calendar: Book Soup: Boy Meets World Podcast"
     },
     {
       "kind": "event",
@@ -313,21 +262,55 @@
         "TH 11/5/2026",
         "Screening, Q&A, Reception",
         "Shatto",
-        "7:00pm",
+        "7:00pm-9:00pm",
         "Screening",
         "1",
         "",
         "",
-        "7:00pm start",
+        "TBD\n7:00pm start",
         "",
         ""
       ],
       "note": "from calendar: Screening, Q&A, Reception"
+    },
+    {
+      "kind": "divider",
+      "cells": [
+        "OCTOBER",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 10/11/2026",
+        "Labyrinth",
+        "Shatto",
+        "12:45pm-1:45pm",
+        "Special Event",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": "from calendar: Labyrinth"
     }
   ],
   "counts": {
-    "events": 16,
+    "events": 14,
     "worship": 8,
-    "from_calendar": 8
+    "from_calendar": 6
   }
 }
