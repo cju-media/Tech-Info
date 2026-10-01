@@ -13,10 +13,6 @@
   ],
   "card_events": [
     {
-      "name": "Book Soup: Devon Rodriguez presents \"Work in Progress: A Memoir\"",
-      "start": "2026-09-30T19:00:00-07:00"
-    },
-    {
       "name": "Min Jin Lee discusses \"American Hagwon\"",
       "start": "2026-10-13T19:00:00-07:00"
     },
@@ -45,7 +41,7 @@
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "d6d1a94263d6266376166d3a88f7592512f88399822d8880ebdaadbcb27088cf",
+  "card_fingerprint": "2577db98ff3b849bf654778a416960ddb544186e8aeeb24010b2458c248d71b2",
   "classified": {
     "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"|2026-11-16T19:00:00-08:00": {
       "category": "AUTHOR TALK",
@@ -268,6 +264,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "f861d95e384da03edac0e247e4362047d93c1c66d04e369606b358c3ca2bcbf2",
-  "updated_at": "2026-09-27T19:47:29-07:00"
+  "page_fingerprint": "4c692333b7f13f353a9bebd735cc4b0e3932d7efc80c90a86d1109bb66fa0c97",
+  "updated_at": "2026-09-30T19:47:21-07:00"
 }

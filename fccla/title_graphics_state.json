@@ -1,0 +1,72 @@
+{
+  "build": {
+    "id": "10-4-26_0930-1558",
+    "week": "10-4-26",
+    "dateText": "October 4, 2026",
+    "fields": {
+      "heading": [
+        "Fall Series 5",
+        "Painting the Stars",
+        "An Anticipatory Universe"
+      ],
+      "dateText": "October 4, 2026",
+      "preacher": "Rev. Laura Vail Fregin",
+      "title": "An Anticipatory Universe"
+    },
+    "ow": {
+      "name": "10.4.26_OW_Draft.pdf",
+      "sha": "8dbbb719e1420a793efb76a2bf8609db51b10c08"
+    },
+    "built_at": "2026-09-30T15:58:26-07:00",
+    "notes": [
+      "sermon row title 'We are Stories & Stardust' differs from page-1 title 'An Anticipatory Universe'"
+    ],
+    "options": [
+      {
+        "n": 1,
+        "hex": "#1C304B",
+        "label": "blue, 65% of the photo's color",
+        "problems": [],
+        "service": "fccla/status/10-4-26_0930-1558/1-service.jpg",
+        "sermon": "fccla/status/10-4-26_0930-1558/1-sermon.jpg"
+      },
+      {
+        "n": 2,
+        "hex": "#0D4035",
+        "label": "teal, 24% of the photo's color",
+        "problems": [],
+        "service": "fccla/status/10-4-26_0930-1558/2-service.jpg",
+        "sermon": "fccla/status/10-4-26_0930-1558/2-sermon.jpg"
+      },
+      {
+        "n": 3,
+        "hex": "#132135",
+        "label": "deeper blue",
+        "problems": [],
+        "service": "fccla/status/10-4-26_0930-1558/3-service.jpg",
+        "sermon": "fccla/status/10-4-26_0930-1558/3-sermon.jpg"
+      }
+    ],
+    "pick": {
+      "n": 1,
+      "hex": "#1C304B",
+      "label": "blue, 65% of the photo's color",
+      "at": "2026-09-30T16:01:13-07:00",
+      "drive": "sent"
+    },
+    "heading": [
+      "Fall Series 5",
+      "Painting the Stars",
+      "An Anticipatory Universe"
+    ],
+    "title": "An Anticipatory Universe",
+    "preacher": "Rev. Laura Vail Fregin",
+    "cover": "fccla/status/10-4-26_0930-1558/cover.jpg"
+  },
+  "last_run": {
+    "at": "2026-09-30T16:01:13-07:00",
+    "trigger": "pick",
+    "status": "picked",
+    "message": "Using #1C304B (blue) for Sunday, October 4. Saved to iCloud (10-4-26). Sent to Drive for the livestream (Worship Service + Sermon Series)."
+  }
+}

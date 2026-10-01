@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Title Graphics</title>
+    <!--
+      Picker for the week's Service Title / Sermon Title graphics. Studio Mini builds one version
+      per suggested panel color after an OW upload (title_graphics.yml, fccla/auto_build.py) and
+      texts a link here. "Use this one" sends title_graphics_pick, which copies that version into
+      the iCloud week folder and queues its JPGs for Drive and the livestream. "Use, don't send to
+      Drive" (client_payload.drive false) only copies it into iCloud, to be edited and then
+      uploaded on the upload dashboard, which replaces the thumbnails in Drive and on the livestream.
+    -->
+    <style>
+        :root { --accent: #3498db; --accent-dark: #2980b9; --ink: #2c3e50; --muted: #777; --line: #e5e7eb; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0; padding: 24px 16px 40px; background: #f4f4f9; color: #333;
+        }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: var(--ink); margin: 0 0 4px; font-size: 26px; }
+        .sub { margin: 0 0 16px; color: var(--muted); }
+        .banner { padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; background: #eef6fc; color: var(--ink); white-space: pre-line; }
+        .banner.error { background: #fdecea; color: #a93226; }
+        .banner.ok { background: #eafaf1; color: #1e7e46; }
+        .option { border: 2px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 16px; }
+        .option.picked { border-color: #2ecc71; }
+        .option header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        .dot { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex: none; }
+        .option code { color: var(--muted); }
+        .tag { margin-left: auto; font-size: 13px; background: #2ecc71; color: white; padding: 2px 8px; border-radius: 10px; }
+        .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .shots img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; background: #ddd; }
+        .problems { color: #a93226; font-size: 14px; margin: 8px 0 0; }
+        .btn { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .btn:hover { background: var(--accent-dark); }
+        .btn:disabled { background: #aab7c4; cursor: default; }
+        .btn.secondary { background: #7f8c8d; }
+        .btn.secondary:hover { background: #6c7a7b; }
+        .btn.secondary:disabled { background: #c3cbcf; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+        .actions .btn { margin-top: 0; }
+        details { margin-top: 8px; color: #555; }
+        summary { cursor: pointer; color: var(--accent-dark); }
+        .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+        .row .btn { margin-top: 0; }
+        input[type=text], input[type=password] { padding: 9px; font: inherit; border: 1px solid #ccc; border-radius: 6px; }
+        #hex { width: 110px; }
+        .pat { margin-top: 16px; padding: 12px; border: 1px dashed #ccc; border-radius: 8px; }
+        .foot { margin: 20px 0 0; font-size: 14px; }
+        .foot a { color: var(--accent-dark); }
+        @media (max-width: 560px) {
+            .container { padding: 16px; }
+            .shots { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<main class="container">
+    <h1>Title graphics</h1>
+    <p class="sub" id="sub">Loading&hellip;</p>
+    <div class="banner" id="banner" hidden></div>
+    <div id="options"></div>
+
+    <details id="more">
+        <summary>Another color, or replace hand edits</summary>
+        <div class="row">
+            <input type="text" id="hex" placeholder="#325673" maxlength="7" aria-label="Panel color">
+            <button type="button" class="btn secondary" id="custom">Build and use this color</button>
+            <button type="button" class="btn secondary" id="custom-hold">Build it, don't send to Drive</button>
+        </div>
+        <label><input type="checkbox" id="replace"> Replace graphics in iCloud that were made or edited by hand</label>
+    </details>
+
+    <div class="pat" id="pat-box" hidden>
+        <p style="margin-top:0">Picking needs a GitHub token (the same one the upload dashboard uses). It's saved on this device only.</p>
+        <div class="row">
+            <input type="password" id="pat" placeholder="GitHub token" aria-label="GitHub token">
+            <button type="button" class="btn" id="save-pat">Save</button>
+        </div>
+    </div>
+
+    <p class="foot"><a href="../uploads/index.html">Upload dashboard</a></p>
+</main>
+
+<script>
+    const REPO = 'cju-media/Tech-Info';
+    const STATE = 'fccla/title_graphics_state.json';
+    const sub = document.getElementById('sub');
+    const banner = document.getElementById('banner');
+    const optionsDiv = document.getElementById('options');
+    const hexInput = document.getElementById('hex');
+    const replaceBox = document.getElementById('replace');
+    const patBox = document.getElementById('pat-box');
+    let state = null;
+    let poll = null;
+    let waitingSince = null;           // last_run.at when a pick was sent; the page polls until it changes
+
+    function pat() {
+        try { return localStorage.getItem('GITHUB_PAT') || ''; } catch (e) { return ''; }
+    }
+    function headers(accept) {
+        const h = { 'Accept': accept || 'application/vnd.github.v3+json' };
+        if (pat()) h['Authorization'] = `token ${pat()}`;
+        return h;
+    }
+    function rawUrl(path) {
+        return `https://raw.githubusercontent.com/${REPO}/main/${path.split('/').map(encodeURIComponent).join('/')}`;
+    }
+    function when(iso) {
+        const d = new Date(iso);
+        return isNaN(d) ? '' : d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+    function show(msg, kind) {
+        banner.hidden = !msg;
+        banner.textContent = msg || '';
+        banner.className = 'banner' + (kind ? ' ' + kind : '');
+    }
+    function shortLabel(o) {
+        return (o.label || '').split(',')[0];
+    }
+
+    async function loadState() {
+        // The contents API rather than raw.githubusercontent.com, which serves a stale copy for a few minutes.
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${STATE}?ref=main`,
+            { headers: headers('application/vnd.github.raw'), cache: 'no-store' });
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error(`GitHub said ${res.status}`);
+        return res.json();
+    }
+    async function latestRun() {
+        try {
+            const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/title_graphics.yml/runs?per_page=1`,
+                { headers: headers(), cache: 'no-store' });
+            return res.ok ? ((await res.json()).workflow_runs[0] || null) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function refresh() {
+        clearTimeout(poll);
+        try {
+            state = await loadState();
+        } catch (e) {
+            show(`Couldn't load the title graphics: ${e.message}`, 'error');
+            return;
+        }
+        const run = await latestRun();
+        const busy = run && (run.status === 'queued' || run.status === 'in_progress');
+        const last = state && state.last_run;
+        if (waitingSince !== null && last && last.at !== waitingSince) waitingSince = null;   // the pick was answered
+        render(busy);
+        if (busy || waitingSince !== null) poll = setTimeout(refresh, 10000);
+    }
+
+    function render(busy) {
+        const build = state && state.build;
+        const last = state && state.last_run;
+        optionsDiv.replaceChildren();
+        if (!build) {
+            sub.textContent = '';
+            show(busy ? 'Studio Mini is building the options…' : 'Nothing built yet. Upload the OW on the upload dashboard.');
+            return;
+        }
+        sub.textContent = [build.dateText].concat(build.heading || [build.series, build.seriesName, build.title], [build.preacher]).filter(Boolean).join(' · ');
+
+        const lines = [];
+        if (busy || waitingSince !== null) lines.push('Studio Mini is working on it… this page updates by itself.');
+        if (build.pick) {
+            const drive = { sent: 'Sent to Drive for the livestream.', waiting: 'Drive gets it early in that week.',
+                            'not sent': 'Not sent to Drive (too late); upload by hand if needed.',
+                            held: 'Not sent to Drive: edit it in iCloud, then upload the JPGs on the upload dashboard (they replace the thumbnails in Drive and on the livestream).'
+                          }[build.pick.drive] || '';
+            lines.push(`In use: ${build.pick.hex}${build.pick.label ? ' (' + build.pick.label.split(',')[0] + ')' : ''}, picked ${when(build.pick.at)}. ${drive}`);
+        } else {
+            lines.push('Pick the version to use. It goes into the iCloud week folder and to Drive for the livestream. ' +
+                       'To edit it first, use "Don\'t send to Drive" and upload your edited JPGs on the upload dashboard.');
+            if (build.previous_pick) lines.push(`The OW changed after you picked ${build.previous_pick.hex}; pick again.`);
+        }
+        const lastBad = last && (last.status === 'failed' || last.status === 'skipped');
+        if (lastBad && !busy) lines.push(last.message);
+        // A pick refused because the week was made or edited by hand: show the checkbox that allows it.
+        if (lastBad && /by hand/.test(last.message)) document.getElementById('more').open = true;
+        show(lines.join('\n'), last && last.status === 'failed' && !busy ? 'error' : build.pick && !busy ? 'ok' : '');
+
+        for (const o of build.options || []) {
+            const picked = build.pick && build.pick.n === o.n;
+            const held = picked && build.pick.drive === 'held';
+            const card = document.createElement('section');
+            card.className = 'option' + (picked ? ' picked' : '');
+            const head = document.createElement('header');
+            const dot = document.createElement('span');
+            dot.className = 'dot';
+            dot.style.background = o.hex;
+            const name = document.createElement('strong');
+            name.textContent = `${o.n} · ${shortLabel(o) || 'color'}`;
+            const code = document.createElement('code');
+            code.textContent = o.hex;
+            head.append(dot, name, code);
+            if (picked) {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.textContent = held ? 'In use · not in Drive' : 'In use';
+                head.append(tag);
+            }
+            const shots = document.createElement('div');
+            shots.className = 'shots';
+            for (const [key, alt] of [['service', 'Service Title'], ['sermon', 'Sermon Title']]) {
+                if (!o[key]) continue;
+                const img = document.createElement('img');
+                img.src = rawUrl(o[key]);
+                img.alt = `${alt}, option ${o.n} (${o.hex})`;
+                img.loading = 'lazy';
+                shots.append(img);
+            }
+            card.append(head, shots);
+            if (o.problems && o.problems.length) {
+                const p = document.createElement('p');
+                p.className = 'problems';
+                p.textContent = 'Check: ' + o.problems.join('; ');
+                card.append(p);
+            }
+            const working = busy || waitingSince !== null;
+            const what = `option ${o.n} (${o.hex} ${shortLabel(o)})`;
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+            const use = document.createElement('button');
+            use.type = 'button';
+            use.className = 'btn';
+            // A version kept out of Drive can still be sent as it is.
+            use.textContent = held ? 'Send it to Drive' : picked ? 'In use' : 'Use this one';
+            use.disabled = (picked && !held) || working;
+            use.addEventListener('click', () => pick(String(o.n), what, true));
+            actions.append(use);
+            if (!picked) {
+                const hold = document.createElement('button');
+                hold.type = 'button';
+                hold.className = 'btn secondary';
+                hold.textContent = "Use, don't send to Drive";
+                hold.title = 'Save it to the iCloud week folder only, to edit it before uploading it on the upload dashboard';
+                hold.disabled = working;
+                hold.addEventListener('click', () => pick(String(o.n), what, false));
+                actions.append(hold);
+            }
+            card.append(actions);
+            optionsDiv.append(card);
+        }
+    }
+
+    // send false: iCloud only (the "don't send to Drive" buttons).
+    async function pick(value, description, send) {
+        if (!pat()) {
+            patBox.hidden = false;
+            show('Save your GitHub token below first.', 'error');
+            return;
+        }
+        const replace = replaceBox.checked;
+        const question = (send
+            ? `Use ${description}? It goes into the iCloud week folder and to Drive for the livestream.`
+            : `Use ${description} without sending it to Drive? It goes into the iCloud week folder only. ` +
+              'Edit it there, then upload the JPGs on the upload dashboard; they replace the thumbnails in Drive and on the livestream.') +
+            (replace ? '\n\nGraphics in iCloud that were made or edited by hand will be replaced.' : '');
+        if (!confirm(question)) return;
+        try {
+            const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
+                method: 'POST',
+                headers: Object.assign(headers(), { 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ event_type: 'title_graphics_pick',
+                                       client_payload: { pick: value, replace_hand_edits: replace, drive: send } })
+            });
+            if (!res.ok) throw new Error(res.status === 401 ? 'the GitHub token was refused' : `GitHub said ${res.status}`);
+        } catch (e) {
+            show(`Couldn't send the pick: ${e.message}`, 'error');
+            if (/token/.test(e.message)) patBox.hidden = false;
+            return;
+        }
+        waitingSince = state && state.last_run ? state.last_run.at : '';
+        render(true);
+        poll = setTimeout(refresh, 8000);
+    }
+
+    function pickCustom(send) {
+        const hex = hexInput.value.trim().toUpperCase().replace(/^([0-9A-F]{6})$/, '#$1');
+        if (!/^#[0-9A-F]{6}$/.test(hex)) {
+            show('Type a color like #325673.', 'error');
+            return;
+        }
+        pick(hex, `${hex} (Studio Mini builds it first, about a minute more)`, send);
+    }
+    document.getElementById('custom').addEventListener('click', () => pickCustom(true));
+    document.getElementById('custom-hold').addEventListener('click', () => pickCustom(false));
+    document.getElementById('save-pat').addEventListener('click', () => {
+        const value = document.getElementById('pat').value.trim();
+        try { value ? localStorage.setItem('GITHUB_PAT', value) : localStorage.removeItem('GITHUB_PAT'); } catch (e) { /* private mode */ }
+        patBox.hidden = !!value;
+        show(value ? 'Token saved. Pick a version.' : 'Token removed.', value ? 'ok' : '');
+    });
+
+    patBox.hidden = !!pat();
+    refresh();
+</script>
+</body>
+</html>

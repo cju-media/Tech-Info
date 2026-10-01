@@ -108,6 +108,10 @@ class Similar(unittest.TestCase):
         self.assertEqual({group_key(n) for n in ('rose3.MP4', 'nightRose2.MP4', 'Rose 7.mov')}, {'rose'})
         self.assertEqual(group_key('building 5.mov'), group_key('building.mov'))
         self.assertNotEqual(group_key('organKeys.mov'), group_key('organ2.mp4'))
+        # "night" at the end too (2026-09-28: parkingNight played right
+        # before parking 5).
+        self.assertEqual({group_key(n) for n in ('parkingNight.mov', 'parking 5.mov',
+                                                 'parking night 2.mov')}, {'parking'})
 
     def test_adjacent_repeats_counts_the_wrap(self):
         self.assertEqual(adjacent_repeats(['a', 'b', 'a']), 1)   # last -> first

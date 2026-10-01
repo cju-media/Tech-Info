@@ -25,6 +25,7 @@ Repo: `cju-media/Tech-Info` · Pages site: <https://cju-media.github.io/Tech-Inf
 - [Montage photos](#montage-photos)
 - [Display videos](#display-videos)
 - [Video migration](#video-migration)
+- [Title graphics (Illustrator)](#title-graphics-illustrator)
 - [GitHub Actions workflows](#github-actions-workflows)
 - [Repository layout](#repository-layout)
 - [Infrastructure, secrets & external services](#infrastructure-secrets--external-services)
@@ -44,6 +45,7 @@ GitHub Gist, and the GitHub API — there is no backend.
 | `Utilities/dashboard/index.html` | **Tech Info Dashboard** — hub page: this week's Sunday info, RF coordination conflicts, the Weekly Content Pipeline freshness panel, a "Draft Upcoming Events" button, and a link to the workflows dashboard. |
 | `Utilities/dashboard/workflows.html` | **Automated Workflows Dashboard** — live view of every GitHub Actions workflow (last run, next scheduled run, trigger type) drawn as a Mermaid dependency flowchart. Optionally authenticated with a GitHub PAT stored in `localStorage`. |
 | `Utilities/uploads/index.html` | **FCCLA Upload Dashboard** — drag-and-drop upload zones for weekly assets: Order of Worship PDF, worship-service and sermon-series thumbnails, event ad flyers, sermon recordings, a `timings.txt` fallback, and livestream settings. Files are committed to an uploads queue (or pushed to the `cju-media/OW` repo) and picked up by workflows. |
+| `Utilities/title-graphics/index.html` | **Title graphics picker** — the week's Service/Sermon Title graphics in each suggested panel color; "Use this one" sends it to iCloud, Drive and the livestream, "Use, don't send to Drive" puts it in iCloud only for editing (see `fccla/README.md`). Linked from the text Studio Mini sends. |
 | `event-draft.html` | Renders `event_draft.json` — a copy-paste draft of upcoming events for the Tech Availability sheet. |
 | `event-notes.html` | Renders calendar notes pulled from the published Outlook calendar. |
 | `Worship Scripts/upcoming_script.html` | Renders the parsed run-of-show / worship script for the upcoming service. |
@@ -333,6 +335,26 @@ the `last_upload.json` breadcrumb on a successful upload; if it copies to
 Drive but *skips* the YouTube upload (missing title/description text, or auth
 failure) it dispatches `video_migration_upload_skipped` → iMessage.
 
+## Title graphics (Illustrator)
+
+`fccla/` holds the weekly Service Title / Sermon Title graphics. `fccla/UpdateWeek.jsx`, run
+in Illustrator, updates last week's `.ai` files (photo, text, panel color) from a small
+`week-data.txt`. Normally it runs by itself. The upload dashboard's `ow_uploaded` dispatch also
+starts `title_graphics.yml` on Studio Mini (`fccla/auto_build.py`), which:
+- reads the PDF and has Gemini check the fields;
+- builds one version per suggested panel color;
+- texts Cameron a link to `Utilities/title-graphics/`.
+
+Picking one there (`title_graphics_pick`) copies it into the iCloud week folder and queues both
+JPGs through `Utilities/uploads_queue/` like a dashboard thumbnail upload, so the Worship
+Service one creates the livestream. "Use, don't send to Drive" copies it into iCloud only, to be
+edited and uploaded on the dashboard. Every pick and every dashboard Worship Service / Sermon
+Series thumbnail replaces that Sunday's thumbnail in Drive and on the stream instead of adding
+a second one (`upload_queue_to_drive.py`'s `{"replace": true}` sidecar). Graphics in iCloud
+made or edited by hand are only replaced on request. The by-hand route (Gemini CLI + `fccla/GEMINI.md`) uses the same
+script from the iCloud "Worship and Sermon Series/Scripts" folder. Details, setup and tests are
+in `fccla/README.md`.
+
 ## GitHub Actions workflows
 
 All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
@@ -403,6 +425,14 @@ Worship Scripts/
   Sermon-Series/               Generated sermon-series titles + descriptions
   worship workflows/           All the pipeline + Drive-housekeeping scripts (+ unit tests)
 
+fccla/
+  UpdateWeek.jsx               Illustrator script: last week's title graphics -> this week's
+  prepare_week.py              OW PDF -> cover photo, panel-color picks, week-data.txt
+  auto_build.py                The automatic build run by title_graphics.yml on Studio Mini
+  title_graphics_state.json    Current options + pick (+ status/ previews) for the picker page
+  GEMINI.md                    What Gemini does each week (only writes week-data.txt)
+  test/                        End-to-end Illustrator tests against the hand-made 9-27-26 files
+
 Youtube Processing/
   osc_server.js                Live OSC timestamp server + web UI (Node)
   public/index.html            OSC server web UI
@@ -446,7 +476,8 @@ that keeps hourly jobs idempotent and quiet.
 
 - GitHub-hosted `ubuntu-latest` for most workflows.
 - Self-hosted **macOS** runner ("Studio Mini") at the church for anything that
-  needs native iMessage (`osascript`) or must poll `localhost` media servers.
+  needs native iMessage (`osascript`), must poll `localhost` media servers, or drives
+  Illustrator (the title graphics).
 - Raspberry Pi display fleet (`hallway-display`, `narthex-display`) running the
   VLC watchdog via systemd.
 

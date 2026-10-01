@@ -23,3 +23,8 @@ Utilities/Service Ad/service-ad.html
 # newsletter_ad_state.json (the Gemini cache) is what's worth keeping.
 Utilities/Newsletter Ad/newsletter-ad.png
 Utilities/Newsletter Ad/newsletter-ad.html
+
+# Title-graphics test outputs (Illustrator files, rebuilt by fccla/test/*.py)
+fccla/test/out/
+fccla/.message.txt
+fccla/.message-link.txt

@@ -1,0 +1,123 @@
+name: Title Graphics
+
+# The week's Service Title / Sermon Title graphics, built in Illustrator on Studio Mini
+# (fccla/auto_build.py; see fccla/README.md).
+#  - ow_uploaded (the upload dashboard, same dispatch as the Service Titles Checker): build one
+#    version per suggested panel color and text Cameron a link to Utilities/title-graphics/.
+#  - title_graphics_pick (that page): copy the chosen version into iCloud and queue its JPGs
+#    for Drive (Utilities/uploads_queue/ -> process_uploads.yml -> livestream), or, with
+#    client_payload.drive false, only copy it into iCloud to be edited first.
+#  - schedule: send a pick that was waiting for its week to come up, and build for an OW that
+#    reached cju-media/OW without the dashboard. No builds on Sundays.
+on:
+  repository_dispatch:
+    types: [ow_uploaded, title_graphics_pick]
+  schedule:
+    - cron: '20 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      ow_filename:
+        description: 'Build from this OW in cju-media/OW/OWs (blank = the coming Sunday)'
+        required: false
+        type: string
+        default: ''
+      pick:
+        description: 'Instead, use this option: its number, or a color like #325673'
+        required: false
+        type: string
+        default: ''
+      replace_hand_edits:
+        description: 'With a pick: replace graphics in iCloud that were made or edited by hand'
+        required: false
+        type: boolean
+        default: false
+      send_to_drive:
+        description: 'With a pick: also send it to Drive and the livestream (untick to edit it first)'
+        required: false
+        type: boolean
+        default: true
+      probe:
+        description: 'Only check that Studio Mini is set up (Illustrator, iCloud folder, Gemini)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: title-graphics
+  cancel-in-progress: false      # never kill Illustrator halfway through a save
+
+jobs:
+  build:
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 40
+    permissions:
+      contents: write
+
+    steps:
+      - name: Clean workspace
+        run: rm -rf .git || true
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # A push made with the default GITHUB_TOKEN doesn't trigger other workflows; the
+          # queued Drive uploads below have to start process_uploads.yml.
+          token: ${{ secrets.PAT }}
+
+      - name: Install dependencies
+        run: python3 -m pip install --quiet pypdf pillow requests google-genai
+
+      - name: Build or use a pick
+        env:
+          EVENT: ${{ github.event_name }}:${{ github.event.action }}
+          OW_FILENAME: ${{ github.event.client_payload.filename || github.event.inputs.ow_filename }}
+          PICK: ${{ github.event.client_payload.pick || github.event.inputs.pick }}
+          REPLACE_HAND_EDITS: ${{ github.event.client_payload.replace_hand_edits || github.event.inputs.replace_hand_edits }}
+          # false only when the picker's "don't send to Drive" button (or the unticked input) says so.
+          # toJSON because a missing value loosely equals false in an expression.
+          SEND_TO_DRIVE: ${{ toJSON(github.event.client_payload.drive) == 'false' && 'false' || github.event.inputs.send_to_drive }}
+          PROBE: ${{ github.event.inputs.probe }}
+          TITLE_GRAPHICS_ROOT: ${{ vars.TITLE_GRAPHICS_ROOT }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          case "$EVENT" in
+            repository_dispatch:ow_uploaded) export TRIGGER=upload ;;
+            repository_dispatch:title_graphics_pick) export TRIGGER=pick ;;
+            schedule:*) export TRIGGER=schedule ;;
+            *) export TRIGGER=manual ;;
+          esac
+          if [ "$PROBE" = "true" ]; then
+            python3 fccla/auto_build.py --probe
+          else
+            python3 fccla/auto_build.py
+          fi
+
+      - name: Text Cameron
+        if: always()
+        run: |
+          # The link goes on its own: iMessage sent through osascript only makes a URL tappable
+          # when it's the whole message.
+          if [ -s fccla/.message.txt ]; then
+            python3 "Utilities/Scheduling/Event Data/send_imessage.py" "$(cat fccla/.message.txt)"
+          fi
+          if [ -s fccla/.message-link.txt ]; then
+            python3 "Utilities/Scheduling/Event Data/send_imessage.py" "$(cat fccla/.message-link.txt)"
+          fi
+
+      - name: Commit state, previews and Drive uploads
+        if: always() && github.event.inputs.probe != 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          for p in fccla/title_graphics_state.json fccla/status Utilities/uploads_queue; do
+            if [ -e "$p" ] || git ls-files --error-unmatch "$p" >/dev/null 2>&1; then git add -A "$p"; fi
+          done
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update title graphics"
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin HEAD:main && exit 0
+              sleep $((attempt * 5))
+            done
+            echo "::error::Couldn't push the title graphics commit"; exit 1
+          fi

@@ -1,8 +1,8 @@
 {
-  "generated": "2026-09-28T17:49:23+00:00",
+  "generated": "2026-09-30T16:07:36+00:00",
   "window": {
-    "start": "2026-09-28",
-    "end": "2026-12-29"
+    "start": "2026-09-30",
+    "end": "2026-12-31"
   },
   "columns": [
     "Date",
@@ -73,18 +73,18 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Sarah Smith & Elijah Rawlings Wedding",
-        "Sanctuary/Forecourt",
-        "TBD",
-        "Wedding",
+        "Resonance Collective Concert",
+        "Shatto",
+        "4:00pm-10:00pm",
+        "Concert",
         "1",
         "",
         "",
+        "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
         "",
-        "",
-        "Weddings"
+        ""
       ],
-      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
+      "note": "from calendar: Resonance Collective Concert"
     },
     {
       "kind": "event",
@@ -102,23 +102,6 @@
         "Leave Blank"
       ],
       "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 12/12/2026",
-        "Gloria Kang & Daniel Kim Wedding",
-        "Sanctuary/Forecourt",
-        "TBD",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
     },
     {
       "kind": "event",
@@ -153,23 +136,6 @@
         "Leave Blank"
       ],
       "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 12/5/2026",
-        "Elizabeth Bernal & Izett Barnett Wedding",
-        "Sanctuary/Forecourt",
-        "3:00pm-11:00pm",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "3pm - 11pm Event Guard",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Elizabeth Bernal & Izett Barnett"
     },
     {
       "kind": "event",
@@ -242,23 +208,6 @@
     {
       "kind": "event",
       "cells": [
-        "SA 11/21/2026",
-        "Sofia Uribe & Robin Aimaq Wedding",
-        "Sanctuary/Forecourt/Stuart Hall",
-        "TBD",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Sofia Uribe & Robin Aimaq"
-    },
-    {
-      "kind": "event",
-      "cells": [
         "MO 11/16/2026",
         "Boy Meets World Podcast",
         "Sanctuary",
@@ -311,7 +260,7 @@
       "kind": "event",
       "cells": [
         "TH 11/5/2026",
-        "\"Groundswell\" Screening & Q&A",
+        "Screening, Q&A, Reception",
         "Shatto",
         "7:00pm-9:00pm",
         "Screening",
@@ -323,11 +272,45 @@
         ""
       ],
       "note": "from calendar: Screening, Q&A, Reception"
+    },
+    {
+      "kind": "divider",
+      "cells": [
+        "OCTOBER",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 10/11/2026",
+        "Labyrinth",
+        "Shatto",
+        "12:45pm-1:45pm",
+        "Special Event",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": "from calendar: Labyrinth"
     }
   ],
   "counts": {
-    "events": 16,
+    "events": 14,
     "worship": 8,
-    "from_calendar": 8
+    "from_calendar": 6
   }
 }

@@ -147,9 +147,17 @@ def upload(drive, folder_id, name, data):
                                 supportsAllDrives=True).execute()
 
 
-def shuffle_new(drive, folder_id, dry_run):
-    """Give the new arrivals codes, so they join the loop at random points."""
+def shuffle_new(drive, folder_id, dry_run, uploaded=()):
+    """Give the new arrivals codes, so they join the loop at random points.
+
+    `uploaded` are the files this run just created. Drive's listing can lag
+    a create by a few seconds, and on 2026-09-28 the last of six videos was
+    missing from it, so it got no code and played at the end of the loop.
+    Anything uploaded here but not listed yet is added by hand.
+    """
     files = shuffle.list_files(drive, folder_id)
+    listed = {f['id'] for f in files}
+    files += [f for f in uploaded if f['id'] not in listed]
     for f, new_name in shuffle.plan(files, 'new', random):
         print(f"  {f['name']}  ->  {new_name}")
         if not dry_run:
@@ -162,6 +170,7 @@ def process_branch(gh, drive, folder_id, branch, dry_run):
     print(f'\n{branch}')
     videos = read_videos(gh, branch)
     print(f'  {len(videos)} video(s), all parts present and matching.')
+    uploaded = []
     for name, data in videos:
         existing = already_in_folder(drive, folder_id, data)
         if existing:
@@ -169,8 +178,8 @@ def process_branch(gh, drive, folder_id, branch, dry_run):
             continue
         print(f'  {name}: uploading {len(data) / 1048576:.1f} MB...')
         if not dry_run:
-            upload(drive, folder_id, name, data)
-    shuffle_new(drive, folder_id, dry_run)
+            uploaded.append(upload(drive, folder_id, name, data))
+    shuffle_new(drive, folder_id, dry_run, uploaded)
     if dry_run:
         print(f'  DRY RUN: would delete {branch}.')
     else:

@@ -106,11 +106,13 @@ def main():
 
     service_titles_state_path = "../Worship Scripts/service_titles_state.json"
     last_processed_sha = None
+    titles_target_date = None
     if os.path.exists(service_titles_state_path):
         try:
             with open(service_titles_state_path, "r") as f:
                 state_data = json.load(f)
                 last_processed_sha = state_data.get("last_processed_sha")
+                titles_target_date = state_data.get("target_date")
         except Exception as e:
             print(f"Error reading service titles state: {e}")
 
@@ -119,7 +121,15 @@ def main():
     if github_token:
         headers["Authorization"] = f"Bearer {github_token}"
 
-    for date_str, data in worship_scripts.items():
+    # Description.txt is the boilerplate with the date's program link, and the chapters come
+    # from the OW's service-title files: neither reads the worship script. So the Sunday whose
+    # OW service_titles_checker has processed counts too, before its script is posted.
+    # Otherwise the livestream (which waits for this) waits for the script.
+    service_dates = list(worship_scripts)
+    if titles_target_date and titles_target_date not in service_dates:
+        service_dates.append(titles_target_date)
+
+    for date_str in service_dates:
         try:
             doc_dt = dateutil.parser.parse(date_str)
             doc_dt_aware = doc_dt

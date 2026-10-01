@@ -72,7 +72,7 @@ def extract_date(text):
         r'\b\d{1,2}-\d{1,2}-\d{2,4}\b', # MM-DD-YY or MM-DD-YYYY
         r'\b\d{1,2}\.\d{1,2}\.\d{2,4}\b', # MM.DD.YY
         r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', # MM/DD/YY
-        r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}(?:st|nd|rd|th)?(?:, \d{4})?\b'
+        r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.? \d{1,2}(?:st|nd|rd|th)?(?:,? \d{4})?\b'
     ]
 
     for pattern in patterns:
@@ -384,72 +384,78 @@ def main():
                 print(f"Error accessing folder {target_id}: {e}")
                 break
 
+        print(f"  {len(docs)} item(s) in {active_folder['name']}")
         for doc in docs:
-            if doc['mimeType'] == 'application/vnd.google-apps.document':
-                date_str = extract_date(doc['name'])
-                if date_str:
-                    doc_dt = dateutil.parser.parse(date_str)
-                    if doc_dt.date() >= now.date():
+            if doc['mimeType'] != 'application/vnd.google-apps.document':
+                print(f"  [Skip] '{doc['name']}': not a Google Doc ({doc['mimeType']})")
+                continue
+            date_str = extract_date(doc['name'])
+            if not date_str:
+                print(f"  [Skip] '{doc['name']}': no parseable date in name")
+                continue
+            if dateutil.parser.parse(date_str).date() < now.date():
+                print(f"  [Skip] '{doc['name']}': date {date_str} is in the past")
+                continue
 
-                        modified_time = doc.get('modifiedTime')
+            modified_time = doc.get('modifiedTime')
 
-                        # Check against previous state
-                        should_download = True
-                        if date_str in worship_scripts:
-                            old_modified_time = worship_scripts[date_str].get('modifiedTime')
+            # Check against previous state
+            should_download = True
+            if date_str in worship_scripts:
+                old_modified_time = worship_scripts[date_str].get('modifiedTime')
 
-                            # Only download/process if the file is new/modified
-                            if old_modified_time == modified_time:
-                                # File hasn't changed, skip download but keep in new state
-                                # Ensure we don't lose old custom properties if they aren't fully merged.
-                                # Actually, worship_scripts[date_str] already has everything from the file.
-                                worship_scripts_new[date_str] = worship_scripts[date_str]
-                                print(f"Skipping {date_str} (No changes since last run)")
-                                should_download = False
+                # Only download/process if the file is new/modified
+                if old_modified_time == modified_time:
+                    # File hasn't changed, skip download but keep in new state
+                    # Ensure we don't lose old custom properties if they aren't fully merged.
+                    # Actually, worship_scripts[date_str] already has everything from the file.
+                    worship_scripts_new[date_str] = worship_scripts[date_str]
+                    print(f"Skipping {date_str} (No changes since last run)")
+                    should_download = False
 
-                        if should_download:
-                            try:
-                                pdf_path = f"{output_dir}/{date_str}.pdf"
-                                request = service.files().export_media(fileId=doc['id'], mimeType='application/pdf')
-                                pdf_content = request.execute()
-                                with open(pdf_path, 'wb') as pdf_file:
-                                    pdf_file.write(pdf_content)
+            if should_download:
+                try:
+                    pdf_path = f"{output_dir}/{date_str}.pdf"
+                    request = service.files().export_media(fileId=doc['id'], mimeType='application/pdf')
+                    pdf_content = request.execute()
+                    with open(pdf_path, 'wb') as pdf_file:
+                        pdf_file.write(pdf_content)
 
-                                is_communion, coffee_hour_room, speaker_info = extract_pdf_info(pdf_path, date_str)
+                    is_communion, coffee_hour_room, speaker_info = extract_pdf_info(pdf_path, date_str)
 
-                                # Save URL encoded path for the web and modifiedTime
-                                new_entry = {
-                                    'path': pdf_path,
-                                    'modifiedTime': modified_time,
-                                    'isCommunion': is_communion,
-                                    'coffeeHourRoom': coffee_hour_room,
-                                    'speakerInfo': speaker_info
-                                }
+                    # Save URL encoded path for the web and modifiedTime
+                    new_entry = {
+                        'path': pdf_path,
+                        'modifiedTime': modified_time,
+                        'isCommunion': is_communion,
+                        'coffeeHourRoom': coffee_hour_room,
+                        'speakerInfo': speaker_info
+                    }
 
-                                # Preserve manual overrides and other keys if they exist
-                                if date_str in worship_scripts:
-                                    old_entry = worship_scripts[date_str]
-                                    if old_entry.get('manualOverride'):
-                                        new_entry['manualOverride'] = True
-                                        new_entry['speakerInfo'] = old_entry.get('speakerInfo', speaker_info)
-                                        if 'customNotes' in old_entry:
-                                            new_entry['customNotes'] = old_entry['customNotes']
-                                    # coffeeHourRoom has no manual-override flag of its own;
-                                    # only fall back to the previously recorded value when
-                                    # this run didn't extract one at all.
-                                    if coffee_hour_room is None and old_entry.get('coffeeHourRoom'):
-                                        new_entry['coffeeHourRoom'] = old_entry['coffeeHourRoom']
-                                    if 'youtubeDescriptionModifiedTime' in old_entry:
-                                        new_entry['youtubeDescriptionModifiedTime'] = old_entry['youtubeDescriptionModifiedTime']
+                    # Preserve manual overrides and other keys if they exist
+                    if date_str in worship_scripts:
+                        old_entry = worship_scripts[date_str]
+                        if old_entry.get('manualOverride'):
+                            new_entry['manualOverride'] = True
+                            new_entry['speakerInfo'] = old_entry.get('speakerInfo', speaker_info)
+                            if 'customNotes' in old_entry:
+                                new_entry['customNotes'] = old_entry['customNotes']
+                        # coffeeHourRoom has no manual-override flag of its own;
+                        # only fall back to the previously recorded value when
+                        # this run didn't extract one at all.
+                        if coffee_hour_room is None and old_entry.get('coffeeHourRoom'):
+                            new_entry['coffeeHourRoom'] = old_entry['coffeeHourRoom']
+                        if 'youtubeDescriptionModifiedTime' in old_entry:
+                            new_entry['youtubeDescriptionModifiedTime'] = old_entry['youtubeDescriptionModifiedTime']
 
-                                worship_scripts_new[date_str] = new_entry
-                                print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
-                                print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, coffeeHourRoom='{coffee_hour_room}', speakerInfo='{speaker_info}'")
-                            except Exception as e:
-                                print(f"Error downloading {doc['name']}: {e}")
-                                # Keep old data if it fails
-                                if date_str in worship_scripts:
-                                    worship_scripts_new[date_str] = worship_scripts[date_str]
+                    worship_scripts_new[date_str] = new_entry
+                    print(f"Downloaded upcoming script for {date_str}: {pdf_path}")
+                    print(f"[Record] Recorded into repo JSON for {date_str}: isCommunion={is_communion}, coffeeHourRoom='{coffee_hour_room}', speakerInfo='{speaker_info}'")
+                except Exception as e:
+                    print(f"Error downloading {doc['name']}: {e}")
+                    # Keep old data if it fails
+                    if date_str in worship_scripts:
+                        worship_scripts_new[date_str] = worship_scripts[date_str]
 
     with open('worship_scripts.json', 'w') as out:
         json.dump(worship_scripts_new, out, indent=2)
