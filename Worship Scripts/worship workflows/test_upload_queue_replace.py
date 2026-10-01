@@ -92,6 +92,26 @@ class UploadToDrive(unittest.TestCase):
         self.assertIn("create", drive.calls)
         self.assertFalse(any(c.startswith(("update", "trash")) for c in drive.calls))
 
+    def test_title_and_description_overwrite_their_earlier_copies(self):
+        # a second thumbnail for the same Sunday mustn't leave two title.txt / Description.txt
+        drive = FakeDrive(images=[("txt", "title.txt", OLD)])
+        work = tempfile.mkdtemp()
+        cwd = os.getcwd()
+        os.chdir(work)
+        try:
+            os.makedirs(os.path.join("Worship Scripts", "service-titles"))
+            os.makedirs("Youtube Processing")
+            for p in (os.path.join("Worship Scripts", "service-titles", "title.txt"),
+                      os.path.join("Youtube Processing", "Description.txt")):
+                with open(p, "w") as fh:
+                    fh.write("text")
+            with mock.patch.object(uq, "dispatch_event"):
+                self.assertTrue(uq.upload_title_and_description(drive, "folder", "10-04-2026"))
+        finally:
+            os.chdir(cwd)
+        self.assertNotIn("create", drive.calls)
+        self.assertEqual(drive.calls.count("update:txt"), 2)    # FakeDrive finds "txt" for any name
+
     def test_newer_image_is_found(self):
         drive = FakeDrive(images=[("abc", "mine.jpg", NEW)])
         self.assertEqual(uq.newer_image_in_folder(drive, "folder", "2026-09-30T23:00:00+00:00"), "mine.jpg")
@@ -241,7 +261,7 @@ class DelayedStream(unittest.TestCase):
     def test_created_stream_gets_its_text_in_drive(self):
         drive, events, dated, left = self.run_pending(0)
         self.assertEqual(dated, [(uq.THUMBNAILS_DEST_PARENT_FOLDER_ID, "10-04-2026")])
-        self.assertEqual(drive.calls.count("create"), 2)          # title.txt and Description.txt
+        self.assertEqual(drive.calls.count("create"), 2)          # title.txt and Description.txt, new
         self.assertEqual(events, ["worship_title_description_uploaded"])
         self.assertFalse(left)
 

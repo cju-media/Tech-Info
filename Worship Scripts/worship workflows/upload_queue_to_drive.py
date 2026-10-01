@@ -219,7 +219,7 @@ def upload_title_and_description(drive_service, folder_id, date_str, title=None,
     worship_title_text = None
 
     if os.path.exists(title_path):
-        upload_to_drive(drive_service, title_path, "title.txt", folder_id)
+        upload_to_drive(drive_service, title_path, "title.txt", folder_id, same_name=True)
         title_uploaded = True
         try:
             with open(title_path, "r") as f:
@@ -230,7 +230,7 @@ def upload_title_and_description(drive_service, folder_id, date_str, title=None,
         print(f"Title file not found at {title_path}")
 
     if os.path.exists(desc_path):
-        upload_to_drive(drive_service, desc_path, "Description.txt", folder_id)
+        upload_to_drive(drive_service, desc_path, "Description.txt", folder_id, same_name=True)
         desc_uploaded = True
     else:
         print(f"Description file not found at {desc_path}")
@@ -410,10 +410,12 @@ def replace_images(service, folder_id, original_filename, media):
     return True
 
 
-def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_exists=False, replace=False):
+def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_exists=False, replace=False,
+                    same_name=False):
     """replace: this image replaces every image in folder_id, a Sunday's dated thumbnail folder
     (see replace_images). Dashboard thumbnail uploads and title-graphics picks send
-    {"replace": true} in their .meta.json sidecar."""
+    {"replace": true} in their .meta.json sidecar.
+    same_name: overwrite a file with this name in folder_id in place (title.txt, Description.txt)."""
     print(f"Uploading {original_filename} to Google Drive folder {folder_id}...")
 
     if skip_if_exists and not replace and identical_file_in_folder(service, folder_id, original_filename, file_path):
@@ -437,7 +439,7 @@ def upload_to_drive(service, file_path, original_filename, folder_id, skip_if_ex
                 # Fall through to a plain create rather than losing the upload.
                 print(f"Could not replace the thumbnail in {folder_id}: {e}")
 
-        if is_protected_flyer(original_filename):
+        if same_name or is_protected_flyer(original_filename):
             existing_id = find_file_id_by_name(service, folder_id, original_filename)
             if existing_id:
                 service.files().update(
