@@ -85,13 +85,15 @@ def current_code(current, props):
 
 def group_key(name):
     """Which clips count as similar: the name without its number, and
-    without "night", so "nightRose3.MP4", "rose7.MP4" and "Rose 2.mov" are
-    one group -- the same subject, which shouldn't play back to back.
+    without "night" at either end, so "nightRose3.MP4", "rose7.MP4",
+    "Rose 2.mov" are one group, and "parkingNight.mov" and "parking 5.mov"
+    another -- the same subject, which shouldn't play back to back.
     "organKeys" stays apart from "organ": different words, different shot.
     """
     stem = os.path.splitext(name)[0].lower()
     stem = re.sub(r'[\d\s_()\-]+$', '', stem)
-    stem = re.sub(r'^night[\s_\-]*', '', stem)
+    stem = re.sub(r'^night[\s_\-]*|[\s_\-]*night$', '', stem)
+    stem = re.sub(r'[\d\s_()\-]+$', '', stem)
     stem = re.sub(r'[^a-z0-9]+', '', stem)
     return stem or name.lower()
 

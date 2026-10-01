@@ -86,12 +86,16 @@ class ProcessBranch(unittest.TestCase):
     def setUp(self):
         self.uploads = []
         patches = [
-            mock.patch.object(u, 'upload', side_effect=lambda d, f, name, data: self.uploads.append((name, data))),
+            mock.patch.object(u, 'upload', side_effect=self.fake_upload),
             mock.patch.object(u, 'shuffle_new'),
         ]
         for p in patches:
             p.start()
             self.addCleanup(p.stop)
+
+    def fake_upload(self, drive, folder_id, name, data):
+        self.uploads.append((name, data))
+        return {'id': f'new-{len(self.uploads)}', 'name': name}
 
     def run_branch(self, gh, existing=None, dry_run=False):
         with mock.patch.object(u, 'already_in_folder', return_value=existing):
@@ -102,7 +106,9 @@ class ProcessBranch(unittest.TestCase):
         self.run_branch(gh)
         self.assertEqual(self.uploads, [('building.mov', VIDEO)])
         self.assertEqual(gh.deleted, ['video-upload/1'])
-        u.shuffle_new.assert_called_once()
+        # The shuffle is told what was just uploaded, in case Drive's
+        # listing hasn't caught up with it yet.
+        self.assertEqual(u.shuffle_new.call_args.args[3], [{'id': 'new-1', 'name': 'building.mov'}])
 
     def test_retry_does_not_upload_twice(self):
         gh = FakeGitHub()
@@ -122,6 +128,29 @@ class ProcessBranch(unittest.TestCase):
         self.run_branch(gh, dry_run=True)
         self.assertEqual(self.uploads, [])
         self.assertEqual(gh.deleted, [])
+
+
+class ShuffleNew(unittest.TestCase):
+    def test_uploaded_file_missing_from_listing_still_gets_a_code(self):
+        # 2026-09-28: Drive's listing lagged the last upload of a batch.
+        listed = [{'id': 'a', 'name': '3F rose1.MP4',
+                   'appProperties': {u.shuffle.ORIGINAL_KEY: 'rose1.MP4',
+                                     u.shuffle.GIVEN_KEY: '3F rose1.MP4'}}]
+        just_uploaded = [{'id': 'b', 'name': 'parking 1.mov'}]
+        renamed = []
+        with mock.patch.object(u.shuffle, 'list_files', return_value=listed), \
+             mock.patch.object(u.shuffle, 'rename', side_effect=lambda d, f, n: renamed.append((f['id'], n))):
+            u.shuffle_new(object(), 'folder', False, just_uploaded)
+        self.assertEqual([i for i, _ in renamed], ['b'])
+        self.assertRegex(renamed[0][1], r'^[1-9][A-Z] parking 1\.mov$')
+
+    def test_listed_upload_is_not_counted_twice(self):
+        listed = [{'id': 'b', 'name': 'parking 1.mov'}]
+        renamed = []
+        with mock.patch.object(u.shuffle, 'list_files', return_value=listed), \
+             mock.patch.object(u.shuffle, 'rename', side_effect=lambda d, f, n: renamed.append(f['id'])):
+            u.shuffle_new(object(), 'folder', False, [{'id': 'b', 'name': 'parking 1.mov'}])
+        self.assertEqual(renamed, ['b'])
 
 
 class Main(unittest.TestCase):
