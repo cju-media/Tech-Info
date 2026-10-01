@@ -181,7 +181,7 @@
             if (build.previous_pick) lines.push(`The OW changed after you picked ${build.previous_pick.hex}; pick again.`);
         }
         const lastBad = last && (last.status === 'failed' || last.status === 'skipped');
-        if (lastBad && !busy) lines.push(last.message);
+        if ((lastBad || (last && last.status === 'unchanged')) && !busy) lines.push(last.message);
         // A pick refused because the week was made or edited by hand: show the checkbox that allows it.
         if (lastBad && /by hand/.test(last.message)) document.getElementById('more').open = true;
         show(lines.join('\n'), last && last.status === 'failed' && !busy ? 'error' : build.pick && !busy ? 'ok' : '');

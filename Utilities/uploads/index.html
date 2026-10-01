@@ -189,6 +189,8 @@
         .success { color: #2ecc71; }
         .info { color: #3498db; }
 
+        .zone-option { display: block; margin-top: 8px; font-size: 13px; color: #555; cursor: pointer; }
+        .zone-option input { margin-right: 4px; vertical-align: middle; }
         .tg-panel { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: left; }
         .tg-panel h2 { margin: 0 0 6px; color: #2c3e50; font-size: 20px; }
         .tg-status { margin: 0 0 12px; color: #555; white-space: pre-line; }
@@ -306,6 +308,9 @@
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
             <input type="file" class="file-input" accept="application/pdf, .pdf" multiple>
+            <label class="zone-option" id="ow-force-label" title="A new OW that reads the same as the title graphics in use (same text and photo) normally isn't rebuilt">
+                <input type="checkbox" id="ow-force-rebuild"> Rebuild title graphics even if the text hasn't changed
+            </label>
             <p class="last-upload" data-folder="OW">Last upload: checking&hellip;</p>
         </div>
 
@@ -472,6 +477,9 @@
 
     applyDefaultDateTime();
     loadGeneratedDefaults();
+
+    // The OW box's "Rebuild title graphics" checkbox: a click there mustn't open the file picker.
+    document.getElementById('ow-force-label').addEventListener('click', (e) => e.stopPropagation());
 
     settingsBtn.addEventListener('click', (e) => {
         e.stopPropagation(); // don't let the click bubble to the drop-zone's file picker
@@ -726,7 +734,7 @@
                                   : `${(build.options || []).length} colors ready to pick.`);
         }
         const last = state && state.last_run;
-        if (last && (last.status === 'failed' || last.status === 'skipped') && !busy) lines.push(last.message);
+        if (last && (last.status === 'failed' || last.status === 'skipped' || last.status === 'unchanged') && !busy) lines.push(last.message);
         tgStatus.textContent = lines.join('\n') || 'Nothing built yet. Upload an OW to start.';
         tgStatus.className = 'tg-status' + (last && last.status === 'failed' && !busy ? ' error' : '');
         if (busy) tgPoll = setTimeout(loadTitleGraphics, 20000);
@@ -796,6 +804,7 @@
                 for (const file of Array.from(e.dataTransfer.files)) {
                     await handleFile(file, targetFolder, fileInput);
                 }
+                if (targetFolder === 'OW') document.getElementById('ow-force-rebuild').checked = false;
             }
         });
 
@@ -815,6 +824,7 @@
                 for (const file of Array.from(fileInput.files)) {
                     await handleFile(file, targetFolder, fileInput);
                 }
+                if (targetFolder === 'OW') document.getElementById('ow-force-rebuild').checked = false;
             }
         });
     });
@@ -1053,7 +1063,9 @@
     // upload, the scheduled run is still the backstop.
     // The same dispatch starts the Title Graphics workflow on Studio Mini, which uses the
     // filename to build from exactly this OW.
-    async function triggerServiceTitlesRun(pat, filename) {
+    // forceRebuild: the OW box's "Rebuild title graphics" checkbox (fccla/auto_build.py
+    // --force-rebuild); otherwise an OW that reads the same as the graphics in use isn't rebuilt.
+    async function triggerServiceTitlesRun(pat, filename, forceRebuild) {
         try {
             const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
                 method: 'POST',
@@ -1062,7 +1074,8 @@
                     'Content-Type': 'application/json',
                     'Accept': 'application/vnd.github.v3+json'
                 },
-                body: JSON.stringify({ event_type: 'ow_uploaded', client_payload: { filename } })
+                body: JSON.stringify({ event_type: 'ow_uploaded',
+                                       client_payload: forceRebuild ? { filename, force_rebuild: true } : { filename } })
             });
             if (!res.ok) {
                 let msg = res.statusText;
@@ -1190,7 +1203,8 @@
 
             if (targetFolder === 'OW') {
                 setStatus('File uploaded to OW repository! Starting Gemini processing...', 'success');
-                const triggered = await triggerServiceTitlesRun(pat, safeFilename);
+                const triggered = await triggerServiceTitlesRun(pat, safeFilename,
+                                                                 document.getElementById('ow-force-rebuild').checked);
                 setStatus(
                     triggered
                         ? 'File uploaded! Service Titles Checker is running now — titles update in a few minutes, and Studio Mini builds the title graphics.'

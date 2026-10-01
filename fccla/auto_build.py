@@ -5,7 +5,9 @@ After an Order of Worship is uploaded on the upload dashboard (ow_uploaded):
   1. find the OW in cju-media/OW: the uploaded file, else the coming Sunday's;
   2. read the text fields from the PDF and have Gemini check them;
   3. build the graphics once per suggested panel color, in a staging folder on this Mac (not in
-     iCloud), and text a link to the picker page (Utilities/title-graphics/).
+     iCloud), and text a link to the picker page (Utilities/title-graphics/). A new OW whose text
+     and cover photo match the graphics in use (or the options already built) isn't rebuilt
+     unless --force-rebuild (the dashboard's "Rebuild title graphics" box) says so.
 When one is picked there (title_graphics_pick):
   4. copy it into the iCloud week folder. Graphics made or edited by hand are never replaced
      unless asked;
@@ -17,6 +19,7 @@ When one is picked there (title_graphics_pick):
      dashboard, which replaces the thumbnails the same way.
 
   python3 fccla/auto_build.py [--ow 10.4.26_OW_Draft.pdf]          # build the options
+  python3 fccla/auto_build.py --ow 10.4.26_OW.pdf --force-rebuild   # even if nothing changed
   python3 fccla/auto_build.py --pick 2    |   --pick '#325673'       # use one (a new hex is built first)
   python3 fccla/auto_build.py --pick 2 --no-drive                    # use it in iCloud only
   python3 fccla/auto_build.py --probe                                # is this Mac set up?
@@ -263,6 +266,67 @@ def read_fields(pdf):
         raise Stop("failed", "Title graphics: couldn't read %s from the OW. Make this week by hand (see "
                    "fccla/GEMINI.md)." % (", ".join(missing) or "the date"), code=1)
     return fields, notes
+
+
+# ---------------------------------------------------------------- a new OW that changes nothing
+
+def text_key(s):
+    """Text as it reads on a graphic: quotes, dashes and spacing evened out; case kept."""
+    s = (s or "").replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+    return re.sub(r"\s+", " ", s.replace("–", "-").replace("—", "-")).strip()
+
+
+def same_text(a, b):
+    return ([text_key(x) for x in pw.heading_of(a)] == [text_key(x) for x in pw.heading_of(b)]
+            and pw.parse_date_text(a.get("dateText")) == pw.parse_date_text(b.get("dateText"))
+            and text_key(a.get("preacher")) == text_key(b.get("preacher")))
+
+
+def cover_of(pdf):
+    try:
+        return pw.upscale(pw.extract_cover(pdf))[0]
+    except (Exception, SystemExit):
+        return None
+
+
+def same_picture(a, b):
+    """Same cover photo, allowing for resampling differences between machines."""
+    if a is None or b is None or a.size != b.size:
+        return False
+    a, b = (im.convert("RGB").resize((64, 64)) for im in (a, b))
+    pa, pb = a.tobytes(), b.tobytes()
+    return sum(abs(x - y) for x, y in zip(pa, pb)) / len(pa) < 2
+
+
+def unchanged(ctx, build, fields, pdf):
+    """A new OW whose text and cover photo match what's already there doesn't need its graphics
+    rebuilt. "There" is the graphics in use (UpdateWeek's week-data.txt and cover in the iCloud
+    week folder), or else the options already built for that week. Returns (message, link) when
+    nothing would change, else None."""
+    date = pw.parse_date_text(fields["dateText"])
+    week = pw.week_name(date)
+    data_path = os.path.join(ctx.root, week, "week-data.txt")
+    cover_path = os.path.join(ctx.root, week, "Cover_%s.png" % week)
+    tail = " To rebuild them anyway, upload the OW again with \"Rebuild title graphics\" ticked."
+    if os.path.exists(data_path) and os.path.exists(cover_path):
+        for p in (data_path, cover_path):
+            pw.ensure_local(p)
+        in_use = pw.read_data(data_path)
+        try:
+            picture = Image.open(cover_path)
+        except OSError:
+            return None
+        if same_text(fields, in_use) and same_picture(cover_of(pdf), picture):
+            return ("The new OW for %s reads the same as the graphics in use (%s), with the same photo, so the "
+                    "thumbnails weren't rebuilt." % (long_date(date), in_use.get("panelColor") or "in iCloud") + tail,
+                    None)
+        return None
+    staged = os.path.join(ctx.staging, week, "ow.pdf")
+    if build.get("week") == week and build.get("options") and os.path.exists(staged):
+        if same_text(fields, build.get("fields") or {}) and same_picture(cover_of(pdf), cover_of(staged)):
+            return ("The new OW for %s reads the same as the options already built, with the same photo, so they "
+                    "weren't rebuilt. Pick one at the link below." % long_date(date) + tail, PICKER_URL)
+    return None
 
 
 # ---------------------------------------------------------------- building options
@@ -576,7 +640,7 @@ def run(a, ctx, state):
         msg = "Title graphics: no OW %s in cju-media/OW." % ("named %s" % a.ow if a.ow else "for the coming Sunday")
         raise Stop("idle" if a.trigger == "schedule" else "skipped", msg, notify=a.trigger != "schedule")
     ow = {"name": ow["name"], "sha": ow["sha"], "download_url": ow["download_url"]}
-    if build.get("ow", {}).get("sha") == ow["sha"] and a.trigger in ("upload", "schedule"):
+    if build.get("ow", {}).get("sha") == ow["sha"] and a.trigger in ("upload", "schedule") and not a.force_rebuild:
         if waiting:
             return "sent", waiting, True, None
         raise Stop("idle" if a.trigger == "schedule" else "skipped",
@@ -591,6 +655,13 @@ def run(a, ctx, state):
         with open(pdf, "wb") as fh:
             fh.write(r.content)
         fields, notes = read_fields(pdf)
+        same = None if a.force_rebuild else unchanged(ctx, build, fields, pdf)
+        if same:
+            if build.get("week") == pw.week_name(pw.parse_date_text(fields["dateText"])):
+                build["ow"] = ow                        # seen: the schedule won't read this OW again
+            message, link = same
+            raise Stop("unchanged", (waiting + "\n\n" if waiting else "") + message,
+                       notify=a.trigger != "schedule" or bool(waiting), link=link)
         new = build_options(ctx, ow, pdf, fields, notes, build)
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -605,6 +676,9 @@ def main():
     ap.add_argument("--pick", default=os.environ.get("PICK") or None, help="option number, or '#RRGGBB'")
     ap.add_argument("--replace-hand-edits", action="store_true",
                     default=os.environ.get("REPLACE_HAND_EDITS", "").lower() == "true")
+    ap.add_argument("--force-rebuild", action="store_true",
+                    default=os.environ.get("FORCE_REBUILD", "").lower() == "true",
+                    help="build the options even if the OW reads the same as what's already there")
     ap.add_argument("--no-drive", action="store_true",
                     default=os.environ.get("SEND_TO_DRIVE", "").lower() == "false",
                     help="with --pick: copy it into iCloud only, to edit before uploading it on the dashboard")

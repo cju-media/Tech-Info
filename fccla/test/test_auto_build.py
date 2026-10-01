@@ -271,5 +271,104 @@ class UsePick(unittest.TestCase):
         self.assertIn("keep #6E6127", msg)
 
 
+class NewOwThatChangesNothing(unittest.TestCase):
+    """A new OW that reads the same (and has the same photo) as what's already there isn't rebuilt,
+    unless the dashboard's "Rebuild title graphics" box (--force-rebuild) is ticked."""
+
+    WEEK = "10-4-26"
+    FIELDS = {"heading": ["Fall Series 5", "Painting the Stars", "We are Stories & Stardust"],
+              "dateText": "October 4, 2026", "preacher": "Rev. Laura Vail Fregin"}
+
+    def setUp(self):
+        self.base = tempfile.mkdtemp()
+        self.root, self.staging = os.path.join(self.base, "icloud"), os.path.join(self.base, "staging")
+        self.ctx = type("Ctx", (), {"root": self.root, "staging": self.staging,
+                                    "today": datetime.date(2026, 9, 30),
+                                    "now": datetime.datetime(2026, 9, 30, 12, tzinfo=ab.TZ)})()
+        self.photo = ab.Image.new("RGB", (64, 80), (20, 40, 90))
+        self.other = ab.Image.new("RGB", (64, 80), (200, 160, 40))
+
+    def in_use(self, heading="Fall Series 5 | Painting the Stars | We are Stories & Stardust"):
+        week = os.path.join(self.root, self.WEEK)
+        os.makedirs(week)
+        with open(os.path.join(week, "week-data.txt"), "w") as fh:
+            fh.write("heading = %s\ndateText = October 4, 2026\npreacher = Rev. Laura Vail Fregin\n"
+                     "panelColor = #1C304B\n" % heading)
+        self.photo.save(os.path.join(week, "Cover_%s.png" % self.WEEK))
+
+    def check(self, fields, photo, build=None):
+        with mock.patch.object(ab, "cover_of", return_value=photo):
+            return ab.unchanged(self.ctx, build or {}, fields, "new-ow.pdf")
+
+    def test_same_text_and_photo_as_the_graphics_in_use(self):
+        self.in_use()
+        msg, link = self.check(self.FIELDS, self.photo)
+        self.assertIn("#1C304B", msg)
+        self.assertIn("Rebuild title graphics", msg)                # says how to force it
+        self.assertIsNone(link)
+
+    def test_spacing_and_curly_quotes_dont_count(self):
+        self.in_use()
+        fields = dict(self.FIELDS, preacher="Rev.  Laura Vail Fregin ")
+        self.assertIsNotNone(self.check(fields, self.photo))
+
+    def test_a_changed_title_rebuilds(self):
+        self.in_use()
+        fields = dict(self.FIELDS, heading=["Fall Series 5", "Painting the Stars", "An Anticipatory Universe"])
+        self.assertIsNone(self.check(fields, self.photo))
+
+    def test_capitals_count_since_they_show_on_the_graphic(self):
+        self.in_use()
+        fields = dict(self.FIELDS, heading=["Fall Series 5", "Painting the Stars", "We Are Stories & Stardust"])
+        self.assertIsNone(self.check(fields, self.photo))
+
+    def test_a_new_photo_rebuilds(self):
+        self.in_use()
+        self.assertIsNone(self.check(self.FIELDS, self.other))
+
+    def test_nothing_picked_yet_compares_with_the_options_built(self):
+        os.makedirs(os.path.join(self.staging, self.WEEK))
+        open(os.path.join(self.staging, self.WEEK, "ow.pdf"), "w").close()
+        build = {"week": self.WEEK, "fields": dict(self.FIELDS, heading=" | ".join(self.FIELDS["heading"])),
+                 "options": [{"n": 1}]}
+        msg, link = self.check(self.FIELDS, self.photo, build)
+        self.assertIn("options already built", msg)
+        self.assertEqual(link, ab.PICKER_URL)
+
+    def run_upload(self, force):
+        self.in_use()
+        state = {"build": {"week": self.WEEK, "ow": {"name": "10.4.26_OW_Draft.pdf", "sha": "old"},
+                           "pick": {"hex": "#1C304B", "drive": "sent"}}}
+        a = type("A", (), {"pick": None, "trigger": "upload", "ow": "10.4.26_OW.pdf", "force_rebuild": force})()
+        new_ow = {"name": "10.4.26_OW.pdf", "sha": "new", "download_url": "https://example.invalid/ow.pdf"}
+        built = []
+        with mock.patch.object(ab, "list_ows", return_value=[new_ow]), \
+             mock.patch.object(ab, "choose_ow", return_value=dict(new_ow)), \
+             mock.patch.object(ab.requests, "get", return_value=mock.Mock(content=b"%PDF")), \
+             mock.patch.object(ab, "read_fields", return_value=(dict(self.FIELDS), [])), \
+             mock.patch.object(ab, "cover_of", return_value=self.photo), \
+             mock.patch.object(ab, "build_options", side_effect=lambda *x: built.append(1) or {"id": "b"}), \
+             mock.patch.object(ab, "build_message", return_value="ready"), \
+             mock.patch.object(ab, "clean_up"):
+            try:
+                result = ab.run(a, self.ctx, state)
+            except ab.Stop as stop:
+                result = stop
+        return result, built, state
+
+    def test_upload_that_changes_nothing_isnt_rebuilt(self):
+        stop, built, state = self.run_upload(force=False)
+        self.assertEqual(stop.status, "unchanged")
+        self.assertTrue(stop.notify)                                # you're told
+        self.assertEqual(built, [])
+        self.assertEqual(state["build"]["ow"]["sha"], "new")        # the schedule won't read it again
+        self.assertEqual(state["build"]["pick"]["hex"], "#1C304B")  # still in use
+
+    def test_rebuild_box_forces_it(self):
+        result, built, state = self.run_upload(force=True)
+        self.assertEqual(result[0], "built")
+        self.assertEqual(built, [1])
+
+
 if __name__ == "__main__":
     unittest.main()

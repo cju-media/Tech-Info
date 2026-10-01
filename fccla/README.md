@@ -71,7 +71,11 @@ Details:
   pick for a later week waits. The schedule (every 3 hours) sends it on the Monday of its week.
   A pick made on the Sunday itself isn't sent.
 - **A re-uploaded OW** rebuilds the options (your earlier pick's color is kept as an option), and
-  you pick again.
+  you pick again. If it reads the same as the graphics in use (same heading lines, capitals
+  included, date, preacher and cover photo), nothing is rebuilt and you get a text saying so.
+  Before a pick, it's compared with the options already built. Tick **Rebuild title graphics
+  even if the text hasn't changed** in the dashboard's OW box (or `force_rebuild` on a manual
+  run) to rebuild anyway.
 - **The schedule** also builds for an OW that reached `cju-media/OW` without the dashboard. It
   never builds on Sundays.
 - **Moving last week's folder** into `Past Weeks` stays manual.

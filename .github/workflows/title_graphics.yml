@@ -26,6 +26,11 @@ on:
         required: false
         type: string
         default: ''
+      force_rebuild:
+        description: 'Build the options even if the OW reads the same as the graphics in use'
+        required: false
+        type: boolean
+        default: false
       replace_hand_edits:
         description: 'With a pick: replace graphics in iCloud that were made or edited by hand'
         required: false
@@ -72,6 +77,8 @@ jobs:
           EVENT: ${{ github.event_name }}:${{ github.event.action }}
           OW_FILENAME: ${{ github.event.client_payload.filename || github.event.inputs.ow_filename }}
           PICK: ${{ github.event.client_payload.pick || github.event.inputs.pick }}
+          # the upload dashboard's "Rebuild title graphics" box
+          FORCE_REBUILD: ${{ github.event.client_payload.force_rebuild || github.event.inputs.force_rebuild }}
           REPLACE_HAND_EDITS: ${{ github.event.client_payload.replace_hand_edits || github.event.inputs.replace_hand_edits }}
           # false only when the picker's "don't send to Drive" button (or the unticked input) says so.
           # toJSON because a missing value loosely equals false in an expression.
