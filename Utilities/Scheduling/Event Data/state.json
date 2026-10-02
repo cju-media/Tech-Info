@@ -12,7 +12,6 @@
             "su-11-01-2026-worship-service"
         ],
         "Jaffe": [
-            "we-9-30-2026-book-soup",
             "su-10-18-2026-worship-service",
             "su-10-18-2026-worship-service",
             "su-10-25-2026-worship-service"
@@ -116,11 +115,6 @@
             "date": "2026-10-03",
             "name": "Wedding Ceremony",
             "call_time": "3:00pm-7:00pm"
-        },
-        "we-9-30-2026-book-soup": {
-            "date": "2026-09-30",
-            "name": "Book Soup",
-            "call_time": "5:00pm-9:00pm"
         }
     }
 }
