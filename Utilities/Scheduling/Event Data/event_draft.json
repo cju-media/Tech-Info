@@ -1,8 +1,8 @@
 {
-  "generated": "2026-10-02T15:58:36+00:00",
+  "generated": "2026-10-03T14:25:40+00:00",
   "window": {
-    "start": "2026-10-02",
-    "end": "2027-01-02"
+    "start": "2026-10-03",
+    "end": "2027-01-03"
   },
   "columns": [
     "Date",
@@ -18,6 +18,40 @@
     "PAYCOM CODE"
   ],
   "rows": [
+    {
+      "kind": "divider",
+      "cells": [
+        "JANUARY",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 1/3/2027",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
+    },
     {
       "kind": "divider",
       "cells": [
@@ -309,8 +343,8 @@
     }
   ],
   "counts": {
-    "events": 14,
-    "worship": 8,
+    "events": 15,
+    "worship": 9,
     "from_calendar": 6
   }
 }
