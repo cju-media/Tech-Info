@@ -18,7 +18,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "sa-10-3-2026-wedding-ceremony",
             "su-10-4-2026-worship-service",
             "tu-10-13-2026-reception-and-book-talk-diesel-bookstore-min-jin-lee",
             "sa-10-17-2026-wedding-ceremony",
@@ -28,6 +27,7 @@
         ],
         "Saad": [
             "su-10-4-2026-worship-service",
+            "sa-10-24-2026-la-choral-lab-recording-tbd",
             "su-10-25-2026-resonance-collective",
             "su-10-25-2026-worship-service",
             "mo-10-26-2026-book-soup-susan-orlean",
@@ -36,6 +36,46 @@
         ]
     },
     "event_details": {
+        "su-12-6-2026-worship-service": {
+            "date": "2026-12-06",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "fr-12-4-2026-yamandu-costa-concert": {
+            "date": "2026-12-04",
+            "name": "\"Yamandu Costa\" Concert",
+            "call_time": "5:30pm-9:30pm"
+        },
+        "su-11-29-2026-worship-service": {
+            "date": "2026-11-29",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "su-11-22-2026-worship-service": {
+            "date": "2026-11-22",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "mo-11-16-2026-boy-meets-world-podcast": {
+            "date": "2026-11-16",
+            "name": "Boy Meets World Podcast",
+            "call_time": "5:00pm-9:00pm"
+        },
+        "su-11-15-2026-worship-service": {
+            "date": "2026-11-15",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "su-11-8-2026-worship-service": {
+            "date": "2026-11-08",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "th-11-5-2026-screening-q-a-reception": {
+            "date": "2026-11-05",
+            "name": "Screening, Q&A, Reception",
+            "call_time": "7:00pm-9:00pm"
+        },
         "su-11-01-2026-wedding-ceremony": {
             "date": "2026-11-01",
             "name": "Wedding Ceremony",
@@ -71,9 +111,9 @@
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         },
-        "sa-10-24-2026-la-choral-lab-recording": {
+        "sa-10-24-2026-la-choral-lab-recording-tbd": {
             "date": "2026-10-24",
-            "name": "LA Choral Lab Recording",
+            "name": "LA Choral Lab Recording (TBD)",
             "call_time": "12:00pm-6:00pm"
         },
         "su-10-18-2026-worship-service": {
@@ -110,11 +150,6 @@
             "date": "2026-10-04",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "sa-10-3-2026-wedding-ceremony": {
-            "date": "2026-10-03",
-            "name": "Wedding Ceremony",
-            "call_time": "3:00pm-7:00pm"
         }
     }
 }
