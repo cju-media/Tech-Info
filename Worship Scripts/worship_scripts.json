@@ -1,17 +1,17 @@
 {
+  "2026-10-04": {
+    "path": "service-scripts/2026-10-04.pdf",
+    "modifiedTime": "2026-10-04T17:20:10.010Z",
+    "isCommunion": false,
+    "coffeeHourRoom": "Barnum Room",
+    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Brittany Skiles\nLAV4: Lance Skiles"
+  },
   "2026-10-25": {
     "path": "service-scripts/2026-10-25.pdf",
     "modifiedTime": "2026-10-01T23:15:35.846Z",
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat"
-  },
-  "2026-10-04": {
-    "path": "service-scripts/2026-10-04.pdf",
-    "modifiedTime": "2026-10-01T18:35:48.454Z",
-    "isCommunion": false,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\nLAV1: Laura Vincent Fregin\nLAV2: Michael Lehmann\nLAV3: Brittany Skiles\nLAV4: Lance Skiles"
   },
   "2026-10-18": {
     "path": "service-scripts/2026-10-18.pdf",
