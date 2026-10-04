@@ -8,7 +8,8 @@ Runs on the self-hosted Studio-Mini runner (the same machine the Content
 Display server runs on) via .github/workflows/push_coffee_hour.yml, after
 every worship-script check and again on Sunday mornings as a backstop.
 
-Uses the soonest script dated today or later that names a Coffee Hour room.
+Uses the soonest script dated today or later. If it names a Coffee Hour room
+that room is used; if it doesn't mention Coffee Hour, DEFAULT_ROOM is used.
 A normal run only pushes when that text differs from the last one it pushed,
 so a manual edit made in the control app during the week isn't clobbered
 every hour. --force (the Sunday backstop) always pushes.
@@ -27,6 +28,7 @@ from datetime import datetime
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORSHIP_SCRIPTS_FILE = os.path.join(SCRIPT_DIR, os.pardir, 'worship_scripts.json')
+DEFAULT_ROOM = 'Mayflower Courtyard'
 SERVER_URL = os.environ.get('CONTENT_DISPLAY_URL', 'http://localhost:1031')
 STATE_FILE = os.environ.get(
     'COFFEE_HOUR_STATE',
@@ -35,14 +37,14 @@ STATE_FILE = os.environ.get(
 
 
 def upcoming_room(worship_scripts, today):
-    """Returns (date_str, room) for the soonest script on/after today that
-    names a Coffee Hour room, or (None, None)."""
+    """Returns (date_str, room) for the soonest script on/after today: its
+    named Coffee Hour room, or DEFAULT_ROOM when it doesn't mention one.
+    Returns (None, None) when there is no upcoming script."""
     for date_str in sorted(worship_scripts):
         if date_str < today:
             continue
         room = (worship_scripts[date_str] or {}).get('coffeeHourRoom')
-        if room:
-            return date_str, room
+        return date_str, room or DEFAULT_ROOM
     return None, None
 
 
@@ -76,7 +78,7 @@ def main():
 
     date_str, room = upcoming_room(worship_scripts, today)
     if not room:
-        print(f"No upcoming worship script (on/after {today}) names a Coffee Hour room; leaving display as-is.")
+        print(f"No worship script on/after {today}; leaving display as-is.")
         return
 
     text = f"Join us for Coffee Hour in {room}!"
