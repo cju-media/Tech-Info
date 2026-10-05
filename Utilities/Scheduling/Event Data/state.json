@@ -18,7 +18,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "su-10-4-2026-worship-service",
             "tu-10-13-2026-reception-and-book-talk-diesel-bookstore-min-jin-lee",
             "sa-10-17-2026-wedding-ceremony",
             "su-10-18-2026-worship-service",
@@ -26,7 +25,6 @@
             "su-11-01-2026-wedding-ceremony"
         ],
         "Saad": [
-            "su-10-4-2026-worship-service",
             "sa-10-24-2026-la-choral-lab-recording-tbd",
             "su-10-25-2026-resonance-collective",
             "su-10-25-2026-worship-service",
@@ -143,11 +141,6 @@
         },
         "su-10-11-2026-worship-service": {
             "date": "2026-10-11",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
-        },
-        "su-10-4-2026-worship-service": {
-            "date": "2026-10-04",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
         }
