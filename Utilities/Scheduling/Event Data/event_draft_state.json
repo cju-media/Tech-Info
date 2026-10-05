@@ -1,21 +1,5 @@
 {
   "drafted": {
-    "040000008200E00074C5B7101A82E0080000000052498EA9FEF1DC01000000000000000010000000ABE2267440E71A42833B61FCF04435CF::2026-12-04": {
-      "call_times": "5:30pm-9:30pm",
-      "count": 1,
-      "name": "\"Yamandu Costa\" Concert",
-      "schedule": "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
-      "type": "Concert",
-      "venue": "Sanctuary"
-    },
-    "040000008200E00074C5B7101A82E008000000005347C5B61B08DD010000000000000000100000007B90D9B3B2A29B4A91B7AF09424C8442::2026-11-16": {
-      "call_times": "5:00pm-9:00pm",
-      "count": 1,
-      "name": "Boy Meets World Podcast",
-      "schedule": "5:00pm Set-up\n5:30pm Artist arrives\n6:15pm Doors\n7:00-8:30 Show\n9:00pm Off Campus",
-      "type": "Talk",
-      "venue": "Sanctuary"
-    },
     "040000008200E00074C5B7101A82E0080000000069F913AFB34BDD01000000000000000010000000C9267B423C7FBA4F81C5864D113E922B::2026-10-11": {
       "call_times": "12:45pm-1:45pm",
       "count": 1,
@@ -27,28 +11,20 @@
     "040000008200E00074C5B7101A82E0080000000096796A8F6924DD010000000000000000100000003435062FACF0FE45B669B8A493E95B50::2026-12-06": {
       "call_times": "2:00pm-10:00pm",
       "count": 2,
-      "name": "HoLAdays Synesthesia Sinfonietta Concert",
-      "schedule": "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
+      "name": "\"Synesthesia Sinfonietta\" Concert",
+      "schedule": "2:00pm Load-in\n6:30pm Doors\n7:00-9:00pm Concert\n10:00pm Off campus",
       "type": "Concert",
       "venue": "Sanctuary/Stuart Hall/Forecourt"
     },
     "040000008200E00074C5B7101A82E00800000000BC34ED37D817DD010000000000000000100000003417AB522A577847972012826DB0A36C::2026-12-13": {
       "call_times": "4:00pm-10:00pm",
       "count": 1,
-      "name": "Resonance Collective Concert",
-      "schedule": "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
+      "name": "\"Resonance Collective\" Concert",
+      "schedule": "4:00pm Load in\n7:00pm Concert\n8:30pm Reception\n10:00pm Off campus",
       "type": "Concert",
-      "venue": "Shatto"
-    },
-    "040000008200E00074C5B7101A82E00800000000EAEFDEF04A19DD010000000000000000100000009AD8CA85476F094EA332A26BF1EDF785::2026-11-05": {
-      "call_times": "7:00pm-9:00pm",
-      "count": 1,
-      "name": "Screening, Q&A, Reception",
-      "schedule": "TBD\n7:00pm start",
-      "type": "Screening",
       "venue": "Shatto"
     }
   },
-  "fingerprint": "754b6cef9334cfebd744033d269f7c13dd6e927941b4da78014cc5034d5628c2",
-  "gemini_at": "2026-09-30T16:07:36+00:00"
+  "fingerprint": "2d2230b8dcc58ab870fcb7871d4a5b3bbb1d4f6ab51c417697ebe42ee24141c7",
+  "gemini_at": "2026-10-05T18:51:46+00:00"
 }

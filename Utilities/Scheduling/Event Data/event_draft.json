@@ -1,8 +1,8 @@
 {
-  "generated": "2026-10-04T14:59:40+00:00",
+  "generated": "2026-10-05T18:51:46+00:00",
   "window": {
-    "start": "2026-10-04",
-    "end": "2027-01-04"
+    "start": "2026-10-05",
+    "end": "2027-01-05"
   },
   "columns": [
     "Date",
@@ -107,14 +107,14 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Resonance Collective Concert",
+        "\"Resonance Collective\" Concert",
         "Shatto",
         "4:00pm-10:00pm",
         "Concert",
         "1",
         "",
         "",
-        "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
+        "4:00pm Load in\n7:00pm Concert\n8:30pm Reception\n10:00pm Off campus",
         "",
         ""
       ],
@@ -141,171 +141,18 @@
       "kind": "event",
       "cells": [
         "SU 12/6/2026",
-        "HoLAdays Synesthesia Sinfonietta Concert",
+        "\"Synesthesia Sinfonietta\" Concert",
         "Sanctuary/Stuart Hall/Forecourt",
         "2:00pm-10:00pm",
         "Concert",
         "2",
         "",
         "",
-        "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
+        "2:00pm Load-in\n6:30pm Doors\n7:00-9:00pm Concert\n10:00pm Off campus",
         "",
         ""
       ],
       "note": "from calendar: HoLAdays Synesthesia Sinfonietta concert"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 12/6/2026",
-        "Worship Service",
-        "Sanctuary",
-        "8:45am-12:30pm",
-        "Worship Service",
-        "2",
-        "",
-        "(Live) \n(Stream)",
-        "",
-        "",
-        "Leave Blank"
-      ],
-      "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "FR 12/4/2026",
-        "\"Yamandu Costa\" Concert",
-        "Sanctuary",
-        "5:30pm-9:30pm",
-        "Concert",
-        "1",
-        "",
-        "",
-        "5:30pm \u2013 load-in\n7:30-8:45pm \u2013 concert\n9:30pm \u2013 off campus",
-        "",
-        ""
-      ],
-      "note": "from calendar: Concert: Yamandu Costa"
-    },
-    {
-      "kind": "divider",
-      "cells": [
-        "NOVEMBER",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        ""
-      ],
-      "note": ""
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 11/29/2026",
-        "Worship Service",
-        "Sanctuary",
-        "8:45am-12:30pm",
-        "Worship Service",
-        "2",
-        "",
-        "(Live) \n(Stream)",
-        "",
-        "",
-        "Leave Blank"
-      ],
-      "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 11/22/2026",
-        "Worship Service",
-        "Sanctuary",
-        "8:45am-12:30pm",
-        "Worship Service",
-        "2",
-        "",
-        "(Live) \n(Stream)",
-        "",
-        "",
-        "Leave Blank"
-      ],
-      "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "MO 11/16/2026",
-        "Boy Meets World Podcast",
-        "Sanctuary",
-        "5:00pm-9:00pm",
-        "Talk",
-        "1",
-        "",
-        "",
-        "5:00pm Set-up\n5:30pm Artist arrives\n6:15pm Doors\n7:00-8:30 Show\n9:00pm Off Campus",
-        "",
-        ""
-      ],
-      "note": "from calendar: Book Soup: Boy Meets World Podcast"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 11/15/2026",
-        "Worship Service",
-        "Sanctuary",
-        "8:45am-12:30pm",
-        "Worship Service",
-        "2",
-        "",
-        "(Live) \n(Stream)",
-        "",
-        "",
-        "Leave Blank"
-      ],
-      "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 11/8/2026",
-        "Worship Service",
-        "Sanctuary",
-        "8:45am-12:30pm",
-        "Worship Service",
-        "2",
-        "",
-        "(Live) \n(Stream)",
-        "",
-        "",
-        "Leave Blank"
-      ],
-      "note": "weekly worship service (not on the Outlook calendar)"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "TH 11/5/2026",
-        "Screening, Q&A, Reception",
-        "Shatto",
-        "7:00pm-9:00pm",
-        "Screening",
-        "1",
-        "",
-        "",
-        "TBD\n7:00pm start",
-        "",
-        ""
-      ],
-      "note": "from calendar: Screening, Q&A, Reception"
     },
     {
       "kind": "divider",
@@ -343,8 +190,8 @@
     }
   ],
   "counts": {
-    "events": 15,
-    "worship": 9,
-    "from_calendar": 6
+    "events": 7,
+    "worship": 4,
+    "from_calendar": 3
   }
 }
