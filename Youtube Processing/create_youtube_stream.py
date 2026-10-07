@@ -157,6 +157,34 @@ def _is_retryable(e):
     return False
 
 
+SERVICE_STREAM_KEY_TITLE = os.environ.get("SERVICE_STREAM_KEY_TITLE", "Service Stream Key")
+
+
+def find_service_stream_id(service):
+    """Id of the reusable stream key (liveStreams resource) titled "service".
+
+    Matches the title case-insensitively, exact match preferred, then
+    "contains". Returns None when no such key exists so the caller can warn
+    instead of silently binding YouTube's default key."""
+    want = SERVICE_STREAM_KEY_TITLE.strip().lower()
+    streams, page = [], None
+    while True:
+        resp = service.liveStreams().list(
+            part="snippet,cdn", mine=True, maxResults=50, pageToken=page).execute()
+        streams.extend(resp.get("items", []))
+        page = resp.get("nextPageToken")
+        if not page:
+            break
+    titles = [(st["snippet"]["title"].strip().lower(), st["id"]) for st in streams]
+    for t, sid in titles:
+        if t == want:
+            return sid
+    for t, sid in titles:
+        if want in t:
+            return sid
+    return None
+
+
 def attempt(what, done, call, max_retries=4, backoff_seconds=3):
     """Run one API call, retrying failures that plausibly clear on their own.
 
@@ -588,6 +616,24 @@ def main():
     # the dispatch that backfills the real stream link into the sermon-series
     # description and the breadcrumb the dashboard reads. The stream went out
     # fine; the description shipped with the placeholder still in it.
+    # Default to the "service" stream key rather than whatever YouTube picks.
+    stream_id, found = attempt(
+        "looking up the service stream key",
+        "Found the service stream key.",
+        lambda: find_service_stream_id(service)
+    )
+    if found and stream_id:
+        attempt(
+            f"binding {broadcast_id} to the service stream key",
+            "Bound broadcast to the service stream key.",
+            lambda: service.liveBroadcasts().bind(
+                id=broadcast_id, part="id,contentDetails", streamId=stream_id
+            ).execute()
+        )
+    elif found:
+        print(f"Warning: no stream key titled '{SERVICE_STREAM_KEY_TITLE}' found; "
+              f"{broadcast_id} was left on the default stream key.")
+
     # Update category
     attempt(
         f"setting the video category on {broadcast_id}",
