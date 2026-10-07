@@ -1,29 +1,29 @@
 [
   {
-    "name": "XBOX - EDAY",
-    "date": "2026-09-28",
-    "location": "6301 Hollywood Blvd",
+    "name": "HAUNTED HAYRIDE",
+    "date": "2026-10-02",
+    "location": "Griffith Park Picnic Area 4730 N CRYSTAL SPRINGS DR 90027",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.48,
-    "permit": "264109000001398",
+    "distance_mi": 5.02,
+    "permit": "264109000001460",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "COMPLEXCON",
-    "date": "2026-10-03",
-    "location": "LACC South Hall Booth E41 1301 S FIGUEROA ST 90015",
+    "name": "USC VS WA 2026",
+    "date": "2026-10-02",
+    "location": "Flying camera system attached to four light poles surrounding the LAMC. 3911 S FIGUEROA ST 90037",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001387",
+    "distance_mi": 3.52,
+    "permit": "264109000001507",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "COMPLEXCON",
-    "date": "2026-10-03",
-    "location": "1301 S FIGUEROA ST 90015",
+    "name": "BKS CEREMONY",
+    "date": "2026-10-16",
+    "location": "Alumni Park 3551 S TROUSDALE PKWY 90089",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001420",
+    "distance_mi": 3.03,
+    "permit": "264109000001523",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -36,156 +36,12 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "HAUNTED HAYRIDE",
-    "date": "2026-09-25",
-    "location": "Picnic Area 4730 N CRYSTAL SPRINGS DR 90027",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 5.02,
-    "permit": "264109000001414",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "LOS ANGELES EQUESTRIAN",
-    "date": "2026-10-03",
-    "location": "480 w. RIVERSIDE DRIVE , BURBANK CA,91506",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 276.81,
-    "permit": "264109000001422",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "USC SUITES",
-    "date": "2026-09-26",
-    "location": "Gate 19 & Field 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001418",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "ALL DAY I DREAM.",
-    "date": "2026-10-03",
-    "location": "532 S Olive St inside Park",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.14,
-    "permit": "264109000001320",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "BITCOIN/CASH APP BOOTH",
-    "date": "2026-10-03",
-    "location": "LACC booth A16 by ComplexCon entry signage 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001428",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "PRIVATE RECORD RELEASE",
-    "date": "2026-10-06",
-    "location": "630 S ANDERSON ST 90023",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 4.01,
-    "permit": "264109000001281",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "TUNNEL TENT",
-    "date": "2026-09-25",
-    "location": "Players Tunnel 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001417",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CHECK IN TENTS",
-    "date": "2026-09-29",
-    "location": "USC Campus",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001453",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "LAPFCU 90TH ANNIVERSARY",
     "date": "2026-10-10",
     "location": "Los Angeles Police Academy Athletic Field 1880 N ACADEMY DR 90012",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 2.82,
     "permit": "264109000001151",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "USC VS OREGON 2026",
-    "date": "2026-09-26",
-    "location": "Flying camera system attached to four light poles surrounding the LAMC 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001444",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "COMPLEXCON - BOOTH #P4 - WEST HALL",
-    "date": "2026-10-02",
-    "location": "1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001445",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "COMPLEXCON 2026",
-    "date": "2026-10-03",
-    "location": "1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001405",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "OPEN AIR AFFAIR",
-    "date": "2026-10-03",
-    "location": "Outdoor event in parking lot/patio 630 S ANDERSON ST 90023",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 4.01,
-    "permit": "264109000001270",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "COMPLEX CON",
-    "date": "2026-10-03",
-    "location": "Sculpture in South Hall 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001383",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "LOOSE LEAF BOOTH N28",
-    "date": "2026-10-03",
-    "location": "1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001310",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "PUFF CON",
-    "date": "2026-10-03",
-    "location": "Inside studio 1201 W 5TH ST 90017",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.64,
-    "permit": "264109000001458",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CAMERA TENT",
-    "date": "2026-09-26",
-    "location": "West end of stadium 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001416",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]

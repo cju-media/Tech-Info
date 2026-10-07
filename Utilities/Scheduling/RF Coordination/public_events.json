@@ -1,19 +1,19 @@
 [
   {
-    "name": "LA GREEK FEST",
-    "date": "2026-10-03",
-    "location": "1324 S NORMANDIE AVE 90006",
-    "type": "Expected - recurs yearly (2018, 2025), no permit yet; verify",
-    "distance_mi": 1.47,
+    "name": "WESTLAKE XMAS FEST23",
+    "date": "2026-12-01",
+    "location": "Lafayette Park, 625 S Lafayette Park Pl, Los Angeles 90057",
+    "type": "Expected - recurs yearly (2023), no permit yet; verify",
+    "distance_mi": 0.23,
     "permit": "",
     "source": "Projected from prior-year LA City permits"
   },
   {
-    "name": "FESTIVAL CHAPIN LOS ANGELES",
-    "date": "2026-10-11",
-    "location": "Lafayette Park, 625 S Lafayette Park Pl, Los Angeles 90057",
+    "name": "THE STREAMER AWARDS",
+    "date": "2026-12-05",
+    "location": "Inside main room 3790 W WILSHIRE BLVD 90010",
     "type": "Expected - recurs yearly (2025), no permit yet; verify",
-    "distance_mi": 0.23,
+    "distance_mi": 1.35,
     "permit": "",
     "source": "Projected from prior-year LA City permits"
   }
