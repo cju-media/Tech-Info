@@ -1,72 +1,64 @@
 {
   "build": {
-    "id": "10-4-26_0930-1558",
-    "week": "10-4-26",
-    "dateText": "October 4, 2026",
+    "id": "10-11-26_1007-1311",
+    "week": "10-11-26",
+    "dateText": "October 11, 2026",
     "fields": {
       "heading": [
-        "Fall Series 5",
-        "Painting the Stars",
-        "An Anticipatory Universe"
+        "Fall Series 6",
+        "Sacred Earth, Sacred Soul",
+        "Reawakening to What Our Souls Already Know"
       ],
-      "dateText": "October 4, 2026",
-      "preacher": "Rev. Laura Vail Fregin",
-      "title": "An Anticipatory Universe"
+      "dateText": "October 11, 2026",
+      "preacher": "Rev. Michael Lehman",
+      "title": "Reawakening to What Our Souls Already Know"
     },
     "ow": {
-      "name": "10.4.26_OW_Draft.pdf",
-      "sha": "8dbbb719e1420a793efb76a2bf8609db51b10c08"
+      "name": "10.11.26_OW_Draft.pdf",
+      "sha": "3e4d4b649f1287aaa26830fc71e89334919d14a4"
     },
-    "built_at": "2026-09-30T15:58:26-07:00",
-    "notes": [
-      "sermon row title 'We are Stories & Stardust' differs from page-1 title 'An Anticipatory Universe'"
-    ],
+    "built_at": "2026-10-07T13:11:28-07:00",
+    "notes": [],
     "options": [
       {
         "n": 1,
-        "hex": "#1C304B",
-        "label": "blue, 65% of the photo's color",
+        "hex": "#3B456A",
+        "label": "blue, 94% of the photo's color",
         "problems": [],
-        "service": "fccla/status/10-4-26_0930-1558/1-service.jpg",
-        "sermon": "fccla/status/10-4-26_0930-1558/1-sermon.jpg"
+        "service": "fccla/status/10-11-26_1007-1311/1-service.jpg",
+        "sermon": "fccla/status/10-11-26_1007-1311/1-sermon.jpg"
       },
       {
         "n": 2,
-        "hex": "#0D4035",
-        "label": "teal, 24% of the photo's color",
+        "hex": "#6A5A3F",
+        "label": "orange, 5% of the photo's color",
         "problems": [],
-        "service": "fccla/status/10-4-26_0930-1558/2-service.jpg",
-        "sermon": "fccla/status/10-4-26_0930-1558/2-sermon.jpg"
+        "service": "fccla/status/10-11-26_1007-1311/2-service.jpg",
+        "sermon": "fccla/status/10-11-26_1007-1311/2-sermon.jpg"
       },
       {
         "n": 3,
-        "hex": "#132135",
+        "hex": "#29304A",
         "label": "deeper blue",
         "problems": [],
-        "service": "fccla/status/10-4-26_0930-1558/3-service.jpg",
-        "sermon": "fccla/status/10-4-26_0930-1558/3-sermon.jpg"
+        "service": "fccla/status/10-11-26_1007-1311/3-service.jpg",
+        "sermon": "fccla/status/10-11-26_1007-1311/3-sermon.jpg"
       }
     ],
-    "pick": {
-      "n": 1,
-      "hex": "#1C304B",
-      "label": "blue, 65% of the photo's color",
-      "at": "2026-09-30T16:01:13-07:00",
-      "drive": "sent"
-    },
+    "pick": null,
     "heading": [
-      "Fall Series 5",
-      "Painting the Stars",
-      "An Anticipatory Universe"
+      "Fall Series 6",
+      "Sacred Earth, Sacred Soul",
+      "Reawakening to What Our Souls Already Know"
     ],
-    "title": "An Anticipatory Universe",
-    "preacher": "Rev. Laura Vail Fregin",
-    "cover": "fccla/status/10-4-26_0930-1558/cover.jpg"
+    "title": "Reawakening to What Our Souls Already Know",
+    "preacher": "Rev. Michael Lehman",
+    "cover": "fccla/status/10-11-26_1007-1311/cover.jpg"
   },
   "last_run": {
-    "at": "2026-09-30T16:01:13-07:00",
-    "trigger": "pick",
-    "status": "picked",
-    "message": "Using #1C304B (blue) for Sunday, October 4. Saved to iCloud (10-4-26). Sent to Drive for the livestream (Worship Service + Sermon Series)."
+    "at": "2026-10-07T13:11:28-07:00",
+    "trigger": "upload",
+    "status": "built",
+    "message": "Title graphics for Sunday, October 11 are ready to pick (link below).\n1 blue #3B456A \u00b7 2 orange #6A5A3F \u00b7 3 deeper blue #29304A"
   }
 }
