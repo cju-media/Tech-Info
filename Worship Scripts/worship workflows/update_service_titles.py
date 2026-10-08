@@ -14,6 +14,8 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaIoBaseUpload
 
+import hymn_lyrics
+
 DRIVE_FOLDER_ID = '1BICfy0OQa3fNvo69iEOpEx_66KCQGeUv'
 
 def get_drive_service():
@@ -338,6 +340,13 @@ def main():
 
             with open(filepath, "w") as f:
                 f.write(content.strip())
+
+    # Hymn lyrics, straight from the PDF text (not Gemini, so the words are exactly as printed),
+    # for the ProPresenter Mac's sync_propresenter_hymns.py
+    for key, verses in hymn_lyrics.extract(pdf_text).items():
+        with open(os.path.join(titles_dir, f"{key}-lyrics.txt"), "w") as f:
+            f.write(hymn_lyrics.to_file_text(verses))
+        print(f"Wrote {key}-lyrics.txt ({len(verses)} verses)")
 
 
     # 16. Upload to Google Drive
