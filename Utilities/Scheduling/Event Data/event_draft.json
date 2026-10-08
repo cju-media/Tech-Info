@@ -1,8 +1,8 @@
 {
-  "generated": "2026-10-06T16:17:08+00:00",
+  "generated": "2026-10-08T16:58:52+00:00",
   "window": {
-    "start": "2026-10-06",
-    "end": "2027-01-06"
+    "start": "2026-10-08",
+    "end": "2027-01-08"
   },
   "columns": [
     "Date",
@@ -107,11 +107,28 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "\"Resonance Collective\" Concert",
+        "Sarah Smith & Elijah Rawlings Wedding",
+        "Sanctuary/Forecourt",
+        "",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/13/2026",
+        "Resonance Collective Concert",
         "Shatto",
         "4:00pm-10:00pm",
         "Concert",
-        "1",
+        "2",
         "",
         "",
         "4:00pm Load in\n7:00pm Concert\n8:30pm Reception\n10:00pm Off campus",
@@ -140,8 +157,25 @@
     {
       "kind": "event",
       "cells": [
+        "SA 12/12/2026",
+        "Gloria Kang & Daniel Kim Wedding",
+        "Sanctuary/Forecourt",
+        "",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
+    },
+    {
+      "kind": "event",
+      "cells": [
         "SU 12/6/2026",
-        "\"Synesthesia Sinfonietta\" Concert",
+        "HoLAdays Synesthesia Sinfonietta Concert",
         "Sanctuary/Stuart Hall/Forecourt",
         "2:00pm-10:00pm",
         "Concert",
@@ -155,9 +189,26 @@
       "note": "from calendar: HoLAdays Synesthesia Sinfonietta concert"
     },
     {
+      "kind": "event",
+      "cells": [
+        "SA 12/5/2026",
+        "Elizabeth Bernal & Izett Barnett Wedding",
+        "Sanctuary/Forecourt",
+        "3:00pm-11:00pm",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "3:00pm Event Guard",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Elizabeth Bernal & Izett Barnett"
+    },
+    {
       "kind": "divider",
       "cells": [
-        "OCTOBER",
+        "NOVEMBER",
         "",
         "",
         "",
@@ -174,24 +225,41 @@
     {
       "kind": "event",
       "cells": [
-        "SU 10/11/2026",
-        "Labyrinth",
-        "Shatto",
-        "12:45pm-1:45pm",
-        "Special Event",
+        "FR 11/27/2026",
+        "Emma Johnson & Jarrett Cox Wedding",
+        "Sanctuary/Forecourt",
+        "3:30pm-6:30pm",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "3:30pm Security\n4:15pm Prelude\n4:30pm Ceremony",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Emma Johnson & Jarrett Cox Wedding"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SA 11/21/2026",
+        "Sofia Uribe & Robin Aimaq Wedding",
+        "Sanctuary/Forecourt/Stuart Hall",
+        "",
+        "Wedding",
         "1",
         "",
         "",
         "",
         "",
-        ""
+        "Weddings"
       ],
-      "note": "from calendar: Labyrinth"
+      "note": "from calendar: Ceremony: Sofia Uribe & Robin Aimaq"
     }
   ],
   "counts": {
-    "events": 7,
+    "events": 11,
     "worship": 4,
-    "from_calendar": 3
+    "from_calendar": 7
   }
 }

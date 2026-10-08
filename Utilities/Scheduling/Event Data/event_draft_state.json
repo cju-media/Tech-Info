@@ -1,30 +1,62 @@
 {
   "drafted": {
-    "040000008200E00074C5B7101A82E0080000000069F913AFB34BDD01000000000000000010000000C9267B423C7FBA4F81C5864D113E922B::2026-10-11": {
-      "call_times": "12:45pm-1:45pm",
+    "040000008200E00074C5B7101A82E008000000000E49EF75F06DDC01000000000000000010000000E5BDCE4BF492044FA758FB7F08FB19C0::2026-12-05": {
+      "call_times": "3:00pm-11:00pm",
       "count": 1,
-      "name": "Labyrinth",
+      "name": "Elizabeth Bernal & Izett Barnett Wedding",
+      "schedule": "3:00pm Event Guard",
+      "type": "Wedding",
+      "venue": "Sanctuary/Forecourt"
+    },
+    "040000008200E00074C5B7101A82E00800000000640A4C5486B1DC01000000000000000010000000BEA81B405584644EBB935795740D09E9::2026-11-21": {
+      "call_times": "",
+      "count": 1,
+      "name": "Sofia Uribe & Robin Aimaq Wedding",
       "schedule": "",
-      "type": "Special Event",
-      "venue": "Shatto"
+      "type": "Wedding",
+      "venue": "Sanctuary/Forecourt/Stuart Hall"
     },
     "040000008200E00074C5B7101A82E0080000000096796A8F6924DD010000000000000000100000003435062FACF0FE45B669B8A493E95B50::2026-12-06": {
       "call_times": "2:00pm-10:00pm",
       "count": 2,
-      "name": "\"Synesthesia Sinfonietta\" Concert",
+      "name": "HoLAdays Synesthesia Sinfonietta Concert",
       "schedule": "2:00pm Load-in\n6:30pm Doors\n7:00-9:00pm Concert\n10:00pm Off campus",
       "type": "Concert",
       "venue": "Sanctuary/Stuart Hall/Forecourt"
     },
+    "040000008200E00074C5B7101A82E00800000000B8724E9D9893DC0100000000000000001000000001F5C7B20EF9C549BB619796E18EBEBE::2026-12-13": {
+      "call_times": "",
+      "count": 1,
+      "name": "Sarah Smith & Elijah Rawlings Wedding",
+      "schedule": "",
+      "type": "Wedding",
+      "venue": "Sanctuary/Forecourt"
+    },
     "040000008200E00074C5B7101A82E00800000000BC34ED37D817DD010000000000000000100000003417AB522A577847972012826DB0A36C::2026-12-13": {
       "call_times": "4:00pm-10:00pm",
-      "count": 1,
-      "name": "\"Resonance Collective\" Concert",
+      "count": 2,
+      "name": "Resonance Collective Concert",
       "schedule": "4:00pm Load in\n7:00pm Concert\n8:30pm Reception\n10:00pm Off campus",
       "type": "Concert",
       "venue": "Shatto"
+    },
+    "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
+      "call_times": "",
+      "count": 1,
+      "name": "Gloria Kang & Daniel Kim Wedding",
+      "schedule": "",
+      "type": "Wedding",
+      "venue": "Sanctuary/Forecourt"
+    },
+    "040000008200E00074C5B7101A82E00800000000E07BF32A02EADB010000000000000000100000003689773DCAB7B24DABA0FB2F963F8F12::2026-11-27": {
+      "call_times": "3:30pm-6:30pm",
+      "count": 1,
+      "name": "Emma Johnson & Jarrett Cox Wedding",
+      "schedule": "3:30pm Security\n4:15pm Prelude\n4:30pm Ceremony",
+      "type": "Wedding",
+      "venue": "Sanctuary/Forecourt"
     }
   },
-  "fingerprint": "2d2230b8dcc58ab870fcb7871d4a5b3bbb1d4f6ab51c417697ebe42ee24141c7",
-  "gemini_at": "2026-10-05T18:51:46+00:00"
+  "fingerprint": "7baf13be69ed3ec75662bbb566930db43593eeba17da40090c05edbdc65aeb1f",
+  "gemini_at": "2026-10-08T16:58:52+00:00"
 }
