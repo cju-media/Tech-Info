@@ -1,17 +1,17 @@
 {
+  "2026-10-11": {
+    "path": "service-scripts/2026-10-11.pdf",
+    "modifiedTime": "2026-10-08T04:56:31.320Z",
+    "isCommunion": true,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\n    LAV1: Laura\n    LAV2: Michael\n    LAV3: Emily Kang\n    LAV4: Gavin Gregorio"
+  },
   "2026-11-01": {
     "path": "service-scripts/2026-11-01.pdf",
     "modifiedTime": "2026-10-07T19:20:26.434Z",
     "isCommunion": false,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
-  },
-  "2026-10-11": {
-    "path": "service-scripts/2026-10-11.pdf",
-    "modifiedTime": "2026-10-07T17:23:48.904Z",
-    "isCommunion": true,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Emily Kang\nLAV4: Gavin Gregorio"
   },
   "2026-10-25": {
     "path": "service-scripts/2026-10-25.pdf",
