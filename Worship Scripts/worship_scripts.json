@@ -1,4 +1,11 @@
 {
+  "2026-10-18": {
+    "path": "service-scripts/2026-10-18.pdf",
+    "modifiedTime": "2026-10-10T01:21:13.230Z",
+    "isCommunion": false,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Ayur"
+  },
   "2026-10-11": {
     "path": "service-scripts/2026-10-11.pdf",
     "modifiedTime": "2026-10-08T18:40:09.323Z",
@@ -19,12 +26,5 @@
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat"
-  },
-  "2026-10-18": {
-    "path": "service-scripts/2026-10-18.pdf",
-    "modifiedTime": "2026-10-06T21:51:50.958Z",
-    "isCommunion": false,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Ayur"
   }
 }
