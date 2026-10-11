@@ -1,10 +1,10 @@
 {
   "2026-10-11": {
     "path": "service-scripts/2026-10-11.pdf",
-    "modifiedTime": "2026-10-11T05:09:19.200Z",
+    "modifiedTime": "2026-10-11T16:04:48.045Z",
     "isCommunion": true,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\nLAV1: Rev. Laura Vail Fousek\nLAV2: Rev. Michael Livingston\nLAV3: Emily Kang\nLAV4: Gavin Gregorio"
+    "coffeeHourRoom": "Mayflower",
+    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Emily Kang\nLAV4: Gavin Gregorio"
   },
   "2026-10-25": {
     "path": "service-scripts/2026-10-25.pdf",
