@@ -4,14 +4,10 @@
             "su-10-18-2026-worship-service"
         ],
         "Danny": [
-            "su-10-11-2026-wedding-ceremony",
-            "su-10-11-2026-labyrinth",
-            "su-10-11-2026-worship-service",
             "sa-10-31-2026-wedding-ceremony",
             "su-11-01-2026-worship-service"
         ],
         "Jaffe": [
-            "su-10-11-2026-worship-service",
             "su-10-18-2026-worship-service",
             "su-10-18-2026-wedding-ceremony",
             "su-10-18-2026-worship-service",
@@ -129,21 +125,6 @@
             "date": "2026-10-13",
             "name": "Reception and Book Talk - Diesel Bookstore: Min Jin Lee",
             "call_time": "3:00pm-9:00pm"
-        },
-        "su-10-11-2026-wedding-ceremony": {
-            "date": "2026-10-11",
-            "name": "Wedding Ceremony",
-            "call_time": "3:00pm-7:00pm"
-        },
-        "su-10-11-2026-labyrinth": {
-            "date": "2026-10-11",
-            "name": "Labyrinth",
-            "call_time": "1:15-3:00"
-        },
-        "su-10-11-2026-worship-service": {
-            "date": "2026-10-11",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
