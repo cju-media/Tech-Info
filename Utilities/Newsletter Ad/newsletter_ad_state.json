@@ -1,48 +1,69 @@
 {
-  "issue_fingerprint": "b7e210afe1b88e877b48a194cb3fe77db39966451ac9da822cbb1685f507465d",
-  "issue_title": "The Meetinghouse This Week - September 17th, 2026",
-  "issue_url": "https://conta.cc/4yVbjNX",
+  "issue_fingerprint": "8b868071960c5f563851340e11d782780e598e4e2c7f9a80d65781ffbaae4598",
+  "issue_title": "The Meetinghouse This Week - October 8th, 2026",
+  "issue_url": "https://conta.cc/4zks6Kg",
   "items": [
     {
-      "blurb": "Explore the gifts of nature in this weekly Zoom discussion led by Rev. Michael.",
-      "date": "2026-09-22",
-      "title": "Braiding Sweetgrass Book Group",
-      "when": "Tuesdays | 7pm | Zoom"
+      "blurb": "Help maintain the campus urban farm during a monthly workday.",
+      "date": "2026-10-17",
+      "title": "Garden Saturday Workday",
+      "when": "Saturday, Oct 17"
     },
     {
-      "blurb": "Join a welcoming evening of connection, contemplation, and fun.",
-      "date": "2026-09-23",
-      "title": "FCCLA Men's Group",
-      "when": "Wednesday, Sept 23 | 7pm"
-    },
-    {
-      "blurb": "Dive into an exciting and meaningful study of the scriptures.",
-      "date": "2026-09-24",
-      "title": "Not Your Grandma's Bible Study",
-      "when": "Thursday, Sept 24 | 6pm"
-    },
-    {
-      "blurb": "Hear a Russian Orthodox nun share about Christian life in the Holy Land.",
-      "date": "2026-09-26",
-      "title": "Conversation With Mother Agapia",
-      "when": "Saturday, Sept 26 | 11am"
-    },
-    {
-      "blurb": "Kick off the new year of justice, community, and spirituality groups with a meal.",
-      "date": "2026-09-27",
-      "title": "Collaboratives Kickoff Lunch",
-      "when": "Sunday, Sept 27 | 1pm"
-    },
-    {
-      "blurb": "Help harvest fresh produce in the community gardens to feed local families.",
-      "date": "2026-10-04",
+      "blurb": "Join the garden team to gather fresh produce for neighbors.",
+      "date": "2026-10-18",
       "title": "Harvesting Sundays",
-      "when": "1st & 3rd Sundays | 8:30am"
+      "when": "Sunday, Oct 18 | 8:30am"
+    },
+    {
+      "blurb": "Discover the magic of campus food growing on a guided sensory walk.",
+      "date": "2026-10-18",
+      "title": "Gardens and Farm Tour",
+      "when": "Sunday, Oct 18 | 12:30pm"
+    },
+    {
+      "blurb": "Join the community for crafts, games, a costume contest, and pie raffle.",
+      "date": "2026-10-25",
+      "title": "Fall Festival and Chili Cook-Off",
+      "when": "Sunday, Oct 25 | 12:30pm"
+    },
+    {
+      "blurb": "Water crops weekly or host the produce table during coffee hour.",
+      "date": "",
+      "title": "Garden and Farm Volunteer Call",
+      "when": ""
+    },
+    {
+      "blurb": "Help provide urgent financial support to community members in need.",
+      "date": "",
+      "title": "Emergency Assistance Fund Drive",
+      "when": ""
     }
   ],
   "published": {
-    "at": "2026-10-11",
-    "items": [],
-    "md5": "108d47c979c0296a2bb5049d5d597e25"
+    "at": "2026-10-12",
+    "items": [
+      {
+        "date": "2026-10-17",
+        "title": "Garden Saturday Workday",
+        "when": "Saturday, Oct 17"
+      },
+      {
+        "date": "2026-10-18",
+        "title": "Harvesting Sundays",
+        "when": "Sunday, Oct 18 | 8:30am"
+      },
+      {
+        "date": "2026-10-18",
+        "title": "Gardens and Farm Tour",
+        "when": "Sunday, Oct 18 | 12:30pm"
+      },
+      {
+        "date": "2026-10-25",
+        "title": "Fall Festival and Chili Cook-Off",
+        "when": "Sunday, Oct 25 | 12:30pm"
+      }
+    ],
+    "md5": "3e03d91dfb4d7128cde7fccc62acd228"
   }
 }
