@@ -1,7 +1,14 @@
 {
+  "2026-10-18": {
+    "path": "service-scripts/2026-10-18.pdf",
+    "modifiedTime": "2026-10-12T22:06:17.909Z",
+    "isCommunion": false,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura Vance Fregin\nLAV2: Michael Lehman\nLAV3: Sharon Duncan"
+  },
   "2026-10-25": {
     "path": "service-scripts/2026-10-25.pdf",
-    "modifiedTime": "2026-10-12T01:57:25.096Z",
+    "modifiedTime": "2026-10-12T19:05:26.419Z",
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat"
@@ -12,12 +19,5 @@
     "isCommunion": false,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
-  },
-  "2026-10-18": {
-    "path": "service-scripts/2026-10-18.pdf",
-    "modifiedTime": "2026-10-10T01:21:13.230Z",
-    "isCommunion": false,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Ayur"
   }
 }
