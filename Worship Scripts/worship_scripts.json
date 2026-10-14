@@ -1,4 +1,11 @@
 {
+  "2026-10-18": {
+    "path": "service-scripts/2026-10-18.pdf",
+    "modifiedTime": "2026-10-14T21:52:40.851Z",
+    "isCommunion": false,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Sharon Duncan"
+  },
   "2026-11-15": {
     "path": "service-scripts/2026-11-15.pdf",
     "modifiedTime": "2026-10-14T18:15:56.574Z",
@@ -19,13 +26,6 @@
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
-  },
-  "2026-10-18": {
-    "path": "service-scripts/2026-10-18.pdf",
-    "modifiedTime": "2026-10-14T17:55:28.302Z",
-    "isCommunion": false,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Rev. Laura Vance Fennell\nLAV2: Rev. Michael\nLAV3: Sharon Duncan"
   },
   "2026-10-25": {
     "path": "service-scripts/2026-10-25.pdf",
