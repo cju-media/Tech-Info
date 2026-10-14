@@ -1,23 +1,5 @@
 [
   {
-    "name": "HAUNTED HAYRIDE",
-    "date": "2026-10-02",
-    "location": "Griffith Park Picnic Area 4730 N CRYSTAL SPRINGS DR 90027",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 5.02,
-    "permit": "264109000001460",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "USC VS WA 2026",
-    "date": "2026-10-02",
-    "location": "Flying camera system attached to four light poles surrounding the LAMC. 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001507",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "BKS CEREMONY",
     "date": "2026-10-16",
     "location": "Alumni Park 3551 S TROUSDALE PKWY 90089",
@@ -27,21 +9,120 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "CARNIVAL",
-    "date": "2026-10-09",
-    "location": "1536 Selby Ave., Los Angeles, CA 90024",
+    "name": "CHECK IN TENTS",
+    "date": "2026-10-12",
+    "location": "USC Campus",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 8.73,
-    "permit": "264109000001074",
+    "distance_mi": null,
+    "permit": "264109000001549",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "LAPFCU 90TH ANNIVERSARY",
-    "date": "2026-10-10",
-    "location": "Los Angeles Police Academy Athletic Field 1880 N ACADEMY DR 90012",
+    "name": "2026 AAO HNSF",
+    "date": "2026-10-17",
+    "location": "1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.82,
-    "permit": "264109000001151",
+    "distance_mi": 1.92,
+    "permit": "264109000001477",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "AAO-HNSF - KARL STORZ",
+    "date": "2026-10-17",
+    "location": "LACC South Hall 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001561",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "INAUGURATION",
+    "date": "2026-10-16",
+    "location": "Alumni Park 3551 S TROUSDALE PKWY 90089",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.03,
+    "permit": "264109000001527",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CAMERA TENT",
+    "date": "2026-10-10",
+    "location": "West end of Stadium 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001520",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "HAUNTED HAYRIDE",
+    "date": "2026-10-09",
+    "location": "Picnic area 4730 N CRYSTAL SPRINGS DR 90027",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 5.02,
+    "permit": "264109000001526",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "TUNNEL TENT",
+    "date": "2026-10-09",
+    "location": "Players Tunnel 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001519",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CIRCUS VARGAS - WEEK 3",
+    "date": "2026-11-06",
+    "location": "6100 N Topanga Canyon 91367",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001542",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "OLIVE TREE PEOPLE FESTIVAL",
+    "date": "2026-10-17",
+    "location": "1 Windward Ave 90291",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001564",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CIRCUS VARGAS - WEEK 4",
+    "date": "2026-11-13",
+    "location": "6100 N Topanga Canyon 91367",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001543",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "TUNNEL TENT",
+    "date": "2026-10-16",
+    "location": "Players Tunnel 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001558",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "HAUNTED HAYRIDE",
+    "date": "2026-10-16",
+    "location": "Picnic area 4730 N CRYSTAL SPRINGS DR 90027",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 5.02,
+    "permit": "264109000001586",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "1015_1016_1017 OUTDOOR CONCERTS",
+    "date": "2026-10-15",
+    "location": "The Fairbanks Lawn - an 80K sq ft lawn in the 54 acre Hollywood Forever Cemetery 6000 W SANTA MONICA BLVD 90038",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.68,
+    "permit": "264109000001554",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
