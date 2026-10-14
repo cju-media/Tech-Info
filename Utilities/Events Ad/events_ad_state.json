@@ -13,10 +13,6 @@
   ],
   "card_events": [
     {
-      "name": "Min Jin Lee discusses \"American Hagwon\"",
-      "start": "2026-10-13T19:00:00-07:00"
-    },
-    {
       "name": "The Resonance Collective presents Mayab\u2019: Live Folktr\u00f3nica with Aurora Nohemi",
       "start": "2026-10-25T19:00:00-07:00"
     },
@@ -41,7 +37,7 @@
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "2577db98ff3b849bf654778a416960ddb544186e8aeeb24010b2458c248d71b2",
+  "card_fingerprint": "0a6b8fb0ef5980ea9019b20b4140c6f5a3b3e1d405aa22644dbe10675d247188",
   "classified": {
     "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"|2026-11-16T19:00:00-08:00": {
       "category": "AUTHOR TALK",
@@ -272,6 +268,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "fcc4d3061ab3170fdbd42900bf7eb8b5f2e1e366baba7811c6191d4ce1d09cfb",
-  "updated_at": "2026-09-30T19:47:21-07:00"
+  "page_fingerprint": "7eca37c768d87364998f944525f5a51516e48e8c8d666d323b2494eca20421b8",
+  "updated_at": "2026-10-13T19:11:16-07:00"
 }
