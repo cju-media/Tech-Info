@@ -15,7 +15,7 @@
     },
     "ow": {
       "name": "10.18.26_OW_Draft.pdf",
-      "sha": "6b3abb472ad5b2ee9b5c5285d3fe409eccea942c"
+      "sha": "6b918271046454ddb86c9803acb8cbfa7c94337a"
     },
     "built_at": "2026-10-15T11:11:09-07:00",
     "notes": [],
@@ -62,9 +62,9 @@
     "cover": "fccla/status/10-18-26_1015-1111/cover.jpg"
   },
   "last_run": {
-    "at": "2026-10-15T11:37:25-07:00",
-    "trigger": "pick",
-    "status": "picked",
-    "message": "Using #B46639 (orange) for Sunday, October 18. Saved to iCloud (10-18-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
+    "at": "2026-10-15T12:08:50-07:00",
+    "trigger": "upload",
+    "status": "unchanged",
+    "message": "The new OW for Sunday, October 18 reads the same as the graphics in use (#B46639), with the same photo, so the thumbnails weren't rebuilt. To rebuild them anyway, upload the OW again with \"Rebuild title graphics\" ticked."
   }
 }
