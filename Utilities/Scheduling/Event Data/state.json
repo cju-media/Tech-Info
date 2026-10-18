@@ -15,7 +15,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "sa-10-17-2026-wedding-ceremony",
             "su-10-18-2026-worship-service",
             "su-10-25-2026-resonance-collective",
             "su-11-01-2026-wedding-ceremony"
@@ -112,11 +111,6 @@
         },
         "su-10-18-2026-wedding-ceremony": {
             "date": "2026-10-18",
-            "name": "Wedding Ceremony",
-            "call_time": "2:00pm-5:00pm"
-        },
-        "sa-10-17-2026-wedding-ceremony": {
-            "date": "2026-10-17",
             "name": "Wedding Ceremony",
             "call_time": "2:00pm-5:00pm"
         }
