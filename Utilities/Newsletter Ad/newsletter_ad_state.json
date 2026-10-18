@@ -41,13 +41,8 @@
     }
   ],
   "published": {
-    "at": "2026-10-17",
+    "at": "2026-10-18",
     "items": [
-      {
-        "date": "2026-10-17",
-        "title": "Garden Saturday Workday",
-        "when": "Saturday, Oct 17"
-      },
       {
         "date": "2026-10-18",
         "title": "Harvesting Sundays",
@@ -62,8 +57,13 @@
         "date": "2026-10-25",
         "title": "Fall Festival and Chili Cook-Off",
         "when": "Sunday, Oct 25 | 12:30pm"
+      },
+      {
+        "date": "",
+        "title": "Garden and Farm Volunteer Call",
+        "when": ""
       }
     ],
-    "md5": "3e03d91dfb4d7128cde7fccc62acd228"
+    "md5": "f71c712704d7c88d8a3d5f7878f536db"
   }
 }
