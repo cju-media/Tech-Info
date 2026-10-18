@@ -19,7 +19,7 @@
     "040000008200E00074C5B7101A82E0080000000096796A8F6924DD010000000000000000100000003435062FACF0FE45B669B8A493E95B50::2026-12-06": {
       "call_times": "2:00pm-10:00pm",
       "count": 2,
-      "name": "HoLAdays Synesthesia Sinfonietta Concert",
+      "name": "\"Synesthesia Sinfonietta\" Concert",
       "schedule": "2:00pm \u2013 Load-in\nTBD \u2013 Sound Check\nTBD \u2013 musician dinner in Stuart Hall\n6:30pm \u2013 Doors\n7:00-9:00pm \u2013 Concert\n10:00pm \u2013 Off campus",
       "type": "Concert",
       "venue": "Sanctuary/Stuart Hall/Forecourt"
@@ -35,7 +35,7 @@
     "040000008200E00074C5B7101A82E00800000000BC34ED37D817DD010000000000000000100000003417AB522A577847972012826DB0A36C::2026-12-13": {
       "call_times": "4:00pm-10:00pm",
       "count": 1,
-      "name": "Resonance Collective Concert",
+      "name": "\"Resonance Collective\" Concert",
       "schedule": "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
       "type": "Concert",
       "venue": "Shatto"
@@ -57,6 +57,6 @@
       "venue": "Forecourt/Sanctuary"
     }
   },
-  "fingerprint": "319aedfcde72bf7e7bbe4ff710f0f6297a536cb08b652d944b96f9285d6b135b",
-  "gemini_at": "2026-10-17T13:15:54+00:00"
+  "fingerprint": "10f117a4a5adc1236282f2c4632e5f2eaa1eeae5e4fb79367f9d3659457244cd",
+  "gemini_at": "2026-10-18T13:36:21+00:00"
 }
