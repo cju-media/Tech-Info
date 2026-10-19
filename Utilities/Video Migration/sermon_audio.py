@@ -116,7 +116,9 @@ def download_stream_audio(url, out_dir, cookies_path=None):
     """
     template = os.path.join(out_dir, 'stream-audio.%(ext)s')
     ytdlp = [os.environ['YT_DLP']] if os.environ.get('YT_DLP') else [sys.executable, '-m', 'yt_dlp']
-    cmd = ytdlp + ['-f', 'bestaudio', '--no-playlist', '--newline', '-o', template]
+    cmd = ytdlp + ['-f', 'bestaudio', '--no-playlist', '--newline',
+                   '--concurrent-fragments', '8', '--socket-timeout', '30', '--retries', '10',
+                   '-o', template]
     if cookies_path:
         cmd += ['--cookies', cookies_path]
     cmd.append(url)
