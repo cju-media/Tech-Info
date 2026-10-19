@@ -107,8 +107,10 @@ def render_sermon_video(audio_path, image_path, start, end, out_path):
     audio_filter = (f"afade=t=in:d={FADE_IN_SECONDS},"
                     f"afade=t=out:st={fade_out_start}:d={FADE_OUT_SECONDS},"
                     "loudnorm=I=-16:TP=-1.5:LRA=11")
-    video_filter = ("scale=1920:1080:force_original_aspect_ratio=decrease,"
-                    "pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p")
+    # Fill the frame and crop the overflow (the podcast graphic is 1920x1082,
+    # so padding would leave black slivers at the sides).
+    video_filter = ("scale=1920:1080:force_original_aspect_ratio=increase,"
+                    "crop=1920:1080,format=yuv420p")
     subprocess.run([
         'ffmpeg', '-y', '-loglevel', 'error',
         '-loop', '1', '-framerate', '5', '-i', image_path,

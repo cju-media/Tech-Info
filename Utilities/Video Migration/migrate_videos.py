@@ -15,6 +15,9 @@ import tempfile
 
 import sermon_audio
 
+# The still shown over the sermon audio; the per-week Drive image is only the
+# YouTube thumbnail.
+PODCAST_IMAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'podcast-background.png')
 DEST_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc9v95hvMCERRUvWBXJJsGrP'
 # Where the Sunday livestream itself lives (create_youtube_stream.py's
@@ -250,9 +253,9 @@ def fetch_thumbnail(service, folder_id):
     return local_path
 
 
-def build_sermon_video(service, youtube_service, folder_id, service_date, service_date_str):
-    """Render the sermon mp4 (thumbnail over the sermon's slice of the livestream
-    audio). Returns its path, or None after telling the iMessage notifier why
+def build_sermon_video(youtube_service, service_date, service_date_str):
+    """Render the sermon mp4 (the podcast image over the sermon's slice of the
+    livestream audio). Returns its path, or None after telling the iMessage notifier why
     there is nothing to upload."""
     def skip(missing, detail):
         msg = (f"Video migration: the {service_date_str} sermon upload was skipped - "
@@ -276,11 +279,6 @@ def build_sermon_video(service, youtube_service, folder_id, service_date, servic
         skip('stream', "no livestream for that date in the worship playlist")
         return None
 
-    image_path = fetch_thumbnail(service, folder_id)
-    if not image_path:
-        skip('thumbnail', "no image in the Drive folder to put behind the audio")
-        return None
-
     work_dir = tempfile.mkdtemp()
     cookies_path = None
     try:
@@ -294,7 +292,7 @@ def build_sermon_video(service, youtube_service, folder_id, service_date, servic
         audio_path = sermon_audio.download_stream_audio(stream_url, work_dir, cookies_path)
         out_path = os.path.join('/tmp', f"sermon-{service_date_str}.mp4")
         print("Cutting the sermon and rendering the video...")
-        sermon_audio.cut_sermon(timings_text, audio_path, image_path, out_path)
+        sermon_audio.cut_sermon(timings_text, audio_path, PODCAST_IMAGE, out_path)
         return out_path
     except (ValueError, RuntimeError, subprocess.CalledProcessError) as e:
         stderr = (getattr(e, 'stderr', '') or '').strip().splitlines()
@@ -303,8 +301,6 @@ def build_sermon_video(service, youtube_service, folder_id, service_date, servic
         return None
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
-        if os.path.exists(image_path):
-            os.remove(image_path)
 
 
 def main():
@@ -405,8 +401,7 @@ def main():
 
             if not already_uploaded:
                 local_video_path = build_sermon_video(
-                    service, youtube_service, dest_subfolder_id,
-                    sunday_date.date(), sunday_str_formatted
+                    youtube_service, sunday_date.date(), sunday_str_formatted
                 )
                 if not local_video_path:
                     return
