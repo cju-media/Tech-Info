@@ -111,6 +111,45 @@ class RenderTests(unittest.TestCase):
                         "-i", "color=c=blue:s=640x480", "-frames:v", "1", image], check=True)
         return audio, image
 
+    def _make_audio(self, segments):
+        """A stream built from ('tone'|'quiet', seconds) pieces; 'quiet' is -60 dB
+        noise, like an open mic in an empty room."""
+        audio = os.path.join(self.dir, "stream.m4a")
+        sources = []
+        for kind, seconds in segments:
+            sources += ["-f", "lavfi", "-i",
+                        f"sine=frequency=440:duration={seconds}" if kind == "tone"
+                        else f"anoisesrc=duration={seconds}:amplitude=0.001:color=white"]
+        inputs = "".join(f"[{i}]" for i in range(len(segments)))
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *sources, "-filter_complex",
+                        f"{inputs}concat=n={len(segments)}:v=0:a=1", "-c:a", "aac", audio],
+                       check=True)
+        image = os.path.join(self.dir, "thumb.png")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi",
+                        "-i", "color=c=blue:s=640x480", "-frames:v", "1", image], check=True)
+        return audio, image
+
+    def _cut_whole_stream(self, segments):
+        audio, image = self._make_audio(segments)
+        total = int(sum(seconds for _, seconds in segments))
+        out = os.path.join(self.dir, "sermon.mp4")
+        cut_sermon(f"00:00 Sermon - X\n{total // 60}:{total % 60:02d} Offering", audio, image, out)
+        return probe_duration(out)
+
+    def test_trailing_dead_air_is_trimmed(self):
+        duration = self._cut_whole_stream([("tone", 200), ("quiet", 25)])
+        self.assertAlmostEqual(duration, 200 + sermon_audio.SILENCE_TAIL_PAD_SECONDS, delta=1.5)
+
+    def test_short_trailing_pause_is_kept(self):
+        self.assertAlmostEqual(self._cut_whole_stream([("tone", 200), ("quiet", 5)]), 205, delta=1.5)
+
+    def test_silence_in_the_middle_is_kept(self):
+        duration = self._cut_whole_stream([("tone", 100), ("quiet", 15), ("tone", 100)])
+        self.assertAlmostEqual(duration, 215, delta=1.5)
+
+    def test_no_trim_that_would_leave_too_short_a_sermon(self):
+        self.assertAlmostEqual(self._cut_whole_stream([("tone", 60), ("quiet", 150)]), 210, delta=1.5)
+
     def _streams(self, path):
         out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type",
                               "-of", "json", path], check=True, capture_output=True, text=True)

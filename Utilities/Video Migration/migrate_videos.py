@@ -257,6 +257,26 @@ def fetch_thumbnail(service, folder_id):
     return local_path
 
 
+def find_timings_path(service_date, service_date_str):
+    """The service's timings.txt: the Monday archive, or, until that has run, the
+    live file the OSC server pushed when the stream ended (only if it is this
+    service's)."""
+    archived = os.path.join('Utilities', 'Archives', service_date.isoformat(), 'timings.txt')
+    if os.path.exists(archived):
+        return archived
+
+    live = os.path.join('Youtube Processing', 'timings.txt')
+    try:
+        with open(os.path.join('Youtube Processing', 'last_stream.json')) as f:
+            live_date = json.load(f).get('service_date')
+    except (OSError, ValueError):
+        return None
+    if live_date == service_date_str and os.path.exists(live):
+        print(f"No archive for {service_date_str} yet; using the live {live}.")
+        return live
+    return None
+
+
 def build_sermon_video(youtube_service, service_date, service_date_str):
     """Render the sermon mp4 (the podcast image over the sermon's slice of the
     livestream audio). Returns its path, or None after telling the iMessage notifier why
@@ -271,9 +291,9 @@ def build_sermon_video(youtube_service, service_date, service_date_str):
             'message': msg,
         })
 
-    timings_path = os.path.join('Utilities', 'Archives', service_date.isoformat(), 'timings.txt')
-    if not os.path.exists(timings_path):
-        skip('timings', f"no {timings_path} to find the sermon in")
+    timings_path = find_timings_path(service_date, service_date_str)
+    if not timings_path:
+        skip('timings', f"no archived timings.txt for {service_date_str} to find the sermon in")
         return None
     with open(timings_path, encoding='utf-8') as f:
         timings_text = f.read()
@@ -332,6 +352,11 @@ def main():
 
     # Just explicitly go back to the most recent Sunday
     sunday_date = now - timedelta(days=now.weekday() + 1)
+    # On a Sunday this picks the previous one; SERVICE_DATE (MM-DD-YYYY) names the
+    # service explicitly, e.g. to test with the stream that just finished.
+    service_date_override = os.environ.get('SERVICE_DATE', '').strip()
+    if service_date_override:
+        sunday_date = tz.localize(datetime.strptime(service_date_override, '%m-%d-%Y'))
 
     sunday_str_formatted = sunday_date.strftime('%m-%d-%Y')
     print(f"Target Sunday date: {sunday_str_formatted}")

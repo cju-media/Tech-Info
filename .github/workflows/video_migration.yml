@@ -15,6 +15,11 @@ on:
         options:
           - private
           - public
+      service_date:
+        description: 'Service date MM-DD-YYYY (default: the last Sunday before today)'
+        required: false
+        default: ''
+        type: string
       test_run:
         description: 'Test run: upload a private [TEST] copy even if already uploaded; skip playlist and breadcrumb'
         required: false
@@ -57,6 +62,7 @@ jobs:
           # bot-checks the livestream audio download from GitHub's runners.
           YOUTUBE_COOKIES_TXT: ${{ secrets.YOUTUBE_COOKIES_TXT }}
           YOUTUBE_PRIVACY_STATUS: ${{ github.event.inputs.privacy_status || 'public' }}
+          SERVICE_DATE: ${{ github.event.inputs.service_date }}
           SERMON_TEST_RUN: ${{ github.event.inputs.test_run == 'true' && '1' || '' }}
           PAT: ${{ secrets.PAT }}
         run: |

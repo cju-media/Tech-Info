@@ -20,6 +20,16 @@ END_PAD_SECONDS = 0
 FADE_IN_SECONDS = 1
 FADE_OUT_SECONDS = 2
 
+# The next timing lands a little after the sermon actually ends, leaving dead
+# air at the tail. Silence of at least SILENCE_MIN_SECONDS that runs to the end
+# of the span is cut, keeping SILENCE_TAIL_PAD_SECONDS of it so the last word
+# can ring out. SILENCE_NOISE_DB is the level counted as silent: raise it
+# (e.g. -35) if room noise keeps the tail from being detected, lower it if
+# quiet speech gets clipped.
+SILENCE_NOISE_DB = -40
+SILENCE_MIN_SECONDS = 10
+SILENCE_TAIL_PAD_SECONDS = 1.5
+
 # A span outside this range means the timings or the offset are off, and
 # publishing the cut would put a wrong video on a public channel.
 MIN_SERMON_SECONDS = 3 * 60
@@ -104,6 +114,51 @@ def probe_duration(path):
     return float(result.stdout.strip())
 
 
+def find_trailing_silence(audio_path, start, end):
+    """Seconds into audio_path[start:end] where a silence that runs to the end begins.
+
+    None if the span doesn't end in at least SILENCE_MIN_SECONDS of silence.
+    """
+    length = end - start
+    result = subprocess.run(
+        ['ffmpeg', '-hide_banner', '-nostats', '-ss', str(start), '-t', str(length),
+         '-i', audio_path,
+         '-af', f'silencedetect=noise={SILENCE_NOISE_DB}dB:d={SILENCE_MIN_SECONDS}',
+         '-f', 'null', '-'],
+        check=True, capture_output=True, text=True)
+
+    last_start = last_end = None
+    for line in result.stderr.splitlines():
+        found = re.search(r'silence_start: (-?[\d.]+)', line)
+        if found:
+            last_start, last_end = max(float(found.group(1)), 0.0), None
+            continue
+        found = re.search(r'silence_end: ([\d.]+)', line)
+        if found:
+            last_end = float(found.group(1))
+
+    if last_start is None:
+        return None
+    # Older ffmpegs print no silence_end for a silence still going at EOF.
+    if last_end is not None and last_end < length - 0.5:
+        return None
+    return last_start
+
+
+def trim_trailing_silence(audio_path, start, end):
+    """end moved back to just after the last speech, if the span ends in dead air."""
+    silence_start = find_trailing_silence(audio_path, start, end)
+    if silence_start is None:
+        return end
+    new_end = min(start + silence_start + SILENCE_TAIL_PAD_SECONDS, end)
+    if new_end - start < MIN_SERMON_SECONDS:
+        print(f"Ignoring trailing silence at {silence_start:.0f}s: trimming would leave "
+              f"under {MIN_SERMON_SECONDS // 60} minutes.")
+        return end
+    print(f"Trimmed {end - new_end:.1f}s of trailing silence from the sermon.")
+    return new_end
+
+
 def render_sermon_video(audio_path, image_path, start, end, out_path):
     """Write an mp4 of audio_path[start:end] over image_path."""
     duration = end - start
@@ -142,4 +197,5 @@ def cut_sermon(timings_text, audio_path, image_path, out_path):
         end = int(probe_duration(audio_path))
     start, end = apply_pads(start, end)
     check_span(start, end)
+    end = trim_trailing_silence(audio_path, start, end)
     return render_sermon_video(audio_path, image_path, start, end, out_path)
