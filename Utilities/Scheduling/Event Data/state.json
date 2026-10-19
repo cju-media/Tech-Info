@@ -1,21 +1,15 @@
 {
     "assignments": {
-        "Cameron": [
-            "su-10-18-2026-worship-service"
-        ],
+        "Cameron": [],
         "Danny": [
             "sa-10-31-2026-wedding-ceremony",
             "su-11-01-2026-worship-service"
         ],
         "Jaffe": [
-            "su-10-18-2026-worship-service",
-            "su-10-18-2026-wedding-ceremony",
-            "su-10-18-2026-worship-service",
             "su-10-25-2026-worship-service"
         ],
         "Kaspar": [],
         "Marc": [
-            "su-10-18-2026-worship-service",
             "su-10-25-2026-resonance-collective",
             "su-11-01-2026-wedding-ceremony"
         ],
@@ -103,16 +97,6 @@
             "date": "2026-10-24",
             "name": "LA Choral Lab Recording (TBD)",
             "call_time": "12:00pm-6:00pm"
-        },
-        "su-10-18-2026-worship-service": {
-            "date": "2026-10-18",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
-        },
-        "su-10-18-2026-wedding-ceremony": {
-            "date": "2026-10-18",
-            "name": "Wedding Ceremony",
-            "call_time": "2:00pm-5:00pm"
         }
     }
 }
