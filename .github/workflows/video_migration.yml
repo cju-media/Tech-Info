@@ -15,6 +15,11 @@ on:
         options:
           - private
           - public
+      test_run:
+        description: 'Test run: upload a private [TEST] copy even if already uploaded; skip playlist and breadcrumb'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   migrate_video:
@@ -45,6 +50,7 @@ jobs:
           # bot-checks the livestream audio download from GitHub's runners.
           YOUTUBE_COOKIES_TXT: ${{ secrets.YOUTUBE_COOKIES_TXT }}
           YOUTUBE_PRIVACY_STATUS: ${{ github.event.inputs.privacy_status || 'public' }}
+          SERMON_TEST_RUN: ${{ github.event.inputs.test_run == 'true' && '1' || '' }}
           PAT: ${{ secrets.PAT }}
         run: |
           python "Utilities/Video Migration/migrate_videos.py"

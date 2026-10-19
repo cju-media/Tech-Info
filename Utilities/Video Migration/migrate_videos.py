@@ -18,6 +18,10 @@ import sermon_audio
 # The still shown over the sermon audio; the per-week Drive image is only the
 # YouTube thumbnail.
 PODCAST_IMAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'podcast-background.png')
+# SERMON_TEST_RUN=1 (the workflow's test_run input): upload a private "[TEST]" copy
+# even if the sermon is already on YouTube, and leave the playlist and the
+# last_upload.json breadcrumb alone.
+TEST_RUN = os.environ.get('SERMON_TEST_RUN') == '1'
 DEST_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc9v95hvMCERRUvWBXJJsGrP'
 # Where the Sunday livestream itself lives (create_youtube_stream.py's
@@ -378,7 +382,7 @@ def main():
             already_uploaded = False
             next_page_token = None
 
-            while True:
+            while not TEST_RUN:
                 playlist_response = youtube_service.playlistItems().list(
                     part='snippet',
                     playlistId=YOUTUBE_PLAYLIST_ID,
@@ -407,7 +411,8 @@ def main():
                     return
 
                 print("Sermon video rendered. Starting YouTube upload...")
-                privacy_status = os.environ.get('YOUTUBE_PRIVACY_STATUS', 'public')
+                privacy_status = 'private' if TEST_RUN else os.environ.get('YOUTUBE_PRIVACY_STATUS', 'public')
+                upload_title = f"[TEST] {video_title}" if TEST_RUN else video_title
 
                 try:
                     video_description = resolve_stream_link(
@@ -416,7 +421,7 @@ def main():
                     )
                     body = {
                         'snippet': {
-                            'title': video_title,
+                            'title': upload_title,
                             'description': video_description,
                             'categoryId': '29'  # Nonprofits & Activism
                         },
@@ -442,28 +447,29 @@ def main():
                     uploaded_video_id = response.get('id')
                     print(f"Video uploaded successfully! Video ID: {uploaded_video_id}")
 
-                    # Add to playlist
-                    print(f"Adding video {uploaded_video_id} to playlist {YOUTUBE_PLAYLIST_ID}...")
-                    youtube_service.playlistItems().insert(
-                        part='snippet',
-                        body={
-                            'snippet': {
-                                'playlistId': YOUTUBE_PLAYLIST_ID,
-                                'resourceId': {
-                                    'kind': 'youtube#video',
-                                    'videoId': uploaded_video_id
+                    if not TEST_RUN:
+                        print(f"Adding video {uploaded_video_id} to playlist {YOUTUBE_PLAYLIST_ID}...")
+                        youtube_service.playlistItems().insert(
+                            part='snippet',
+                            body={
+                                'snippet': {
+                                    'playlistId': YOUTUBE_PLAYLIST_ID,
+                                    'resourceId': {
+                                        'kind': 'youtube#video',
+                                        'videoId': uploaded_video_id
+                                    }
                                 }
                             }
-                        }
-                    ).execute()
-                    print("Video added to playlist successfully.")
+                        ).execute()
+                        print("Video added to playlist successfully.")
 
                     dispatch_event('sermon_series_video_uploaded', {
-                        'video_title': video_title,
+                        'video_title': upload_title,
                         'video_url': f"https://youtube.com/watch?v={uploaded_video_id}",
                         'privacy_status': privacy_status
                     })
-                    record_last_upload(uploaded_video_id, video_title, sunday_str_formatted)
+                    if not TEST_RUN:
+                        record_last_upload(uploaded_video_id, video_title, sunday_str_formatted)
 
                     local_thumb_path = fetch_thumbnail(service, dest_subfolder_id)
                     if local_thumb_path:
