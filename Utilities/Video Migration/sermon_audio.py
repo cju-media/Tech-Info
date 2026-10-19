@@ -182,12 +182,13 @@ SPEECH_PROMPT = """This audio is the final minutes of a church sermon. The speak
 then there is a transition and organ or choir music.
 
 List every stretch of human speech (a person talking, including "Amen" or a closing \
-prayer) as start and end times in seconds from the beginning of this clip. Singing, \
+prayer) with start and end times measured from the beginning of this clip, written as \
+"MM:SS" strings (for example "04:10" is four minutes ten seconds in). Singing, \
 humming, choir and instruments are NOT speech. Merge pauses between sentences shorter \
 than 3 seconds into one stretch. If there is no speech at all, return an empty list.
 
 Respond with ONLY compact JSON, no markdown fences:
-{"speech": [{"start": 0.0, "end": 123.4}]}"""
+{"speech": [{"start": "00:00", "end": "02:03"}]}"""
 
 
 def _seconds(value):
@@ -272,6 +273,11 @@ def trim_after_speech(audio_path, start, end):
 
     print("Speech in the last {:.0f}s of the span (seconds into that window): {}".format(
         clip_length, ", ".join(f"{a:.0f}-{b:.0f}" for a, b in segments) or "none"))
+    # Times past the end of the clip mean the model misread the timeline (it once
+    # wrote 4:10 as 410); don't guess at them.
+    if any(end > clip_length + 5 for _, end in segments):
+        print("Speech times run past the end of the clip; keeping the timed end.")
+        return end
     speech_end = speech_end_before_music(segments, clip_length)
     if speech_end is None:
         print("No 10s+ gap in the speech near the end of the span; keeping the timed end.")

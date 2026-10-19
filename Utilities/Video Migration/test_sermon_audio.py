@@ -207,6 +207,11 @@ class RenderTests(unittest.TestCase):
             cut_sermon("00:00 Sermon - X\n10:00 Offering", audio, image, out)
         return probe_duration(out), ask
 
+    def test_times_past_the_end_of_the_clip_are_not_trusted(self):
+        # The model once answered 0-410 / 493-500 for a 300s clip (it meant 4:10, 4:53-5:00).
+        duration, _ = self._cut_with_speech([(0.0, 410.0), (493.0, 500.0)])
+        self.assertAlmostEqual(duration, 600, delta=1.5)
+
     def test_trims_the_music_after_the_last_spoken_word(self):
         # The span is 600s; Gemini sees the last 300s (starting at 300s) and hears
         # speech to 200s into it, so the sermon ends at 300 + 200 + pad.
