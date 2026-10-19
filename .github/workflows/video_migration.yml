@@ -23,7 +23,9 @@ on:
 
 jobs:
   migrate_video:
-    runs-on: ubuntu-latest
+    # Self-hosted: YouTube bot-checks the livestream audio download from
+    # GitHub's datacenter IPs ("Sign in to confirm you're not a bot").
+    runs-on: [self-hosted, macOS]
     permissions:
       contents: write
 
@@ -33,14 +35,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
       - name: Install dependencies
         run: |
-          pip install google-api-python-client google-auth google-auth-oauthlib pytz requests yt-dlp
+          python3 -m pip install --quiet --upgrade google-api-python-client google-auth google-auth-oauthlib pytz requests yt-dlp
+          command -v ffmpeg >/dev/null || brew install ffmpeg
 
       - name: Run video migration script
         env:
@@ -53,7 +51,7 @@ jobs:
           SERMON_TEST_RUN: ${{ github.event.inputs.test_run == 'true' && '1' || '' }}
           PAT: ${{ secrets.PAT }}
         run: |
-          python "Utilities/Video Migration/migrate_videos.py"
+          python3 "Utilities/Video Migration/migrate_videos.py"
 
       - name: Commit last-upload breadcrumb
         run: |
