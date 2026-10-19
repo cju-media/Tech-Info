@@ -1,0 +1,33 @@
+name: Video Migration Watchdog
+
+# The migration job and the iMessage notifier both run on the self-hosted Mac, so
+# if it is down nothing can text. This runs on a GitHub-hosted runner Monday
+# evening and emails if that run never started, is stuck, or failed. See Utilities/Video Migration/check_migration_ran.py.
+
+on:
+  schedule:
+    # Video Migration is scheduled for 17:00 UTC Mondays but GitHub has been starting
+    # it ~22:00-23:30 UTC, so check at 04:00 UTC Tuesday (Monday 9pm Pacific).
+    - cron: '0 4 * * 2'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Monday's Video Migration run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEALTH_ALERT_EMAIL: ${{ vars.HEALTH_ALERT_EMAIL }}
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+        run: python3 "Utilities/Video Migration/check_migration_ran.py"

@@ -31,6 +31,8 @@ jobs:
     # Self-hosted: YouTube bot-checks the livestream audio download from
     # GitHub's datacenter IPs ("Sign in to confirm you're not a bot").
     runs-on: [self-hosted, macOS]
+    # A hung step fails (and texts) instead of holding the runner for hours.
+    timeout-minutes: 90
     permissions:
       contents: write
 
@@ -77,3 +79,26 @@ jobs:
           # the tech-info dashboard's pipeline section reads it.
           git add "Utilities/Video Migration/last_upload.json" || true
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Record last sermon video migration" && git pull --rebase origin main && git push)
+
+      # Covers failures the script can't report itself (a failed pip/curl/brew
+      # step, a crash before main() starts). The script texts its own problems.
+      - name: Text on workflow failure
+        if: failure()
+        env:
+          PAT: ${{ secrets.PAT }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          body = {"event_type": "video_migration_upload_skipped", "client_payload": {
+              "date": "the latest service",
+              "message": "The Video Migration workflow failed, so the sermon video may not have been "
+                         "uploaded. Details: " + os.environ["RUN_URL"] + " - re-run it once fixed."}}
+          request = urllib.request.Request(
+              "https://api.github.com/repos/" + os.environ["REPO"] + "/dispatches",
+              data=json.dumps(body).encode(), method="POST",
+              headers={"Authorization": "token " + os.environ["PAT"],
+                       "Accept": "application/vnd.github.v3+json"})
+          urllib.request.urlopen(request, timeout=30)
+          PY

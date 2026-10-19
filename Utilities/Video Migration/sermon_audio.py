@@ -23,6 +23,10 @@ import requests
 START_PAD_SECONDS = 0
 END_PAD_SECONDS = 0
 
+# Degraded-but-published conditions from the latest cut_sermon call, worded to
+# follow "the video uploaded, but ..." in the text migrate_videos.py sends.
+NOTES = []
+
 FADE_IN_SECONDS = 1
 FADE_OUT_SECONDS = 2
 
@@ -255,6 +259,7 @@ def trim_after_speech(audio_path, start, end):
     api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
         print("GEMINI_API_KEY not set; not looking for where the speech ends.")
+        NOTES.append("GEMINI_API_KEY is not set, so the music after the sermon was not trimmed.")
         return end
 
     window_start = max(start, end - SPEECH_WINDOW_SECONDS)
@@ -269,6 +274,7 @@ def trim_after_speech(audio_path, start, end):
             segments = ask_gemini_for_speech(clip_path, api_key)
         except (subprocess.CalledProcessError, requests.RequestException, ValueError, KeyError, IndexError) as e:
             print(f"Could not find where the speech ends ({e}); keeping the timed end.")
+            NOTES.append("the speech-end check failed, so it may end with about a minute of organ music.")
             return end
 
     print("Speech in the last {:.0f}s of the span (seconds into that window): {}".format(
@@ -277,6 +283,7 @@ def trim_after_speech(audio_path, start, end):
     # wrote 4:10 as 410); don't guess at them.
     if any(end > clip_length + 5 for _, end in segments):
         print("Speech times run past the end of the clip; keeping the timed end.")
+        NOTES.append("the speech-end check gave unusable times, so it may end with about a minute of organ music.")
         return end
     speech_end = speech_end_before_music(segments, clip_length)
     if speech_end is None:
@@ -336,6 +343,7 @@ def cut_sermon(timings_text, audio_path, image_path, out_path):
 
     Raises ValueError if there is no Sermon line or the span is implausible.
     """
+    NOTES.clear()
     span = find_sermon_span(timings_text)
     if span is None:
         raise ValueError("No Sermon line in timings.txt")
