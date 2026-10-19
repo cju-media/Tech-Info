@@ -1,10 +1,17 @@
 {
   "2026-10-25": {
     "path": "service-scripts/2026-10-25.pdf",
-    "modifiedTime": "2026-10-19T15:23:06.400Z",
+    "modifiedTime": "2026-10-19T20:56:47.700Z",
     "isCommunion": true,
     "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat"
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Rev. Laura Vail Fregin\nLAV2: Rev. Michael Livingston\nLAV3: Cynthia Siadat"
+  },
+  "2026-11-01": {
+    "path": "service-scripts/2026-11-01.pdf",
+    "modifiedTime": "2026-10-19T17:06:26.184Z",
+    "isCommunion": false,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
   },
   "2026-11-15": {
     "path": "service-scripts/2026-11-15.pdf",
@@ -24,13 +31,6 @@
     "path": "service-scripts/2026-11-08.pdf",
     "modifiedTime": "2026-10-14T18:09:17.537Z",
     "isCommunion": true,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
-  },
-  "2026-11-01": {
-    "path": "service-scripts/2026-11-01.pdf",
-    "modifiedTime": "2026-10-10T17:45:13.006Z",
-    "isCommunion": false,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
   }
