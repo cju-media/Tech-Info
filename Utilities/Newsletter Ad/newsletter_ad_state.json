@@ -41,18 +41,8 @@
     }
   ],
   "published": {
-    "at": "2026-10-18",
+    "at": "2026-10-19",
     "items": [
-      {
-        "date": "2026-10-18",
-        "title": "Harvesting Sundays",
-        "when": "Sunday, Oct 18 | 8:30am"
-      },
-      {
-        "date": "2026-10-18",
-        "title": "Gardens and Farm Tour",
-        "when": "Sunday, Oct 18 | 12:30pm"
-      },
       {
         "date": "2026-10-25",
         "title": "Fall Festival and Chili Cook-Off",
@@ -62,8 +52,13 @@
         "date": "",
         "title": "Garden and Farm Volunteer Call",
         "when": ""
+      },
+      {
+        "date": "",
+        "title": "Emergency Assistance Fund Drive",
+        "when": ""
       }
     ],
-    "md5": "f71c712704d7c88d8a3d5f7878f536db"
+    "md5": "ef428c1ddc452fd95b4e3219d6ff5d59"
   }
 }
