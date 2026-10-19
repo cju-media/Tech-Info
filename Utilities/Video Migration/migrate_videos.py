@@ -9,8 +9,12 @@ from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 import io
+import shutil
+import subprocess
+import tempfile
 
-SOURCE_FOLDER_ID = '1wntwzav8sqcBOROpsr_Lm3MzAPyfGUUh'
+import sermon_audio
+
 DEST_FOLDER_ID = '1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4'
 YOUTUBE_PLAYLIST_ID = 'PLGtiSp5WvUc9v95hvMCERRUvWBXJJsGrP'
 # Where the Sunday livestream itself lives (create_youtube_stream.py's
@@ -220,6 +224,89 @@ def get_or_create_folder(service, parent_id, folder_name):
         print(f"Created new folder '{folder_name}' with ID: {folder.get('id')}")
         return folder.get('id')
 
+def fetch_thumbnail(service, folder_id):
+    """Download the first image in a Drive folder to /tmp. Returns its path, or None."""
+    print("Searching for thumbnail image...")
+    query = f"'{folder_id}' in parents and (mimeType = 'image/jpeg' or mimeType = 'image/png' or mimeType = 'image/jpg' or mimeType = 'image/webp') and trashed = false"
+    images = service.files().list(
+        q=query,
+        supportsAllDrives=True,
+        includeItemsFromAllDrives=True,
+        fields="files(id, name)"
+    ).execute().get('files', [])
+    if not images:
+        print("No image file found in the destination folder to use as a thumbnail.")
+        return None
+
+    thumb_file = images[0]
+    print(f"Found thumbnail image: {thumb_file['name']}")
+    local_path = f"/tmp/{thumb_file['name']}"
+    request = service.files().get_media(fileId=thumb_file['id'])
+    with io.FileIO(local_path, 'wb') as fh:
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+    return local_path
+
+
+def build_sermon_video(service, youtube_service, folder_id, service_date, service_date_str):
+    """Render the sermon mp4 (thumbnail over the sermon's slice of the livestream
+    audio). Returns its path, or None after telling the iMessage notifier why
+    there is nothing to upload."""
+    def skip(missing, detail):
+        msg = (f"Video migration: the {service_date_str} sermon upload was skipped - "
+               f"{detail}. Fix that and re-run 'Video Migration'.")
+        print(msg)
+        dispatch_event('video_migration_upload_skipped', {
+            'date': service_date_str,
+            'missing': missing,
+            'message': msg,
+        })
+
+    timings_path = os.path.join('Utilities', 'Archives', service_date.isoformat(), 'timings.txt')
+    if not os.path.exists(timings_path):
+        skip('timings', f"no {timings_path} to find the sermon in")
+        return None
+    with open(timings_path, encoding='utf-8') as f:
+        timings_text = f.read()
+
+    stream_url = find_worship_stream_url(youtube_service, service_date)
+    if not stream_url:
+        skip('stream', "no livestream for that date in the worship playlist")
+        return None
+
+    image_path = fetch_thumbnail(service, folder_id)
+    if not image_path:
+        skip('thumbnail', "no image in the Drive folder to put behind the audio")
+        return None
+
+    work_dir = tempfile.mkdtemp()
+    cookies_path = None
+    try:
+        cookies = os.environ.get('YOUTUBE_COOKIES_TXT')
+        if cookies:
+            cookies_path = os.path.join(work_dir, 'cookies.txt')
+            with open(cookies_path, 'w') as f:
+                f.write(cookies)
+
+        print(f"Downloading livestream audio from {stream_url}...")
+        audio_path = sermon_audio.download_stream_audio(stream_url, work_dir, cookies_path)
+        out_path = os.path.join('/tmp', f"sermon-{service_date_str}.mp4")
+        print("Cutting the sermon and rendering the video...")
+        sermon_audio.cut_sermon(timings_text, audio_path, image_path, out_path)
+        return out_path
+    except (ValueError, RuntimeError, subprocess.CalledProcessError) as e:
+        stderr = (getattr(e, 'stderr', '') or '').strip().splitlines()
+        detail = f"{e}" + (f" ({stderr[-1]})" if stderr else "")
+        skip('audio-cut', f"could not build the video: {detail}")
+        return None
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+
+
 def main():
     service = get_drive_service()
     if not service:
@@ -249,96 +336,13 @@ def main():
     sunday_str_formatted = sunday_date.strftime('%m-%d-%Y')
     print(f"Target Sunday date: {sunday_str_formatted}")
 
-    # Query most recent video file from source folder
-    # We query for video/mp4 files, order by modifiedTime desc
-    query = f"'{SOURCE_FOLDER_ID}' in parents and mimeType contains 'video/' and trashed = false"
-    results = service.files().list(
-        q=query,
-        orderBy="modifiedTime desc",
-        pageSize=10,
-        supportsAllDrives=True,
-        includeItemsFromAllDrives=True,
-        fields="files(id, name, modifiedTime, size)"
-    ).execute()
-
-    files = results.get('files', [])
-    if not files:
-        print("No video files found in the source folder.")
-        return
-
-    recent_video = files[0]
-    print(f"Most recent video: {recent_video['name']} (modified: {recent_video.get('modifiedTime')}, size: {recent_video.get('size')} bytes)")
-
-    # 1. Check size: around 100MB
-    size_bytes = int(recent_video.get('size', 0))
-    # 50MB to 150MB
-    if not (50 * 1024 * 1024 <= size_bytes <= 150 * 1024 * 1024):
-        print(f"Video size {size_bytes} bytes is not around 100MB. Skipping.")
-        return
-
-    # 2 & 3 & 4. Validate Date and Time based on Filename
-    # Filenames are expected to be like "2026-07-19 11-28-40.mp4"
-    import re
-    match = re.search(r"(\d{4}-\d{2}-\d{2}) (\d{2})-\d{2}-\d{2}", recent_video['name'])
-    if not match:
-        print(f"Video filename '{recent_video['name']}' does not match expected date format. Skipping.")
-        return
-
-    parsed_date_str = match.group(1)
-    parsed_hour_str = match.group(2)
-
-    parsed_date = datetime.strptime(parsed_date_str, '%Y-%m-%d').date()
-    parsed_hour = int(parsed_hour_str)
-
-    if parsed_date != sunday_date.date():
-        print(f"Video was recorded on {parsed_date}, not target Sunday {sunday_date.date()}. Skipping.")
-        return
-
-    if parsed_hour != 11:
-        print(f"Video was recorded in hour {parsed_hour}, not 11am. Skipping.")
-        return
-
-    if '11' not in recent_video['name']:
-        # This is somewhat redundant with the hour check, but keeping to strictly follow original rule
-        print(f"Video title does not contain '11'. Skipping.")
-        return
-
-    print("Video matches all parameters!")
-
-    # Get or create subfolder with Sunday's date in destination folder
+    # The video is rendered from the livestream's audio, so the Sunday's Drive
+    # folder only needs to hold the title, description and thumbnail.
     dest_subfolder_id = get_or_create_folder(service, DEST_FOLDER_ID, sunday_str_formatted)
-
-    # Check if it already exists in the subfolder to avoid duplicate copies
-    query_existing = f"'{dest_subfolder_id}' in parents and name = '{recent_video['name']}' and trashed = false"
-    existing_results = service.files().list(
-        q=query_existing,
-        supportsAllDrives=True,
-        includeItemsFromAllDrives=True,
-        fields="files(id)"
-    ).execute()
-
-    copied_video_id = None
-    if existing_results.get('files'):
-        print(f"Video '{recent_video['name']}' already exists in destination subfolder '{sunday_str_formatted}'. Skipping copy.")
-        copied_video_id = existing_results['files'][0]['id']
-    else:
-        # Copy file to destination subfolder
-        print(f"Copying video to destination subfolder...")
-        copied_file = {
-            'name': recent_video['name'],
-            'parents': [dest_subfolder_id]
-        }
-        copied_response = service.files().copy(
-            fileId=recent_video['id'],
-            body=copied_file,
-            supportsAllDrives=True
-        ).execute()
-        copied_video_id = copied_response.get('id')
-        print(f"Successfully copied video '{recent_video['name']}' to '{sunday_str_formatted}'!")
 
     # Search for Title and Description in the destination subfolder for YouTube upload
     youtube_service = get_youtube_service()
-    if youtube_service and copied_video_id:
+    if youtube_service:
         # We need to find the title and description files in the same dest_subfolder_id
         # Usually they are generated by create_sermon_series.py and uploaded here
         query_text_files = f"'{dest_subfolder_id}' in parents and mimeType = 'text/plain' and trashed = false"
@@ -400,18 +404,14 @@ def main():
                     break
 
             if not already_uploaded:
-                print("Downloading video locally for YouTube upload...")
-                local_video_path = f"/tmp/{recent_video['name']}"
-                request = service.files().get_media(fileId=copied_video_id)
-                fh = io.FileIO(local_video_path, 'wb')
-                downloader = MediaIoBaseDownload(fh, request)
-                done = False
-                while done is False:
-                    status, done = downloader.next_chunk()
-                    if status:
-                        print(f"Download {int(status.progress() * 100)}%.")
+                local_video_path = build_sermon_video(
+                    service, youtube_service, dest_subfolder_id,
+                    sunday_date.date(), sunday_str_formatted
+                )
+                if not local_video_path:
+                    return
 
-                print("Video downloaded successfully. Starting YouTube upload...")
+                print("Sermon video rendered. Starting YouTube upload...")
                 privacy_status = os.environ.get('YOUTUBE_PRIVACY_STATUS', 'public')
 
                 try:
@@ -470,31 +470,8 @@ def main():
                     })
                     record_last_upload(uploaded_video_id, video_title, sunday_str_formatted)
 
-                    # Search for thumbnail image in destination subfolder
-                    print("Searching for thumbnail image to upload...")
-                    query_image_files = f"'{dest_subfolder_id}' in parents and (mimeType = 'image/jpeg' or mimeType = 'image/png' or mimeType = 'image/jpg' or mimeType = 'image/webp') and trashed = false"
-                    image_results = service.files().list(
-                        q=query_image_files,
-                        supportsAllDrives=True,
-                        includeItemsFromAllDrives=True,
-                        fields="files(id, name)"
-                    ).execute()
-
-                    images = image_results.get('files', [])
-                    if images:
-                        thumb_file = images[0]
-                        print(f"Found thumbnail image: {thumb_file['name']}")
-                        local_thumb_path = f"/tmp/{thumb_file['name']}"
-
-                        # Download thumbnail
-                        request = service.files().get_media(fileId=thumb_file['id'])
-                        fh = io.FileIO(local_thumb_path, 'wb')
-                        downloader = MediaIoBaseDownload(fh, request)
-                        done = False
-                        while done is False:
-                            status, done = downloader.next_chunk()
-
-                        # Upload thumbnail
+                    local_thumb_path = fetch_thumbnail(service, dest_subfolder_id)
+                    if local_thumb_path:
                         print("Uploading custom thumbnail to YouTube...")
                         media_thumb = MediaFileUpload(local_thumb_path)
                         youtube_service.thumbnails().set(
@@ -502,13 +479,7 @@ def main():
                             media_body=media_thumb
                         ).execute()
                         print("Thumbnail uploaded successfully!")
-
-                        # Cleanup local thumbnail file
-                        if os.path.exists(local_thumb_path):
-                            os.remove(local_thumb_path)
-                            print(f"Deleted local file {local_thumb_path}.")
-                    else:
-                        print("No image file found in the destination folder to use as a thumbnail.")
+                        os.remove(local_thumb_path)
 
                 except Exception as e:
                     print(f"Error during YouTube upload/playlist insertion: {e}")
@@ -524,8 +495,8 @@ def main():
             if not video_description:
                 missing.append("description")
             msg = (
-                f"Video migration: the {sunday_str_formatted} recording is in Drive but the "
-                f"YouTube upload was skipped - no {' or '.join(missing)} text file in the "
+                f"Video migration: the {sunday_str_formatted} sermon upload was skipped - "
+                f"no {' or '.join(missing)} text file in the "
                 f"'{sunday_str_formatted}' folder yet. Re-run 'Video Migration' once "
                 "create_sermon_series.py has uploaded it."
             )
@@ -535,10 +506,10 @@ def main():
                 'missing': ", ".join(missing),
                 'message': msg,
             })
-    elif copied_video_id and not youtube_service:
+    else:
         msg = (
-            f"Video migration: the {sunday_str_formatted} recording is in Drive but the "
-            "YouTube upload was skipped - could not authenticate with YouTube "
+            f"Video migration: the {sunday_str_formatted} sermon upload was skipped - "
+            "could not authenticate with YouTube "
             "(check YOUTUBE_CREDENTIALS_JSON)."
         )
         print(msg)

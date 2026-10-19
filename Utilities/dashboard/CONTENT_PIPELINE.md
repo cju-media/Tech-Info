@@ -18,7 +18,7 @@ YouTube Stream`, …) "succeed" every run whether or not they did anything, so
 | Order of Worship | GitHub commits API — last commit touching `Worship Scripts/service_titles_state.json` | a new OW ingested from the `cju-media/OW` repo (`OWs/`) and sent to Gemini by `update_service_titles.py` |
 | Service titles | GitHub commits API — last commit touching `Worship Scripts/service-titles/` | the individual title `.txt` files regenerated from the OW and synced to Drive |
 | YouTube livestream | `Youtube Processing/last_stream.json` (`created_at`) | the Sunday-service live broadcast created by `create_youtube_stream.py`. Fallback if the file is missing: last commit touching `Youtube Processing/description_push_state.json` |
-| Sermon video | `Utilities/Video Migration/last_upload.json` (`uploaded_at`) | the recorded service copied from Drive and uploaded to YouTube by `migrate_videos.py` |
+| Sermon video | `Utilities/Video Migration/last_upload.json` (`uploaded_at`) | the sermon cut from the livestream's audio (span from `Archives/<date>/timings.txt`, `sermon_audio.py`), rendered over the Drive thumbnail and uploaded to YouTube by `migrate_videos.py` |
 
 ## The two breadcrumb files
 

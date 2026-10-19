@@ -35,12 +35,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install google-api-python-client google-auth google-auth-oauthlib pytz requests
+          pip install google-api-python-client google-auth google-auth-oauthlib pytz requests yt-dlp
 
       - name: Run video migration script
         env:
           GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
           YOUTUBE_CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
+          # Optional Netscape-format cookies.txt for yt-dlp; YouTube often
+          # bot-checks the livestream audio download from GitHub's runners.
+          YOUTUBE_COOKIES_TXT: ${{ secrets.YOUTUBE_COOKIES_TXT }}
           YOUTUBE_PRIVACY_STATUS: ${{ github.event.inputs.privacy_status || 'public' }}
           PAT: ${{ secrets.PAT }}
         run: |
