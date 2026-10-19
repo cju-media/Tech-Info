@@ -84,26 +84,37 @@ def check_span(start, end):
         )
 
 
+DOWNLOAD_TIMEOUT_SECONDS = 30 * 60
+
+
 def download_stream_audio(url, out_dir, cookies_path=None):
     """Download only the audio of a YouTube video. Returns the file path.
 
     YT_DLP names the yt-dlp executable (the workflow's standalone build); without
     it, yt-dlp runs as a module of the current interpreter. YouTube often
     bot-checks datacenter IPs such as GitHub's hosted runners; a cookies.txt
-    export (cookies_path) gets past that.
+    export (cookies_path) gets past that. Progress goes straight to the log
+    (stderr is captured so a failure can be reported), and the download is
+    abandoned after DOWNLOAD_TIMEOUT_SECONDS rather than hanging the job.
     """
     template = os.path.join(out_dir, 'stream-audio.%(ext)s')
     ytdlp = [os.environ['YT_DLP']] if os.environ.get('YT_DLP') else [sys.executable, '-m', 'yt_dlp']
-    cmd = ytdlp + ['-f', 'bestaudio', '--no-playlist', '--no-progress',
-                   '-o', template, '--print', 'after_move:filepath']
+    cmd = ytdlp + ['-f', 'bestaudio', '--no-playlist', '--newline', '-o', template]
     if cookies_path:
         cmd += ['--cookies', cookies_path]
     cmd.append(url)
-    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-    path = result.stdout.strip().splitlines()[-1]
-    if not os.path.exists(path):
-        raise RuntimeError(f"yt-dlp reported {path!r} but it does not exist")
-    return path
+    try:
+        subprocess.run(cmd, check=True, stderr=subprocess.PIPE, text=True,
+                       timeout=DOWNLOAD_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired as e:
+        tail = (e.stderr or '').strip().splitlines()[-1:] if isinstance(e.stderr, str) else []
+        raise RuntimeError(f"yt-dlp took over {DOWNLOAD_TIMEOUT_SECONDS // 60} minutes"
+                           + (f" ({tail[0]})" if tail else "")) from e
+
+    downloaded = sorted(f for f in os.listdir(out_dir) if f.startswith('stream-audio.'))
+    if not downloaded:
+        raise RuntimeError("yt-dlp finished but wrote no audio file")
+    return os.path.join(out_dir, downloaded[0])
 
 
 def probe_duration(path):

@@ -66,7 +66,7 @@ jobs:
           SERMON_TEST_RUN: ${{ github.event.inputs.test_run == 'true' && '1' || '' }}
           PAT: ${{ secrets.PAT }}
         run: |
-          python3 "Utilities/Video Migration/migrate_videos.py"
+          python3 -u "Utilities/Video Migration/migrate_videos.py"
 
       - name: Commit last-upload breadcrumb
         run: |
