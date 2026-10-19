@@ -1,10 +1,10 @@
 {
-  "2026-10-18": {
-    "path": "service-scripts/2026-10-18.pdf",
-    "modifiedTime": "2026-10-18T15:55:35.810Z",
-    "isCommunion": false,
-    "coffeeHourRoom": "Mayflower",
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Sharon Duncan"
+  "2026-10-25": {
+    "path": "service-scripts/2026-10-25.pdf",
+    "modifiedTime": "2026-10-19T00:10:33.698Z",
+    "isCommunion": true,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat"
   },
   "2026-11-15": {
     "path": "service-scripts/2026-11-15.pdf",
@@ -26,13 +26,6 @@
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
-  },
-  "2026-10-25": {
-    "path": "service-scripts/2026-10-25.pdf",
-    "modifiedTime": "2026-10-12T19:05:26.419Z",
-    "isCommunion": true,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Cynthia Siadat"
   },
   "2026-11-01": {
     "path": "service-scripts/2026-11-01.pdf",
