@@ -6,10 +6,16 @@ whose timing offset already lines the elapsed times up with the broadcast), and
 ffmpeg turns that span plus the thumbnail into an mp4 for migrate_videos.py to
 upload.
 """
+import base64
+import json
 import os
 import re
 import subprocess
 import sys
+import tempfile
+import time
+
+import requests
 
 # Seconds trimmed off / added to the span read from timings.txt. The timings
 # are placed by hand as each section starts, so they sit a beat late; widen
@@ -29,6 +35,17 @@ FADE_OUT_SECONDS = 2
 SILENCE_NOISE_DB = -40
 SILENCE_MIN_SECONDS = 10
 SILENCE_TAIL_PAD_SECONDS = 1.5
+
+# The next timing is placed when the next item starts, after a transition, so
+# the span ends in a minute or so of organ music. Gemini lists where human
+# speech occurs in the last SPEECH_WINDOW_SECONDS of the span; if the final
+# NO_SPEECH_SECONDS hold none, the sermon is cut SPEECH_TAIL_PAD_SECONDS after
+# the last word. Without GEMINI_API_KEY (or if the call fails) the span is left
+# as the timings give it.
+GEMINI_MODEL = 'gemini-3.5-flash'
+SPEECH_WINDOW_SECONDS = 5 * 60
+NO_SPEECH_SECONDS = 10
+SPEECH_TAIL_PAD_SECONDS = 2
 
 # A span outside this range means the timings or the offset are off, and
 # publishing the cut would put a wrong video on a public channel.
@@ -156,6 +173,108 @@ def find_trailing_silence(audio_path, start, end):
     return last_start
 
 
+SPEECH_PROMPT = """This audio is the final minutes of a church sermon. The speaker talks, \
+then there is a transition and organ or choir music.
+
+List every stretch of human speech (a person talking, including "Amen" or a closing \
+prayer) as start and end times in seconds from the beginning of this clip. Singing, \
+humming, choir and instruments are NOT speech. Merge pauses between sentences shorter \
+than 3 seconds into one stretch. If there is no speech at all, return an empty list.
+
+Respond with ONLY compact JSON, no markdown fences:
+{"speech": [{"start": 0.0, "end": 123.4}]}"""
+
+
+def _seconds(value):
+    """Gemini's 12.5, "12.5" or "1:02.5" as seconds."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    seconds = 0.0
+    for part in str(value).strip().split(':'):
+        seconds = seconds * 60 + float(part)
+    return seconds
+
+
+def parse_speech_segments(text):
+    """[(start, end), ...] from Gemini's reply; raises ValueError if unusable."""
+    cleaned = re.sub(r'^```(?:json)?|```$', '', text.strip(), flags=re.M).strip()
+    try:
+        rows = json.loads(cleaned)['speech']
+        segments = [(_seconds(row['start']), _seconds(row['end'])) for row in rows]
+    except (ValueError, KeyError, TypeError) as e:
+        raise ValueError(f"Could not read speech segments from {text[:200]!r}") from e
+    return sorted(seg for seg in segments if seg[1] > seg[0])
+
+
+def ask_gemini_for_speech(clip_path, api_key, retries=3):
+    """Speech segments (seconds into the clip) as Gemini hears them."""
+    with open(clip_path, 'rb') as f:
+        audio = base64.b64encode(f.read()).decode()
+    body = {
+        'contents': [{'parts': [
+            {'text': SPEECH_PROMPT},
+            {'inline_data': {'mime_type': 'audio/mp3', 'data': audio}},
+        ]}],
+        'generationConfig': {'temperature': 0},
+    }
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent'
+    for attempt in range(1, retries + 1):
+        response = requests.post(url, headers={'x-goog-api-key': api_key}, json=body, timeout=300)
+        if response.status_code == 429 or response.status_code >= 500:
+            if attempt < retries:
+                time.sleep(5 * attempt)
+                continue
+        response.raise_for_status()
+        break
+    parts = response.json()['candidates'][0]['content']['parts']
+    return parse_speech_segments(''.join(part.get('text', '') for part in parts))
+
+
+def last_speech_end(segments, clip_length):
+    """When the last speech ends, if at least NO_SPEECH_SECONDS of the clip follow; else None."""
+    if not segments:
+        return None
+    last_end = min(max(end for _, end in segments), clip_length)
+    return last_end if clip_length - last_end >= NO_SPEECH_SECONDS else None
+
+
+def trim_after_speech(audio_path, start, end):
+    """end moved back to just after the last spoken word, if music runs on after it."""
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        print("GEMINI_API_KEY not set; not looking for where the speech ends.")
+        return end
+
+    window_start = max(start, end - SPEECH_WINDOW_SECONDS)
+    clip_length = end - window_start
+    with tempfile.TemporaryDirectory() as work_dir:
+        clip_path = os.path.join(work_dir, 'tail.mp3')
+        try:
+            subprocess.run(
+                ['ffmpeg', '-y', '-loglevel', 'error', '-ss', str(window_start), '-t', str(clip_length),
+                 '-i', audio_path, '-ac', '1', '-ar', '16000', '-c:a', 'libmp3lame', '-b:a', '48k', clip_path],
+                check=True)
+            segments = ask_gemini_for_speech(clip_path, api_key)
+        except (subprocess.CalledProcessError, requests.RequestException, ValueError, KeyError, IndexError) as e:
+            print(f"Could not find where the speech ends ({e}); keeping the timed end.")
+            return end
+
+    print("Speech in the last {:.0f}s of the span (seconds into that window): {}".format(
+        clip_length, ", ".join(f"{a:.0f}-{b:.0f}" for a, b in segments) or "none"))
+    speech_end = last_speech_end(segments, clip_length)
+    if speech_end is None:
+        print("Speech runs to the end of the span (or none was found); keeping the timed end.")
+        return end
+
+    new_end = min(window_start + speech_end + SPEECH_TAIL_PAD_SECONDS, end)
+    if new_end - start < MIN_SERMON_SECONDS:
+        print(f"Ignoring speech end at {speech_end:.0f}s: trimming would leave "
+              f"under {MIN_SERMON_SECONDS // 60} minutes.")
+        return end
+    print(f"Trimmed {end - new_end:.1f}s of music after the last spoken word.")
+    return new_end
+
+
 def trim_trailing_silence(audio_path, start, end):
     """end moved back to just after the last speech, if the span ends in dead air."""
     silence_start = find_trailing_silence(audio_path, start, end)
@@ -208,5 +327,6 @@ def cut_sermon(timings_text, audio_path, image_path, out_path):
         end = int(probe_duration(audio_path))
     start, end = apply_pads(start, end)
     check_span(start, end)
+    end = trim_after_speech(audio_path, start, end)
     end = trim_trailing_silence(audio_path, start, end)
     return render_sermon_video(audio_path, image_path, start, end, out_path)

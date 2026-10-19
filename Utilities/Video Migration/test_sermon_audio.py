@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 import sermon_audio
 from sermon_audio import (
@@ -19,6 +20,8 @@ from sermon_audio import (
     check_span,
     cut_sermon,
     find_sermon_span,
+    last_speech_end,
+    parse_speech_segments,
     parse_timestamp,
     probe_duration,
 )
@@ -78,6 +81,49 @@ class FindSermonSpanTests(unittest.TestCase):
         self.assertGreater(checked, 0)
 
 
+class SpeechSegmentTests(unittest.TestCase):
+    def test_parses_plain_json(self):
+        reply = '{"speech": [{"start": 0.0, "end": 120.5}, {"start": 130, "end": 200}]}'
+        self.assertEqual(parse_speech_segments(reply), [(0.0, 120.5), (130.0, 200.0)])
+
+    def test_strips_markdown_fences(self):
+        reply = '```json\n{"speech": [{"start": 1, "end": 2}]}\n```'
+        self.assertEqual(parse_speech_segments(reply), [(1.0, 2.0)])
+
+    def test_accepts_minute_second_strings(self):
+        reply = '{"speech": [{"start": "0:05", "end": "3:20.5"}]}'
+        self.assertEqual(parse_speech_segments(reply), [(5.0, 200.5)])
+
+    def test_empty_list_is_valid(self):
+        self.assertEqual(parse_speech_segments('{"speech": []}'), [])
+
+    def test_drops_backwards_segments_and_sorts(self):
+        reply = '{"speech": [{"start": 50, "end": 60}, {"start": 9, "end": 3}, {"start": 1, "end": 2}]}'
+        self.assertEqual(parse_speech_segments(reply), [(1.0, 2.0), (50.0, 60.0)])
+
+    def test_rejects_garbage(self):
+        for reply in ("no idea", '{"other": 1}', '{"speech": [{"begin": 1}]}'):
+            with self.assertRaises(ValueError):
+                parse_speech_segments(reply)
+
+
+class LastSpeechEndTests(unittest.TestCase):
+    def test_music_after_the_last_word(self):
+        self.assertEqual(last_speech_end([(0, 100), (110, 215)], 300), 215)
+
+    def test_less_than_ten_seconds_of_quiet_is_not_a_trim(self):
+        self.assertIsNone(last_speech_end([(0, 295)], 300))
+
+    def test_exactly_ten_seconds_counts(self):
+        self.assertEqual(last_speech_end([(0, 290)], 300), 290)
+
+    def test_no_speech_found_means_no_trim(self):
+        self.assertIsNone(last_speech_end([], 300))
+
+    def test_end_beyond_the_clip_is_clamped(self):
+        self.assertIsNone(last_speech_end([(0, 400)], 300))
+
+
 class CheckSpanTests(unittest.TestCase):
     def test_accepts_a_typical_sermon(self):
         check_span(4165, 5120)
@@ -135,6 +181,51 @@ class RenderTests(unittest.TestCase):
         out = os.path.join(self.dir, "sermon.mp4")
         cut_sermon(f"00:00 Sermon - X\n{total // 60}:{total % 60:02d} Offering", audio, image, out)
         return probe_duration(out)
+
+    def _cut_with_speech(self, segments, env_key="test-key"):
+        audio, image = self._make_audio([("tone", 600)])
+        out = os.path.join(self.dir, "sermon.mp4")
+        env = {"GEMINI_API_KEY": env_key} if env_key else {}
+        with mock.patch.dict(os.environ, env, clear=False), \
+                mock.patch.object(sermon_audio, "ask_gemini_for_speech", return_value=segments) as ask:
+            if not env_key:
+                os.environ.pop("GEMINI_API_KEY", None)
+            cut_sermon("00:00 Sermon - X\n10:00 Offering", audio, image, out)
+        return probe_duration(out), ask
+
+    def test_trims_the_music_after_the_last_spoken_word(self):
+        # The span is 600s; Gemini sees the last 300s (starting at 300s) and hears
+        # speech to 200s into it, so the sermon ends at 300 + 200 + pad.
+        duration, ask = self._cut_with_speech([(0.0, 200.0)])
+        self.assertAlmostEqual(duration, 500 + sermon_audio.SPEECH_TAIL_PAD_SECONDS, delta=1.5)
+        self.assertEqual(ask.call_args[0][1], "test-key")
+
+    def test_speech_to_the_end_is_not_trimmed(self):
+        duration, _ = self._cut_with_speech([(0.0, 296.0)])
+        self.assertAlmostEqual(duration, 600, delta=1.5)
+
+    def test_no_api_key_keeps_the_timed_end(self):
+        duration, ask = self._cut_with_speech([(0.0, 200.0)], env_key=None)
+        self.assertAlmostEqual(duration, 600, delta=1.5)
+        ask.assert_not_called()
+
+    def test_gemini_failure_keeps_the_timed_end(self):
+        audio, image = self._make_audio([("tone", 600)])
+        out = os.path.join(self.dir, "sermon.mp4")
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "k"}), \
+                mock.patch.object(sermon_audio, "ask_gemini_for_speech",
+                                  side_effect=sermon_audio.requests.ConnectionError("down")):
+            cut_sermon("00:00 Sermon - X\n10:00 Offering", audio, image, out)
+        self.assertAlmostEqual(probe_duration(out), 600, delta=1.5)
+
+    def test_trim_that_would_leave_too_short_a_sermon_is_ignored(self):
+        audio, image = self._make_audio([("tone", 300)])
+        out = os.path.join(self.dir, "sermon.mp4")
+        # Window = whole 300s span; speech ends at 50s -> 52s left, under 3 minutes.
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "k"}), \
+                mock.patch.object(sermon_audio, "ask_gemini_for_speech", return_value=[(0.0, 50.0)]):
+            cut_sermon("00:00 Sermon - X\n5:00 Offering", audio, image, out)
+        self.assertAlmostEqual(probe_duration(out), 300, delta=1.5)
 
     def test_trailing_dead_air_is_trimmed(self):
         duration = self._cut_whole_stream([("tone", 200), ("quiet", 25)])
