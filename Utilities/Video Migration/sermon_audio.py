@@ -40,12 +40,15 @@ SILENCE_TAIL_PAD_SECONDS = 1.5
 # the span ends in a minute or so of organ music. Gemini lists where human
 # speech occurs in the last SPEECH_WINDOW_SECONDS of the span; if the final
 # NO_SPEECH_SECONDS hold none, the sermon is cut SPEECH_TAIL_PAD_SECONDS after
-# the last word. Without GEMINI_API_KEY (or if the call fails) the span is left
+# the last word. Speech after that gap (up to MAX_SPEECH_AFTER_GAP_SECONDS in all)
+# is the next item starting right at the timing, e.g. the prayer leader's first
+# words, not more sermon. Without GEMINI_API_KEY (or if the call fails) the span is left
 # as the timings give it.
 GEMINI_MODEL = 'gemini-3.5-flash'
 SPEECH_WINDOW_SECONDS = 5 * 60
 NO_SPEECH_SECONDS = 10
 SPEECH_TAIL_PAD_SECONDS = 2
+MAX_SPEECH_AFTER_GAP_SECONDS = 30
 
 # A span outside this range means the timings or the offset are off, and
 # publishing the cut would put a wrong video on a public channel.
@@ -232,12 +235,18 @@ def ask_gemini_for_speech(clip_path, api_key, retries=3):
     return parse_speech_segments(''.join(part.get('text', '') for part in parts))
 
 
-def last_speech_end(segments, clip_length):
-    """When the last speech ends, if at least NO_SPEECH_SECONDS of the clip follow; else None."""
-    if not segments:
-        return None
-    last_end = min(max(end for _, end in segments), clip_length)
-    return last_end if clip_length - last_end >= NO_SPEECH_SECONDS else None
+def speech_end_before_music(segments, clip_length):
+    """When the sermon's speech ends: the start of the last gap of at least
+    NO_SPEECH_SECONDS with no speech, provided no more than
+    MAX_SPEECH_AFTER_GAP_SECONDS of speech follows it. None if there is no such gap."""
+    segments = [(a, min(b, clip_length)) for a, b in segments if a < clip_length]
+    found = None
+    for i, (_, end) in enumerate(segments):
+        next_start = segments[i + 1][0] if i + 1 < len(segments) else clip_length
+        speech_after = sum(b - a for a, b in segments[i + 1:])
+        if next_start - end >= NO_SPEECH_SECONDS and speech_after <= MAX_SPEECH_AFTER_GAP_SECONDS:
+            found = end
+    return found
 
 
 def trim_after_speech(audio_path, start, end):
@@ -263,9 +272,9 @@ def trim_after_speech(audio_path, start, end):
 
     print("Speech in the last {:.0f}s of the span (seconds into that window): {}".format(
         clip_length, ", ".join(f"{a:.0f}-{b:.0f}" for a, b in segments) or "none"))
-    speech_end = last_speech_end(segments, clip_length)
+    speech_end = speech_end_before_music(segments, clip_length)
     if speech_end is None:
-        print("Speech runs to the end of the span (or none was found); keeping the timed end.")
+        print("No 10s+ gap in the speech near the end of the span; keeping the timed end.")
         return end
 
     new_end = min(window_start + speech_end + SPEECH_TAIL_PAD_SECONDS, end)

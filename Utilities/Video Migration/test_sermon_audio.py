@@ -20,7 +20,7 @@ from sermon_audio import (
     check_span,
     cut_sermon,
     find_sermon_span,
-    last_speech_end,
+    speech_end_before_music,
     parse_speech_segments,
     parse_timestamp,
     probe_duration,
@@ -107,21 +107,35 @@ class SpeechSegmentTests(unittest.TestCase):
                 parse_speech_segments(reply)
 
 
-class LastSpeechEndTests(unittest.TestCase):
+class SpeechEndBeforeMusicTests(unittest.TestCase):
     def test_music_after_the_last_word(self):
-        self.assertEqual(last_speech_end([(0, 100), (110, 215)], 300), 215)
+        self.assertEqual(speech_end_before_music([(0, 100), (110, 215)], 300), 215)
 
-    def test_less_than_ten_seconds_of_quiet_is_not_a_trim(self):
-        self.assertIsNone(last_speech_end([(0, 295)], 300))
+    def test_next_speaker_starting_at_the_timing_does_not_block_the_trim(self):
+        # The real 10-18 reply: speech to 251s, music, then the next item's first words.
+        self.assertEqual(speech_end_before_music([(0, 251), (292, 300)], 300), 251)
+
+    def test_a_long_run_of_speech_after_the_gap_is_still_sermon(self):
+        self.assertIsNone(speech_end_before_music([(0, 100), (115, 300)], 300))
+
+    def test_pause_in_the_sermon_before_the_music_is_not_the_cut(self):
+        self.assertEqual(speech_end_before_music([(0, 100), (115, 215)], 300), 215)
+
+    def test_last_qualifying_gap_wins(self):
+        # "Amen" (5s of speech) between two gaps stays in the sermon.
+        self.assertEqual(speech_end_before_music([(0, 100), (112, 117), (292, 300)], 300), 117)
+
+    def test_less_than_ten_seconds_of_quiet_is_not_a_gap(self):
+        self.assertIsNone(speech_end_before_music([(0, 295)], 300))
 
     def test_exactly_ten_seconds_counts(self):
-        self.assertEqual(last_speech_end([(0, 290)], 300), 290)
+        self.assertEqual(speech_end_before_music([(0, 290)], 300), 290)
 
     def test_no_speech_found_means_no_trim(self):
-        self.assertIsNone(last_speech_end([], 300))
+        self.assertIsNone(speech_end_before_music([], 300))
 
     def test_end_beyond_the_clip_is_clamped(self):
-        self.assertIsNone(last_speech_end([(0, 400)], 300))
+        self.assertIsNone(speech_end_before_music([(0, 400)], 300))
 
 
 class CheckSpanTests(unittest.TestCase):
@@ -203,6 +217,10 @@ class RenderTests(unittest.TestCase):
     def test_speech_to_the_end_is_not_trimmed(self):
         duration, _ = self._cut_with_speech([(0.0, 296.0)])
         self.assertAlmostEqual(duration, 600, delta=1.5)
+
+    def test_next_speakers_first_words_at_the_end_are_cut_too(self):
+        duration, _ = self._cut_with_speech([(0.0, 251.0), (292.0, 300.0)])
+        self.assertAlmostEqual(duration, 300 + 251 + sermon_audio.SPEECH_TAIL_PAD_SECONDS, delta=1.5)
 
     def test_no_api_key_keeps_the_timed_end(self):
         duration, ask = self._cut_with_speech([(0.0, 200.0)], env_key=None)
