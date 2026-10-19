@@ -37,8 +37,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python3 -m pip install --quiet --upgrade google-api-python-client google-auth google-auth-oauthlib pytz requests yt-dlp
+          python3 -m pip install --quiet --upgrade google-api-python-client google-auth google-auth-oauthlib pytz requests
           command -v ffmpeg >/dev/null || brew install ffmpeg
+          # The runner's system Python is 3.9, which pip can only give a stale
+          # yt-dlp (current releases need 3.10+; stale ones fail with "The page
+          # needs to be reloaded"). The official standalone build bundles its own.
+          curl -fsSL -o "$RUNNER_TEMP/yt-dlp" https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos
+          chmod +x "$RUNNER_TEMP/yt-dlp"
+          "$RUNNER_TEMP/yt-dlp" --version
+          echo "YT_DLP=$RUNNER_TEMP/yt-dlp" >> "$GITHUB_ENV"
+          # yt-dlp needs a JavaScript runtime to solve YouTube's player challenge.
+          command -v deno >/dev/null || command -v node >/dev/null || brew install deno
 
       - name: Run video migration script
         env:

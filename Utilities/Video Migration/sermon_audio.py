@@ -77,12 +77,15 @@ def check_span(start, end):
 def download_stream_audio(url, out_dir, cookies_path=None):
     """Download only the audio of a YouTube video. Returns the file path.
 
-    Run through the current interpreter so it needn't be on PATH. yt-dlp is often challenged ("confirm you're not a bot") from datacenter IPs
-    such as GitHub's runners; a cookies.txt export (cookies_path) gets past it.
+    YT_DLP names the yt-dlp executable (the workflow's standalone build); without
+    it, yt-dlp runs as a module of the current interpreter. YouTube often
+    bot-checks datacenter IPs such as GitHub's hosted runners; a cookies.txt
+    export (cookies_path) gets past that.
     """
     template = os.path.join(out_dir, 'stream-audio.%(ext)s')
-    cmd = [sys.executable, '-m', 'yt_dlp', '-f', 'bestaudio', '--no-playlist', '--no-progress',
-           '-o', template, '--print', 'after_move:filepath']
+    ytdlp = [os.environ['YT_DLP']] if os.environ.get('YT_DLP') else [sys.executable, '-m', 'yt_dlp']
+    cmd = ytdlp + ['-f', 'bestaudio', '--no-playlist', '--no-progress',
+                   '-o', template, '--print', 'after_move:filepath']
     if cookies_path:
         cmd += ['--cookies', cookies_path]
     cmd.append(url)
