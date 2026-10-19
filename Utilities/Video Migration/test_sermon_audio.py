@@ -212,6 +212,17 @@ class RenderTests(unittest.TestCase):
         duration, _ = self._cut_with_speech([(0.0, 410.0), (493.0, 500.0)])
         self.assertAlmostEqual(duration, 600, delta=1.5)
 
+    def test_degraded_cuts_leave_a_note_for_the_notifier(self):
+        self._cut_with_speech([(0.0, 410.0), (493.0, 500.0)])
+        self.assertEqual(len(sermon_audio.NOTES), 1)
+        self._cut_with_speech([(0.0, 200.0)], env_key=None)
+        self.assertEqual(len(sermon_audio.NOTES), 1)
+        self.assertIn("GEMINI_API_KEY", sermon_audio.NOTES[0])
+
+    def test_a_clean_trim_leaves_no_notes(self):
+        self._cut_with_speech([(0.0, 200.0)])
+        self.assertEqual(sermon_audio.NOTES, [])
+
     def test_trims_the_music_after_the_last_spoken_word(self):
         # The span is 600s; Gemini sees the last 300s (starting at 300s) and hears
         # speech to 200s into it, so the sermon ends at 300 + 200 + pad.

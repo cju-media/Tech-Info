@@ -78,6 +78,12 @@ def dispatch_event(event_type, client_payload, max_retries=4, backoff_seconds=3)
         print(f"Failed to dispatch '{event_type}' github event: {response.status_code} {response.text}")
         return
 
+def notify_problem(date_str, message):
+    """Text a problem (the notifier prefixes a warning sign). Always printed too."""
+    print(message)
+    dispatch_event('video_migration_upload_skipped', {'date': date_str, 'message': message})
+
+
 def find_worship_stream_url(youtube_service, service_date):
     """The public URL of the worship livestream scheduled for service_date, or None."""
     try:
@@ -330,7 +336,9 @@ def build_sermon_video(youtube_service, service_date, service_date_str):
 def main():
     service = get_drive_service()
     if not service:
-        print("Could not get Google Drive service. Exiting.")
+        notify_problem('the latest service',
+                       "Video migration could not sign in to Google Drive (check GDRIVE_OAUTH_JSON). "
+                       "No sermon video was uploaded - fix it and re-run 'Video Migration'.")
         return
 
     # Calculate yesterday (Sunday)
@@ -495,6 +503,8 @@ def main():
                     })
                     if not TEST_RUN:
                         record_last_upload(uploaded_video_id, video_title, sunday_str_formatted)
+                    for note in sermon_audio.NOTES:
+                        notify_problem(sunday_str_formatted, f"The {sunday_str_formatted} sermon video uploaded, but {note}")
 
                     local_thumb_path = fetch_thumbnail(service, dest_subfolder_id)
                     if local_thumb_path:
@@ -508,7 +518,10 @@ def main():
                         os.remove(local_thumb_path)
 
                 except Exception as e:
-                    print(f"Error during YouTube upload/playlist insertion: {e}")
+                    notify_problem(sunday_str_formatted,
+                                   f"Video migration failed while uploading the {sunday_str_formatted} sermon to "
+                                   f"YouTube: {e}. Check YouTube Studio for a partial upload before re-running "
+                                   "'Video Migration', or it may upload a second copy.")
 
                 # Cleanup local video file
                 if os.path.exists(local_video_path):
@@ -546,4 +559,11 @@ def main():
         })
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        # Anything uncaught: say so by text, then still fail the job.
+        notify_problem('the latest service',
+                       f"Video migration crashed: {type(e).__name__}: {e}. No sermon video was "
+                       "uploaded - check the Video Migration run in GitHub Actions, then re-run it.")
+        raise
