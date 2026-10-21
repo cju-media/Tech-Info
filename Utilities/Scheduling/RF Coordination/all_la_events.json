@@ -1,92 +1,11 @@
 [
   {
-    "name": "BKS CEREMONY",
-    "date": "2026-10-16",
-    "location": "Alumni Park 3551 S TROUSDALE PKWY 90089",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.03,
-    "permit": "264109000001523",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CHECK IN TENTS",
-    "date": "2026-10-12",
-    "location": "USC Campus",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001549",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "2026 AAO HNSF",
-    "date": "2026-10-17",
-    "location": "1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001477",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "AAO-HNSF - KARL STORZ",
-    "date": "2026-10-17",
-    "location": "LACC South Hall 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001561",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "INAUGURATION",
-    "date": "2026-10-16",
-    "location": "Alumni Park 3551 S TROUSDALE PKWY 90089",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.03,
-    "permit": "264109000001527",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CAMERA TENT",
-    "date": "2026-10-10",
-    "location": "West end of Stadium 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001520",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "HAUNTED HAYRIDE",
-    "date": "2026-10-09",
-    "location": "Picnic area 4730 N CRYSTAL SPRINGS DR 90027",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 5.02,
-    "permit": "264109000001526",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "TUNNEL TENT",
-    "date": "2026-10-09",
-    "location": "Players Tunnel 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001519",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "CIRCUS VARGAS - WEEK 3",
     "date": "2026-11-06",
     "location": "6100 N Topanga Canyon 91367",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": null,
     "permit": "264109000001542",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "OLIVE TREE PEOPLE FESTIVAL",
-    "date": "2026-10-17",
-    "location": "1 Windward Ave 90291",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001564",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -99,30 +18,102 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "TUNNEL TENT",
-    "date": "2026-10-16",
-    "location": "Players Tunnel 3911 S FIGUEROA ST 90037",
+    "name": "FRANK MAZA MUSICAL SHOWCASE",
+    "date": "2026-11-20",
+    "location": "The event will be held in our own parking lot which will have no cars that day. 3375 N BARHAM BLVD 90068",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001558",
+    "distance_mi": 5.78,
+    "permit": "264109000001069",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CIRCUS VARGAS -WEEK 2",
+    "date": "2026-10-30",
+    "location": "6100 N Topanga Canyon 91367",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001541",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "26th Annual MSCP Dia de Los Muertos Fest",
+    "date": "2026-11-01",
+    "location": "21609 Sherman Way from Topanga to Canoga & on Owensmouth from Wyandotte to Alley",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264101000001491",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "SPECS",
+    "date": "2026-10-15",
+    "location": "Atrium 10250 W SANTA MONICA BLVD 90067",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 7.73,
+    "permit": "264109000001598",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "WESTWOOD VILLAGE FARMERS' MARKET",
+    "date": "2026-07-02",
+    "location": "Broxton Plaza 1036 S BROXTON AVE 90024",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 9.21,
+    "permit": "264109000000967",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "53rd Dia de Los Muertos Celebration",
+    "date": "2026-11-07",
+    "location": "1300 e 1st ST, 90033",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.57,
+    "permit": "264101000001634",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
     "name": "HAUNTED HAYRIDE",
     "date": "2026-10-16",
-    "location": "Picnic area 4730 N CRYSTAL SPRINGS DR 90027",
+    "location": "Picnic Area 4730 N CRYSTAL SPRINGS DR 90027",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 5.02,
-    "permit": "264109000001586",
+    "permit": "264109000001587",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "1015_1016_1017 OUTDOOR CONCERTS",
-    "date": "2026-10-15",
-    "location": "The Fairbanks Lawn - an 80K sq ft lawn in the 54 acre Hollywood Forever Cemetery 6000 W SANTA MONICA BLVD 90038",
+    "name": "CIRCUS VARGAS WEEK 1",
+    "date": "2026-10-23",
+    "location": "6100 N Topanga Canyon 91367",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.68,
-    "permit": "264109000001554",
+    "distance_mi": null,
+    "permit": "264109000001540",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CARNIVAL",
+    "date": "2026-10-23",
+    "location": "1130 S. Vermont Ave., Los Angeles, CA 90006",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.05,
+    "permit": "264109000001333",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "USC SUITES",
+    "date": "2026-10-18",
+    "location": "Gate 19 & field 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001608",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CHECK IN TENTS",
+    "date": "2026-10-19",
+    "location": "USC campus",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001624",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
