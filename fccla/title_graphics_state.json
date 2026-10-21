@@ -47,7 +47,13 @@
         "sermon": "fccla/status/10-25-26_1021-0955/3-sermon.jpg"
       }
     ],
-    "pick": null,
+    "pick": {
+      "n": 1,
+      "hex": "#A3972E",
+      "label": "gold, 79% of the photo's color",
+      "at": "2026-10-21T09:59:54-07:00",
+      "drive": "sent"
+    },
     "heading": [
       "Fall Series 8",
       "Sacred Earth, Sacred Soul",
@@ -58,9 +64,9 @@
     "cover": "fccla/status/10-25-26_1021-0955/cover.jpg"
   },
   "last_run": {
-    "at": "2026-10-21T09:55:38-07:00",
-    "trigger": "upload",
-    "status": "built",
-    "message": "Title graphics for Sunday, October 25 are ready to pick (link below).\n1 gold #A3972E \u00b7 2 blue #167CAA \u00b7 3 deeper gold #817724\nNote: sermon row title 'The Sacred Feminin e' differs from page-1 title 'Sacred Feminine'"
+    "at": "2026-10-21T09:59:54-07:00",
+    "trigger": "pick",
+    "status": "picked",
+    "message": "Using #A3972E (gold) for Sunday, October 25. Saved to iCloud (10-25-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
   }
 }
