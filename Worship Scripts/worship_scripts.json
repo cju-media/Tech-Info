@@ -1,10 +1,24 @@
 {
+  "2026-11-08": {
+    "path": "service-scripts/2026-11-08.pdf",
+    "modifiedTime": "2026-10-21T23:10:36.341Z",
+    "isCommunion": true,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
+  },
   "2026-11-01": {
     "path": "service-scripts/2026-11-01.pdf",
-    "modifiedTime": "2026-10-21T19:50:09.910Z",
+    "modifiedTime": "2026-10-21T22:49:31.045Z",
     "isCommunion": false,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
+  },
+  "2026-10-25": {
+    "path": "service-scripts/2026-10-25.pdf",
+    "modifiedTime": "2026-10-21T21:31:48.387Z",
+    "isCommunion": true,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Rev. Laura Vail Fregin\nLAV2: Rev. Michael Lemon\nLAV3: Cynthia Siadat"
   },
   "2026-11-15": {
     "path": "service-scripts/2026-11-15.pdf",
@@ -13,23 +27,9 @@
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Rev. Dr. Laura Vance Fregin\nLAV2: Rev. Michael Livingston\nLAV3: Youth"
   },
-  "2026-10-25": {
-    "path": "service-scripts/2026-10-25.pdf",
-    "modifiedTime": "2026-10-21T17:29:50.897Z",
-    "isCommunion": true,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Rev. Laura Vance Fregin\nLAV2: Rev. Michael Lemon\nLAV3: Cynthia Siadat"
-  },
   "2026-11-22": {
     "path": "service-scripts/2026-11-22.pdf",
     "modifiedTime": "2026-10-14T18:10:14.926Z",
-    "isCommunion": true,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
-  },
-  "2026-11-08": {
-    "path": "service-scripts/2026-11-08.pdf",
-    "modifiedTime": "2026-10-14T18:09:17.537Z",
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
