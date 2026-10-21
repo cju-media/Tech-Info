@@ -1,70 +1,66 @@
 {
   "build": {
-    "id": "10-18-26_1015-1111",
-    "week": "10-18-26",
-    "dateText": "October 18, 2026",
+    "id": "10-25-26_1021-0955",
+    "week": "10-25-26",
+    "dateText": "October 25, 2026",
     "fields": {
       "heading": [
-        "Fall Series 7",
+        "Fall Series 8",
         "Sacred Earth, Sacred Soul",
-        "Sacred Earth"
+        "Sacred Feminine"
       ],
-      "dateText": "October 18, 2026",
-      "preacher": "Rev. Michael Lehman",
-      "title": "Sacred Earth"
+      "dateText": "October 25, 2026",
+      "preacher": "Rev. Lehman",
+      "title": "Sacred Feminine"
     },
     "ow": {
-      "name": "10.18.26_OW_Draft.pdf",
-      "sha": "6b918271046454ddb86c9803acb8cbfa7c94337a"
+      "name": "10.25.26_OW_Draft.pdf",
+      "sha": "2c4c00fbd0d88f8cd09eca053aa3f2821dc38f75"
     },
-    "built_at": "2026-10-15T11:11:09-07:00",
-    "notes": [],
+    "built_at": "2026-10-21T09:55:38-07:00",
+    "notes": [
+      "sermon row title 'The Sacred Feminin e' differs from page-1 title 'Sacred Feminine'"
+    ],
     "options": [
       {
         "n": 1,
-        "hex": "#B46639",
-        "label": "orange, 69% of the photo's color",
+        "hex": "#A3972E",
+        "label": "gold, 79% of the photo's color",
         "problems": [],
-        "service": "fccla/status/10-18-26_1015-1111/1-service.jpg",
-        "sermon": "fccla/status/10-18-26_1015-1111/1-sermon.jpg"
+        "service": "fccla/status/10-25-26_1021-0955/1-service.jpg",
+        "sermon": "fccla/status/10-25-26_1021-0955/1-sermon.jpg"
       },
       {
         "n": 2,
-        "hex": "#5D243B",
-        "label": "pink, 15% of the photo's color",
+        "hex": "#167CAA",
+        "label": "blue, 10% of the photo's color",
         "problems": [],
-        "service": "fccla/status/10-18-26_1015-1111/2-service.jpg",
-        "sermon": "fccla/status/10-18-26_1015-1111/2-sermon.jpg"
+        "service": "fccla/status/10-25-26_1021-0955/2-service.jpg",
+        "sermon": "fccla/status/10-25-26_1021-0955/2-sermon.jpg"
       },
       {
         "n": 3,
-        "hex": "#7E4828",
-        "label": "deeper orange",
+        "hex": "#817724",
+        "label": "deeper gold",
         "problems": [],
-        "service": "fccla/status/10-18-26_1015-1111/3-service.jpg",
-        "sermon": "fccla/status/10-18-26_1015-1111/3-sermon.jpg"
+        "service": "fccla/status/10-25-26_1021-0955/3-service.jpg",
+        "sermon": "fccla/status/10-25-26_1021-0955/3-sermon.jpg"
       }
     ],
-    "pick": {
-      "n": 1,
-      "hex": "#B46639",
-      "label": "orange, 69% of the photo's color",
-      "at": "2026-10-15T11:37:25-07:00",
-      "drive": "sent"
-    },
+    "pick": null,
     "heading": [
-      "Fall Series 7",
+      "Fall Series 8",
       "Sacred Earth, Sacred Soul",
-      "Sacred Earth"
+      "Sacred Feminine"
     ],
-    "title": "Sacred Earth",
-    "preacher": "Rev. Michael Lehman",
-    "cover": "fccla/status/10-18-26_1015-1111/cover.jpg"
+    "title": "Sacred Feminine",
+    "preacher": "Rev. Lehman",
+    "cover": "fccla/status/10-25-26_1021-0955/cover.jpg"
   },
   "last_run": {
-    "at": "2026-10-15T12:08:50-07:00",
+    "at": "2026-10-21T09:55:38-07:00",
     "trigger": "upload",
-    "status": "unchanged",
-    "message": "The new OW for Sunday, October 18 reads the same as the graphics in use (#B46639), with the same photo, so the thumbnails weren't rebuilt. To rebuild them anyway, upload the OW again with \"Rebuild title graphics\" ticked."
+    "status": "built",
+    "message": "Title graphics for Sunday, October 25 are ready to pick (link below).\n1 gold #A3972E \u00b7 2 blue #167CAA \u00b7 3 deeper gold #817724\nNote: sermon row title 'The Sacred Feminin e' differs from page-1 title 'Sacred Feminine'"
   }
 }
