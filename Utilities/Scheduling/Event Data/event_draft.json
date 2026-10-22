@@ -1,8 +1,8 @@
 {
-  "generated": "2026-10-21T14:41:36+00:00",
+  "generated": "2026-10-22T14:42:31+00:00",
   "window": {
-    "start": "2026-10-21",
-    "end": "2027-01-21"
+    "start": "2026-10-22",
+    "end": "2027-01-22"
   },
   "columns": [
     "Date",
@@ -124,6 +124,23 @@
       "kind": "event",
       "cells": [
         "SU 12/20/2026",
+        "Pageant Dress Rehearsal",
+        "Sanctuary",
+        "1:00pm-3:00pm",
+        "Rehearsal",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": "from calendar: Pageant Dress Rehearsal"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/20/2026",
         "Worship Service",
         "Sanctuary",
         "8:45am-12:30pm",
@@ -141,7 +158,7 @@
       "kind": "event",
       "cells": [
         "SU 12/13/2026",
-        "Resonance Collective Concert",
+        "\"Resonance Collective\" Concert",
         "Shatto",
         "4:00pm-10:00pm",
         "Concert",
@@ -175,7 +192,7 @@
       "kind": "event",
       "cells": [
         "SU 12/6/2026",
-        "HoLAdays Synesthesia Sinfonietta Concert",
+        "\"Synesthesia Sinfonietta\" Concert",
         "Sanctuary/Stuart Hall/Forecourt",
         "2:00pm-10:00pm",
         "Concert",
@@ -243,14 +260,14 @@
       "kind": "event",
       "cells": [
         "SA 11/14/2026",
-        "VOX Femina Concert",
+        "\"VOX Femina\" Concert",
         "Sanctuary/Stuart Hall",
         "4:00pm-10:00pm",
         "Concert",
         "1",
         "",
         "",
-        "4pm Load in\n5:30 Sound Check/Run Through\n6:30 Doors Open\n7:00pm Concert (approx. 2 hours with intermission)\n10:00pm Out",
+        "4pm Load in\n5:30pm Sound Check/Run Through\n6:30pm Doors Open\n7:00pm Concert\n10:00pm Out",
         "",
         ""
       ],
@@ -267,7 +284,7 @@
         "1",
         "",
         "",
-        "5pm Load in (staff only: Rebecca Wink, Joanna Mitchell)\n6pm Load in choir\n7-10pm Dress Rehearsal",
+        "5pm Load in\n6pm Load in choir\n7-10pm Dress Rehearsal",
         "",
         ""
       ],
@@ -275,8 +292,8 @@
     }
   ],
   "counts": {
-    "events": 12,
+    "events": 13,
     "worship": 6,
-    "from_calendar": 6
+    "from_calendar": 7
   }
 }
