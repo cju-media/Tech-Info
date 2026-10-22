@@ -42,7 +42,23 @@
   ],
   "published": {
     "at": "2026-10-21",
-    "items": [],
-    "md5": "108d47c979c0296a2bb5049d5d597e25"
+    "items": [
+      {
+        "date": "2026-10-25",
+        "title": "Fall Festival and Chili Cook-Off",
+        "when": "Sunday, Oct 25 | 12:30pm"
+      },
+      {
+        "date": "",
+        "title": "Garden and Farm Volunteer Call",
+        "when": ""
+      },
+      {
+        "date": "",
+        "title": "Emergency Assistance Fund Drive",
+        "when": ""
+      }
+    ],
+    "md5": "ef428c1ddc452fd95b4e3219d6ff5d59"
   }
 }
