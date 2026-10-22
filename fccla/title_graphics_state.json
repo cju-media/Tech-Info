@@ -64,9 +64,9 @@
     "cover": "fccla/status/10-25-26_1021-0955/cover.jpg"
   },
   "last_run": {
-    "at": "2026-10-22T12:54:02-07:00",
+    "at": "2026-10-22T13:40:16-07:00",
     "trigger": "upload",
-    "status": "unchanged",
-    "message": "The new OW for Sunday, October 25 reads the same as the graphics in use (#A3972E), with the same photo, so the thumbnails weren't rebuilt. To rebuild them anyway, upload the OW again with \"Rebuild title graphics\" ticked."
+    "status": "failed",
+    "message": "Title graphics: couldn't read heading, dateText from the OW. Make this week by hand (see fccla/GEMINI.md)."
   }
 }
