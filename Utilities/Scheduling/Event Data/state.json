@@ -1,25 +1,36 @@
 {
     "assignments": {
-        "Cameron": [],
+        "Cameron": [
+            "su-12-6-2026-worship-service"
+        ],
         "Danny": [
             "sa-10-31-2026-wedding-ceremony",
-            "su-11-01-2026-worship-service"
+            "su-11-01-2026-worship-service",
+            "su-11-22-2026-worship-service"
         ],
         "Jaffe": [
-            "su-10-25-2026-worship-service"
+            "su-10-25-2026-worship-service",
+            "su-11-8-2026-worship-service",
+            "mo-11-16-2026-boy-meets-world-podcast",
+            "su-11-22-2026-worship-service"
         ],
         "Kaspar": [],
         "Marc": [
             "su-10-25-2026-resonance-collective",
-            "su-11-01-2026-wedding-ceremony"
+            "su-11-01-2026-wedding-ceremony",
+            "su-11-8-2026-worship-service",
+            "su-11-15-2026-worship-service",
+            "su-11-29-2026-worship-service"
         ],
         "Saad": [
-            "sa-10-24-2026-la-choral-lab-recording-tbd",
             "su-10-25-2026-resonance-collective",
             "su-10-25-2026-worship-service",
-            "mo-10-26-2026-book-soup-susan-orlean",
             "fr-10-30-2026-candlelight-concert-the-magic-of-ennio-morricone",
-            "su-11-01-2026-worship-service"
+            "su-11-01-2026-worship-service",
+            "su-11-15-2026-worship-service",
+            "su-11-29-2026-worship-service",
+            "fr-12-4-2026-yamandu-costa-concert",
+            "su-12-6-2026-worship-service"
         ]
     },
     "event_details": {
@@ -78,11 +89,6 @@
             "name": "Candlelight Concert: The Magic of Ennio Morricone",
             "call_time": "5:00pm-10:00pm"
         },
-        "mo-10-26-2026-book-soup-susan-orlean": {
-            "date": "2026-10-26",
-            "name": "Book Soup: Susan Orlean",
-            "call_time": "5:00pm-10:00pm"
-        },
         "su-10-25-2026-resonance-collective": {
             "date": "2026-10-25",
             "name": "Resonance Collective ",
@@ -92,11 +98,6 @@
             "date": "2026-10-25",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "sa-10-24-2026-la-choral-lab-recording-tbd": {
-            "date": "2026-10-24",
-            "name": "LA Choral Lab Recording (TBD)",
-            "call_time": "12:00pm-6:00pm"
         }
     }
 }
