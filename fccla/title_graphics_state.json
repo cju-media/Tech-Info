@@ -64,9 +64,9 @@
     "cover": "fccla/status/10-25-26_1021-0955/cover.jpg"
   },
   "last_run": {
-    "at": "2026-10-22T13:40:16-07:00",
+    "at": "2026-10-22T13:42:33-07:00",
     "trigger": "upload",
-    "status": "failed",
-    "message": "Title graphics: couldn't read heading, dateText from the OW. Make this week by hand (see fccla/GEMINI.md)."
+    "status": "skipped",
+    "message": "Title graphics: no OW named 10.25.26_OW_Trifold_FINAL_V2.pdf in cju-media/OW."
   }
 }
