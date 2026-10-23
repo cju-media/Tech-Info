@@ -19,15 +19,15 @@
     "040000008200E00074C5B7101A82E008000000008FB1C1C0AC42DC0100000000000000001000000084F2EFF2CC98B7428CD68F15A3D4ED3F::2026-11-14": {
       "call_times": "4:00pm-10:00pm",
       "count": 1,
-      "name": "\"VOX Femina\" Concert",
-      "schedule": "4pm Load in\n5:30pm Sound Check/Run Through\n6:30pm Doors Open\n7:00pm Concert\n10:00pm Out",
+      "name": "VOX Femina Concert",
+      "schedule": "4pm Load in\n5:30 Sound Check/Run Through\n6:30 Doors Open\n7:00pm Concert\n10:00pm Out",
       "type": "Concert",
       "venue": "Sanctuary/Stuart Hall"
     },
     "040000008200E00074C5B7101A82E0080000000096796A8F6924DD010000000000000000100000003435062FACF0FE45B669B8A493E95B50::2026-12-06": {
       "call_times": "2:00pm-10:00pm",
       "count": 2,
-      "name": "\"Synesthesia Sinfonietta\" Concert",
+      "name": "HoLAdays Synesthesia Sinfonietta Concert",
       "schedule": "2:00pm Load-in\n6:30pm Doors\n7:00-9:00pm Concert\n10:00pm Off campus",
       "type": "Concert",
       "venue": "Sanctuary/Stuart Hall/Forecourt"
@@ -43,7 +43,7 @@
     "040000008200E00074C5B7101A82E00800000000BC34ED37D817DD010000000000000000100000003417AB522A577847972012826DB0A36C::2026-12-13": {
       "call_times": "4:00pm-10:00pm",
       "count": 1,
-      "name": "\"Resonance Collective\" Concert",
+      "name": "Resonance Collective Concert",
       "schedule": "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
       "type": "Concert",
       "venue": "Shatto"
@@ -57,6 +57,6 @@
       "venue": "Forecourt/Sanctuary"
     }
   },
-  "fingerprint": "d1c56c504ed94944da19ee771f6594a611229f1863f32a0d95e6458d9d521bd0",
-  "gemini_at": "2026-10-22T14:42:31+00:00"
+  "fingerprint": "4298251fbb2e1b6ffcfec1656cfb56344b5b7086d0d4e8664b196fd368da46e4",
+  "gemini_at": "2026-10-23T14:28:31+00:00"
 }
