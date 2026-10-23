@@ -1,0 +1,66 @@
+name: Move Draft Events to Sheet
+
+# Dispatched from event-draft.html ("Move to sheet"). The page sends the
+# checked-out rows (with any inline edits) as the `rows` input.
+on:
+  workflow_dispatch:
+    inputs:
+      rows:
+        description: 'JSON list of {key, cells} rows to insert'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (report only, no sheet or draft changes)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: move-draft-to-sheet
+  cancel-in-progress: false
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # PAT so the draft commit redeploys Pages (default token pushes don't)
+          token: ${{ secrets.PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth python-dateutil
+
+      - name: Insert rows into the schedule sheet
+        env:
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          DRAFT_ROWS: ${{ inputs.rows }}
+          DRY_RUN: ${{ inputs.dry_run == 'true' && '1' || '0' }}
+        run: cd "Utilities/Scheduling/Event Data" && python move_draft_to_sheet.py
+
+      - name: Commit the trimmed draft
+        if: ${{ inputs.dry_run != 'true' }}
+        run: |
+          cd "Utilities/Scheduling/Event Data"
+          git add event_draft.json 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: Move checked-out events from draft to sheet"
+            git pull --rebase origin ${{ github.ref_name }}
+            git push
+          fi

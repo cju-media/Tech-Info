@@ -24,6 +24,21 @@
     th { background: #f1f3f5; position: sticky; top: 0; }
     td:first-child, th:first-child { white-space: nowrap; }
     tr.divider td { background: #e9ecef; font-weight: bold; letter-spacing: .05em; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .toolbar button.copy { margin-bottom: 0; }
+    button.move { background: #198754; }
+    button.link { font: inherit; font-size: 12px; color: #6f42c1; background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; }
+    #status { font-size: 13px; color: #555; }
+    #status.err { color: #b02a37; }
+    td.chk, th.chk { width: 28px; text-align: center; white-space: nowrap; }
+    td[contenteditable] { cursor: text; min-width: 40px; }
+    td[contenteditable]:focus { outline: 2px solid #6f42c1; outline-offset: -2px; background: #f8f4ff; }
+    td.edited { background: #fff8e1; }
+    tr.queued td { opacity: .45; }
+    tr.queued td[contenteditable] { cursor: default; }
+    tr.selected td { background: #e8f5ee; }
+    tr.selected td.edited { background: #f3f1d4; }
+    .badge { font-size: 11px; color: #198754; font-weight: bold; white-space: nowrap; }
     .src { color: #999; font-size: 11px; }
     .empty { color: #888; font-style: italic; padding: 20px 0; }
     .error { color: #b02a37; }
@@ -35,6 +50,12 @@
         th, td { border-color: #3a3a3a; }
         th { background: #262626; }
         tr.divider td { background: #333; }
+        #status { color: #b5b5b5; }
+        td[contenteditable]:focus { background: #2d2540; }
+        td.edited { background: #3a3318; }
+        tr.selected td { background: #1f3a2b; }
+        tr.selected td.edited { background: #3a4020; }
+        button.link { color: #b99cf0; }
     }
 </style>
 </head>
@@ -44,11 +65,18 @@
     <div class="meta" id="meta"></div>
     <div class="how">
         A starting point for the Tech Availability sheet &mdash; <strong>not</strong> the live sheet.
-        Click <em>Copy table</em>, paste into a blank area of the sheet, then edit.
-        Availability, Assignment and Tech are left blank on purpose. Check the month-divider
-        rows and any row that overlaps something already on the sheet.
+        Click any cell to fix it (edits are kept in this browser), tick the rows you want, then
+        <em>Move to sheet</em> inserts them in date order under the right month. Moving takes
+        about a minute. Availability, Assignment and Tech are left blank on purpose. Or use
+        <em>Copy table</em> to paste by hand.
     </div>
-    <button class="copy" id="copyBtn" disabled>Copy table</button>
+    <div class="toolbar">
+        <button class="copy move" id="moveBtn" disabled>Move to sheet</button>
+        <button class="copy" id="copyBtn" disabled>Copy table</button>
+        <button class="link" id="resetBtn" hidden>Discard my edits</button>
+        <button class="link" id="tokenBtn">GitHub token</button>
+        <span id="status"></span>
+    </div>
     <div id="content"><p>Loading&hellip;</p></div>
 </div>
 <script>
@@ -72,6 +100,34 @@
         return p[1] + '/' + p[2] + '/' + p[0];
     }
 
+    var REPO = 'cju-media/Tech-Info';
+    var WORKFLOW = 'move_draft_to_sheet.yml';
+    var BRANCH = 'main';
+    var LS_EDITS = 'eventDraft.edits', LS_QUEUED = 'eventDraft.queued', LS_TOKEN = 'eventDraft.token';
+
+    var moveBtn = document.getElementById('moveBtn');
+    var resetBtn = document.getElementById('resetBtn');
+    var statusEl = document.getElementById('status');
+    var entries = [];   // {key, orig, tr, cells: [td], box}
+
+    function lsGet(k, fallback) {
+        try { var v = localStorage.getItem(k); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; }
+    }
+    function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+    function setStatus(msg, isErr) { statusEl.textContent = msg; statusEl.className = isErr ? 'err' : ''; }
+
+    document.getElementById('tokenBtn').addEventListener('click', function () {
+        var cur = '';
+        try { cur = localStorage.getItem(LS_TOKEN) || ''; } catch (e) {}
+        var t = window.prompt('GitHub fine-grained token for ' + REPO + ' with "Actions: Read and write" ' +
+            '(stored only in this browser). Leave empty to remove.', cur);
+        if (t === null) return;
+        try { t.trim() ? localStorage.setItem(LS_TOKEN, t.trim()) : localStorage.removeItem(LS_TOKEN); } catch (e) {}
+        setStatus(t.trim() ? 'Token saved.' : 'Token removed.');
+    });
+
+    function rowKey(row) { return row.cells[0] + '|' + row.cells[1] + '|' + (row.note || ''); }
+
     function render(data) {
         if (data.generated) {
             metaEl.textContent = 'Generated ' + new Date(data.generated).toLocaleString() +
@@ -86,11 +142,31 @@
             return;
         }
 
+        var edits = lsGet(LS_EDITS, {});
+        var queued = lsGet(LS_QUEUED, {});
+        // Forget local state for rows that are no longer in the draft (moved or regenerated away).
+        var live = {};
+        rows.forEach(function (r) { if (r.kind === 'event') live[rowKey(r)] = 1; });
+        Object.keys(edits).forEach(function (k) { if (!live[k]) delete edits[k]; });
+        Object.keys(queued).forEach(function (k) { if (!live[k]) delete queued[k]; });
+        lsSet(LS_EDITS, edits); lsSet(LS_QUEUED, queued);
+
         var table = document.createElement('table');
         table.id = 'draft-table';
 
         var thead = document.createElement('thead');
         var htr = document.createElement('tr');
+        var allTh = document.createElement('th');
+        allTh.className = 'chk';
+        var allBox = document.createElement('input');
+        allBox.type = 'checkbox';
+        allBox.title = 'Select all';
+        allBox.addEventListener('change', function () {
+            entries.forEach(function (e) { if (!e.queued) { e.box.checked = allBox.checked; e.sync(); } });
+            refresh();
+        });
+        allTh.appendChild(allBox);
+        htr.appendChild(allTh);
         data.columns.forEach(function (c) {
             var th = document.createElement('th');
             th.textContent = c;
@@ -100,14 +176,60 @@
         table.appendChild(thead);
 
         var tbody = document.createElement('tbody');
+        entries = [];
         rows.forEach(function (row) {
             var tr = document.createElement('tr');
-            if (row.kind === 'divider') tr.className = 'divider';
-            row.cells.forEach(function (val) {
+            var chk = document.createElement('td');
+            chk.className = 'chk';
+            tr.appendChild(chk);
+            if (row.kind === 'divider') {
+                tr.className = 'divider';
+                row.cells.forEach(function (val) {
+                    var td = document.createElement('td');
+                    td.textContent = val == null ? '' : String(val);
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+                return;
+            }
+            var key = rowKey(row);
+            var entry = { key: key, orig: row.cells.map(function (v) { return v == null ? '' : String(v); }),
+                          tr: tr, tds: [], queued: !!queued[key] };
+            var saved = edits[key];
+            row.cells.forEach(function (val, i) {
                 var td = document.createElement('td');
-                td.textContent = val == null ? '' : String(val);
+                var orig = entry.orig[i];
+                td.textContent = saved && saved[i] != null ? saved[i] : orig;
+                if (!entry.queued) {
+                    td.contentEditable = 'plaintext-only';
+                    if (td.contentEditable !== 'plaintext-only') td.contentEditable = 'true';
+                    td.addEventListener('input', function () { onEdit(entry); });
+                    td.addEventListener('paste', function (ev) {
+                        ev.preventDefault();
+                        var txt = (ev.clipboardData || window.clipboardData).getData('text');
+                        document.execCommand('insertText', false, txt);
+                    });
+                }
+                entry.tds.push(td);
                 tr.appendChild(td);
             });
+            var box = document.createElement('input');
+            box.type = 'checkbox';
+            entry.box = box;
+            if (entry.queued) {
+                tr.className = 'queued';
+                box.disabled = true;
+                var b = document.createElement('span');
+                b.className = 'badge'; b.textContent = 'queued';
+                chk.appendChild(b);
+            } else {
+                chk.appendChild(box);
+                box.addEventListener('change', function () { entry.sync(); refresh(); });
+            }
+            entry.sync = function () { tr.classList.toggle('selected', box.checked); };
+            entry.values = function () { return entry.tds.map(function (td) { return td.innerText.replace(/\r/g, '').replace(/\n+$/, ''); }); };
+            markEdited(entry);
+            entries.push(entry);
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
@@ -125,15 +247,128 @@
         contentEl.appendChild(srcNote);
 
         copyBtn.disabled = false;
-        copyBtn.addEventListener('click', function () { copyTable(table); });
+        copyBtn.onclick = function () { copyTable(table); };
+        moveBtn.onclick = moveSelected;
+        resetBtn.onclick = function () {
+            if (!window.confirm('Discard all of your edits and restore the generated values?')) return;
+            lsSet(LS_EDITS, {});
+            entries.forEach(function (e) { e.tds.forEach(function (td, i) { td.textContent = e.orig[i]; }); markEdited(e); });
+            refresh();
+        };
+        refresh();
+    }
+
+    function markEdited(entry) {
+        var vals = entry.values();
+        entry.tds.forEach(function (td, i) { td.classList.toggle('edited', vals[i] !== entry.orig[i]); });
+        return vals.some(function (v, i) { return v !== entry.orig[i]; });
+    }
+
+    function onEdit(entry) {
+        var edits = lsGet(LS_EDITS, {});
+        if (markEdited(entry)) edits[entry.key] = entry.values(); else delete edits[entry.key];
+        lsSet(LS_EDITS, edits);
+        refresh();
+    }
+
+    function selected() { return entries.filter(function (e) { return e.box && e.box.checked && !e.queued; }); }
+
+    function refresh() {
+        var n = selected().length;
+        moveBtn.disabled = n === 0;
+        moveBtn.textContent = n ? 'Move ' + n + ' to sheet' : 'Move to sheet';
+        resetBtn.hidden = !Object.keys(lsGet(LS_EDITS, {})).length;
+    }
+
+    function moveSelected() {
+        var token = '';
+        try { token = localStorage.getItem(LS_TOKEN) || ''; } catch (e) {}
+        if (!token) { setStatus('Add a GitHub token first (link at right).', true); return; }
+
+        var sel = selected();
+        var bad = sel.filter(function (e) {
+            var v = e.values();
+            return !/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(v[0]) || !v[1].trim();
+        });
+        if (bad.length) {
+            bad[0].tr.scrollIntoView({ block: 'center' });
+            setStatus('Row "' + bad[0].values()[0] + '" needs a date like "SU 12/6/2026" and an event name.', true);
+            return;
+        }
+        var payload = sel.map(function (e) { return { key: e.key, cells: e.values() }; });
+        var rowsJson = JSON.stringify(payload);
+        if (rowsJson.length > 60000) { setStatus('Too many rows at once — move fewer.', true); return; }
+        if (!window.confirm('Insert ' + sel.length + ' row(s) into the live Tech Availability sheet?')) return;
+
+        moveBtn.disabled = true;
+        var t0 = Date.now();
+        setStatus('Sending…');
+        api('POST', '/actions/workflows/' + WORKFLOW + '/dispatches',
+            { ref: BRANCH, inputs: { rows: rowsJson, dry_run: 'false' } }, token)
+            .then(function () {
+                var queued = lsGet(LS_QUEUED, {});
+                sel.forEach(function (e) {
+                    queued[e.key] = 1; e.queued = true; e.box.checked = false; e.box.disabled = true;
+                    e.tr.className = 'queued';
+                    e.tds.forEach(function (td) { td.contentEditable = 'false'; });
+                });
+                lsSet(LS_QUEUED, queued);
+                refresh();
+                poll(token, t0, sel.length);
+            })
+            .catch(function (err) { setStatus('Failed: ' + err.message, true); refresh(); });
+    }
+
+    function api(method, path, body, token) {
+        return fetch('https://api.github.com/repos/' + REPO + path, {
+            method: method,
+            headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + token,
+                       'Content-Type': 'application/json' },
+            body: body ? JSON.stringify(body) : undefined
+        }).then(function (r) {
+            if (r.status === 204) return null;
+            return r.json().catch(function () { return {}; }).then(function (j) {
+                if (!r.ok) throw new Error((j && j.message) || ('HTTP ' + r.status));
+                return j;
+            });
+        });
+    }
+
+    function poll(token, t0, n) {
+        var tries = 0;
+        setStatus('Queued ' + n + ' row(s)…');
+        (function tick() {
+            tries++;
+            api('GET', '/actions/workflows/' + WORKFLOW + '/runs?event=workflow_dispatch&per_page=5', null, token)
+                .then(function (j) {
+                    var run = (j.workflow_runs || []).filter(function (r) { return new Date(r.created_at).getTime() >= t0 - 15000; })[0];
+                    if (run && run.status === 'completed') {
+                        if (run.conclusion === 'success') {
+                            setStatus('Moved ' + n + ' row(s) to the sheet ✓ — they disappear from this list after the next page deploy.');
+                        } else {
+                            setStatus('The move failed (' + run.conclusion + '). Nothing may have been written — see ' + run.html_url, true);
+                        }
+                        return;
+                    }
+                    setStatus(run ? 'Writing to the sheet… (' + run.status + ')' : 'Waiting for the runner…');
+                    if (tries < 60) setTimeout(tick, 5000); else setStatus('Still running — check GitHub Actions.', true);
+                })
+                .catch(function (e) { setStatus('Could not check progress: ' + e.message, true); });
+        })();
     }
 
     function copyTable(table) {
         // Google Sheets pastes text/html into cells and keeps line breaks.
-        var html = '<table>' + table.querySelector('tbody').innerHTML + '</table>';
+        var trs = Array.prototype.filter.call(table.querySelectorAll('tbody tr'), function (tr) { return !tr.classList.contains('queued'); });
+        function cellsOf(tr) { return Array.prototype.slice.call(tr.children, 1); }
+        var html = '<table>' + trs.map(function (tr) {
+            return '<tr>' + cellsOf(tr).map(function (td) {
+                return '<td>' + td.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</td>';
+            }).join('') + '</tr>';
+        }).join('') + '</table>';
         html = html.replace(/\n/g, '<br>');
-        var tsv = Array.prototype.map.call(table.querySelectorAll('tbody tr'), function (tr) {
-            return Array.prototype.map.call(tr.children, function (td) {
+        var tsv = trs.map(function (tr) {
+            return cellsOf(tr).map(function (td) {
                 return td.textContent.replace(/\t/g, ' ').replace(/\n/g, ' / ');
             }).join('\t');
         }).join('\n');
