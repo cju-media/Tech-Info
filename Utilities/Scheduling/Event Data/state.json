@@ -34,10 +34,60 @@
         ]
     },
     "event_details": {
+        "su-12-27-2026-worship-service": {
+            "date": "2026-12-27",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "th-12-24-2026-christmas-eve-11pm-service": {
+            "date": "2026-12-24",
+            "name": "Christmas Eve 11pm Service",
+            "call_time": "8:00pm-1:00am"
+        },
+        "th-12-24-2026-christmas-eve-8pm-service": {
+            "date": "2026-12-24",
+            "name": "Christmas Eve 8pm Service",
+            "call_time": "5:00pm-10:00pm"
+        },
+        "th-12-24-2026-christmas-eve-fkf-service": {
+            "date": "2026-12-24",
+            "name": "Christmas Eve FKF Service",
+            "call_time": "2:00pm-6:00pm"
+        },
+        "su-12-20-2026-pageant-dress-rehearsal": {
+            "date": "2026-12-20",
+            "name": "Pageant Dress Rehearsal",
+            "call_time": "12:00pm-3:00pm"
+        },
+        "su-12-20-2026-worship-service": {
+            "date": "2026-12-20",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "su-12-13-2026-resonance-collective-concert": {
+            "date": "2026-12-13",
+            "name": "Resonance Collective Concert",
+            "call_time": "4:00pm-10:00pm"
+        },
+        "su-12-13-2026-worship-service": {
+            "date": "2026-12-13",
+            "name": "Worship Service",
+            "call_time": "8:45am-12:30pm"
+        },
+        "su-12-6-2026-holadays-synesthesia-sinfonietta-concert": {
+            "date": "2026-12-06",
+            "name": "HoLAdays Synesthesia Sinfonietta Concert",
+            "call_time": "2:00pm-10:00pm"
+        },
         "su-12-6-2026-worship-service": {
             "date": "2026-12-06",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
+        },
+        "sa-12-5-2026-elizabeth-bernal-izett-barnett-wedding": {
+            "date": "2026-12-05",
+            "name": "Elizabeth Bernal & Izett Barnett Wedding",
+            "call_time": "3:00pm-11:00pm"
         },
         "fr-12-4-2026-yamandu-costa-concert": {
             "date": "2026-12-04",
@@ -48,6 +98,11 @@
             "date": "2026-11-29",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
+        },
+        "fr-11-27-2026-emma-johnson-jarrett-cox-wedding": {
+            "date": "2026-11-27",
+            "name": "Emma Johnson & Jarrett Cox Wedding",
+            "call_time": "3:30pm-6:30pm"
         },
         "su-11-22-2026-worship-service": {
             "date": "2026-11-22",
@@ -63,6 +118,16 @@
             "date": "2026-11-15",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
+        },
+        "sa-11-14-2026-vox-femina-concert": {
+            "date": "2026-11-14",
+            "name": "VOX Femina Concert",
+            "call_time": "4:00pm-10:00pm"
+        },
+        "we-11-11-2026-vox-dress-rehearsal": {
+            "date": "2026-11-11",
+            "name": "VOX Dress Rehearsal",
+            "call_time": "5:00pm-10:00pm"
         },
         "su-11-8-2026-worship-service": {
             "date": "2026-11-08",
