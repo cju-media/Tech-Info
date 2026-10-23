@@ -1,44 +1,58 @@
 {
+    "su-12-27-2026-worship-service": [],
+    "th-12-24-2026-christmas-eve-11pm-service": [],
+    "th-12-24-2026-christmas-eve-8pm-service": [],
+    "th-12-24-2026-christmas-eve-fkf-service": [],
+    "su-12-20-2026-pageant-dress-rehearsal": [],
+    "su-12-20-2026-worship-service": [],
+    "su-12-13-2026-resonance-collective-concert": [],
+    "su-12-13-2026-worship-service": [],
+    "su-12-6-2026-holadays-synesthesia-sinfonietta-concert": [],
     "su-12-6-2026-worship-service": [
         "Saad"
     ],
+    "sa-12-5-2026-elizabeth-bernal-izett-barnett-wedding": [],
     "fr-12-4-2026-yamandu-costa-concert": [
-        "Saad",
-        "Jaffe"
+        "Jaffe",
+        "Saad"
     ],
     "su-11-29-2026-worship-service": [
+        "Jaffe",
         "Saad",
-        "Marc",
-        "Jaffe"
+        "Marc"
     ],
-    "fr-11-27-2026-emma-johnson-jarrett-cox-wedding": [],
+    "fr-11-27-2026-emma-johnson-jarrett-cox-wedding": [
+        "Marc"
+    ],
     "su-11-22-2026-worship-service": [
-        "Danny",
-        "Jaffe"
+        "Jaffe",
+        "Danny"
     ],
     "mo-11-16-2026-boy-meets-world-podcast": [
+        "Jaffe",
         "Saad",
-        "Marc",
-        "Jaffe"
+        "Marc"
     ],
     "su-11-15-2026-worship-service": [
+        "Jaffe",
         "Saad",
-        "Marc",
-        "Jaffe"
+        "Marc"
     ],
-    "sa-11-14-2026-vox-femina-concert": [],
+    "sa-11-14-2026-vox-femina-concert": [
+        "Marc"
+    ],
     "we-11-11-2026-vox-dress-rehearsal": [],
     "su-11-8-2026-worship-service": [
+        "Jaffe",
         "Saad",
-        "Marc",
-        "Jaffe"
+        "Marc"
     ],
     "su-11-01-2026-wedding-ceremony": [
         "Marc"
     ],
     "su-11-01-2026-worship-service": [
-        "Saad",
-        "Danny"
+        "Danny",
+        "Saad"
     ],
     "sa-10-31-2026-wedding-ceremony": [
         "Danny"
@@ -47,12 +61,12 @@
         "Saad"
     ],
     "su-10-25-2026-resonance-collective": [
+        "Jaffe",
         "Saad",
-        "Marc",
-        "Jaffe"
+        "Marc"
     ],
     "su-10-25-2026-worship-service": [
-        "Saad",
-        "Jaffe"
+        "Jaffe",
+        "Saad"
     ]
 }
