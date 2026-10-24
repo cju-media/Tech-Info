@@ -1,8 +1,8 @@
 {
-  "generated": "2026-10-23T14:28:31+00:00",
+  "generated": "2026-10-24T13:37:26+00:00",
   "window": {
-    "start": "2026-10-23",
-    "end": "2027-01-23"
+    "start": "2026-10-24",
+    "end": "2027-01-24"
   },
   "columns": [
     "Date",
@@ -34,6 +34,23 @@
         ""
       ],
       "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 1/24/2027",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
     },
     {
       "kind": "event",
@@ -89,6 +106,57 @@
     {
       "kind": "divider",
       "cells": [
+        "DECEMBER",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/13/2026",
+        "Sarah Smith & Elijah Rawlings Wedding",
+        "Forecourt/Sanctuary",
+        "",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SA 12/12/2026",
+        "Gloria Kang & Daniel Kim Wedding",
+        "Forecourt/Sanctuary",
+        "",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
+    },
+    {
+      "kind": "divider",
+      "cells": [
         "NOVEMBER",
         "",
         "",
@@ -106,58 +174,24 @@
     {
       "kind": "event",
       "cells": [
-        "FR 11/27/2026",
-        "Emma Johnson & Jarrett Cox Wedding",
-        "Forecourt/Sanctuary",
-        "3:30pm-6:30pm",
+        "SA 11/21/2026",
+        "Sofia Uribe & Robin Aimaq Wedding",
+        "Sanctuary/Forecourt/Stuart Hall",
+        "",
         "Wedding",
         "1",
         "",
         "",
-        "4:15pm Prelude\n4:30pm Actual",
+        "",
         "",
         "Weddings"
       ],
-      "note": "from calendar: Ceremony: Emma Johnson & Jarrett Cox Wedding"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 11/14/2026",
-        "VOX Femina Concert",
-        "Sanctuary/Stuart Hall",
-        "4:00pm-10:00pm",
-        "Concert",
-        "1",
-        "",
-        "",
-        "4pm Load in\n5:30 Sound Check/Run Through\n6:30 Doors Open\n7:00pm Concert\n10:00pm Out",
-        "",
-        ""
-      ],
-      "note": "from calendar: VOX Femina Concert"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "WE 11/11/2026",
-        "VOX Dress Rehearsal",
-        "Sanctuary",
-        "5:00pm-10:00pm",
-        "Rehearsal",
-        "1",
-        "",
-        "",
-        "5pm Load in\n6pm Load in choir\n7-10pm Dress Rehearsal",
-        "",
-        ""
-      ],
-      "note": "from calendar: VOX dress rehearsal"
+      "note": "from calendar: Ceremony: Sofia Uribe & Robin Aimaq"
     }
   ],
   "counts": {
-    "events": 13,
-    "worship": 6,
-    "from_calendar": 7
+    "events": 7,
+    "worship": 4,
+    "from_calendar": 3
   }
 }
