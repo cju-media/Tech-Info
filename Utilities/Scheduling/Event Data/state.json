@@ -9,22 +9,18 @@
             "su-11-22-2026-worship-service"
         ],
         "Jaffe": [
-            "su-10-25-2026-worship-service",
             "su-11-8-2026-worship-service",
             "mo-11-16-2026-boy-meets-world-podcast",
             "su-11-22-2026-worship-service"
         ],
         "Kaspar": [],
         "Marc": [
-            "su-10-25-2026-resonance-collective",
             "su-11-01-2026-wedding-ceremony",
             "su-11-8-2026-worship-service",
             "su-11-15-2026-worship-service",
             "su-11-29-2026-worship-service"
         ],
         "Saad": [
-            "su-10-25-2026-resonance-collective",
-            "su-10-25-2026-worship-service",
             "fr-10-30-2026-candlelight-concert-the-magic-of-ennio-morricone",
             "su-11-01-2026-worship-service",
             "su-11-15-2026-worship-service",
@@ -153,16 +149,6 @@
             "date": "2026-10-30",
             "name": "Candlelight Concert: The Magic of Ennio Morricone",
             "call_time": "5:00pm-10:00pm"
-        },
-        "su-10-25-2026-resonance-collective": {
-            "date": "2026-10-25",
-            "name": "Resonance Collective ",
-            "call_time": "4:00pm-10:30pm"
-        },
-        "su-10-25-2026-worship-service": {
-            "date": "2026-10-25",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
