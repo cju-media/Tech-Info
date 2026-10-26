@@ -41,13 +41,8 @@
     }
   ],
   "published": {
-    "at": "2026-10-25",
+    "at": "2026-10-26",
     "items": [
-      {
-        "date": "2026-10-25",
-        "title": "Fall Festival and Chili Cook-Off",
-        "when": "Sunday, Oct 25 | 12:30pm"
-      },
       {
         "date": "",
         "title": "Garden and Farm Volunteer Call",
@@ -59,6 +54,6 @@
         "when": ""
       }
     ],
-    "md5": "ef428c1ddc452fd95b4e3219d6ff5d59"
+    "md5": "3da16c42f387d82ea04bf1ce494dce23"
   }
 }
