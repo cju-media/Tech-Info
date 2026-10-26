@@ -15,10 +15,6 @@
   ],
   "card_events": [
     {
-      "name": "The Resonance Collective presents Mayab\u2019: Live Folktr\u00f3nica with Aurora Nohemi",
-      "start": "2026-10-25T19:00:00-07:00"
-    },
-    {
       "name": "Susan Orlean discusses and signs \"Joyride: A Memoir\"",
       "start": "2026-10-26T19:00:00-07:00"
     },
@@ -47,7 +43,7 @@
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "49825caa43de2e993f15bcc390f32f4b2e85678d9958d46206dfa53a99c47334",
+  "card_fingerprint": "4d3618b886cfc7677f1ff8024729f58c977e6ae6f07daa012d30eb7f48ce1249",
   "classified": {
     "All Saints Day - Becoming Earth|2026-11-01T10:30:00-08:00": {
       "category": "HOLIDAY",
@@ -294,6 +290,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "ca785873ca47a913be2b7cee284b25a6dad82b99764414f5428db8e9bf784e4e",
-  "updated_at": "2026-10-21T14:47:31-07:00"
+  "page_fingerprint": "aa0f34781896ecaa3691edb00b0590e6c5c00399f671c7ae386448236e922967",
+  "updated_at": "2026-10-25T19:47:34-07:00"
 }
