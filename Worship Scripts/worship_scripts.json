@@ -1,21 +1,21 @@
 {
-  "2026-11-15": {
-    "path": "service-scripts/2026-11-15.pdf",
-    "modifiedTime": "2026-10-22T21:49:00.999Z",
+  "2026-11-01": {
+    "path": "service-scripts/2026-11-01.pdf",
+    "modifiedTime": "2026-10-26T18:33:10.672Z",
     "isCommunion": false,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
   },
   "2026-11-08": {
     "path": "service-scripts/2026-11-08.pdf",
-    "modifiedTime": "2026-10-21T23:16:44.511Z",
+    "modifiedTime": "2026-10-26T17:01:11.548Z",
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
   },
-  "2026-11-01": {
-    "path": "service-scripts/2026-11-01.pdf",
-    "modifiedTime": "2026-10-21T22:49:31.045Z",
+  "2026-11-15": {
+    "path": "service-scripts/2026-11-15.pdf",
+    "modifiedTime": "2026-10-22T21:49:00.999Z",
     "isCommunion": false,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
