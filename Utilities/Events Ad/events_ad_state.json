@@ -15,10 +15,6 @@
   ],
   "card_events": [
     {
-      "name": "Susan Orlean discusses and signs \"Joyride: A Memoir\"",
-      "start": "2026-10-26T19:00:00-07:00"
-    },
-    {
       "name": "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience",
       "start": "2026-10-30T19:30:00-07:00"
     },
@@ -43,7 +39,7 @@
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "4d3618b886cfc7677f1ff8024729f58c977e6ae6f07daa012d30eb7f48ce1249",
+  "card_fingerprint": "5c2a861f6b02b62a99bf71363c65c9fbc58924a44e088379907945cec00ca68f",
   "classified": {
     "All Saints Day - Becoming Earth|2026-11-01T10:30:00-08:00": {
       "category": "HOLIDAY",
@@ -290,6 +286,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "aa0f34781896ecaa3691edb00b0590e6c5c00399f671c7ae386448236e922967",
-  "updated_at": "2026-10-25T19:47:34-07:00"
+  "page_fingerprint": "db26b390e518773041fbb446500b84cdf5c066f3044b4ee2bd41652fab997dc4",
+  "updated_at": "2026-10-26T19:47:22-07:00"
 }
