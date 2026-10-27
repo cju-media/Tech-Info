@@ -109,13 +109,14 @@
         }
         .mermaid-viewport {
             overflow: auto;
-            max-height: 78vh;
+            margin-bottom: 18px;
+            cursor: zoom-in;
             border: 1px solid #eee;
             border-radius: 6px;
             background: #fcfcfd;
         }
         .mermaid {
-            display: inline-block;
+            display: block;
             transform-origin: top left;
             transition: transform 0.15s ease;
         }
@@ -159,7 +160,17 @@
             stroke: #ff5722 !important;
             stroke-width: 3px !important;
         }
+        .flow-title { margin: 22px 0 4px; color: #333; }
+        .flow-intro { margin: 0 0 8px; font-size: 13px; color: #888; }
+        #zm { position: fixed; inset: 0; z-index: 50; background: rgba(10,14,20,.72); display: flex; flex-direction: column; padding: 12px; gap: 8px; }
+        #zm[hidden] { display: none; }
+        #zm .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: #fff; }
+        #zm .bar button { padding: 4px 12px; border-radius: 4px; border: 1px solid #ccc; background: white; cursor: pointer; font-size: 14px; }
+        #zm .t { font-weight: 600; margin-right: auto; }
+        #zm .zbody { flex: 1; min-height: 0; overflow: auto; background: #fcfcfd; border-radius: 8px; padding: 16px; cursor: grab; }
+        #zm svg { display: block; max-width: none !important; height: auto; }
         .flowchart-description {
+            position: sticky; bottom: 0; background: white; padding: 8px 0;
             text-align: center;
             min-height: 24px;
             margin-top: 15px;
@@ -227,6 +238,10 @@
     </style>
 </head>
 <body>
+    <div id="zm" hidden role="dialog" aria-modal="true" aria-label="Zoomed diagram">
+        <div class="bar"><span class="t" id="zt"></span><button id="zo" type="button">&minus;</button><span id="zl">100%</span><button id="zi" type="button">+</button><button id="zf" type="button">Fit</button><button id="zc" type="button">Close</button></div>
+        <div class="zbody" id="zb"></div>
+    </div>
     <div class="header-container">
         <a href="index.html" class="back-btn">&#x2039; Back to Dashboard</a>
         <h1>Tech-Info Automated Workflows</h1>
@@ -240,132 +255,343 @@
     <div class="dashboard-container">
         <div class="flowchart-card">
             <h2>Workflow Automation Architecture</h2>
-            <p style="text-align:center; font-size:13px; color:#888; margin-top:-10px;">Solid arrows = data/trigger flow between GitHub Actions workflows. Dashed arrows = one workflow calling another's script inline (not via Actions triggers). Hover a node to trace its connections; scroll/drag to pan, use the zoom controls to resize.</p>
-            <div class="zoom-controls">
-                <button onclick="adjustZoom(-0.15)">&minus; Zoom Out</button>
-                <span id="zoom-level">100%</span>
-                <button onclick="adjustZoom(0.15)">+ Zoom In</button>
-                <button onclick="resetZoom()">Reset</button>
-            </div>
-            <div class="mermaid-viewport">
+            <p style="text-align:center; font-size:13px; color:#888; margin-top:-10px;">One diagram per area. Solid arrows = data/trigger flow between GitHub Actions workflows. Dashed arrows = one workflow calling another's script inline (not via Actions triggers). Every imessage_notifications box is the same workflow, repeated where a diagram sends it an alert. Hover a node to trace its connections; click a diagram to zoom in.</p>
+            <h3 class="flow-title">Overview</h3>
+            <div class="mermaid-viewport" title="Click to zoom">
             <div class="mermaid">
-                graph TD
-                %% ===== External data sources =====
-                subgraph SOURCES["External Data Sources"]
-                    S1(["GitHub cju-media/OW<br/>weekly OW PDF + index.json"])
-                    S2(["Google Drive<br/>Worship Service Docs"])
-                    S3(["/uploads frontend<br/>&#8594; uploads_queue/"])
-                    S4(["Google Sheet<br/>Team Schedule"])
-                    S5(["LA Open Data API<br/>Public Events"])
-                end
-
-                %% ===== Pipeline 1: OW PDF -> Service Titles =====
-                subgraph PIPE1["OW PDF &#8594; Service Titles (Gemini)"]
-                    C1[service_titles_checker]
-                    T1[("service-titles/*.txt")]
-                    C2[sync_service_titles]
-                    G4[sermon_series]
-                end
-
-                %% ===== Pipeline 2: Worship Docs -> Scripts =====
-                subgraph PIPE2["Worship Docs &#8594; Scripts (Gemini)"]
-                    A1[worship_scripts_checker]
-                    T2[("worship_scripts.json +<br/>service-scripts/*.pdf")]
-                end
-                B2[pages_deployment]
-
-                %% ===== Pipeline 3: YouTube description + livestream =====
-                subgraph PIPE3["YouTube Description &#8594; Livestream"]
-                    B1[youtube_description]
-                    T3[("Description.txt +<br/>chapters.txt")]
-                    F1[update_youtube_stream]
-                    F2[Push to timings.txt]
-                    J1[archive_service_files]
-                end
-
-                %% ===== Pipeline 4: Uploads -> livestream creation =====
-                H1[process_uploads]
-
-                %% ===== Pipeline 5: Team schedule & notices =====
-                subgraph PIPE5["Team Schedule &amp; Notices"]
-                    G1[schedule_notifications]
-                    E1[imessage_notifications]
-                    G3[rf_coordination]
-                end
-
-                D1{drive_upload_complete}
-                D2{youtube_stream_created}
-                EXT1([YouTube Data API])
-                EXT2([Google Drive<br/>sync targets])
-
-                %% ---- Pipeline 1 edges ----
-                S1 -->|Fetch weekly OW PDF| C1
-                C1 -->|Gemini extracts titles| T1
-                T1 -->|Uploads| EXT2
-                C1 -->|Success| D1
-                T1 -->|Push triggers on manual edit| C2
-                C2 -->|Re-syncs| EXT2
-                C2 -->|Success| D1
-                T1 -->|Push triggers,<br/>sermon files only| G4
-                G4 -->|Looks up stream link| EXT1
-                G4 -->|Uploads Sermon-Series file| EXT2
-
-                %% ---- Pipeline 2 edges ----
-                S2 -->|Fetch dated service doc| A1
-                A1 -->|Gemini extracts mic assignments| T2
-                A1 -->|"Triggers via workflow_run<br/>(push uses GITHUB_TOKEN, no push event)"| B2
-                A1 -->|Triggers via workflow_run| B1
-
-                %% ---- Pipeline 3 edges ----
-                S1 -->|index.json + PDF SHA gate| B1
-                T1 -->|Reads titles| B1
-                T2 -->|Reads date map| B1
-                B1 --> T3
-                B1 -->|Completes| F1
-                F2 -->|Triggers| F1
-                T3 -->|Reads| F1
-                F1 -->|Updates live description| EXT1
-                T3 -->|Weekly snapshot| J1
-
-                %% ---- Pipeline 4 edges ----
-                S3 --> H1
-                H1 -->|Uploads thumbnail| EXT2
-                H1 -.->|"If titles missing for date:<br/>runs update_service_titles.py inline"| C1
-                H1 -.->|"If titles missing for date:<br/>runs generate_youtube_description.py inline"| B1
-                H1 -->|Creates broadcast, sets thumbnail| EXT1
-                H1 -->|Fires| D2
-
-                %% ---- Dispatch destinations ----
-                D1 -->|Triggers| E1
-                D2 -->|Triggers| E1
-
-                %% ---- Pipeline 5 edges ----
-                S4 --> G1
-                S4 --> E1
-                S4 --> G3
-                S5 --> G3
-
-                %% ===== Independent workflows =====
-                G2[video_migration]
-
-                S2 -.->|Drive VOD folder| G2
-                G2 -->|Uploads to podcast playlist| EXT1
-
-                %% Click Events
-                click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
-                click B1 href "#youtube_description" "Compiles extracted titles from service_titles_checker into Description.txt and chapters.txt"
-                click B2 href "#pages_deployment" "Deploys the static tech-info dashboard to GitHub Pages. Triggered via workflow_run (not push) because worship_scripts_checker commits with the default GITHUB_TOKEN, which does not fire push events"
-                click C1 href "#service_titles_checker" "Extracts service components from upcoming OW PDF via Gemini and syncs to Drive"
-                click C2 href "#sync_service_titles" "Syncs manual edits of service title text files to Google Drive"
-                click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
-                click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream. No standalone cron: already runs ~hourly via the youtube_description chain, so a separate poll would just duplicate the run"
-                click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications. Manual dispatch also covers the test run mode that the former standalone manual_test workflow duplicated"
-                click G2 href "#video_migration" "Weekly job that copies VOD in Google Drive and uploads it to YouTube podcast playlist"
-                click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails, sourced from the same Team Schedule sheet plus LA Open Data"
-                click G4 href "#sermon_series" "Combines sermon title and minister into a text file, looks up the live stream link via the YouTube API, and syncs to Drive"
-                click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive. When a worship-service thumbnail lands and titles/description are missing, it runs the service-titles and youtube-description scripts inline, then creates the YouTube livestream itself"
-                click J1 href "#archive_service_files" "Weekly Monday snapshot that copies the past week's chapters/timings/description/title files into Archives/"
-
+graph LR
+    OW(["cju-media/OW<br/>Order of Worship PDF"]) --> SUN["Sunday content pipeline"]
+    DRV(["Drive worship docs"]) --> SUN
+    UP(["/uploads page"]) --> LIVE["Uploads &amp; livestream"]
+    SUN --> LIVE
+    SUN --> YT(["YouTube"])
+    LIVE --> YT
+    LIVE --> CARDS["Campus screen cards"]
+    SHEET(["Team Schedule sheet"]) --> CREW["Crew scheduling"]
+    SHEET --> EVT["Sheet &amp; event draft"]
+    CAL(["Outlook calendar"]) --> EVT
+    WEB(["fccla.org + newsletter"]) --> CARDS
+    CREW --> IM["imessage_notifications"]
+    SUN --> IM
+    LIVE --> IM
+    CARDS --> IM
+    EVT --> IM
+    MIG["Video migration"] --> YT
+    MIG --> IM
+    MON["Server health"] --> IM
+    MONT["Montage photos"] --> IM
+    VID["Display videos"]
+    classDef sec fill:#eef,stroke:#557
+    class SUN,LIVE,CARDS,CREW,EVT,MIG,MON,MONT,VID,IM sec
+            </div>
+            </div>
+            <h3 class="flow-title">Sunday content pipeline</h3>
+            <p class="flow-intro">Order of Worship and worship docs become service titles, scripts, the YouTube description and the Drive copies.</p>
+            <div class="mermaid-viewport" title="Click to zoom">
+            <div class="mermaid">
+graph TD
+S1(["cju-media/OW<br/>OW PDF + index.json"])
+    S2(["Drive worship docs"])
+    C1[service_titles_checker]
+    T1[("service-titles/*.txt")]
+    C2[sync_service_titles]
+    G4[sermon_series]
+    A1[worship_scripts_checker]
+    T2[("worship_scripts.json +<br/>service-scripts/*.pdf")]
+    B2[pages_deployment]
+    B1[youtube_description]
+    T3[("Description.txt +<br/>chapters.txt")]
+    F1[update_youtube_stream]
+    F2[Push to timings.txt]
+    J1[archive_service_files]
+    K4[push_coffee_hour]
+    D1{drive_upload_complete}
+    E1[imessage_notifications]
+    EXT1([YouTube Data API])
+    EXT2([Drive sync targets])
+    EXT5([Content Display<br/>control server])
+    S1 -->|Fetch OW PDF| C1
+    C1 -->|Gemini extracts titles| T1
+    T1 -->|Uploads| EXT2
+    C1 -->|Success| D1
+    T1 -->|Manual edit push| C2
+    C2 -->|Re-syncs| EXT2
+    C2 -->|Success| D1
+    T1 -->|Sermon files only| G4
+    G4 -->|Looks up stream link| EXT1
+    G4 -->|Uploads Sermon-Series file| EXT2
+    D1 -->|Triggers| E1
+    S2 -->|Fetch service doc| A1
+    A1 -->|Gemini: mic assignments| T2
+    A1 -->|workflow_run| B2
+    A1 -->|workflow_run| B1
+    A1 -->|"workflow_run + Sunday backstop"| K4
+    K4 -->|"POST /api/coffee-hour"| EXT5
+    S1 -->|index.json + SHA gate| B1
+    T1 -->|Reads titles| B1
+    T2 -->|Reads date map| B1
+    B1 --> T3
+    B1 -->|Completes| F1
+    F2 -->|Triggers| F1
+    T3 -->|Reads| F1
+    F1 -->|Updates live description| EXT1
+    T3 -->|Weekly snapshot| J1
+    class C1,C2,G4,A1,B2,B1,F1,F2,J1,K4,E1 wf
+    class S1,S2,EXT1,EXT2,EXT5 ext
+    classDef wf fill:#fae7e7,stroke:#d93f3f,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#d93f3f,stroke-width:2px
+    click C1 href "#service_titles_checker" "Extracts service components from upcoming OW PDF via Gemini and syncs to Drive"
+    click C2 href "#sync_service_titles" "Syncs manual edits of service title text files to Google Drive"
+    click G4 href "#sermon_series" "Combines sermon title and minister into a text file, looks up the live stream link via the YouTube API, and syncs to Drive"
+    click A1 href "#worship_scripts_checker" "Downloads OW PDF, extracts mic assignments via Gemini, and saves scripts as PDFs for GitHub Pages"
+    click B2 href "#pages_deployment" "Deploys the static tech-info dashboard to GitHub Pages. Triggered via workflow_run (not push) because worship_scripts_checker commits with the default GITHUB_TOKEN, which does not fire push events"
+    click B1 href "#youtube_description" "Compiles extracted titles from service_titles_checker into Description.txt and chapters.txt"
+    click F1 href "#update_youtube_stream" "Pushes compiled description and timings to the upcoming YouTube livestream. No standalone cron: already runs ~hourly via the youtube_description chain, so a separate poll would just duplicate the run"
+    click J1 href "#archive_service_files" "Weekly Monday snapshot that copies the past week's chapters/timings/description/title files into Archives/"
+    click K4 href "#push_coffee_hour" "Reads the Coffee Hour room from worship_scripts.json and POSTs it to the Content Display control server on the self-hosted runner"
+    click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+            </div>
+            </div>
+            <h3 class="flow-title">Uploads, title graphics & livestream creation</h3>
+            <p class="flow-intro">The /uploads page and the title-graphics picker queue files; the workflows file them in Drive and create the YouTube broadcast.</p>
+            <div class="mermaid-viewport" title="Click to zoom">
+            <div class="mermaid">
+graph TD
+S3(["/uploads page<br/>uploads_queue/"])
+    H1[process_uploads]
+    TG1[title_graphics]
+    C1[service_titles_checker]
+    B1[youtube_description]
+    K1[create_pending_youtube_stream]
+    K2[backfill_sermon_series_link]
+    K3[push_sermon_description]
+    R1[renumber_rotation]
+    D2{youtube_stream_created}
+    E1[imessage_notifications]
+    E2[imessage_notifications]
+    T5[("last_upload.json")]
+    EXT1([YouTube Data API])
+    EXT2([Drive sync targets])
+    EXT3([Drive Events_Ads folder])
+    S3 --> H1
+    S3 -->|ow_uploaded| TG1
+    S3 -->|ow_uploaded| C1
+    TG1 -->|"title_graphics_pick: queues JPGs"| H1
+    TG1 -->|Texts picker link| E2
+    H1 -->|Uploads thumbnail| EXT2
+    H1 -->|Creates broadcast, sets thumbnail| EXT1
+    H1 -.->|"Titles missing: runs script inline"| C1
+    H1 -.->|"Titles missing: runs script inline"| B1
+    H1 -.->|"Defers stream to pending_stream/"| K1
+    B1 -->|workflow_run| K1
+    C1 -->|workflow_run| K1
+    K1 -->|Creates broadcast| EXT1
+    K1 -->|Fires| D2
+    H1 -->|Fires| D2
+    D2 -->|Triggers| E1
+    D2 -->|Triggers| K2
+    K2 -->|Replaces YOUTUBE SERVICE LINK| EXT2
+    T5 -->|Video id by date| K3
+    K3 -->|Pushes corrected description| EXT1
+    H1 -->|workflow_run| R1
+    R1 -->|Renames into order| EXT3
+    class H1,TG1,C1,B1,K1,K2,K3,R1,E1,E2 wf
+    class S3,EXT1,EXT2,EXT3,T5 ext
+    classDef wf fill:#f0e9f8,stroke:#8a4fc9,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#8a4fc9,stroke-width:2px
+    click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive. When a worship-service thumbnail lands and titles/description are missing, it runs the service-titles and youtube-description scripts inline, then creates the YouTube livestream itself"
+    click TG1 href "#title_graphics" "Builds the weekly Service/Sermon title graphics in Illustrator on Studio Mini and handles the picker's pick"
+    click C1 href "#service_titles_checker" "Extracts service components from upcoming OW PDF via Gemini and syncs to Drive"
+    click B1 href "#youtube_description" "Compiles extracted titles from service_titles_checker into Description.txt and chapters.txt"
+    click K1 href "#create_pending_youtube_stream" "Finishes a deferred YouTube broadcast once the week's title and description are ready, then fires youtube_stream_created"
+    click K2 href "#backfill_sermon_series_link" "Replaces the YOUTUBE SERVICE LINK placeholder in the sermon-series description once the livestream URL is known"
+    click K3 href "#push_sermon_description" "Manual: pushes the corrected sermon-series description onto an already-uploaded video"
+    click R1 href "#renumber_rotation" "Every 15 min and after Process Uploads Queue: renames Events_Ads into an alternating info-card / event-flyer order"
+    click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+    click E2 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+            </div>
+            </div>
+            <h3 class="flow-title">Crew scheduling & notifications</h3>
+            <p class="flow-intro">The Team Schedule sheet drives emails, iMessages, the weekly RF scan and the public-events check.</p>
+            <div class="mermaid-viewport" title="Click to zoom">
+            <div class="mermaid">
+graph LR
+S4(["Google Sheet<br/>Team Schedule"])
+    S5(["LA Open Data API<br/>Public Events"])
+    G1[schedule_notifications]
+    E1[imessage_notifications]
+    G3[rf_coordination]
+    S4 --> G1
+    S4 --> E1
+    S4 --> G3
+    S5 --> G3
+    class G1,E1,G3 wf
+    class S4,S5 ext
+    classDef wf fill:#e3f3ed,stroke:#1a9e6b,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#1a9e6b,stroke-width:2px
+    click G1 href "#schedule_notifications" "Hourly check for schedule updates to send standard email notifications. Manual dispatch also covers the test run mode that the former standalone manual_test workflow duplicated"
+    click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+    click G3 href "#rf_coordination" "Weekly job that handles RF frequency coordination emails, sourced from the same Team Schedule sheet plus LA Open Data"
+            </div>
+            </div>
+            <h3 class="flow-title">Tech Schedule sheet & event draft</h3>
+            <p class="flow-intro">Keeps the master sheet tidy and builds the copy-paste draft of upcoming events.</p>
+            <div class="mermaid-viewport" title="Click to zoom">
+            <div class="mermaid">
+graph TD
+S4(["Google Sheet<br/>Team Schedule"])
+    S6(["Outlook calendar<br/>ICS feed"])
+    M1[mark_past_sheet_events]
+    M2[sync_calendar_notes]
+    M3[draft_upcoming_events]
+    M4[move_draft_to_sheet]
+    T4[("event_draft.json")]
+    E1[imessage_notifications]
+    S4 --> M1
+    M1 -->|Strikes through past rows| S4
+    S6 --> M2
+    S4 --> M2
+    M2 -->|Column L Event Notes| S4
+    M2 -->|calendar_event_added| E1
+    S6 --> M3
+    M3 --> T4
+    T4 -->|"event-draft.html: check out rows"| M4
+    M4 -->|Inserts rows in date order| S4
+    class M1,M2,M3,M4,E1 wf
+    class S4,S6,T4 ext
+    classDef wf fill:#edf2e0,stroke:#6d9a00,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#6d9a00,stroke-width:2px
+    click M1 href "#mark_past_sheet_events" "Daily: strikes through and reddens past-dated rows on the master Tech Schedule sheet"
+    click M2 href "#sync_calendar_notes" "Daily: copies each Outlook calendar event description into column L (Event Notes) of the sheet, matched by Gemini"
+    click M3 href "#draft_upcoming_events" "Daily: builds a copy-paste draft of upcoming events from the Outlook feed into event_draft.json"
+    click M4 href "#move_draft_to_sheet" "Manual dispatch from event-draft.html: inserts checked-out draft rows into the sheet and removes them from event_draft.json"
+    click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+            </div>
+            </div>
+            <h3 class="flow-title">Campus screen cards</h3>
+            <p class="flow-intro">The cards and flyers that loop on the campus screens, all landing in the Events_Ads Drive folder.</p>
+            <div class="mermaid-viewport" title="Click to zoom">
+            <div class="mermaid">
+graph TD
+S7(["fccla.org<br/>calendar + newsletter"])
+    S9(["Open-Meteo"])
+    EXT1([YouTube Data API])
+    H1[process_uploads]
+    AD1[generate_events_ad]
+    AD2[generate_newsletter_ad]
+    AD3[generate_service_ad]
+    AD4[generate_weather_ad]
+    AD5[audit_newsletter_card]
+    R1[renumber_rotation]
+    N1[cleanup_events_folder]
+    N2[dedupe_events_folder]
+    E1[imessage_notifications]
+    E2[imessage_notifications]
+    EXT3([Drive Events_Ads folder])
+    S7 --> AD1
+    S7 --> AD2
+    S9 --> AD4
+    EXT1 -->|Next scheduled broadcast| AD3
+    AD1 -->|Queued via uploads_queue| H1
+    AD2 --> EXT3
+    AD3 --> EXT3
+    AD4 --> EXT3
+    AD2 -->|Published card record| AD5
+    AD5 -->|newsletter_card_stale| E1
+    H1 -->|workflow_run| R1
+    R1 -->|Renames into info/event order| EXT3
+    N1 -->|Trashes past flyers| EXT3
+    N1 -->|events_folder_* alerts| E2
+    N2 -->|Trashes duplicates| EXT3
+    class H1,AD1,AD2,AD3,AD4,AD5,R1,N1,N2,E1,E2 wf
+    class S7,S9,EXT1,EXT3 ext
+    classDef wf fill:#f7e7e5,stroke:#c0392b,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#c0392b,stroke-width:2px
+    click H1 href "#process_uploads" "Serverless backend that processes file uploads from the /uploads queue to Google Drive. When a worship-service thumbnail lands and titles/description are missing, it runs the service-titles and youtube-description scripts inline, then creates the YouTube livestream itself"
+    click AD1 href "#generate_events_ad" "Hourly: renders the events-at-a-glance card from the fccla.org calendar and queues it for Drive"
+    click AD2 href "#generate_newsletter_ad" "Hourly: renders the Meetinghouse newsletter card; Gemini runs once per issue"
+    click AD3 href "#generate_service_ad" "Hourly (and Sunday mornings): renders the upcoming-service card around the next broadcast's thumbnail"
+    click AD4 href "#generate_weather_ad" "Hourly: renders the LA weather card from Open-Meteo"
+    click AD5 href "#audit_newsletter_card" "Daily: checks the newsletter card on the screens for stale dates or a stale upload and texts if wrong"
+    click R1 href "#renumber_rotation" "Every 15 min and after Process Uploads Queue: renames Events_Ads into an alternating info-card / event-flyer order"
+    click N1 href "#cleanup_events_folder" "Daily: trashes event flyers once the event date (read by Gemini vision) has passed"
+    click N2 href "#dedupe_events_folder" "Manual: trashes byte-identical duplicate flyers, keeping the earliest"
+    click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+    click E2 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+            </div>
+            </div>
+            <h3 class="flow-title">Video migration & monitoring</h3>
+            <p class="flow-intro">The Monday VOD upload, and the watchdogs that notice when something has gone quiet.</p>
+            <div class="mermaid-viewport" title="Click to zoom">
+            <div class="mermaid">
+graph TD
+S2(["Drive VOD folder"])
+    G2[video_migration]
+    T5[("last_upload.json")]
+    W3[video_migration_watchdog]
+    W1[server_health]
+    W2[server_health_watchdog]
+    E1[imessage_notifications]
+    EXT1([YouTube podcast playlist])
+    EXT4([Secret Gist<br/>server status])
+    S2 -.-> G2
+    G2 -->|Uploads| EXT1
+    G2 --> T5
+    G2 -->|video_migration_upload_skipped| E1
+    W3 -->|Checks Monday run happened| G2
+    W1 -->|Publishes status| EXT4
+    EXT4 -->|Freshness check| W2
+    class G2,W3,W1,W2,E1 wf
+    class S2,T5,EXT1,EXT4 ext
+    classDef wf fill:#f7e3eb,stroke:#c2185b,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#c2185b,stroke-width:2px
+    click G2 href "#video_migration" "Weekly job that copies VOD in Google Drive and uploads it to YouTube podcast playlist"
+    click W3 href "#video_migration_watchdog" "Tuesday: emails if Monday's video migration did not run or did not succeed"
+    click W1 href "#server_health" "Every 10 min on the self-hosted runner: polls the Studio Mini servers and publishes status to a Gist"
+    click W2 href "#server_health_watchdog" "Every 30 min: emails if the health poller has gone silent for over 40 minutes"
+    click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
+            </div>
+            </div>
+            <h3 class="flow-title">Montage photos & display videos</h3>
+            <p class="flow-intro">Annual-meeting montage collection and the lobby display video loop.</p>
+            <div class="mermaid-viewport" title="Click to zoom">
+            <div class="mermaid">
+graph TD
+S8(["Constant Contact<br/>Meetinghouse archive"])
+    S10(["video-upload/* branches<br/>from /uploads"])
+    P1[collect_montage_photos]
+    P2[montage_folder_reminder]
+    P3[refile_montage_photos]
+    V1[upload_display_videos]
+    V2[shuffle_display_videos]
+    E1[imessage_notifications]
+    EXT6([Drive montage folder])
+    EXT7([Drive Display Videos])
+    S8 --> P1
+    P1 -->|Gemini sorts photos| EXT6
+    P3 -->|Refiles from montage_refile.json| EXT6
+    P2 -->|montage_folder_reminder| E1
+    S10 --> V1
+    V1 -->|Verified upload| EXT7
+    V1 -->|"Shuffles in (mode new)"| V2
+    V2 -->|Random order codes| EXT7
+    class P1,P2,P3,V1,V2,E1 wf
+    class S8,S10,EXT6,EXT7 ext
+    classDef wf fill:#e0f2f0,stroke:#009688,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#009688,stroke-width:2px
+    click P1 href "#collect_montage_photos" "Every 6 hours: pulls photos from newsletter issues, Gemini files them by category and occasion in the montage Drive folder"
+    click P2 href "#montage_folder_reminder" "Daily in July until the new year's montage folder is configured: emails and texts Cameron"
+    click P3 href "#refile_montage_photos" "Manual: moves misfiled photos listed in montage_refile.json"
+    click V1 href "#upload_display_videos" "On video-upload/* pushes and a daily sweep: rebuilds, verifies and uploads lobby display videos, then deletes the branch"
+    click V2 href "#shuffle_display_videos" "Daily (mode new) or manual (mode all): gives display videos random order codes"
+    click E1 href "#imessage_notifications" "Sends iMessage reminders/updates via self-hosted macOS runner (osascript). Also handles ad-hoc test messages via a manual-dispatch input, folded in from the former standalone test_imessage workflow"
             </div>
             </div>
             <div id="flowchart-desc" class="flowchart-description">Hover over a workflow node to view its description.</div>
@@ -465,9 +691,7 @@
 
             // Use MutationObserver or fallback to setTimeout
             setTimeout(() => {
-                const svg = document.querySelector('.mermaid svg');
-                if (!svg) return;
-
+                document.querySelectorAll('.mermaid svg').forEach(svg => {
                 const nodes = svg.querySelectorAll('g.node');
                 nodes.forEach(node => {
                     // In Mermaid 9+, titles are often rendered as attributes on the node
@@ -520,25 +744,52 @@
                         titleEl.remove();
                     }
                 });
+                });
             }, 1000); // Give mermaid a moment
         }
 
-        // ---- Zoom controls ----
-        let flowchartZoom = 1;
-        function applyZoom() {
-            const mermaidDiv = document.querySelector('.mermaid');
-            if (!mermaidDiv) return;
-            mermaidDiv.style.transform = `scale(${flowchartZoom})`;
-            document.getElementById('zoom-level').textContent = `${Math.round(flowchartZoom * 100)}%`;
-        }
-        function adjustZoom(delta) {
-            flowchartZoom = Math.min(3, Math.max(0.4, flowchartZoom + delta));
-            applyZoom();
-        }
-        function resetZoom() {
-            flowchartZoom = 1.5;
-            applyZoom();
-        }
+        // ---- Click a diagram to zoom ----
+        (function () {
+            const m = document.getElementById('zm'), body = document.getElementById('zb'), lv = document.getElementById('zl');
+            let svg = null, w0 = 0, z = 1;
+            const apply = () => { if (svg) { svg.style.width = (w0 * z) + 'px'; lv.textContent = Math.round(z * 100) + '%'; } };
+            const fit = () => {
+                const vb = svg.viewBox && svg.viewBox.baseVal;
+                w0 = vb && vb.width ? vb.width : svg.getBoundingClientRect().width;
+                z = Math.min(4, Math.max(0.2, (body.clientWidth - 32) / w0));
+                apply();
+            };
+            const close = () => { m.hidden = true; body.textContent = ''; svg = null; };
+            document.addEventListener('click', (e) => {
+                const vp = e.target.closest && e.target.closest('.mermaid-viewport');
+                if (!vp || !m.hidden) return;
+                const src = vp.querySelector('svg');
+                if (!src) return;
+                svg = src.cloneNode(true);
+                svg.removeAttribute('height');
+                svg.style.maxWidth = 'none';
+                body.textContent = '';
+                body.appendChild(svg);
+                const h = vp.previousElementSibling;
+                document.getElementById('zt').textContent = (h && h.classList.contains('flow-intro') ? h.previousElementSibling : h).textContent;
+                m.hidden = false;
+                fit();
+                body.scrollTo(0, 0);
+            });
+            document.getElementById('zc').onclick = close;
+            document.getElementById('zi').onclick = () => { z = Math.min(6, z * 1.25); apply(); };
+            document.getElementById('zo').onclick = () => { z = Math.max(0.1, z / 1.25); apply(); };
+            document.getElementById('zf').onclick = () => fit();
+            m.addEventListener('click', (e) => { if (e.target === m) close(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !m.hidden) close(); });
+            body.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || e.metaKey) { e.preventDefault(); z = Math.min(6, Math.max(0.1, z * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); apply(); }
+            }, { passive: false });
+            let drag = null;
+            body.addEventListener('mousedown', (e) => { drag = { x: e.clientX, y: e.clientY, l: body.scrollLeft, t: body.scrollTop }; });
+            window.addEventListener('mousemove', (e) => { if (drag) { body.scrollLeft = drag.l - (e.clientX - drag.x); body.scrollTop = drag.t - (e.clientY - drag.y); } });
+            window.addEventListener('mouseup', () => { drag = null; });
+        })();
 
 
         async function fetchYAML(path) {
@@ -825,7 +1076,6 @@ if (sortMode === 'last-run') {
             themeVariables: { fontSize: '16px' }
         });
         setupFlowchartHovers();
-        setTimeout(resetZoom, 1000); // Start at a readable zoom once mermaid has rendered
     </script>
 </body>
 </html>

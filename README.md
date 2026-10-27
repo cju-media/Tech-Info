@@ -27,6 +27,7 @@ Repo: `cju-media/Tech-Info` · Pages site: <https://cju-media.github.io/Tech-Inf
 - [Video migration](#video-migration)
 - [Title graphics (Illustrator)](#title-graphics-illustrator)
 - [GitHub Actions workflows](#github-actions-workflows)
+- [Workflow architecture](#workflow-architecture)
 - [Repository layout](#repository-layout)
 - [Infrastructure, secrets & external services](#infrastructure-secrets--external-services)
 - [Tests](#tests)
@@ -396,6 +397,310 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 
 The live state of all of these (last run, next run, dependency graph) is
 visible on `Utilities/dashboard/workflows.html`.
+
+## Workflow architecture
+
+How the GitHub Actions workflows feed each other, split into one diagram per
+area so each stays readable. Solid arrows are data or trigger flow; dashed
+arrows are one workflow running another's script inline. The same graph, all
+on one canvas with hover descriptions, last-run status and zoom, is on
+`Utilities/dashboard/workflows.html`. Every `imessage_notifications` box below
+is the same workflow, repeated where a diagram sends it an alert.
+
+### Overview
+
+```mermaid
+graph LR
+    OW(["cju-media/OW<br/>Order of Worship PDF"]) --> SUN["Sunday content pipeline"]
+    DRV(["Drive worship docs"]) --> SUN
+    UP(["/uploads page"]) --> LIVE["Uploads &amp; livestream"]
+    SUN --> LIVE
+    SUN --> YT(["YouTube"])
+    LIVE --> YT
+    LIVE --> CARDS["Campus screen cards"]
+    SHEET(["Team Schedule sheet"]) --> CREW["Crew scheduling"]
+    SHEET --> EVT["Sheet &amp; event draft"]
+    CAL(["Outlook calendar"]) --> EVT
+    WEB(["fccla.org + newsletter"]) --> CARDS
+    CREW --> IM["imessage_notifications"]
+    SUN --> IM
+    LIVE --> IM
+    CARDS --> IM
+    EVT --> IM
+    MIG["Video migration"] --> YT
+    MIG --> IM
+    MON["Server health"] --> IM
+    MONT["Montage photos"] --> IM
+    VID["Display videos"]
+    classDef sec fill:#eef,stroke:#557
+    class SUN,LIVE,CARDS,CREW,EVT,MIG,MON,MONT,VID,IM sec
+```
+
+### Sunday content pipeline
+
+Order of Worship and worship docs become service titles, scripts, the YouTube description and the Drive copies.
+
+```mermaid
+graph TD
+S1(["cju-media/OW<br/>OW PDF + index.json"])
+    S2(["Drive worship docs"])
+    C1[service_titles_checker]
+    T1[("service-titles/*.txt")]
+    C2[sync_service_titles]
+    G4[sermon_series]
+    A1[worship_scripts_checker]
+    T2[("worship_scripts.json +<br/>service-scripts/*.pdf")]
+    B2[pages_deployment]
+    B1[youtube_description]
+    T3[("Description.txt +<br/>chapters.txt")]
+    F1[update_youtube_stream]
+    F2[Push to timings.txt]
+    J1[archive_service_files]
+    K4[push_coffee_hour]
+    D1{drive_upload_complete}
+    E1[imessage_notifications]
+    EXT1([YouTube Data API])
+    EXT2([Drive sync targets])
+    EXT5([Content Display<br/>control server])
+    S1 -->|Fetch OW PDF| C1
+    C1 -->|Gemini extracts titles| T1
+    T1 -->|Uploads| EXT2
+    C1 -->|Success| D1
+    T1 -->|Manual edit push| C2
+    C2 -->|Re-syncs| EXT2
+    C2 -->|Success| D1
+    T1 -->|Sermon files only| G4
+    G4 -->|Looks up stream link| EXT1
+    G4 -->|Uploads Sermon-Series file| EXT2
+    D1 -->|Triggers| E1
+    S2 -->|Fetch service doc| A1
+    A1 -->|Gemini: mic assignments| T2
+    A1 -->|workflow_run| B2
+    A1 -->|workflow_run| B1
+    A1 -->|"workflow_run + Sunday backstop"| K4
+    K4 -->|"POST /api/coffee-hour"| EXT5
+    S1 -->|index.json + SHA gate| B1
+    T1 -->|Reads titles| B1
+    T2 -->|Reads date map| B1
+    B1 --> T3
+    B1 -->|Completes| F1
+    F2 -->|Triggers| F1
+    T3 -->|Reads| F1
+    F1 -->|Updates live description| EXT1
+    T3 -->|Weekly snapshot| J1
+    class C1,C2,G4,A1,B2,B1,F1,F2,J1,K4,E1 wf
+    class S1,S2,EXT1,EXT2,EXT5 ext
+    classDef wf fill:#fae7e7,stroke:#d93f3f,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#d93f3f,stroke-width:2px
+```
+
+### Uploads, title graphics & livestream creation
+
+The /uploads page and the title-graphics picker queue files; the workflows file them in Drive and create the YouTube broadcast.
+
+```mermaid
+graph TD
+S3(["/uploads page<br/>uploads_queue/"])
+    H1[process_uploads]
+    TG1[title_graphics]
+    C1[service_titles_checker]
+    B1[youtube_description]
+    K1[create_pending_youtube_stream]
+    K2[backfill_sermon_series_link]
+    K3[push_sermon_description]
+    R1[renumber_rotation]
+    D2{youtube_stream_created}
+    E1[imessage_notifications]
+    E2[imessage_notifications]
+    T5[("last_upload.json")]
+    EXT1([YouTube Data API])
+    EXT2([Drive sync targets])
+    EXT3([Drive Events_Ads folder])
+    S3 --> H1
+    S3 -->|ow_uploaded| TG1
+    S3 -->|ow_uploaded| C1
+    TG1 -->|"title_graphics_pick: queues JPGs"| H1
+    TG1 -->|Texts picker link| E2
+    H1 -->|Uploads thumbnail| EXT2
+    H1 -->|Creates broadcast, sets thumbnail| EXT1
+    H1 -.->|"Titles missing: runs script inline"| C1
+    H1 -.->|"Titles missing: runs script inline"| B1
+    H1 -.->|"Defers stream to pending_stream/"| K1
+    B1 -->|workflow_run| K1
+    C1 -->|workflow_run| K1
+    K1 -->|Creates broadcast| EXT1
+    K1 -->|Fires| D2
+    H1 -->|Fires| D2
+    D2 -->|Triggers| E1
+    D2 -->|Triggers| K2
+    K2 -->|Replaces YOUTUBE SERVICE LINK| EXT2
+    T5 -->|Video id by date| K3
+    K3 -->|Pushes corrected description| EXT1
+    H1 -->|workflow_run| R1
+    R1 -->|Renames into order| EXT3
+    class H1,TG1,C1,B1,K1,K2,K3,R1,E1,E2 wf
+    class S3,EXT1,EXT2,EXT3,T5 ext
+    classDef wf fill:#f0e9f8,stroke:#8a4fc9,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#8a4fc9,stroke-width:2px
+```
+
+### Crew scheduling & notifications
+
+The Team Schedule sheet drives emails, iMessages, the weekly RF scan and the public-events check.
+
+```mermaid
+graph LR
+S4(["Google Sheet<br/>Team Schedule"])
+    S5(["LA Open Data API<br/>Public Events"])
+    G1[schedule_notifications]
+    E1[imessage_notifications]
+    G3[rf_coordination]
+    S4 --> G1
+    S4 --> E1
+    S4 --> G3
+    S5 --> G3
+    class G1,E1,G3 wf
+    class S4,S5 ext
+    classDef wf fill:#e3f3ed,stroke:#1a9e6b,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#1a9e6b,stroke-width:2px
+```
+
+### Tech Schedule sheet & event draft
+
+Keeps the master sheet tidy and builds the copy-paste draft of upcoming events.
+
+```mermaid
+graph TD
+S4(["Google Sheet<br/>Team Schedule"])
+    S6(["Outlook calendar<br/>ICS feed"])
+    M1[mark_past_sheet_events]
+    M2[sync_calendar_notes]
+    M3[draft_upcoming_events]
+    M4[move_draft_to_sheet]
+    T4[("event_draft.json")]
+    E1[imessage_notifications]
+    S4 --> M1
+    M1 -->|Strikes through past rows| S4
+    S6 --> M2
+    S4 --> M2
+    M2 -->|Column L Event Notes| S4
+    M2 -->|calendar_event_added| E1
+    S6 --> M3
+    M3 --> T4
+    T4 -->|"event-draft.html: check out rows"| M4
+    M4 -->|Inserts rows in date order| S4
+    class M1,M2,M3,M4,E1 wf
+    class S4,S6,T4 ext
+    classDef wf fill:#edf2e0,stroke:#6d9a00,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#6d9a00,stroke-width:2px
+```
+
+### Campus screen cards
+
+The cards and flyers that loop on the campus screens, all landing in the Events_Ads Drive folder.
+
+```mermaid
+graph TD
+S7(["fccla.org<br/>calendar + newsletter"])
+    S9(["Open-Meteo"])
+    EXT1([YouTube Data API])
+    H1[process_uploads]
+    AD1[generate_events_ad]
+    AD2[generate_newsletter_ad]
+    AD3[generate_service_ad]
+    AD4[generate_weather_ad]
+    AD5[audit_newsletter_card]
+    R1[renumber_rotation]
+    N1[cleanup_events_folder]
+    N2[dedupe_events_folder]
+    E1[imessage_notifications]
+    E2[imessage_notifications]
+    EXT3([Drive Events_Ads folder])
+    S7 --> AD1
+    S7 --> AD2
+    S9 --> AD4
+    EXT1 -->|Next scheduled broadcast| AD3
+    AD1 -->|Queued via uploads_queue| H1
+    AD2 --> EXT3
+    AD3 --> EXT3
+    AD4 --> EXT3
+    AD2 -->|Published card record| AD5
+    AD5 -->|newsletter_card_stale| E1
+    H1 -->|workflow_run| R1
+    R1 -->|Renames into info/event order| EXT3
+    N1 -->|Trashes past flyers| EXT3
+    N1 -->|events_folder_* alerts| E2
+    N2 -->|Trashes duplicates| EXT3
+    class H1,AD1,AD2,AD3,AD4,AD5,R1,N1,N2,E1,E2 wf
+    class S7,S9,EXT1,EXT3 ext
+    classDef wf fill:#f7e7e5,stroke:#c0392b,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#c0392b,stroke-width:2px
+```
+
+### Video migration & monitoring
+
+The Monday VOD upload, and the watchdogs that notice when something has gone quiet.
+
+```mermaid
+graph TD
+S2(["Drive VOD folder"])
+    G2[video_migration]
+    T5[("last_upload.json")]
+    W3[video_migration_watchdog]
+    W1[server_health]
+    W2[server_health_watchdog]
+    E1[imessage_notifications]
+    EXT1([YouTube podcast playlist])
+    EXT4([Secret Gist<br/>server status])
+    S2 -.-> G2
+    G2 -->|Uploads| EXT1
+    G2 --> T5
+    G2 -->|video_migration_upload_skipped| E1
+    W3 -->|Checks Monday run happened| G2
+    W1 -->|Publishes status| EXT4
+    EXT4 -->|Freshness check| W2
+    class G2,W3,W1,W2,E1 wf
+    class S2,T5,EXT1,EXT4 ext
+    classDef wf fill:#f7e3eb,stroke:#c2185b,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#c2185b,stroke-width:2px
+```
+
+### Montage photos & display videos
+
+Annual-meeting montage collection and the lobby display video loop.
+
+```mermaid
+graph TD
+S8(["Constant Contact<br/>Meetinghouse archive"])
+    S10(["video-upload/* branches<br/>from /uploads"])
+    P1[collect_montage_photos]
+    P2[montage_folder_reminder]
+    P3[refile_montage_photos]
+    V1[upload_display_videos]
+    V2[shuffle_display_videos]
+    E1[imessage_notifications]
+    EXT6([Drive montage folder])
+    EXT7([Drive Display Videos])
+    S8 --> P1
+    P1 -->|Gemini sorts photos| EXT6
+    P3 -->|Refiles from montage_refile.json| EXT6
+    P2 -->|montage_folder_reminder| E1
+    S10 --> V1
+    V1 -->|Verified upload| EXT7
+    V1 -->|"Shuffles in (mode new)"| V2
+    V2 -->|Random order codes| EXT7
+    class P1,P2,P3,V1,V2,E1 wf
+    class S8,S10,EXT6,EXT7 ext
+    classDef wf fill:#e0f2f0,stroke:#009688,stroke-width:1.5px
+    classDef ext fill:#fff,stroke:#888,stroke-dasharray:4 3
+    linkStyle default stroke:#009688,stroke-width:2px
+```
 
 ## Repository layout
 
