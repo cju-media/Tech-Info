@@ -29,7 +29,8 @@ import unicodedata
 import urllib.parse
 
 import hymn_lyrics
-from propresenter_pb import (CUE_FIELD, GROUP_FIELD, UUID_RE, cue_uuid, field, fields, identifier,
+from propresenter_pb import (CUE_FIELD, GROUP_FIELD, UUID_RE, copy_slide, cue_uuid, field, fields,
+                             identifier, outside_uuids,
                              new_uuid, propresenter_running, transform, write_with_backup)
 
 HOME = os.path.expanduser("~")
@@ -220,28 +221,30 @@ def deck_words(data):
     return "\n".join(slide_text(c) for _, c in cues_in_order(data))
 
 
-def rebuild_deck(data, slides, name=None):
+def shared_uuids(ordered):
+    """UUIDs used by more than one slide: they point outside any one slide (a theme, media)."""
+    counts = {}
+    for _, c in ordered:
+        for u in set(UUID_RE.findall(c)):
+            counts[u] = counts.get(u, 0) + 1
+    return frozenset(u for u, n in counts.items() if n > 1)
+
+
+def rebuild_deck(data, slides, name=None, keep=frozenset()):
     """The deck with its lyric slides replaced by `slides`, each a copy of its first lyric slide.
-    With `name`, it's a new deck: new UUIDs for the presentation and its groups, and that name."""
+    With `name`, it's a new deck: new UUIDs for the presentation and its groups, and that name.
+    `keep`: UUIDs defined outside the deck (propresenter_pb.outside_uuids), never renewed."""
     ordered = cues_in_order(data)
     lyric = [(u, c) for u, c in ordered if slide_text(c)]
     if not lyric:
         raise ValueError("no slide with text to copy")
     proto = lyric[0][1]
     lyric_ids = {u for u, _ in lyric}
-
-    # IDs the slide shares with other slides point outside it (a theme, media): keep those.
-    counts = {}
-    for _, c in ordered:
-        for u in set(UUID_RE.findall(c)):
-            counts[u] = counts.get(u, 0) + 1
-    own = [u for u in set(UUID_RE.findall(proto)) if counts.get(u, 0) == 1]
+    shared = shared_uuids(ordered)
 
     new_cues, new_ids = [], []
     for text in slides:
-        c = set_slide_text(proto, text)
-        for u in own:
-            c = c.replace(u, new_uuid().encode())
+        c = copy_slide(set_slide_text(proto, text), keep, shared)
         new_cues.append(c)
         new_ids.append(cue_uuid(c))
 
@@ -392,7 +395,8 @@ def read(folder, name):
         return ""
 
 
-def sync_hymn(key, title, lyrics_text, hymns_dir, template_path, dry_run, backup_dir):
+def sync_hymn(key, title, lyrics_text, hymns_dir, template_path, dry_run, backup_dir,
+              keep=frozenset()):
     """Make sure the deck for one hymn exists and matches the OW. Returns its path (or None)."""
     verses = hymn_lyrics.from_file_text(lyrics_text) if lyrics_text else []
     lyrics = "\n".join("\n".join(v) for v in verses)
@@ -415,14 +419,14 @@ def sync_hymn(key, title, lyrics_text, hymns_dir, template_path, dry_run, backup
         print("  %s: %s%s differs from the OW (%.0f%% the same), %s" % (
             label, note, os.path.basename(path), 100 * similarity(deck_words(data), lyrics),
             "would rewrite" if dry_run else "rewriting"))
-        new = rebuild_deck(data, slides_from_verses(verses))
+        new = rebuild_deck(data, slides_from_verses(verses), keep=keep)
     else:
         path = os.path.join(hymns_dir, deck_file_name(title))
         print("  %s: no deck, %s %s" % (label, "would make" if dry_run else "making",
                                         os.path.basename(path)))
         with open(template_path, "rb") as f:
             new = rebuild_deck(f.read(), slides_from_verses(verses),
-                               name=os.path.splitext(os.path.basename(path))[0])
+                               name=os.path.splitext(os.path.basename(path))[0], keep=keep)
     if not dry_run:
         write_with_backup(path, new, backup_dir)
     return path
@@ -447,6 +451,7 @@ def main(argv=None):
         sys.exit("Can't find the Google Drive 'Worship Titles' folder; pass --titles.")
     hymns_dir = os.path.join(a.propresenter, HYMNS_DIR)
     template = os.path.join(hymns_dir, TEMPLATE)
+    keep = outside_uuids(a.propresenter)
 
     print("Hymns in the OW:")
     slots = []
@@ -457,7 +462,7 @@ def main(argv=None):
             slots.append(None)
             continue
         path = sync_hymn(key, title, read(folder, key + "-lyrics.txt"), hymns_dir, template,
-                         a.dry_run, a.backup_dir)
+                         a.dry_run, a.backup_dir, keep)
         slots.append(os.path.relpath(path, a.propresenter) if path else None)
 
     playlist_path = os.path.join(a.propresenter, PLAYLISTS_FILE)

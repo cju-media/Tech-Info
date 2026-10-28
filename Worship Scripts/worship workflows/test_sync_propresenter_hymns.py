@@ -230,6 +230,16 @@ class RebuildDeck(unittest.TestCase):
         per_slide = [u for u in inner if u != THEME.encode()]
         self.assertEqual(len(per_slide), len(set(per_slide)))
 
+    def test_ids_defined_outside_the_deck_are_kept(self):
+        # a macro used on only one slide: shared by no other slide, but defined in Configuration
+        macro = uid(7777)
+        data = deck(["old"]).replace(THEME.encode(), macro.encode())
+        new = sh.rebuild_deck(data, SLIDES, keep=frozenset({macro.encode()}))
+        for _, c in sh.cues_in_order(new):
+            self.assertIn(macro.encode(), c)
+        without = sh.rebuild_deck(data, SLIDES)          # not told: renewed like any slide ID
+        self.assertNotIn(macro.encode(), without)
+
     def test_existing_deck_keeps_its_identity(self):
         new = sh.rebuild_deck(deck(["old"], name="Mine"), SLIDES)
         top = pb.fields(new)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run every ProPresenter sync: the prelude slides, then the hymns. What the launch agent runs.
+"""Run every ProPresenter sync: prelude slides, hymns, Musical Gift. What the launch agent runs.
 
   python3 sync_propresenter.py --skip-if-running
   python3 sync_propresenter.py --dry-run
@@ -10,10 +10,11 @@ import sys
 import traceback
 
 import sync_propresenter_hymns
+import sync_propresenter_musical_gift
 import sync_propresenter_prelude
 from propresenter_pb import propresenter_running
 
-SYNCS = (sync_propresenter_prelude, sync_propresenter_hymns)
+SYNCS = (sync_propresenter_prelude, sync_propresenter_hymns, sync_propresenter_musical_gift)
 
 
 def main(argv=None):

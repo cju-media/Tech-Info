@@ -121,6 +121,30 @@ def new_uuid():
     return str(_uuid.uuid4()).upper()
 
 
+def outside_uuids(propresenter_root):
+    """UUIDs defined in ProPresenter's settings (macros, looks, props, themes, presets). A copied
+    slide must keep these: they point at things outside the deck."""
+    found = set()
+    for sub in ("Configuration", "Presets", "Themes"):
+        for dirpath, _, files in os.walk(os.path.join(propresenter_root, sub)):
+            for name in files:
+                try:
+                    with open(os.path.join(dirpath, name), "rb") as f:
+                        found.update(UUID_RE.findall(f.read()))
+                except OSError:
+                    pass
+    return frozenset(found)
+
+
+def copy_slide(cue, keep=frozenset(), shared=frozenset()):
+    """A copy of a slide with fresh UUIDs for everything that belongs to it, keeping the ones in
+    `keep` (defined outside the deck) and `shared` (used by other slides too)."""
+    for u in dict.fromkeys(UUID_RE.findall(cue)):
+        if u not in keep and u not in shared:
+            cue = cue.replace(u, new_uuid().encode())
+    return cue
+
+
 def propresenter_running():
     return subprocess.run(["pgrep", "-xq", "ProPresenter"]).returncode == 0
 
