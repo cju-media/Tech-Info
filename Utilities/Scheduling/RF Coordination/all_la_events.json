@@ -1,11 +1,164 @@
 [
   {
-    "name": "CIRCUS VARGAS - WEEK 3",
-    "date": "2026-11-06",
-    "location": "6100 N Topanga Canyon 91367",
+    "name": "HAUNTED HAYRIDE",
+    "date": "2026-10-23",
+    "location": "Picnic Area 4730 N CRYSTAL SPRINGS DR 90027",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001542",
+    "distance_mi": 5.02,
+    "permit": "264109000001646",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LATIN DISTRICT HALLOWEEN PARTY",
+    "date": "2026-10-31",
+    "location": "Parking Structure Rooftop 1122 S MAPLE AVE 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.6,
+    "permit": "264109000001666",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CARNIVAL",
+    "date": "2026-11-07",
+    "location": "11955 W. Sunset Bl. Los Angeles, CA 90049",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 10.77,
+    "permit": "264109000001395",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "WINTERTIDE",
+    "date": "2026-10-28",
+    "location": "Inside sound stage 6121 W SUNSET BLVD 90028",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.16,
+    "permit": "264109000001643",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LA AUTO SHOW 2026",
+    "date": "2026-11-20",
+    "location": "For questions, please call Rebecca 619-453-7573 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001314",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "HOUDINI CENTENNIAL GALA",
+    "date": "2026-10-31",
+    "location": "2400 Laurel Canyon Blvd",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 6.14,
+    "permit": "264109000001649",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LA AUTO SHOW 2026",
+    "date": "2026-11-27",
+    "location": "1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001313",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "HAUNTED HAYRIDE",
+    "date": "2026-10-23",
+    "location": "Picnic Area 4730 N CRYSTAL SPRINGS DR 90027",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 5.02,
+    "permit": "264109000001644",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "TUNNEL TENT",
+    "date": "2026-10-23",
+    "location": "Players tunnel 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001645",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "PANCITYCARNIVAL",
+    "date": "2026-10-29",
+    "location": "Mechanical Rides and Carnival Games at Valley Indoor Swap Meet 14650 W PARTHENIA ST 91402",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 14.76,
+    "permit": "264109000001497",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LA AUTO SHOW STELLANTIS BOOTH",
+    "date": "2026-11-19",
+    "location": "Stellantis booth S-360 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001610",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "WINTERTIDE",
+    "date": "2026-10-28",
+    "location": "Inside studio 6121 W SUNSET BLVD 90028",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.16,
+    "permit": "264109000001641",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "HALLOWEEN",
+    "date": "2026-10-28",
+    "location": "Inside venue 720 N CAHUENGA BLVD 90038",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.81,
+    "permit": "264109000001673",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "WINTERTIDE",
+    "date": "2026-10-28",
+    "location": "Inside studio 6121 W SUNSET BLVD 90028",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.16,
+    "permit": "264109000001642",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "AIRBNB",
+    "date": "2026-10-28",
+    "location": "Inside hanger 855 N CAHUENGA BLVD 90038",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 2.93,
+    "permit": "264109000001647",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "AFI",
+    "date": "2026-10-22",
+    "location": "On the street 6925 W HOLLYWOOD BLVD 90028",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 4.09,
+    "permit": "264109000001665",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "AFI",
+    "date": "2026-10-25",
+    "location": "Street and courtyard 6925 W HOLLYWOOD BLVD 90028",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 4.09,
+    "permit": "264109000001680",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "ANOTR",
+    "date": "2026-10-30",
+    "location": "Lot directly south of Mission 4 at Ace Studios. Enter on 6th and Anderson 1600 E 6TH ST 90023",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.88,
+    "permit": "264109000001463",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -45,15 +198,6 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "SPECS",
-    "date": "2026-10-15",
-    "location": "Atrium 10250 W SANTA MONICA BLVD 90067",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 7.73,
-    "permit": "264109000001598",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "WESTWOOD VILLAGE FARMERS' MARKET",
     "date": "2026-07-02",
     "location": "Broxton Plaza 1036 S BROXTON AVE 90024",
@@ -72,48 +216,12 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "HAUNTED HAYRIDE",
-    "date": "2026-10-16",
-    "location": "Picnic Area 4730 N CRYSTAL SPRINGS DR 90027",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 5.02,
-    "permit": "264109000001587",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "CIRCUS VARGAS WEEK 1",
     "date": "2026-10-23",
     "location": "6100 N Topanga Canyon 91367",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": null,
     "permit": "264109000001540",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CARNIVAL",
-    "date": "2026-10-23",
-    "location": "1130 S. Vermont Ave., Los Angeles, CA 90006",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.05,
-    "permit": "264109000001333",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "USC SUITES",
-    "date": "2026-10-18",
-    "location": "Gate 19 & field 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001608",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CHECK IN TENTS",
-    "date": "2026-10-19",
-    "location": "USC campus",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001624",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
