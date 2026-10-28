@@ -54,7 +54,13 @@
         "sermon": "fccla/status/11-1-26_1028-1056/3-sermon.jpg"
       }
     ],
-    "pick": null,
+    "pick": {
+      "n": 1,
+      "hex": "#EC6F02",
+      "label": "orange, 57% of the photo's color",
+      "at": "2026-10-28T11:02:15-07:00",
+      "drive": "sent"
+    },
     "heading": [
       "All Saints Day",
       "Sacred Earth, Sacred Soul",
@@ -65,9 +71,9 @@
     "cover": "fccla/status/11-1-26_1028-1056/cover.jpg"
   },
   "last_run": {
-    "at": "2026-10-28T10:56:50-07:00",
-    "trigger": "upload",
-    "status": "built",
-    "message": "Title graphics for Sunday, November 1 are ready to pick (link below).\n1 orange #EC6F02 \u00b7 2 blue #0D5F98 \u00b7 3 pink #AD1F59\nCheck (option 1): photo shift limited to 0,0 so the photo still fills its frame\nCheck (option 1): photo shift limited to 0,0 so the photo still fills its frame\nCheck (option 2): photo shift limited to 0,0 so the photo still fills its frame\nCheck (option 2): photo shift limited to 0,0 so the photo still fills its frame\nCheck (option 3): photo shift limited to 0,0 so the photo still fills its frame\nCheck (option 3): photo shift limited to 0,0 so the photo still fills its frame"
+    "at": "2026-10-28T11:02:15-07:00",
+    "trigger": "pick",
+    "status": "picked",
+    "message": "Using #EC6F02 (orange) for Sunday, November 1. Saved to iCloud (11-1-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
   }
 }
