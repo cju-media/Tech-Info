@@ -10,6 +10,8 @@ Introit, introit-title-composer.txt - introit-group.txt
 Prayers, Readings, Meditations
 Meditation Anthem, meditation-title-composer.txt - meditation-group.txt
 Sermon, sermon-title.txt - sermon-minister.txt
+Musical Gift, musical-gift-title.txt - musical-gift-performers.txt
+musical-gift-title-composer.txt - musical-gift-group.txt
 Communion, communion.txt
 Offering Prayers, offering-prayer.txt
 Offertory, offertory-title-composer.txt, offertory-group.txt
