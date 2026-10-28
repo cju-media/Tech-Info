@@ -18,6 +18,12 @@ SECTION & FORMATTING RULES:
  * "The Eucharist and Blessing" speaker should be credited as communion - NAMES OF SPEAKERS.
  * If an attribute is not present in the PDF (like communion), leave the text completely blank after the attribute name instead of writing 'No' or 'False'.
  * If multiple items exist under one section (for example, multiple pieces as part of the meditation anthem), credit each subsequent piece "meditation-title-composer1", "meditation-group1", "meditation-title-composer2", "meditation-group2", etc. Always output the first item of this category with no trailing number, and start with the number 1 on subsequent items in a single section. This numbering has no fixed maximum — count the actual number of distinct pieces present in the PDF for that section and output that many, even if it is more than any example shown in this prompt.
+ * Musical Gift (a section headed "Musical Gift", usually near the sermon; it is absent most weeks, so leave every musical-gift attribute completely blank when there is no such section):
+   * musical-gift-title is the name of the overall work or program printed on the "Musical Gift" line (for example "Becoming Earth" from "Becoming Earth An Oratorio curated and conducted by ..."). Add the form after a colon only if the PDF names one (for example "Becoming Earth: An Oratorio"). Leave it blank if the section is just one piece with no overall name.
+   * musical-gift-performers is the group performing the whole Musical Gift, from the overall description (for example "Cathedral Choir, Laude, Soloists, Dr. Christoph Bull (Piano and Organ)" from "Featuring Cathedral Choir, Laude, Soloists, and Dr. Christoph Bull (Piano and Organ)"). Include a curator or conductor credit ("curated and conducted by ...") after the performers, as "Name, Curator & Conductor". Leave it blank if the PDF credits no performers for the work as a whole. This is separate from the per-piece musical-gift-group lines below.
+   * Each individually titled piece under the Musical Gift is a musical-gift-title-composer, formatted like the meditation and offertory pieces: TITLE OF PIECE - COMPOSER. Credit the composer of the music, and an arranger as ", arr. NAME" (for example "Precious Lord, Take My Hand - Thomas Dorsey, arr. Arnold Sevier"). Where the PDF splits the credit as "MUSIC: A, TEXT: B", use only the music composer A; for "MUSIC AND TEXT BY A", use A. Never put the text author in the composer position. Several composers on one piece are separated by " & ".
+   * Each piece's musical-gift-group is the performers credited under it (soloists, choir, instrumentalists, conductor), written as in the PDF, in the same style as the other X-group lines (for example "Molly Pease, Soloist, Dr. Christoph Bull, Organ, Cathedral Choir, Dr. Fahad Siadat, Conductor"). A poetic recitation or reading between pieces (for example "A Poetic Recitation of Clare Harner's In Remembrance - Meg Russett") is not a piece: do not number it or give it a title-composer line.
+   * Number multiple pieces the same way as the meditation anthem: the first piece is musical-gift-title-composer and musical-gift-group with no trailing number, the next are musical-gift-title-composer1 and musical-gift-group1, then 2, 3, and so on. Count every distinct piece in the section, with no fixed maximum, and output a title-composer / group pair for each.
 * Make sure to include subtitles or bigger pieces from a credit. For example, include the full title '“You Are Music” from Symphony For Voices 3: Mycelial' as a title for a given piece, not just "You Are Music"
 * Before finalizing your response, re-read the PDF once more end-to-end and verify that every individually titled piece, reading, prayer, and credited performer/group appears somewhere in your output. If you find one that is missing, add it. Do not omit a piece merely because it is short, is uncredited, or closely resembles a neighboring piece.
 * Generate the title of the OW. Take the series name and sequence number (Pentecost 9 for example), add || and then take the service name found at the top of the name, for example "Another Kind of Freedom ~ Radical Love" so the title will look like "Pentecost 9 || Another Kind of Freedom ~ Radical Love". Preface the full title with the text "title"
@@ -51,6 +57,11 @@ meditation-title-composer
 meditation-group
 sermon-minister
 sermon-title
+musical-gift-title
+musical-gift-performers
+musical-gift-title-composer
+musical-gift-group
+(Continue with musical-gift-title-composer1, musical-gift-group1, musical-gift-title-composer2, musical-gift-group2, ... for as many pieces as appear in the Musical Gift section. If there is no Musical Gift, output every musical-gift line with nothing after it.)
 generosity
 offertory-title-composer
 offertory-group
