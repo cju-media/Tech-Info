@@ -1,8 +1,8 @@
 {
-  "generated": "2026-10-27T15:33:30+00:00",
+  "generated": "2026-10-28T16:18:08+00:00",
   "window": {
-    "start": "2026-10-27",
-    "end": "2027-01-27"
+    "start": "2026-10-28",
+    "end": "2027-01-28"
   },
   "columns": [
     "Date",
@@ -123,75 +123,24 @@
     {
       "kind": "event",
       "cells": [
-        "SU 12/13/2026",
-        "Sarah Smith & Elijah Rawlings Wedding",
-        "Forecourt/Sanctuary",
-        "",
+        "MO 12/21/2026",
+        "Kenneth & Maggie Hsu Wedding",
+        "Sanctuary",
+        "11:00am-2:00pm",
         "Wedding",
         "1",
         "",
         "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 12/12/2026",
-        "Gloria Kang & Daniel Kim Wedding",
-        "Forecourt/Sanctuary",
-        "",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
+        "11:00am Vendors Access to Ceremony Area / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
-      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
-    },
-    {
-      "kind": "divider",
-      "cells": [
-        "NOVEMBER",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        ""
-      ],
-      "note": ""
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 11/21/2026",
-        "Sofia Uribe & Robin Aimaq Wedding",
-        "Sanctuary/Forecourt/Stuart Hall",
-        "",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Sofia Uribe & Robin Aimaq"
+      "note": "from calendar: Ceremony Kenneth & Maggie Hsu"
     }
   ],
   "counts": {
-    "events": 7,
+    "events": 5,
     "worship": 4,
-    "from_calendar": 3
+    "from_calendar": 1
   }
 }

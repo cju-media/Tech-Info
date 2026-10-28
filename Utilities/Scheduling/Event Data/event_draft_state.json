@@ -1,30 +1,14 @@
 {
   "drafted": {
-    "040000008200E00074C5B7101A82E00800000000640A4C5486B1DC01000000000000000010000000BEA81B405584644EBB935795740D09E9::2026-11-21": {
-      "call_times": "",
+    "040000008200E00074C5B7101A82E00800000000309747959B61DD01000000000000000010000000DC5F82F45BF1B3488246EE4EE539F1F2::2026-12-21": {
+      "call_times": "11:00am-2:00pm",
       "count": 1,
-      "name": "Sofia Uribe & Robin Aimaq Wedding",
-      "schedule": "",
+      "name": "Kenneth & Maggie Hsu Wedding",
+      "schedule": "11:00am Vendors Access to Ceremony Area / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
       "type": "Wedding",
-      "venue": "Sanctuary/Forecourt/Stuart Hall"
-    },
-    "040000008200E00074C5B7101A82E00800000000B8724E9D9893DC0100000000000000001000000001F5C7B20EF9C549BB619796E18EBEBE::2026-12-13": {
-      "call_times": "",
-      "count": 1,
-      "name": "Sarah Smith & Elijah Rawlings Wedding",
-      "schedule": "",
-      "type": "Wedding",
-      "venue": "Forecourt/Sanctuary"
-    },
-    "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
-      "call_times": "",
-      "count": 1,
-      "name": "Gloria Kang & Daniel Kim Wedding",
-      "schedule": "",
-      "type": "Wedding",
-      "venue": "Forecourt/Sanctuary"
+      "venue": "Sanctuary"
     }
   },
-  "fingerprint": "e68b2ceb0df839c72681ca6078487f69335cd5b7a7c23f487388cfbfa96345a7",
-  "gemini_at": "2026-10-24T13:37:26+00:00"
+  "fingerprint": "bca3cc0058b62e9e62c49654d6e18bbc238e19dde70779510f02a7b7b0044717",
+  "gemini_at": "2026-10-28T16:18:08+00:00"
 }
