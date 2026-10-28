@@ -8,7 +8,8 @@ one slide per piece, its text linked to that piece's pair. This:
 
   1. counts the pieces (the highest-numbered non-empty musical-gift-title-composer file);
   2. adds a slide for any piece the deck has no slide for yet, a copy of the first piece's slide
-     linked to the new piece's files, and enables the slides up to the count, disabling the rest;
+     linked to the new piece's files, and enables the slides up to the count, disabling the rest
+     (with the slides after each one up to the next piece, such as a clear or a camera change);
   3. puts the deck in the Sunday playlist (after the sermon deck) in weeks with a Musical Gift,
      and takes it out in weeks without one.
 
@@ -91,9 +92,31 @@ def insert_after(data, anchor, new_cues):
     return b"".join(out)
 
 
+def followers(data):
+    """{uuid of a slide after a piece's slide: that piece's slot}: the slides from a piece up to
+    the next piece (a clear, a camera change), within the same group."""
+    cues = {cue_uuid(p): p for n, _, p in fields(data) if n == CUE_FIELD}
+    after = {}
+    for n, _, g in fields(data):
+        if n != GROUP_FIELD:
+            continue
+        current = None
+        for m, _, x in fields(g):
+            if m != 2:
+                continue
+            u = identifier(x)
+            s = slot(cues.get(u, b""))
+            if s is not None:
+                current = s
+            elif current is not None:
+                after[u] = current
+    return after
+
+
 def sync_deck(data, count, keep=frozenset()):
     """Return (new bytes, slides added, {slot: enabled}) with a slide for every piece up to
-    `count`, those enabled and any further ones disabled."""
+    `count`, those enabled and any further ones disabled. The slides after each piece's slide, up
+    to the next piece, are switched on and off with it."""
     ordered = cues_in_order(data)
     slots = {}
     for u, c in ordered:
@@ -110,12 +133,16 @@ def sync_deck(data, count, keep=frozenset()):
         new = [copy_slide(relink(slots[0], k), keep, shared) for k in missing]
         data = insert_after(data, last, new)
 
+    after = followers(data)
     states, out = {}, []
     for n, raw, p in fields(data):
         if n == CUE_FIELD:
             s = slot(p)
             if s is not None:
                 states[s] = s < count
+            else:
+                s = after.get(cue_uuid(p))
+            if s is not None:
                 p2 = set_cue_enabled(p, s < count)
                 if p2 != p:
                     raw = field(CUE_FIELD, p2)

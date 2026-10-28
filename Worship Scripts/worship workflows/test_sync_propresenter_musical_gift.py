@@ -140,6 +140,51 @@ class SyncDeck(unittest.TestCase):
             mg.sync_deck(gift_deck(0), 2)
 
 
+def deck_with_clears():
+    """setup | P1 clear | P2 clear camera | P3 clear  (one group) | final clear (its own group)."""
+    layout = [(uid(300), None), (uid(310), 0), (uid(320), None), (uid(311), 1), (uid(321), None),
+              (uid(331), None), (uid(312), 2), (uid(322), None)]
+    final = (uid(399), None)
+    body = field(2, field(1, uid(9).encode())) + field(3, b"Musical Gift")
+    for g in ([u for u, _ in layout], [final[0]]):
+        body += field(12, field(1, field(1, uid(len(g)).encode())) +
+                      b"".join(field(2, field(1, u.encode())) for u in g))
+    for u, n in layout + [final]:
+        body += field(13, gift_cue(u, n))
+    return body
+
+
+class FollowOnSlides(unittest.TestCase):
+    """The slides after a piece's slide, up to the next piece, go on and off with it."""
+
+    def enabled(self, data):
+        return {u: any(m == 12 for m, _, _ in pb.fields(c)) for u, c in sh.cues_in_order(data)}
+
+    def test_followers_map(self):
+        self.assertEqual(mg.followers(deck_with_clears()),
+                         {uid(320): 0, uid(321): 1, uid(331): 1, uid(322): 2})
+
+    def test_switched_off_and_on_with_their_piece(self):
+        down, _, _ = mg.sync_deck(deck_with_clears(), 2)
+        on = self.enabled(down)
+        self.assertEqual((on[uid(312)], on[uid(322)]), (False, False))     # piece 3 and its clear
+        self.assertTrue(all(on[u] for u in (uid(300), uid(310), uid(320), uid(311), uid(321), uid(331))))
+        self.assertTrue(on[uid(399)])                                      # the final clear stays
+        up, _, _ = mg.sync_deck(down, 3)
+        self.assertEqual(up, deck_with_clears())
+
+    def test_one_piece_leaves_the_rest_off(self):
+        down, _, _ = mg.sync_deck(deck_with_clears(), 1)
+        on = self.enabled(down)
+        self.assertEqual([on[u] for u in (uid(310), uid(320), uid(311), uid(321), uid(331), uid(312), uid(322))],
+                         [True, True, False, False, False, False, False])
+
+    def test_slides_before_the_first_piece_are_never_touched(self):
+        down, _, _ = mg.sync_deck(deck_with_clears(), 1)
+        self.assertNotIn(uid(300), mg.followers(down))
+        self.assertTrue(self.enabled(down)[uid(300)])
+
+
 class Playlists(unittest.TestCase):
     ROOT = "/Users/x/Documents/ProPresenter"
     WITH = SUNDAY[:4] + [mg.DECK] + SUNDAY[4:]
