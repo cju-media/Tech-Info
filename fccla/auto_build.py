@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 """Build the week's title graphics with nobody at the keyboard (title_graphics.yml, on Studio Mini).
 
+Each OW is a service: the Sunday one, or one with a time in its name ("12.24.26 5:30pm OW.pdf",
+Christmas Eve). A service has its own week folder ("12-27-26", "12-24-26 530pm"), its own options
+on the picker, and its own pick. A timed or weekday service gets only the Worship Service graphic,
+its header and times changed to that day and time.
+
 After an Order of Worship is uploaded on the upload dashboard (ow_uploaded):
-  1. find the OW in cju-media/OW: the uploaded file, else the coming Sunday's;
+  1. find the OW in cju-media/OW: the uploaded file, else the coming Sunday's. Any other OW for
+     the coming month that hasn't been read yet is built too (GitHub drops all but the newest of
+     the runs waiting their turn, so four OWs uploaded back to back start only two runs);
   2. read the text fields from the PDF and have Gemini check them;
   3. build the graphics once per suggested panel color, in a staging folder on this Mac (not in
      iCloud), and text a link to the picker page (Utilities/title-graphics/). A new OW whose text
@@ -14,7 +21,8 @@ When one is picked there (title_graphics_pick):
   5. queue both JPGs for Drive the way a dashboard upload does (Utilities/uploads_queue/). The
      Worship Service one creates the livestream. They replace that Sunday's thumbnails in Drive
      and on the livestream. Drive only takes the coming Sunday's thumbnails, so an earlier pick
-     waits and the schedule sends it when its week comes up. A pick made with --no-drive (the
+     waits and the schedule sends it when its week comes up. A timed service's one JPG goes at
+     once, with its date and time, to that service's own folder and stream. A pick made with --no-drive (the
      picker's "don't send" button) only goes into iCloud, to be edited and then uploaded on the
      dashboard, which replaces the thumbnails the same way.
 
@@ -22,6 +30,7 @@ When one is picked there (title_graphics_pick):
   python3 fccla/auto_build.py --ow 10.4.26_OW.pdf --force-rebuild   # even if nothing changed
   python3 fccla/auto_build.py --pick 2    |   --pick '#325673'       # use one (a new hex is built first)
   python3 fccla/auto_build.py --pick 2 --no-drive                    # use it in iCloud only
+  python3 fccla/auto_build.py --pick 1 --service '12-24-26 530pm'    # which service's options
   python3 fccla/auto_build.py --probe                                # is this Mac set up?
 """
 
@@ -57,6 +66,7 @@ FIELDS = ["heading", "dateText", "preacher"]              # heading: its lines j
 SCRIPT_FILES = ["UpdateWeek.jsx", "prepare_week.py", "GEMINI.md", "README.md"]
 TZ = zoneinfo.ZoneInfo("America/Los_Angeles")
 EDIT_GRACE = 120                           # seconds between saving the .ai files and writing log.txt
+CATCH_UP_SECONDS = 20 * 60                 # no more OWs started after this (the job's timeout is 40 minutes)
 # The upload dashboard's Worship Service / Sermon Series thumbnail folders (upload_queue_to_drive.py).
 GRAPHICS = [("service", "Worship Service", "Service Title", "1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f"),
             ("sermon", "Sermon Series", "Sermon Title", "1Ji2Bbe7vWTcaRCpdQOjzwQgxsIoOWdy4")]
@@ -119,24 +129,65 @@ def choose_ow(ows, name=None, today=None):
     return hits[0] if hits else None
 
 
-def not_a_sunday_service(name):
-    """Why an OW gets no title graphics, or None. The graphics are Sunday ones
-    (prepare_week.py checks the date is a Sunday, and each week is built from
-    the last Sunday's .ai files), and there's one build in the picker at a
-    time. A Christmas Eve OW ("12.24.26 5:30pm OW.pdf") would fail that check,
-    and its Sermon Series JPG would land in the coming Sunday's Drive folder
-    -- so those thumbnails are uploaded on the dashboard, one per service
-    with its time set."""
+def service_of(name):
+    """(date, "HH:MM" or None) from an OW's file name: "12.24.26 5:30pm OW.pdf" -> Christmas Eve
+    at 17:30. The usual 10:30 counts as no time. (None, None) without a date."""
     parsed = service_keys.parse_ow_filename(name)
     if not parsed:
-        return None
+        return None, None
     date, time = parsed
-    if time or date.weekday() != 6:
-        when = date.strftime("%B ") + str(date.day) + (" " + service_keys.display_time(time) if time else "")
-        return ("Title graphics are only built for Sunday services, so none were made for %s (%s). Upload "
-                "its Worship Service thumbnail on the upload dashboard with the date and time set; the "
-                "livestream is created from it." % (when, name))
-    return None
+    return date, (None if time == service_keys.DEFAULT_TIME else time)
+
+
+def service_label(build):
+    date = pw.parse_date_text(build["dateText"])
+    return long_date(date) + (" at " + service_keys.display_time(build["time"]) if build.get("time") else "")
+
+
+def graphics_of(build):
+    """GRAPHICS for a Sunday build; only the Worship Service one for a timed or weekday service."""
+    return GRAPHICS if build.get("both", True) else GRAPHICS[:1]
+
+
+def catch_up(ows, today, state, skip=None):
+    """OWs for services from today through LOOKAHEAD_DAYS ahead (a final before a draft, one per
+    service) that haven't been built or read yet, soonest first. skip: the OW this run builds anyway."""
+    seen = known_shas(state)
+    last = today + datetime.timedelta(days=service_keys.LOOKAHEAD_DAYS)
+    services = {}
+    for o in ows:
+        date, time = service_of(o["name"])
+        if o["name"].lower().endswith(".pdf") and date and today <= date <= last:
+            services.setdefault((date, time or ""), []).append(o)
+    out = []
+    for key in sorted(services):
+        o = min(services[key], key=lambda o: ("draft" in o["name"].lower(), o["name"]))
+        if o["sha"] not in seen and not (skip and service_of(skip["name"]) == (key[0], key[1] or None)):
+            out.append(o)
+    return out
+
+
+def known_shas(state):
+    return ({(b.get("ow") or {}).get("sha") for b in builds_of(state).values()} |
+            set((state.get("seen") or {}).values()))
+
+
+def builds_of(state):
+    """state["builds"]: one build per service, by its week folder ("12-27-26", "12-24-26 530pm").
+    An older state's single "build" moves in."""
+    builds = state.setdefault("builds", {})
+    old = state.pop("build", None)
+    if old and old.get("week"):
+        builds.setdefault(old["week"], old)
+    return builds
+
+
+def chosen_build(state, service=None):
+    """The build a pick is for: `service` (its week folder), else the only one, else the newest."""
+    builds = builds_of(state)
+    if service:
+        return builds.get(service)
+    return max(builds.values(), key=lambda b: b.get("built_at") or "", default=None)
 
 
 def list_ows():
@@ -274,7 +325,9 @@ def merge_fields(parsed, gem, full_text):
     return merged, notes
 
 
-def read_fields(pdf):
+def read_fields(pdf, name=""):
+    """The text fields from the OW. A timed or weekday service needs no preacher (it gets no Sermon
+    Series graphic), and takes its date from the file name if the PDF has none."""
     parsed, warn = pw.parse_pdf(pdf)
     parsed = dict(parsed, heading=" | ".join(parsed.get("heading", [])))
     page1, full = pdf_text(pdf)
@@ -283,7 +336,15 @@ def read_fields(pdf):
     fields["heading"] = pw.heading_of(fields)
     fields["title"] = fields["heading"][-1] if fields["heading"] else ""
     notes += ([gem_note] if gem_note else []) + warn
-    missing = [k for k in FIELDS if not fields.get(k)]
+    date, time = service_of(name)
+    if date and not pw.parse_date_text(fields.get("dateText")):
+        fields["dateText"] = "%s %d, %d" % (pw.MONTHS[date.month - 1], date.day, date.year)
+        notes.append("the date came from the file name (%s)" % name)
+    when = pw.parse_date_text(fields.get("dateText")) or date
+    both = not when or pw.sunday_service(when, time)
+    if not both:
+        notes = [n for n in notes if "preacher" not in n and "sermon row" not in n]
+    missing = [k for k in FIELDS if not fields.get(k) and (both or k != "preacher")]
     if missing or not pw.parse_date_text(fields.get("dateText")):
         raise Stop("failed", "Title graphics: couldn't read %s from the OW. Make this week by hand (see "
                    "fccla/GEMINI.md)." % (", ".join(missing) or "the date"), code=1)
@@ -320,13 +381,14 @@ def same_picture(a, b):
     return sum(abs(x - y) for x, y in zip(pa, pb)) / len(pa) < 2
 
 
-def unchanged(ctx, build, fields, pdf):
+def unchanged(ctx, build, fields, pdf, time=None):
     """A new OW whose text and cover photo match what's already there doesn't need its graphics
     rebuilt. "There" is the graphics in use (UpdateWeek's week-data.txt and cover in the iCloud
     week folder), or else the options already built for that week. Returns (message, link) when
     nothing would change, else None."""
     date = pw.parse_date_text(fields["dateText"])
-    week = pw.week_name(date)
+    week = pw.week_name(date, time)
+    what = long_date(date) + (" at " + service_keys.display_time(time) if time else "")
     data_path = os.path.join(ctx.root, week, "week-data.txt")
     cover_path = os.path.join(ctx.root, week, "Cover_%s.png" % week)
     tail = " To rebuild them anyway, upload the OW again with \"Rebuild title graphics\" ticked."
@@ -340,14 +402,14 @@ def unchanged(ctx, build, fields, pdf):
             return None
         if same_text(fields, in_use) and same_picture(cover_of(pdf), picture):
             return ("The new OW for %s reads the same as the graphics in use (%s), with the same photo, so the "
-                    "thumbnails weren't rebuilt." % (long_date(date), in_use.get("panelColor") or "in iCloud") + tail,
+                    "thumbnails weren't rebuilt." % (what, in_use.get("panelColor") or "in iCloud") + tail,
                     None)
         return None
     staged = os.path.join(ctx.staging, week, "ow.pdf")
     if build.get("week") == week and build.get("options") and os.path.exists(staged):
         if same_text(fields, build.get("fields") or {}) and same_picture(cover_of(pdf), cover_of(staged)):
             return ("The new OW for %s reads the same as the options already built, with the same photo, so they "
-                    "weren't rebuilt. Pick one at the link below." % long_date(date) + tail, PICKER_URL)
+                    "weren't rebuilt. Pick one at the link below." % what + tail, PICKER_URL)
     return None
 
 
@@ -375,7 +437,7 @@ def build_option(ctx, build, n, color, label):
     try:
         prep = pw.prepare(os.path.join(wdir, "ow.pdf"), ctx.root, out_root=wdir,
                           data_path=os.path.join(wdir, "option-%d.txt" % n), color=color,
-                          fields=build["fields"], write=True, output_dir=out)
+                          fields=build["fields"], write=True, output_dir=out, time=build.get("time"))
     except pw.PrepareError as e:
         raise Stop("failed", "Title graphics for %s: %s" % (build["week"], e), code=1)
     if prep["problems"]:
@@ -395,16 +457,17 @@ def build_option(ctx, build, n, color, label):
     return prep
 
 
-def build_options(ctx, ow, pdf, fields, notes, previous):
-    """Every suggested color (plus last pick for this week, if the OW changed), in staging."""
+def build_options(ctx, ow, pdf, fields, notes, previous, time=None):
+    """Every suggested color (plus last pick for this service, if the OW changed), in staging."""
     date = pw.parse_date_text(fields["dateText"])
-    week = pw.week_name(date)
+    week = pw.week_name(date, time)
     wdir = os.path.join(ctx.staging, week)
     if os.path.isdir(wdir):
         shutil.rmtree(wdir)
     os.makedirs(wdir)
     shutil.copyfile(pdf, os.path.join(wdir, "ow.pdf"))
-    build = {"id": "%s_%s" % (week, ctx.now.strftime("%m%d-%H%M")), "week": week, "dateText": fields["dateText"],
+    build = {"id": "%s_%s" % (week.replace(" ", "_"), ctx.now.strftime("%m%d-%H%M")), "week": week,
+             "dateText": fields["dateText"], "time": time, "both": pw.sunday_service(date, time),
              "fields": fields, "ow": ow, "built_at": ctx.now.isoformat(timespec="seconds"),
              "notes": notes, "options": [], "pick": None}
     build["heading"], build["title"], build["preacher"] = fields["heading"], fields["title"], fields["preacher"]
@@ -427,43 +490,69 @@ def build_options(ctx, ow, pdf, fields, notes, previous):
     return build
 
 
-def clean_up(ctx, keep_id):
-    """Only the current build's previews stay in the repo; staged weeks go after three weeks."""
+def clean_up(ctx, state):
+    """Builds for services that have passed leave the state; only the previews of the builds
+    still there stay in the repo; staged weeks go after three weeks."""
+    builds = builds_of(state)
+    for week, b in list(builds.items()):
+        if pw.parse_date_text(b.get("dateText")) and pw.parse_date_text(b["dateText"]) < ctx.today:
+            del builds[week]
+    seen = state.get("seen") or {}
+    for name in list(seen):
+        date = service_of(name)[0]
+        if not date or date < ctx.today:
+            del seen[name]
+    keep = {b.get("id") for b in builds.values()}
     for d in glob.glob(os.path.join(ctx.status_dir, "*")):
-        if os.path.basename(d) != keep_id:
+        if os.path.basename(d) not in keep:
             shutil.rmtree(d) if os.path.isdir(d) else os.remove(d)
     for d in glob.glob(os.path.join(ctx.staging, "*")):
-        wd = pw.parse_week_name(os.path.basename(d))
+        wd = (pw.parse_folder_name(os.path.basename(d)) or (None,))[0]
         if wd and (ctx.today - wd).days > 21:
             shutil.rmtree(d, ignore_errors=True)
 
 
 # ---------------------------------------------------------------- using a pick
 
-def queue_for_drive(week_dir, week, sunday, chosen_at, queue_dir):
-    """Queue both JPGs like the upload dashboard's thumbnail drop zones (TIMESTAMP---FOLDER---NAME).
+def queue_for_drive(week_dir, week, date, chosen_at, queue_dir, service_time=None):
+    """Queue the JPGs like the upload dashboard's thumbnail drop zones (TIMESTAMP---FOLDER---NAME).
 
-    The .meta.json sidecar carries the Sunday the way the dashboard writes it (MM-DD-YYYY), so both
-    file under the same dated Drive folder. It asks Drive to replace whatever thumbnail that Sunday
-    already has (and the livestream's), unless something was uploaded after chosen_at: an upload
-    made on the dashboard after the pick wins over a pick that waited for its week."""
+    The .meta.json sidecar carries the date the way the dashboard writes it (MM-DD-YYYY), and a
+    timed service's time ("17:30"), so each files under that service's Drive folder and stream. It
+    asks Drive to replace whatever thumbnail that service already has (and the livestream's),
+    unless something was uploaded after chosen_at: an upload made on the dashboard after the pick
+    wins over a pick that waited for its week. Only the Sunday service has a Sermon Series JPG to
+    send: Drive files that one under the coming Sunday whatever the sidecar says."""
     os.makedirs(queue_dir, exist_ok=True)
     stamp, queued = int(time.time() * 1000), []
     chosen = chosen_at.astimezone(datetime.timezone.utc).isoformat(timespec="seconds")
-    for i, (_, sub, name, folder) in enumerate(GRAPHICS):
+    graphics = GRAPHICS if pw.sunday_service(date, service_time) else GRAPHICS[:1]
+    for i, (_, sub, name, folder) in enumerate(graphics):
         src = os.path.join(week_dir, "%s %s" % (sub, week), "%s_%s.jpg" % (name, week))
         safe = re.sub(r"[^a-zA-Z0-9.-]", "_", os.path.basename(src))
         dst = os.path.join(queue_dir, "%d---%s---%s" % (stamp + i, folder, safe))
         shutil.copyfile(src, dst)
+        meta = {"date": date.strftime("%m-%d-%Y"), "replace": True, "chosen_at": chosen}
+        if service_time:
+            meta["time"] = service_time
         with open(dst + ".meta.json", "w") as fh:
-            json.dump({"date": sunday.strftime("%m-%d-%Y"), "replace": True, "chosen_at": chosen}, fh)
+            json.dump(meta, fh)
         queued.append(dst)
     return queued
 
 
 def send_to_drive(ctx, build, chosen_at):
-    """Queue the picked graphics for Drive if their week is the one Drive files under now."""
+    """Queue the picked graphics for Drive if their week is the one Drive files under now. A timed
+    or weekday service has no Sermon Series JPG to wait for, so it goes now, until it starts."""
     date = pw.parse_date_text(build["dateText"])
+    if not build.get("both", True):
+        if ctx.now >= service_keys.service_start(date, build.get("time")):
+            return "not sent", "Not sent to Drive: that service has already started."
+        queue_for_drive(os.path.join(ctx.root, build["week"]), build["week"], date, chosen_at, ctx.queue_dir,
+                        build.get("time"))
+        return "sent", ("Sent to Drive (Worship Service, for that service's own folder and livestream; there's no "
+                        "Sermon Series graphic for it). The livestream gets it as soon as its title and "
+                        "description are ready.")
     if date == drive_sunday(ctx.today):
         queue_for_drive(os.path.join(ctx.root, build["week"]), build["week"], date, chosen_at, ctx.queue_dir)
         return "sent", ("Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this "
@@ -476,13 +565,14 @@ def send_to_drive(ctx, build, chosen_at):
     return "waiting", "Drive gets them on %s (it only takes the coming Sunday's)." % long_date(send_on)
 
 
-def use_pick(ctx, state, sel, replace_hand_edits, send=True):
-    """Copies the chosen version into iCloud, and sends it to Drive unless send is False (the
-    picker's "don't send" button: edit it first, then upload it on the dashboard).
-    Returns (message, link for a second text or None)."""
-    build = state.get("build")
+def use_pick(ctx, state, sel, replace_hand_edits, send=True, service=None):
+    """Copies the chosen version of a service's graphics (service: its week folder) into iCloud, and
+    sends it to Drive unless send is False (the picker's "don't send" button: edit it first, then
+    upload it on the dashboard). Returns (message, link for a second text or None)."""
+    build = chosen_build(state, service)
     if not build:
-        raise Stop("failed", "Title graphics: nothing has been built yet to pick from.", code=1)
+        raise Stop("failed", "Title graphics: nothing has been built yet to pick from%s."
+                   % (" for %s" % service if service else ""), code=1)
     week = build["week"]
     if not os.path.exists(os.path.join(ctx.staging, week, "ow.pdf")):
         raise Stop("failed", "Title graphics for %s: the options aren't on Studio Mini any more; upload "
@@ -512,11 +602,11 @@ def use_pick(ctx, state, sel, replace_hand_edits, send=True):
     try:
         prep = pw.prepare(os.path.join(ctx.staging, week, "ow.pdf"), ctx.root,
                           data_path=os.path.join(ctx.root, "Scripts", "week-data.txt"), color=option["hex"],
-                          fields=build["fields"], write=True)
+                          fields=build["fields"], write=True, time=build.get("time"))
     except pw.PrepareError as e:
         raise Stop("failed", "Title graphics for %s: %s" % (week, e), code=1)
     staged = os.path.join(ctx.staging, week, "option-%d" % option["n"], week)
-    for _, sub, _, _ in GRAPHICS:
+    for _, sub, _, _ in graphics_of(build):
         folder = "%s %s" % (sub, week)
         os.makedirs(os.path.join(target, folder), exist_ok=True)
         for f in sorted(os.listdir(os.path.join(staged, folder))):
@@ -530,35 +620,38 @@ def use_pick(ctx, state, sel, replace_hand_edits, send=True):
     link = None
     if send:
         drive, drive_msg = send_to_drive(ctx, build, ctx.now)
-    elif earlier.get("drive") == "sent" and earlier.get("hex") != option["hex"]:
-        drive, link = "held", DASHBOARD_URL
-        drive_msg = ("Not sent to Drive: Drive and the livestream keep %s until you upload the edited JPGs on "
-                     "the upload dashboard (Worship Service and Sermon Series thumbnails)." % earlier["hex"])
     else:
         drive, link = "held", DASHBOARD_URL
-        drive_msg = ("Not sent to Drive, so you can edit them first. When they're ready, upload the JPGs on the "
-                     "upload dashboard (Worship Service and Sermon Series thumbnails).")
+        zones = ("Worship Service and Sermon Series thumbnails" if build.get("both", True) else
+                 "Worship Service thumbnail, with the date and %s set" %
+                 (service_keys.display_time(build["time"]) if build.get("time") else "time"))
+        if earlier.get("drive") == "sent" and earlier.get("hex") != option["hex"]:
+            drive_msg = ("Not sent to Drive: Drive and the livestream keep %s until you upload the edited JPGs on "
+                         "the upload dashboard (%s)." % (earlier["hex"], zones))
+        else:
+            drive_msg = ("Not sent to Drive, so you can edit them first. When they're ready, upload the JPGs on the "
+                         "upload dashboard (%s)." % zones)
     build["pick"] = {"n": option["n"], "hex": option["hex"], "label": option["label"],
                      "at": ctx.now.isoformat(timespec="seconds"), "drive": drive}
     name = (option["label"] or "").split(",")[0]
-    date = pw.parse_date_text(build["dateText"])
     return "Using %s%s for %s. Saved to iCloud (%s). %s" % (
-        option["hex"], " (%s)" % name if name else "", long_date(date), week, drive_msg), link
+        option["hex"], " (%s)" % name if name else "", service_label(build), week, drive_msg), link
 
 
 def send_waiting(ctx, state):
-    """Schedule: a pick waiting for its week to come up goes to Drive now."""
-    build = state.get("build") or {}
-    pick = build.get("pick") or {}
-    if pick.get("drive") != "waiting":
-        return None
-    at = pick.get("at")
-    drive, msg = send_to_drive(ctx, build, datetime.datetime.fromisoformat(at) if at else ctx.now)
-    if drive == "waiting":
-        return None
-    pick["drive"] = drive
-    date = pw.parse_date_text(build["dateText"])
-    return "Title graphics for %s (%s): %s" % (long_date(date), pick["hex"], msg)
+    """Schedule: picks waiting for their week to come up go to Drive now."""
+    out = []
+    for build in sorted(builds_of(state).values(), key=lambda b: b["week"]):
+        pick = build.get("pick") or {}
+        if pick.get("drive") != "waiting":
+            continue
+        at = pick.get("at")
+        drive, msg = send_to_drive(ctx, build, datetime.datetime.fromisoformat(at) if at else ctx.now)
+        if drive == "waiting":
+            continue
+        pick["drive"] = drive
+        out.append("Title graphics for %s (%s): %s" % (service_label(build), pick["hex"], msg))
+    return "\n".join(out) or None
 
 
 def sync_scripts(root):
@@ -627,9 +720,9 @@ class Context:
 
 
 def build_message(build, notes_prefix=""):
-    date = pw.parse_date_text(build["dateText"])
     opts = " · ".join("%d %s %s" % (o["n"], (o["label"] or "").split(",")[0], o["hex"]) for o in build["options"])
-    lines = [notes_prefix + "Title graphics for %s are ready to pick (link below)." % long_date(date), opts]
+    what = service_label(build) + ("" if build.get("both", True) else " (Worship Service only)")
+    lines = [notes_prefix + "Title graphics for %s are ready to pick (link below)." % what, opts]
     if build.get("previous_pick"):
         lines.append("The OW changed after you picked %s, so pick again to update iCloud and Drive."
                      % build["previous_pick"]["hex"])
@@ -639,10 +732,39 @@ def build_message(build, notes_prefix=""):
     return "\n".join(lines)
 
 
+def build_ow(a, ctx, state, ow):
+    """Reads one OW and builds its service's options (replacing that service's build, and no other).
+    Returns the new build, or raises Stop."""
+    builds = builds_of(state)
+    svc_time = service_of(ow["name"])[1]
+    ow = {"name": ow["name"], "sha": ow["sha"], "download_url": ow["download_url"]}
+    state.setdefault("seen", {})[ow["name"]] = ow["sha"]      # catch_up doesn't read it again, even if it fails
+    work = tempfile.mkdtemp(prefix="title-graphics-")
+    try:
+        pdf = os.path.join(work, ow["name"])
+        r = requests.get(ow.pop("download_url"), timeout=120)
+        r.raise_for_status()
+        with open(pdf, "wb") as fh:
+            fh.write(r.content)
+        fields, notes = read_fields(pdf, ow["name"])
+        build = builds.get(pw.week_name(pw.parse_date_text(fields["dateText"]), svc_time)) or {}
+        same = None if a.force_rebuild else unchanged(ctx, build, fields, pdf, svc_time)
+        if same:
+            if build:
+                build["ow"] = ow                        # seen: the schedule won't read this OW again
+            message, link = same
+            raise Stop("unchanged", message, notify=a.trigger != "schedule", link=link)
+        new = build_options(ctx, ow, pdf, fields, notes, build, svc_time)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    builds[new["week"]] = new
+    return new
+
+
 def run(a, ctx, state):
     """Does the work for one trigger; returns (status, message, notify, link) or raises Stop."""
     if a.pick:
-        message, link = use_pick(ctx, state, a.pick, a.replace_hand_edits, send=not a.no_drive)
+        message, link = use_pick(ctx, state, a.pick, a.replace_hand_edits, send=not a.no_drive, service=a.service)
         return "picked", message, True, link
 
     waiting = send_waiting(ctx, state) if a.trigger == "schedule" else None
@@ -652,55 +774,66 @@ def run(a, ctx, state):
         raise Stop("idle", "Sunday: the schedule doesn't build on service day.", notify=False)
 
     try:
-        ow = choose_ow(list_ows(), a.ow, ctx.today)
+        ows = list_ows()
     except requests.RequestException as e:
         raise Stop("failed", "Title graphics: couldn't list the OWs in cju-media/OW (%s)" % e, code=1)
-    build = state.get("build") or {}
-    if not ow:
+    ow = choose_ow(ows, a.ow, ctx.today)
+    builds = builds_of(state)
+    more = catch_up(ows, ctx.today, state, skip=ow) if a.trigger in ("upload", "schedule") else []
+    if ow and a.trigger in ("upload", "schedule") and not a.force_rebuild:
+        done = next((b for b in builds.values() if (b.get("ow") or {}).get("sha") == ow["sha"]), None)
+        if done and not more:
+            if waiting:
+                return "sent", waiting, True, None
+            raise Stop("idle" if a.trigger == "schedule" else "skipped",
+                       "Title graphics for %s are already built from %s (link below)." % (done["week"], ow["name"]),
+                       notify=a.trigger != "schedule", link=PICKER_URL)
+        if done:
+            ow = None
+    if not ow and not more:
         if waiting:
             return "sent", waiting, True, None
         msg = "Title graphics: no OW %s in cju-media/OW." % ("named %s" % a.ow if a.ow else "for the coming Sunday")
         raise Stop("idle" if a.trigger == "schedule" else "skipped", msg, notify=a.trigger != "schedule")
-    skip = not_a_sunday_service(ow["name"])
-    if skip:
-        if waiting:
-            return "sent", waiting, True, None
-        raise Stop("skipped", skip, notify=a.trigger != "schedule")
-    ow = {"name": ow["name"], "sha": ow["sha"], "download_url": ow["download_url"]}
-    if build.get("ow", {}).get("sha") == ow["sha"] and a.trigger in ("upload", "schedule") and not a.force_rebuild:
-        if waiting:
-            return "sent", waiting, True, None
-        raise Stop("idle" if a.trigger == "schedule" else "skipped",
-                   "Title graphics for %s are already built from %s (link below)." % (build["week"], ow["name"]),
-                   notify=a.trigger != "schedule", link=PICKER_URL)
 
-    work = tempfile.mkdtemp(prefix="title-graphics-")
-    try:
-        pdf = os.path.join(work, ow["name"])
-        r = requests.get(ow.pop("download_url"), timeout=120)
-        r.raise_for_status()
-        with open(pdf, "wb") as fh:
-            fh.write(r.content)
-        fields, notes = read_fields(pdf)
-        same = None if a.force_rebuild else unchanged(ctx, build, fields, pdf)
-        if same:
-            if build.get("week") == pw.week_name(pw.parse_date_text(fields["dateText"])):
-                build["ow"] = ow                        # seen: the schedule won't read this OW again
-            message, link = same
-            raise Stop("unchanged", (waiting + "\n\n" if waiting else "") + message,
-                       notify=a.trigger != "schedule" or bool(waiting), link=link)
-        new = build_options(ctx, ow, pdf, fields, notes, build)
-    finally:
-        shutil.rmtree(work, ignore_errors=True)
-    state["build"] = new
-    clean_up(ctx, new["id"])
-    return "built", build_message(new, (waiting + "\n\n") if waiting else ""), True, PICKER_URL
+    # The OW asked for, then any others not read yet, each on its own: one that fails stops no other.
+    todo, built, stops, began = ([ow] if ow else []) + more, [], [], time.monotonic()
+    for i, o in enumerate(todo):
+        if i and time.monotonic() - began > CATCH_UP_SECONDS:
+            stops.append(Stop("skipped", "Not built yet, for lack of time (the next run builds them): %s."
+                              % ", ".join(x["name"] for x in todo[i:])))
+            break
+        try:
+            built.append(build_ow(a, ctx, state, o))
+        except Stop as s:
+            if ow and i == 0 or s.status == "failed":   # a catch-up OW that reads the same isn't news
+                stops.append(s)
+    if built:
+        clean_up(ctx, state)
+    prefix = (waiting + "\n\n") if waiting else ""
+    if not built and len(stops) == 1:
+        s = stops[0]
+        s.message, s.notify = prefix + s.message, s.notify or bool(waiting)
+        raise s
+    if not built and not stops:
+        if waiting:
+            return "sent", waiting, True, None
+        raise Stop("idle", "Title graphics: nothing new to build.", notify=False)
+    message = prefix + "\n\n".join([build_message(b) for b in built] + [s.message for s in stops if s.notify])
+    link = PICKER_URL if built else next((s.link for s in stops if s.link), None)
+    failed = any(s.status == "failed" for s in stops)
+    status = "built" if built else "failed" if failed else stops[0].status
+    if failed:
+        raise Stop(status, message, code=1, link=link)
+    return status, message, True, link
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--ow", default=os.environ.get("OW_FILENAME") or None, help="OW file name in cju-media/OW/OWs")
     ap.add_argument("--pick", default=os.environ.get("PICK") or None, help="option number, or '#RRGGBB'")
+    ap.add_argument("--service", default=os.environ.get("SERVICE") or None,
+                    help="with --pick: the service's week folder, e.g. '12-24-26 530pm' (default: the newest build)")
     ap.add_argument("--replace-hand-edits", action="store_true",
                     default=os.environ.get("REPLACE_HAND_EDITS", "").lower() == "true")
     ap.add_argument("--force-rebuild", action="store_true",
@@ -747,6 +880,7 @@ def main():
         state = json.load(open(a.state))
     except (OSError, ValueError):
         state = {}
+    before = json.dumps(state, sort_keys=True)
     try:
         status, message, notify, link = run(a, ctx, state)
         code = 0
@@ -755,6 +889,7 @@ def main():
     if status != "idle":                         # quiet schedule runs leave no trace (and no commit)
         state["last_run"] = {"at": ctx.now.isoformat(timespec="seconds"), "trigger": a.trigger,
                              "status": status, "message": message}
+    if status != "idle" or json.dumps(state, sort_keys=True) != before:   # an OW read quietly is remembered
         with open(a.state, "w") as fh:
             json.dump(state, fh, indent=2)
             fh.write("\n")

@@ -723,15 +723,18 @@
             if (runs.ok) run = (await runs.json()).workflow_runs[0] || null;
         } catch (e) { /* show whatever loaded */ }
         const busy = run && (run.status === 'queued' || run.status === 'in_progress');
-        const build = state && state.build;
+        // one build per service (state.builds); an older state has a single "build"
+        const builds = state ? (state.builds ? Object.values(state.builds) : state.build ? [state.build] : []) : [];
+        builds.sort((a, b) => (new Date(a.dateText) - new Date(b.dateText)) || (a.time || '').localeCompare(b.time || ''));
         const lines = [];
         if (busy) lines.push('Studio Mini is working on them now…');
-        if (build) {
-            lines.push(`${build.dateText}: ${(build.heading || [build.title]).join(' / ')}.`);
+        for (const build of builds) {
+            const [h, m] = (build.time || '0:0').split(':').map(Number);
+            const at = build.time ? ` ${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : ''}${h >= 12 ? 'pm' : 'am'}` : '';
             const drive = { sent: 'Sent to Drive.', waiting: 'Waiting to go to Drive.',
-                            held: 'Kept out of Drive for editing: drop the edited JPGs in the thumbnail boxes above.' }[build.pick && build.pick.drive] || 'Not sent to Drive.';
-            lines.push(build.pick ? `In use: ${build.pick.hex}. ${drive}`
-                                  : `${(build.options || []).length} colors ready to pick.`);
+                            held: `Kept out of Drive for editing: drop the edited JPG${build.both === false ? '' : 's'} in the thumbnail boxes above${build.time ? ' with the time set' : ''}.` }[build.pick && build.pick.drive] || 'Not sent to Drive.';
+            lines.push(`${build.dateText}${at}: ${(build.heading || [build.title]).join(' / ')}. ` +
+                       (build.pick ? `In use: ${build.pick.hex}. ${drive}` : `${(build.options || []).length} colors ready to pick.`));
         }
         const last = state && state.last_run;
         if (last && (last.status === 'failed' || last.status === 'skipped' || last.status === 'unchanged') && !busy) lines.push(last.message);

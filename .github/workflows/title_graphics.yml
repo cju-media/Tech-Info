@@ -4,6 +4,9 @@ name: Title Graphics
 # (fccla/auto_build.py; see fccla/README.md).
 #  - ow_uploaded (the upload dashboard, same dispatch as the Service Titles Checker): build one
 #    version per suggested panel color and text Cameron a link to Utilities/title-graphics/.
+#    Each service (a Sunday, or Christmas Eve's 5:30pm, 8pm, 11pm) has its own options there. A
+#    run waiting here is cancelled by a newer one (concurrency), so each run also builds any OW
+#    for the coming month it hasn't read yet.
 #  - title_graphics_pick (that page): copy the chosen version into iCloud and queue its JPGs
 #    for Drive (Utilities/uploads_queue/ -> process_uploads.yml -> livestream), or, with
 #    client_payload.drive false, only copy it into iCloud to be edited first.
@@ -23,6 +26,11 @@ on:
         default: ''
       pick:
         description: 'Instead, use this option: its number, or a color like #325673'
+        required: false
+        type: string
+        default: ''
+      service:
+        description: "With a pick: which service's options, by its week folder (e.g. 12-24-26 530pm; blank = the newest)"
         required: false
         type: string
         default: ''
@@ -77,6 +85,8 @@ jobs:
           EVENT: ${{ github.event_name }}:${{ github.event.action }}
           OW_FILENAME: ${{ github.event.client_payload.filename || github.event.inputs.ow_filename }}
           PICK: ${{ github.event.client_payload.pick || github.event.inputs.pick }}
+          # the picker sends which service's options the pick is from (one build per service)
+          SERVICE: ${{ github.event.client_payload.service || github.event.inputs.service }}
           # the upload dashboard's "Rebuild title graphics" box
           FORCE_REBUILD: ${{ github.event.client_payload.force_rebuild || github.event.inputs.force_rebuild }}
           REPLACE_HAND_EDITS: ${{ github.event.client_payload.replace_hand_edits || github.event.inputs.replace_hand_edits }}

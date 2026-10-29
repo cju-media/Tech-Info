@@ -9,7 +9,11 @@
 var MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December";
 var REQUIRED = ["root", "heading", "dateText", "preacher", "panelColor", "imagePath",
     "outputFolder", "serviceTemplate", "serviceFolder", "serviceName", "sermonTemplate", "sermonFolder", "sermonName"];
-var OPTIONAL = ["timeZone", "photoShiftX", "photoShiftY"];
+// dayName / serviceTime: the Service Title's header and times for a service that isn't Sunday at 11
+// (Christmas Eve). graphics = service: only the Service Title is built (no sermon keys needed).
+var OPTIONAL = ["timeZone", "photoShiftX", "photoShiftY", "dayName", "serviceTime", "graphics"];
+var SERMON_KEYS = ["preacher", "sermonTemplate", "sermonFolder", "sermonName"];
+var TIME_RE = /^(\d{1,2})(?::(\d{2}))? ?([AP]M)$/i;
 var LEGACY = ["series", "seriesName", "title"];         // the heading as three fields, before "heading"
 
 var log = [], problems = [], relock = [];
@@ -50,8 +54,13 @@ function readData(f) {
 
 function validate(d) {
     var bad = [], k;
+    var both = d.graphics != "service";
     for (var i = 0; i < REQUIRED.length; i++)
-        if (!d[REQUIRED[i]] && !(REQUIRED[i] == "heading" && headingOf(d).length)) bad.push("missing " + REQUIRED[i]);
+        if ((both || !has(SERMON_KEYS, REQUIRED[i])) && !d[REQUIRED[i]] && !(REQUIRED[i] == "heading" && headingOf(d).length))
+            bad.push("missing " + REQUIRED[i]);
+    if (d.graphics && d.graphics != "service" && d.graphics != "both") bad.push("graphics must be both or service, not " + d.graphics);
+    if (d.serviceTime && !TIME_RE.test(d.serviceTime)) bad.push("serviceTime must look like 5:30 PM, not " + d.serviceTime);
+    if (d.dayName && !/^[A-Za-z]+$/.test(d.dayName)) bad.push("dayName must be a day like Thursday, not " + d.dayName);
     for (k in d) if (!has(REQUIRED, k) && !has(OPTIONAL, k) && !has(LEGACY, k)) bad.push("unknown key " + k + " (typo?)");
     if (d.panelColor && !/^#[0-9A-Fa-f]{6}$/.test(d.panelColor)) bad.push("panelColor must look like #325673, not " + d.panelColor);
     if (d.dateText && !new RegExp("^(" + MONTHS + ") \\d{1,2}, \\d{4}$").test(d.dateText))
@@ -725,6 +734,8 @@ function updateText(doc, job, D, ab) {
         } else P("preacher line not found");
     }
 
+    if (D.serviceTime) setServiceTimes(frames, D.serviceTime, job.kind == "service");
+
     if (D.timeZone) for (var z = 0; z < tzFrames.length; z++) {
         var nz = setTimeZone(tzFrames[z], D.timeZone);
         if (nz) L("  time zone: " + nz + " time" + (nz == 1 ? "" : "s") + " -> " + D.timeZone);
@@ -733,6 +744,46 @@ function updateText(doc, job, D, ab) {
     var heading = findHeading(frames, dateTF, midX);
     if (heading) updateHeading(doc, heading, D, maxW, headerTF, dateTF);
     else P("the heading above the date wasn't found");
+
+    // last, so the heading is found while the header still reads "Sunday"
+    if (job.kind == "service" && D.dayName && D.dayName != "Sunday") {
+        var oh = headerTF ? strip(headerTF.contents) : "";
+        if (/^Sunday$/i.test(oh)) {
+            replaceAt(headerTF, headerTF.contents.indexOf(oh), oh.length, D.dayName);
+            L("  header: " + oh + " -> " + D.dayName);
+        } else P("the \"Sunday\" header wasn't found, so it doesn't say " + D.dayName);
+    }
+}
+
+// The service times ("Organ Prelude-Concert 10:30 AM", "Virtual Service 11:00 AM"): the latest becomes
+// serviceTime, and each earlier one keeps its distance before it (the prelude half an hour earlier),
+// as Christmas Eve's were made by hand. Only the digits and AM/PM change, so their styles stay.
+function setServiceTimes(frames, serviceTime, expected) {
+    var m = TIME_RE.exec(strip(serviceTime)), want = (+m[1] % 12 + (/p/i.test(m[3]) ? 12 : 0)) * 60 + (+(m[2] || 0));
+    var hits = [], latest = -1, re = /\b(\d{1,2}):(\d{2})(\s*)(AM|PM)\b/gi, f, h, k;
+    for (f = 0; f < frames.length; f++) {
+        var s = frames[f].contents, t;
+        re.lastIndex = 0;
+        while ((t = re.exec(s)) != null) {
+            var mins = (+t[1] % 12 + (/p/i.test(t[4]) ? 12 : 0)) * 60 + (+t[2]);
+            hits.push({ tf: frames[f], at: t.index, digits: t[1] + ":" + t[2], ampm: t[4],
+                        ampmAt: t.index + t[1].length + 3 + t[3].length, mins: mins });
+            if (mins > latest) latest = mins;
+        }
+    }
+    if (!hits.length) { if (expected) P("the service times weren't found, so they don't say " + serviceTime); return; }
+    var was = [], now = [];
+    for (k = hits.length - 1; k >= 0; k--) {                // back to front, so earlier offsets hold
+        h = hits[k];
+        var n = ((want + h.mins - latest) % 1440 + 1440) % 1440, hh = Math.floor(n / 60), mm = n % 60;
+        var ampm = hh >= 12 ? "PM" : "AM";
+        if (h.ampm == h.ampm.toLowerCase()) ampm = ampm.toLowerCase();
+        replaceAt(h.tf, h.ampmAt, h.ampm.length, ampm);
+        replaceAt(h.tf, h.at, h.digits.length, (hh % 12 || 12) + ":" + (mm < 10 ? "0" : "") + mm);
+        was.unshift(h.digits + " " + h.ampm);
+        now.unshift((hh % 12 || 12) + ":" + (mm < 10 ? "0" : "") + mm + " " + ampm);
+    }
+    L("  times: " + was.join(", ") + " -> " + now.join(", "));
 }
 
 // ---------- main ----------
@@ -786,9 +837,10 @@ function UpdateWeek() {
     var root = resolvePath(D.root, "");
     var out = resolvePath(D.outputFolder, root), image = resolvePath(D.imagePath, root);
     var jobs = [
-        { kind: "service", template: resolvePath(D.serviceTemplate, root), dir: out + "/" + D.serviceFolder, name: D.serviceName },
-        { kind: "sermon", template: resolvePath(D.sermonTemplate, root), dir: out + "/" + D.sermonFolder, name: D.sermonName }
+        { kind: "service", template: resolvePath(D.serviceTemplate, root), dir: out + "/" + D.serviceFolder, name: D.serviceName }
     ];
+    if (D.graphics != "service")
+        jobs.push({ kind: "sermon", template: resolvePath(D.sermonTemplate, root), dir: out + "/" + D.sermonFolder, name: D.sermonName });
 
     // check everything before touching anything (and before alerts are switched off)
     bad = [];
@@ -809,7 +861,7 @@ function UpdateWeek() {
     }
     if (!todo.length) return "nothing to do";
 
-    var summary = headingOf(D).concat([D.dateText, D.preacher, D.panelColor, D.timeZone]), shown = [];
+    var summary = headingOf(D).concat([D.dayName, D.dateText, D.serviceTime, D.preacher, D.panelColor, D.timeZone]), shown = [];
     for (var sI = 0; sI < summary.length; sI++) if (summary[sI]) shown.push(summary[sI]);
     L("UpdateWeek: " + shown.join(" / "));
     L("data: " + dataFile.fsName);
