@@ -55,18 +55,24 @@ FRAME_W, FRAME_H = 934, 1080
 REQUIRED_KEYS = ["root", "heading", "dateText", "preacher", "panelColor",
                  "imagePath", "outputFolder", "serviceTemplate", "serviceFolder", "serviceName",
                  "sermonTemplate", "sermonFolder", "sermonName"]
-OPTIONAL_KEYS = ["timeZone", "photoShiftX", "photoShiftY"]
+SERMON_KEYS = ["preacher", "sermonTemplate", "sermonFolder", "sermonName"]   # not needed with graphics = service
+# dayName / serviceTime: the Service Title's header and times when it isn't Sunday at 11 (Christmas Eve).
+# graphics = service: only the Service Title (no Sermon Series graphic for such a service).
+OPTIONAL_KEYS = ["timeZone", "photoShiftX", "photoShiftY", "dayName", "serviceTime", "graphics"]
 LEGACY_KEYS = ["series", "seriesName", "title"]          # the heading as three fields, before "heading"
 
 
 # ---------------------------------------------------------------- PDF text
 
-def week_name(d):
-    """9/27/2026 -> '9-27-26' (the folder/file naming convention)."""
-    return "%d-%d-%02d" % (d.month, d.day, d.year % 100)
+def week_name(d, time=None):
+    """9/27/2026 -> '9-27-26' (the folder/file naming convention). A service with its own time
+    (Christmas Eve: an OW named "12.24.26 5:30pm OW.pdf") gets it too: '12-24-26 530pm', as the
+    hand-made "12-24-25 8pm" folders were, so each of the evening's services has its own folder."""
+    return "%d-%d-%02d" % (d.month, d.day, d.year % 100) + (" " + time_suffix(time) if time else "")
 
 
 def parse_week_name(name):
+    """The date of a plain week folder ('9-27-26'); None for anything else, a timed one included."""
     m = re.fullmatch(r"(\d{1,2})-(\d{1,2})-(\d{2})", name)
     if not m:
         return None
@@ -74,6 +80,44 @@ def parse_week_name(name):
         return datetime.date(2000 + int(m.group(3)), int(m.group(1)), int(m.group(2)))
     except ValueError:
         return None
+
+
+def parse_folder_name(name):
+    """(date, "HH:MM" or None) for '9-27-26' or '12-24-26 530pm', else None."""
+    m = re.fullmatch(r"(\d{1,2}-\d{1,2}-\d{2})(?: (\d{1,2})(\d{2})?(am|pm))?", name)
+    d = m and parse_week_name(m.group(1))
+    if not d:
+        return None
+    if not m.group(4):
+        return d, None
+    hour = int(m.group(2)) % 12 + (12 if m.group(4) == "pm" else 0)
+    return d, "%02d:%s" % (hour, m.group(3) or "00")
+
+
+def time_suffix(time):
+    """'17:30' -> '530pm', '20:00' -> '8pm' (the cju-media/OW index's way of writing a time)."""
+    h, m = (int(x) for x in time.split(":"))
+    return "%d%s%s" % (h % 12 or 12, "%02d" % m if m else "", "pm" if h >= 12 else "am")
+
+
+def time_text(time):
+    """'17:30' -> '5:30 PM', as the graphic shows times."""
+    h, m = (int(x) for x in time.split(":"))
+    return "%d:%02d %s" % (h % 12 or 12, m, "PM" if h >= 12 else "AM")
+
+
+def parse_time_text(s):
+    """'5:30 PM', '5:30pm' or '8pm' -> '17:30' / '20:00', else None."""
+    m = re.fullmatch(r"(\d{1,2})(?::(\d{2}))? ?([AP]M)", (s or "").strip(), re.I)
+    if not m or not 1 <= int(m.group(1)) <= 12 or int(m.group(2) or 0) > 59:
+        return None
+    return "%02d:%s" % (int(m.group(1)) % 12 + (12 if m.group(3).upper() == "PM" else 0), m.group(2) or "00")
+
+
+def sunday_service(date, time=None):
+    """The usual Sunday service, with both graphics. Any other (a timed or weekday service) gets
+    only the Service Title: Drive files a Sermon Series thumbnail under the coming Sunday."""
+    return time is None and date.weekday() == 6
 
 
 # "27 September 2026", "September 27, 2026", "September 28th, 2025" (2025's OWs)
@@ -339,8 +383,10 @@ def ensure_local(path, timeout=180):
 
 
 def find_templates(root, date):
-    """Newest week folder before `date` (in <root> or <root>/Past Weeks) with both .ai files.
-    Returns (week, service_path, sermon_path), paths relative to root."""
+    """Newest Sunday week folder before `date` (in <root> or <root>/Past Weeks) with both .ai files.
+    Returns (week, service_path, sermon_path), paths relative to root. A Christmas Eve folder
+    ('12-24-26 530pm', or an untimed weekday one) is never a template: its graphic says another
+    day and other times and has no Sermon Series, so the next Sunday is built from the one before."""
     weeks = []
     for base in ("", "Past Weeks"):
         d = os.path.join(root, base)
@@ -348,7 +394,7 @@ def find_templates(root, date):
             continue
         for name in os.listdir(d):
             wd = parse_week_name(name)
-            if wd and wd < date and os.path.isdir(os.path.join(d, name)):
+            if wd and wd < date and wd.weekday() == 6 and os.path.isdir(os.path.join(d, name)):
                 weeks.append((wd, os.path.join(base, name) if base else name, name))
     weeks.sort(reverse=True)
     for wd, rel, name in weeks:
@@ -384,15 +430,19 @@ def tilde(path):
     return "~" + path[len(home):] if path.startswith(home + "/") else path
 
 
-def build_data(root, out_root, f, color, week, svc, ser, image_rel, pdf, output_dir=None):
+def build_data(root, out_root, f, color, week, svc, ser, image_rel, pdf, output_dir=None, time=None):
     out_rel = tilde(output_dir) if output_dir else week if out_root == root else tilde(os.path.join(out_root, week))
     tz = datetime.datetime(f["date"].year, f["date"].month, f["date"].day, 11,
                            tzinfo=zoneinfo.ZoneInfo("America/Los_Angeles")).tzname()
+    both = sunday_service(f["date"], time)
     rows = [
         ("root", tilde(root)),
         ("heading", " | ".join(heading_of(f))),
         ("dateText", f.get("dateText", "")),
-        ("preacher", f.get("preacher", "")),
+    ] + ([("preacher", f.get("preacher", ""))] if both else [
+        ("dayName", f["date"].strftime("%A")),
+        ("graphics", "service"),
+    ]) + ([("serviceTime", time_text(time))] if time else []) + [
         ("panelColor", color or "CHOOSE"),
         ("timeZone", tz),
         ("imagePath", image_rel),
@@ -402,13 +452,16 @@ def build_data(root, out_root, f, color, week, svc, ser, image_rel, pdf, output_
         ("serviceTemplate", svc or "NOT FOUND"),
         ("serviceFolder", "Worship Service " + week),
         ("serviceName", "Service Title_" + week),
+    ] + ([
         ("sermonTemplate", ser or "NOT FOUND"),
         ("sermonFolder", "Sermon Series " + week),
         ("sermonName", "Sermon Title_" + week),
-    ]
+    ] if both else [])
     head = ["# week-data.txt for UpdateWeek.jsx: week of %s, from %s" % (week, os.path.basename(pdf)),
             "# key = value, one per line. Relative paths are relative to root (outputs: to outputFolder).",
-            "# photoShiftX/Y nudge the photo in points (+X right, +Y up)."]
+            "# photoShiftX/Y nudge the photo in points (+X right, +Y up)."] + ([] if both else [
+            "# dayName / serviceTime replace the Service Title's \"Sunday\" and its times (the prelude",
+            "# keeps its distance before the service); graphics = service: no Sermon Series graphic."])
     return "\n".join(head + ["%-16s= %s" % (k, v) for k, v in rows]) + "\n"
 
 
@@ -434,8 +487,9 @@ def check(path):
     if not os.path.exists(path):
         return ["%s does not exist" % path]
     d, bad = read_data(path), []
+    both = d.get("graphics", "both") != "service"
     for k in REQUIRED_KEYS:
-        if not d.get(k) and not (k == "heading" and heading_of(d)):
+        if (both or k not in SERMON_KEYS) and not d.get(k) and not (k == "heading" and heading_of(d)):
             bad.append("missing %s" % k)
     for k in d:
         if k not in REQUIRED_KEYS + OPTIONAL_KEYS + LEGACY_KEYS:
@@ -447,15 +501,24 @@ def check(path):
         bad.append("root folder not found: %s" % root)
     if not re.fullmatch(r"#[0-9A-Fa-f]{6}", d["panelColor"]):
         bad.append("panelColor must look like #325673, got %r" % d["panelColor"])
+    if d.get("graphics", "both") not in ("both", "service"):
+        bad.append("graphics must be both or service, got %r" % d["graphics"])
+    time = parse_time_text(d.get("serviceTime"))
+    if d.get("serviceTime") and not time:
+        bad.append("serviceTime must look like 5:30 PM, got %r" % d["serviceTime"])
     m = re.fullmatch(r"(%s) (\d{1,2}), (\d{4})" % MONTH_RE, d["dateText"])
     if not m:
         bad.append("dateText must look like 'September 27, 2026', got %r" % d["dateText"])
     else:
         date = datetime.date(int(m.group(3)), MONTHS.index(m.group(1)) + 1, int(m.group(2)))
-        week = week_name(date)
-        if date.weekday() != 6:
-            bad.append("%s is not a Sunday" % d["dateText"])
-        for k in ("serviceFolder", "serviceName", "sermonFolder", "sermonName"):
+        week = week_name(date, time)
+        day = date.strftime("%A")
+        if d.get("dayName", "Sunday") != day:
+            bad.append("%s is a %s; set dayName = %s" % (d["dateText"], day, day))
+        if both and not sunday_service(date, time):
+            bad.append("%s%s gets only the Service Title: set graphics = service"
+                       % (d["dateText"], " " + d["serviceTime"] if time else ""))
+        for k in ("serviceFolder", "serviceName") + (("sermonFolder", "sermonName") if both else ()):
             if not d[k].endswith(week):
                 bad.append("%s %r should end with %s" % (k, d[k], week))
         if os.path.basename(d["outputFolder"].rstrip("/")) != week:
@@ -467,7 +530,7 @@ def check(path):
     for k in ("photoShiftX", "photoShiftY"):
         if not re.fullmatch(r"-?\d+(\.\d+)?", d.get(k, "0")):
             bad.append("%s must be a number of points" % k)
-    for k in ("serviceTemplate", "sermonTemplate", "imagePath"):
+    for k in ("serviceTemplate", "imagePath") + (("sermonTemplate",) if both else ()):
         p = resolve(d[k], root)
         if not os.path.exists(p):
             bad.append("%s not found: %s" % (k, p))
@@ -486,9 +549,10 @@ def parse_date_text(s):
 
 
 def prepare(pdf, root=DEFAULT_ROOT, out_root=None, data_path=DEFAULT_DATA, color=None, fields=None,
-            sets=(), write=False, output_dir=None):
+            sets=(), write=False, output_dir=None, time=None):
     """Everything the command line does, as a function (auto_build.py calls it).
     fields: text fields already read from the PDF (default: parse it here).
+    time: "HH:MM" for a service with its own time (from an OW named "12.24.26 5:30pm OW.pdf").
     output_dir: where UpdateWeek.jsx saves the graphics (default: the week folder).
     color: '#RRGGBB' or '1'-'3' for a suggestion. Returns a dict describing the week;
     raises PrepareError if it can't be prepared."""
@@ -502,22 +566,23 @@ def prepare(pdf, root=DEFAULT_ROOT, out_root=None, data_path=DEFAULT_DATA, color
     f["date"] = parse_date_text(f.get("dateText"))
     if not f["date"]:
         raise PrepareError("couldn't read the service date; pass --set dateText='September 27, 2026'")
-    week = week_name(f["date"])
-    if f["date"].weekday() != 6:
-        warn.append("%s is not a Sunday; check the date" % f["dateText"])
+    week = week_name(f["date"], time)
+    both = sunday_service(f["date"], time)
+    if not both:                                  # no Sermon Series graphic, so no preacher on one
+        warn = [w for w in warn if "preacher" not in w and "sermon row" not in w]
 
     prev, prev_date, svc, ser = find_templates(root, f["date"])
     if not prev:
         warn.append("no earlier week folder has both a Service Title and a Sermon .ai")
     else:
-        if (f["date"] - prev_date).days != 7:
+        if (f["date"] - prev_date).days > 7:
             warn.append("newest earlier week is %s (%d days before), not last Sunday; "
                         "check it's the right template" % (prev, (f["date"] - prev_date).days))
-        for p in (svc, ser):
+        for p in (svc, ser) if both else (svc,):
             ensure_local(os.path.join(root, p))
 
     week_dir = os.path.join(out_root, week)
-    for sub in ("", "Worship Service " + week, "Sermon Series " + week):
+    for sub in ("", "Worship Service " + week) + (("Sermon Series " + week,) if both else ()):
         os.makedirs(os.path.join(week_dir, sub), exist_ok=True)
     raw = extract_cover(pdf)
     cover, k = upscale(raw)
@@ -538,12 +603,12 @@ def prepare(pdf, root=DEFAULT_ROOT, out_root=None, data_path=DEFAULT_DATA, color
     if color and not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
         raise PrepareError("the color must look like #325673, not %r" % color)
     color = color and color.upper()
-    data = build_data(root, out_root, f, color, week, svc, ser, tilde(image_rel), pdf, output_dir)
+    data = build_data(root, out_root, f, color, week, svc, ser, tilde(image_rel), pdf, output_dir, time)
 
     result = {"week": week, "week_dir": week_dir, "fields": f, "warnings": warn, "prev": prev,
               "cover": cover, "cover_path": cover_path, "raw_size": raw.size, "factor": k,
               "picks": picks, "preview": preview, "color": color, "data": data,
-              "data_path": data_path, "problems": None}
+              "data_path": data_path, "problems": None, "both": both}
     if write:
         if not color:
             raise PrepareError("writing week-data.txt needs a color (pick a suggestion, or any hex)")
@@ -556,6 +621,7 @@ def prepare(pdf, root=DEFAULT_ROOT, out_root=None, data_path=DEFAULT_DATA, color
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("pdf", nargs="?", help="Order of Worship PDF")
+    ap.add_argument("--time", help="a service with its own time, e.g. 5:30pm (Christmas Eve)")
     ap.add_argument("--color", help="chosen panel color, e.g. '#325673' (or 1/2/3 = a suggestion)")
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
                     help="override a field the PDF parse got wrong (repeatable)")
@@ -573,7 +639,10 @@ def main():
     if not a.pdf:
         ap.error("give the Order of Worship PDF")
     try:
-        r = prepare(a.pdf, a.root, a.output_root, a.data, a.color, sets=a.set, write=a.write)
+        time = a.time and parse_time_text(a.time)
+        if a.time and not time:
+            ap.error("--time must look like 5:30pm or 8pm")
+        r = prepare(a.pdf, a.root, a.output_root, a.data, a.color, sets=a.set, write=a.write, time=time)
     except PrepareError as e:
         sys.exit(str(e))
 

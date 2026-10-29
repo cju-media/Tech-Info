@@ -16,6 +16,7 @@ week's Illustrator files:
 | `illustrator.py` | Runs `UpdateWeek.jsx` in Illustrator from Python (automatic build and tests). |
 | `title_graphics_state.json`, `status/` | The current options, the pick, and small previews; the picker page and the upload dashboard read them. Written by the workflow. |
 | `GEMINI.md` | Instructions Gemini follows to produce `week-data.txt` by hand, and only that. |
+| `CHRISTMAS_EVE_CHECKLIST.md` | Checking the timed-service build in Illustrator on Studio Mini. |
 | `test/` | Tests (see below). |
 
 The working copy lives in iCloud at `Worship and Sermon Series/Scripts/`. This folder in the
@@ -80,6 +81,35 @@ Details:
   never builds on Sundays.
 - **Moving last week's folder** into `Past Weeks` stays manual.
 
+## Christmas Eve (timed services)
+
+An OW with a time in its name (`12.24.26 5:30pm OW.pdf`, `12.24.26_11pm.pdf`) is its own service,
+as it is for the titles, description and stream. Upload each one as usual; Studio Mini builds each:
+
+- **Its own folder**, `12-24-26 530pm` (and `12-24-26 8pm`, `12-24-26 11pm`), next to the Sunday's
+  `12-27-26`. Only Sunday folders are ever used as templates, so all of them, and the Sunday
+  after, are built from the Sunday before (Advent 4).
+- **Only the Worship Service graphic.** Its header says the day ("Thursday" instead of "Sunday")
+  and its times move to the service: the OW's time is the Virtual Service, and the Organ
+  Prelude-Concert keeps its half hour before it (7:30 / 8:00 PM for the 8pm). `week-data.txt`
+  carries `dayName`, `serviceTime` and `graphics = service` for this. There's no Sermon Series
+  graphic: Drive files that one under the coming Sunday, where it would replace the Sunday's.
+  No preacher is needed, and if page 1 has no date the file name's is used. An OW with no
+  heading text on page 1 (2025's 5pm pageant was a picture) still has to be made by hand.
+- **Its own options on the picker**, under a tab per service (a dot marks the ones not picked
+  yet). A pick names its service, so picking 8pm leaves 5:30pm and the Sunday alone.
+- **Drive at once.** A pick goes straight to Drive with its date and time (the sidecar's
+  `"time": "17:30"`), to that service's own thumbnail folder (`12-24-2026 5:30pm`) and stream.
+  It doesn't wait for its week; it isn't sent once the service has started. "Use, don't send to
+  Drive" works as usual: upload the edited JPG on the dashboard with the date and time set.
+
+Four OWs uploaded back to back start only two runs (GitHub cancels a waiting run when a newer
+one arrives), so every upload and schedule run also builds any OW for the coming month it hasn't
+read yet, one after another, until 20 minutes have gone (the next run does the rest). An OW it
+read and couldn't use isn't retried until it's uploaded again. Builds for services that have
+passed leave the picker at the next build. Before relying on it for a real Christmas Eve, run
+`CHRISTMAS_EVE_CHECKLIST.md` on Studio Mini.
+
 ## Each week (by hand)
 
 Use this when Studio Mini is unavailable, for special services, or to fix a field.
@@ -124,7 +154,8 @@ checklist: the folder, Illustrator installed and answering, Gemini, `brctl`. Not
   set `photoShiftY` (points, + is up) and rerun.
 - **Text:** edits only the changed characters, so each line keeps its formatting: the heading
   (one area-text frame), the date, the preacher (sermon graphic),
-  and "pdt"/"pst" after the service times.
+  and "pdt"/"pst" after the service times. For a timed service, also the "Sunday" header and the
+  times themselves (digits and AM/PM only).
 - **The heading** is page 1's lines above the date, one to four of them (`heading = Fall Series 4 |
   Painting the Stars | An Anticipatory Universe`; Lent, Pentecost, name-and-title and title-only
   weeks all work). Last week's heading is found by position, so any of those can follow any other.
@@ -154,12 +185,15 @@ checklist: the folder, Illustrator installed and answering, Gemini, `brctl`. Not
 ## Tests
 
 ```bash
-python3 -m unittest fccla/test/test_auto_build.py
+python3 -m unittest fccla/test/test_auto_build.py fccla/test/test_christmas_eve.py
 ```
 
 The automatic build's decisions, with no Illustrator or network: which OW, whether graphics
 were made or edited by hand, how the PDF parse and Gemini's reading are combined, and when a
-pick goes to Drive. The Drive side has its own test:
+pick goes to Drive. `test_christmas_eve.py` uploads Christmas Eve's three OWs and the Sunday
+after in one evening and picks them, with `prepare_week.py` run for real on a scratch folder;
+with node installed it also runs `UpdateWeek.jsx`'s header and time changes on stand-in text
+frames. The Drive side has its own test:
 `cd "Worship Scripts/worship workflows" && python3 -m unittest test_upload_queue_replace`.
 
 The next two need Illustrator open on this Mac, and write only to `fccla/test/out/` (gitignored).
