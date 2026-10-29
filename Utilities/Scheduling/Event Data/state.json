@@ -16,7 +16,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "su-11-01-2026-wedding-ceremony",
             "su-11-8-2026-worship-service",
             "sa-11-14-2026-vox-femina-concert",
             "su-11-15-2026-worship-service",
@@ -133,11 +132,6 @@
             "date": "2026-11-08",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "su-11-01-2026-wedding-ceremony": {
-            "date": "2026-11-01",
-            "name": "Wedding Ceremony",
-            "call_time": "3:00pm-6:00pm"
         },
         "su-11-01-2026-worship-service": {
             "date": "2026-11-01",
