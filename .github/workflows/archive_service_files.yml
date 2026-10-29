@@ -22,24 +22,55 @@ jobs:
             DATE_STR=$(TZ="America/Los_Angeles" date +%Y-%m-%d)
           fi
 
+          # One archive folder per service from the last week, named for its
+          # key (Worship Scripts/services/<key>/, see service_keys.py): the
+          # usual Sunday is just its date, as before, and Christmas Eve's
+          # services are 2026-12-24_1730 and so on, so they don't overwrite
+          # each other.
+          TODAY=$(TZ="America/Los_Angeles" date +%Y-%m-%d)
+          WEEK_AGO=$(TZ="America/Los_Angeles" date -d "8 days ago" +%Y-%m-%d)
+          for dir in "Worship Scripts/services"/*/; do
+            [ -d "$dir" ] || continue
+            key=$(basename "$dir")
+            day=${key%%_*}
+            if [[ "$day" > "$TODAY" || "$day" < "$WEEK_AGO" ]]; then
+              continue
+            fi
+            dest="Utilities/Archives/$key"
+            mkdir -p "$dest"
+            [ -f "$dir/chapters.txt" ] && cp "$dir/chapters.txt" "$dest/chapters.txt"
+            [ -f "$dir/timings.txt" ] && cp "$dir/timings.txt" "$dest/timings.txt"
+            [ -f "$dir/Description.txt" ] && cp "$dir/Description.txt" "$dest/description.txt"
+            [ -f "$dir/service-titles/title.txt" ] && cp "$dir/service-titles/title.txt" "$dest/title.txt"
+            echo "Archived $key"
+          done
+
+          # Before per-service folders existed (or if last Sunday somehow has
+          # none), fall back to the live files.
           ARCHIVE_DIR="Utilities/Archives/$DATE_STR"
+          if [ -d "$ARCHIVE_DIR" ]; then
+            SKIP_LIVE=true
+          fi
           mkdir -p "$ARCHIVE_DIR"
 
-          if [ -f "Youtube Processing/chapters.txt" ]; then
-            cp "Youtube Processing/chapters.txt" "$ARCHIVE_DIR/chapters.txt"
-          fi
-          if [ -f "Youtube Processing/timings.txt" ]; then
-            cp "Youtube Processing/timings.txt" "$ARCHIVE_DIR/timings.txt"
-          fi
+          if [ "${SKIP_LIVE:-false}" != "true" ]; then
+            if [ -f "Youtube Processing/chapters.txt" ]; then
+              cp "Youtube Processing/chapters.txt" "$ARCHIVE_DIR/chapters.txt"
+            fi
+            if [ -f "Youtube Processing/timings.txt" ]; then
+              cp "Youtube Processing/timings.txt" "$ARCHIVE_DIR/timings.txt"
+            fi
 
-          if [ -f "Youtube Processing/description.txt" ]; then
-            cp "Youtube Processing/description.txt" "$ARCHIVE_DIR/description.txt"
-          elif [ -f "Youtube Processing/Description.txt" ]; then
-            cp "Youtube Processing/Description.txt" "$ARCHIVE_DIR/description.txt"
-          fi
+            if [ -f "Youtube Processing/description.txt" ]; then
+              cp "Youtube Processing/description.txt" "$ARCHIVE_DIR/description.txt"
+            elif [ -f "Youtube Processing/Description.txt" ]; then
+              cp "Youtube Processing/Description.txt" "$ARCHIVE_DIR/description.txt"
+            fi
 
-          if [ -f "Worship Scripts/service-titles/title.txt" ]; then
-            cp "Worship Scripts/service-titles/title.txt" "$ARCHIVE_DIR/title.txt"
+            if [ -f "Worship Scripts/service-titles/title.txt" ]; then
+              cp "Worship Scripts/service-titles/title.txt" "$ARCHIVE_DIR/title.txt"
+            fi
+
           fi
 
           git config --local user.email "action@github.com"

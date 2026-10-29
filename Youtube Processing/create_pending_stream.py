@@ -18,7 +18,9 @@ import subprocess
 # Processing", unlike its sibling scripts here.
 
 PENDING_STREAM_DIR = os.path.join("Youtube Processing", "pending_stream")
-PENDING_STREAM_META = os.path.join(PENDING_STREAM_DIR, "meta.json")
+
+sys.path.insert(0, os.path.join("Worship Scripts", "worship workflows"))
+import service_keys  # noqa: E402
 
 # create_youtube_stream.py's exit codes.
 EXIT_NOT_READY = 3
@@ -45,34 +47,28 @@ def _parse_flexible_date(date_str):
     return None
 
 
-def _target_date_matches(state_path, date_str):
-    if not os.path.exists(state_path):
-        return False
+def pending_slots():
+    """The meta.json of every stashed thumbnail: one folder per service
+    (pending_stream/<service key>/meta.json), plus the single flat
+    pending_stream/meta.json older runs wrote."""
+    found = []
+    legacy = os.path.join(PENDING_STREAM_DIR, "meta.json")
+    if os.path.exists(legacy):
+        found.append(legacy)
     try:
-        with open(state_path) as f:
-            state = json.load(f)
-    except Exception:
-        return False
-    target = state.get("target_date")
-    if not target:
-        return False
-    wanted = _parse_flexible_date(date_str)
-    if not wanted:
-        return False
-    return target == wanted.isoformat()
-
-
-def title_matches_target_week(date_str):
-    return _target_date_matches(os.path.join("Worship Scripts", "service_titles_state.json"), date_str)
-
-
-def description_matches_target_week(date_str):
-    return _target_date_matches(os.path.join("Youtube Processing", "description_state.json"), date_str)
+        names = sorted(os.listdir(PENDING_STREAM_DIR))
+    except FileNotFoundError:
+        return found
+    for name in names:
+        meta = os.path.join(PENDING_STREAM_DIR, name, "meta.json")
+        if os.path.exists(meta):
+            found.append(meta)
+    return found
 
 
 def _write_meta(pending):
-    with open(PENDING_STREAM_META, "w") as f:
-        json.dump(pending, f, indent=2)
+    with open(pending["_meta_path"], "w") as f:
+        json.dump({k: v for k, v in pending.items() if k != "_meta_path"}, f, indent=2)
 
 
 def note_thumbnail_attempt(pending, date_str):
@@ -93,7 +89,7 @@ def note_thumbnail_attempt(pending, date_str):
     pending["thumbnail_gave_up"] = True
     _write_meta(pending)
     print(f"The thumbnail for {date_str} has failed {attempts} times; giving up on it. "
-          f"{PENDING_STREAM_DIR} keeps the image for a manual upload.")
+          f"{os.path.dirname(pending['_meta_path'])} keeps the image for a manual upload.")
 
     # Announce it: a stream whose thumbnail silently never landed is exactly
     # the failure that went unnoticed for three days on 09-13.
@@ -124,7 +120,7 @@ def stream_url_for(date_str):
     return ""
 
 
-def put_title_and_description_in_drive(pending, date_str, title=None, description=None):
+def put_title_and_description_in_drive(pending, date_str, title=None, description=None, key=None):
     """A stream made right away gets title.txt and Description.txt next to its thumbnail in the
     week's Drive folder (upload_queue_to_drive.py). One that had to wait for them gets them here,
     once, when it's created."""
@@ -137,8 +133,10 @@ def put_title_and_description_in_drive(pending, date_str, title=None, descriptio
         if not service:
             print(f"No Drive credentials, so title.txt and Description.txt for {date_str} weren't put in Drive.")
             return
-        folder_id = uq.get_or_create_date_folder(service, uq.THUMBNAILS_DEST_PARENT_FOLDER_ID, date_str)
-        if uq.upload_title_and_description(service, folder_id, date_str, title=title, description=description):
+        folder_id = uq.get_or_create_date_folder(service, uq.THUMBNAILS_DEST_PARENT_FOLDER_ID,
+                                                 uq.drive_folder_name(date_str, pending.get("time") or "10:30"))
+        if uq.upload_title_and_description(service, folder_id, date_str, title=title, description=description,
+                                           key=key):
             pending["text_in_drive"] = True
     except Exception as e:
         # The stream exists; a missing text file in Drive isn't worth failing over.
@@ -146,12 +144,23 @@ def put_title_and_description_in_drive(pending, date_str, title=None, descriptio
 
 
 def main():
-    if not os.path.exists(PENDING_STREAM_META):
+    slots = pending_slots()
+    if not slots:
         print("No pending stream waiting on title/description. Exiting.")
         return
+    # Each service waits on its own OW, so one not being ready yet must not
+    # hold up another (Christmas Eve's 5:30, 8pm and 11pm can all be here).
+    for meta_path in slots:
+        try:
+            process(meta_path)
+        except Exception as e:
+            print(f"Error processing {meta_path}: {e}")
 
-    with open(PENDING_STREAM_META) as f:
+
+def process(meta_path):
+    with open(meta_path) as f:
         pending = json.load(f)
+    pending["_meta_path"] = meta_path
 
     date_str = pending.get("date")
     stream_time = pending.get("time") or "10:30"
@@ -172,15 +181,18 @@ def main():
               f"Leaving it for a manual upload.")
         return
 
-    title_path = os.path.join("Worship Scripts", "service-titles", "title.txt")
-    desc_path = os.path.join("Youtube Processing", "Description.txt")
+    key = service_keys.resolve_key(date_str, stream_time)
 
-    def has_content(path):
-        try:
-            with open(path) as f:
-                return bool(f.read().strip())
-        except Exception:
-            return False
+    # Only one half typed on the dashboard: the other comes from this
+    # service's generated text once that's ready (see complete_override).
+    if bool(override_title) != bool(override_desc):
+        import upload_queue_to_drive as uq
+        filled_title, filled_desc = uq.complete_override(key, override_title, override_desc)
+        if not filled_title:
+            print(f"Still waiting on the generated text for {date_str} {stream_time} to go with the "
+                  f"typed {'title' if override_title else 'description'}. Will check again next run.")
+            return
+        override_title, override_desc = filled_title, filled_desc
 
     has_override = bool(override_title and override_desc)
 
@@ -192,14 +204,12 @@ def main():
     thumbnail_only = bool(pending.get("thumbnail_attempts"))
 
     if not has_override and not thumbnail_only:
-        title_ready = os.path.exists(title_path) and has_content(title_path) and title_matches_target_week(date_str)
-        desc_ready = os.path.exists(desc_path) and has_content(desc_path) and description_matches_target_week(date_str)
-
-        if not (title_ready and desc_ready):
-            print(f"Still waiting on title/description for {date_str} (this week's OW likely hasn't been posted yet). Will check again next run.")
+        ready, reason = service_keys.content_ready(key) if key else (False, "its OW hasn't been processed")
+        if not ready:
+            print(f"Still waiting on title/description for {date_str} {stream_time} ({reason}). Will check again next run.")
             return
 
-        print(f"Title/description are ready for {date_str}. Creating the deferred stream now...")
+        print(f"Title/description are ready for {date_str} {stream_time} ({key}). Creating the deferred stream now...")
     elif thumbnail_only:
         print(f"Retrying the outstanding thumbnail for {date_str}'s stream "
               f"(attempt {int(pending['thumbnail_attempts']) + 1}/{MAX_THUMBNAIL_ATTEMPTS})...")
@@ -228,14 +238,14 @@ def main():
         return
     if result.returncode == EXIT_THUMBNAIL_PENDING:
         # the stream exists; only its thumbnail is outstanding (note_thumbnail_attempt saves the flag)
-        put_title_and_description_in_drive(pending, date_str, override_title or None, override_desc or None)
+        put_title_and_description_in_drive(pending, date_str, override_title or None, override_desc or None, key)
         note_thumbnail_attempt(pending, date_str)
         return
     if result.returncode != 0:
         print(f"create_youtube_stream.py failed (exit {result.returncode}). Leaving the thumbnail pending.")
         return
 
-    put_title_and_description_in_drive(pending, date_str, override_title or None, override_desc or None)
+    put_title_and_description_in_drive(pending, date_str, override_title or None, override_desc or None, key)
 
     # Clean up now that the stream has actually been created -- leave
     # nothing pending for the next run to retry unnecessarily.
@@ -244,7 +254,9 @@ def main():
     except Exception as e:
         print(f"Could not remove pending thumbnail {thumbnail_path}: {e}")
     try:
-        os.remove(PENDING_STREAM_META)
+        os.remove(meta_path)
+        if os.path.dirname(meta_path) != PENDING_STREAM_DIR:
+            os.rmdir(os.path.dirname(meta_path))
     except Exception as e:
         print(f"Could not remove pending stream metadata: {e}")
 

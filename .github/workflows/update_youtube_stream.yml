@@ -79,4 +79,7 @@ jobs:
           git add "Youtube Processing/description_push_state.json" || true
           git add "Youtube Processing/Description.txt" "Youtube Processing/chapters.txt" "Youtube Processing/description_state.json" "Youtube Processing/timings.txt" || true
           git add "Worship Scripts/service-titles/" "Worship Scripts/service_titles_state.json" "Worship Scripts/worship_scripts.json" || true
+          # Per-service folders: regenerated text, and the pushed timings filed
+          # under the service whose stream just ended.
+          git add -A "Worship Scripts/services/" || true
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: Update YouTube stream content + push state" && git pull --rebase origin ${{ github.ref_name }} && git push)
