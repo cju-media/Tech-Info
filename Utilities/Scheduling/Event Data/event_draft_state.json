@@ -4,11 +4,19 @@
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Kenneth & Maggie Hsu Wedding",
-      "schedule": "11:00am Vendors Access to Ceremony Area / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+      "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
       "type": "Wedding",
       "venue": "Sanctuary"
+    },
+    "040000008200E00074C5B7101A82E008000000004CA20C4BDC51DD01000000000000000010000000A4686F0BA551F3408F4979122E83171C::2027-01-16": {
+      "call_times": "11:00am-2:00pm",
+      "count": 1,
+      "name": "Wei-Chuan Wang & Yanting Li Wedding",
+      "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+      "type": "Wedding",
+      "venue": "Forecourt/Sanctuary"
     }
   },
-  "fingerprint": "bca3cc0058b62e9e62c49654d6e18bbc238e19dde70779510f02a7b7b0044717",
-  "gemini_at": "2026-10-28T16:18:08+00:00"
+  "fingerprint": "d454352cff421d9b4c00de36d04b3bf6e928b7b84f978b32f5001617d76b96d7",
+  "gemini_at": "2026-10-29T16:26:12+00:00"
 }

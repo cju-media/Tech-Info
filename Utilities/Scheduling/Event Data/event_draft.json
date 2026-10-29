@@ -1,8 +1,8 @@
 {
-  "generated": "2026-10-28T16:18:08+00:00",
+  "generated": "2026-10-29T16:26:12+00:00",
   "window": {
-    "start": "2026-10-28",
-    "end": "2027-01-28"
+    "start": "2026-10-29",
+    "end": "2027-01-29"
   },
   "columns": [
     "Date",
@@ -72,6 +72,23 @@
     {
       "kind": "event",
       "cells": [
+        "SA 1/16/2027",
+        "Wei-Chuan Wang & Yanting Li Wedding",
+        "Forecourt/Sanctuary",
+        "11:00am-2:00pm",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Wei-Chuan Wang & Yanting Li Wedding"
+    },
+    {
+      "kind": "event",
+      "cells": [
         "SU 1/10/2027",
         "Worship Service",
         "Sanctuary",
@@ -131,7 +148,7 @@
         "1",
         "",
         "",
-        "11:00am Vendors Access to Ceremony Area / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
         "",
         "Weddings"
       ],
@@ -139,8 +156,8 @@
     }
   ],
   "counts": {
-    "events": 5,
+    "events": 6,
     "worship": 4,
-    "from_calendar": 1
+    "from_calendar": 2
   }
 }
