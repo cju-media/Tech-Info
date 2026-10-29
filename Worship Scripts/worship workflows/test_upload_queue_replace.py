@@ -137,7 +137,8 @@ class QueueWithSidecar(unittest.TestCase):
     """main() on a queued worship-service thumbnail, with and without {"replace": true}."""
 
     def run_queue(self, sidecar, images=(("abc", "Service_Title_10-4-26.jpg", OLD),),
-                  name="Service_Title_10-4-26.jpg", folder=None, services=("2026-10-04",)):
+                  name="Service_Title_10-4-26.jpg", folder=None, services=("2026-10-04",),
+                  today=None, gemini=None):
         work = tempfile.mkdtemp()
         cwd = os.getcwd()
         os.chdir(work)
@@ -154,17 +155,30 @@ class QueueWithSidecar(unittest.TestCase):
                     json.dump(sidecar, fh)
             drive = FakeDrive(images=images)
             runs, dated = [], []
+            self.events, self.asked = [], []
+
+            class Today(uq.datetime.datetime):
+                @classmethod
+                def now(cls, tz=None):
+                    return uq.datetime.datetime.combine(today or uq.datetime.date(2026, 10, 1),
+                                                        uq.datetime.time(12), tz)
+            clock = types.SimpleNamespace(datetime=Today, date=uq.datetime.date, timedelta=uq.datetime.timedelta,
+                                          time=uq.datetime.time)
             with mock.patch.object(uq, "get_drive_service", return_value=drive), \
+                 mock.patch.object(uq, "datetime", clock), \
+                 mock.patch.object(uq, "ask_gemini_for_service",
+                                   side_effect=lambda path, cands: self.asked.append([c[0] for c in cands]) or gemini), \
                  mock.patch.object(uq, "get_or_create_date_folder",
                                    side_effect=lambda s, parent, d: dated.append(d) or "datefolder"), \
                  services_root(*services), \
-                 mock.patch.object(uq, "dispatch_event"), \
+                 mock.patch.object(uq, "dispatch_event", side_effect=lambda kind, payload: self.events.append((kind, payload))), \
                  mock.patch("subprocess.run", side_effect=lambda cmd, **k: runs.append(cmd) or
                             types.SimpleNamespace(returncode=0)):
                 uq.main()
             left = sorted(os.listdir(uq.QUEUE_DIR))
             self.dated = dated
             self.pending = sorted(os.listdir(uq.PENDING_STREAM_DIR)) if os.path.isdir(uq.PENDING_STREAM_DIR) else []
+            self.held = sorted(os.listdir(uq.UNASSIGNED_DIR)) if os.path.isdir(uq.UNASSIGNED_DIR) else []
             return drive, runs, left
         finally:
             os.chdir(cwd)
@@ -241,6 +255,60 @@ class QueueWithSidecar(unittest.TestCase):
         stream = self.stream_runs(runs)[0]
         self.assertEqual(stream[stream.index("--title") + 1], "My Title")
         self.assertIn("ows/10-04-26", stream[stream.index("--description") + 1])
+
+    # Auto-detection: a dashboard upload with the livestream settings untouched.
+    XMAS = ("2026-12-24_1730", "2026-12-24_2000", "2026-12-24_2300", "2026-12-27")
+    AUTO = {"date": "12-24-2026", "time": "17:30", "replace": True, "auto": True, "suggested": "2026-12-24_1730"}
+
+    def run_auto(self, name="thumb.jpg", gemini=None, services=XMAS):
+        return self.run_queue(dict(self.AUTO), name=name, services=services,
+                              today=uq.datetime.date(2026, 12, 20), gemini=gemini)
+
+    def stream_time(self, runs):
+        stream = self.stream_runs(runs)
+        self.assertEqual(len(stream), 1)
+        return stream[0][2], stream[0][4]
+
+    def test_auto_reads_the_service_from_the_filename(self):
+        drive, runs, left = self.run_auto(name="Service_Title_12-24-26_11pm.jpg")
+        self.assertEqual(self.stream_time(runs), ("12-24-2026", "23:00"))
+        self.assertEqual(self.dated, ["12-24-2026 11pm"])
+        self.assertEqual(self.asked, [])                       # no need to look at the image
+
+    def test_auto_reads_the_service_off_the_image(self):
+        drive, runs, left = self.run_auto(gemini="2026-12-24_2000")
+        self.assertEqual(self.stream_time(runs), ("12-24-2026", "20:00"))
+        self.assertEqual(self.asked, [list(self.XMAS)])
+
+    def test_auto_holds_and_asks_when_the_image_doesnt_say(self):
+        drive, runs, left = self.run_auto(gemini="")
+        self.assertEqual(self.stream_runs(runs), [])
+        self.assertEqual(drive.calls, [])                      # nothing went to Drive
+        self.assertEqual(len(self.held), 2)                    # the image and its settings
+        self.assertEqual([k for k, _ in self.events], ["worship_thumbnail_needs_service"])
+        self.assertIn("5:30pm", self.events[0][1]["services"])
+
+    def test_auto_falls_back_to_the_suggestion_without_gemini(self):
+        drive, runs, left = self.run_auto(gemini=None)
+        self.assertEqual(self.stream_time(runs), ("12-24-2026", "17:30"))
+
+    def test_one_generated_service_is_still_checked_against_the_image(self):
+        # a thumbnail uploaded early may be for a service whose OW isn't posted yet
+        drive, runs, left = self.run_auto(gemini="", services=("2026-12-24_1730",))
+        self.assertEqual(self.stream_runs(runs), [])
+        self.assertEqual(len(self.held), 2)
+
+    def test_auto_with_nothing_generated_uses_the_panel(self):
+        drive, runs, left = self.run_auto(services=())
+        self.assertEqual(self.asked, [])
+        self.assertEqual(self.dated, ["12-24-2026 5:30pm"])
+
+    def test_a_chosen_service_is_used_as_is(self):
+        drive, runs, left = self.run_queue({"date": "12-24-2026", "time": "23:00", "replace": True},
+                                           name="thumb.jpg", services=self.XMAS,
+                                           today=uq.datetime.date(2026, 12, 20), gemini="2026-12-24_1730")
+        self.assertEqual(self.asked, [])
+        self.assertEqual(self.stream_time(runs), ("12-24-2026", "23:00"))
 
     def test_replace_never_touches_an_undated_parent_folder(self):
         # no date in the sidecar or the name, so the image stays in the parent folder: nothing

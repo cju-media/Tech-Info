@@ -492,6 +492,8 @@ def main():
     existing_id, in_playlist = find_stream_for_service(service, target_date, start_time, la_tz, date_only)
     if existing_id:
         print(f"A stream already exists for {target_date} {start_time} (video {existing_id}). Skipping creation.")
+        if key:
+            service_keys.write_stream(key, existing_id)
         repaired = reconcile_stream(service, existing_id, in_playlist,
                                     thumbnail_path if args.reconcile else None)
         if not last_stream_recorded(existing_id):
@@ -581,6 +583,8 @@ def main():
 
     broadcast_id = broadcast_insert_response["id"]
     print(f"Successfully created broadcast with ID: {broadcast_id}")
+    if key:
+        service_keys.write_stream(key, broadcast_id)
 
     # Past this point the stream exists and the service can go live on it, so
     # every remaining call gets its own guard instead of sharing one try

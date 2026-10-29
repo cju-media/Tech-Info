@@ -160,6 +160,114 @@ def complete_override(key, title, description):
             description or service_keys.read_text(os.path.join(service_keys.service_dir(key), "Description.txt")))
 
 
+# ---------------------------------------------------------------- which service
+
+UNASSIGNED_DIR = os.path.join(QUEUE_DIR, '_unassigned')
+GEMINI_MODEL = 'gemini-3.5-flash'          # same model as update_service_titles.py
+
+
+def upcoming_services(today):
+    """(key, date, time) for every generated service from today through
+    LOOKAHEAD_DAYS out, in start order."""
+    last = today + datetime.timedelta(days=service_keys.LOOKAHEAD_DAYS)
+    return [s for s in service_keys.list_services() if today <= s[1] <= last]
+
+
+def service_label(key):
+    date, time = service_keys.parse_service_key(key)
+    when = date.strftime('%a %b ') + str(date.day) + ' ' + service_keys.display_time(time or service_keys.DEFAULT_TIME)
+    title = service_keys.title_for(key)
+    return f"{when} -- {title}" if title else when
+
+
+def service_from_filename(filename, candidates):
+    """The service a thumbnail's name points at ("..._12-24-26_530pm.jpg"), or None."""
+    m = re.search(r'(\d{1,2})[-/._](\d{1,2})[-/._](\d{2,4})', filename)
+    if not m:
+        return None
+    date = parse_flexible_date(f"{m.group(1)}-{m.group(2)}-{m.group(3)}")
+    if not date:
+        return None
+    time = service_keys.parse_time_text(filename[m.end():])
+    key = service_keys.resolve_key(date, time)
+    return key if key in [c[0] for c in candidates] else None
+
+
+def ask_gemini_for_service(image_path, candidates):
+    """Have Gemini read the thumbnail and say which candidate service it's for.
+    Returns a key, "" when it can't tell, or None when it couldn't be asked."""
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        print("GEMINI_API_KEY isn't set; can't read the thumbnail to find its service.")
+        return None
+    try:
+        from google import genai
+        from google.genai import types
+        with open(image_path, 'rb') as fh:
+            image = fh.read()
+        listing = "\n".join(f"{key}: {service_label(key)}" for key, _, _ in candidates)
+        prompt = ("This is a church livestream thumbnail. Which of these services is it for? Use the date, "
+                  "time and any service name printed on it (e.g. a children's service, a candlelight "
+                  "service, 11pm), compared with each service's date, time and title.\n\n"
+                  f"{listing}\n\nReply with only the key from the start of the matching line, or NONE "
+                  "if the image doesn't clearly match exactly one of them.")
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[types.Part.from_bytes(data=image, mime_type='image/jpeg'), prompt])
+        answer = (response.text or '').strip()
+    except Exception as e:
+        print(f"Couldn't ask Gemini which service the thumbnail is for: {e}")
+        return None
+    keys = [key for key, _, _ in candidates if key in answer]
+    print(f"Gemini read the thumbnail as: {answer!r}")
+    return keys[0] if len(keys) == 1 else ""
+
+
+def detect_service(image_path, filename, meta, today):
+    """Which service a thumbnail uploaded without its livestream settings
+    touched belongs to: (date MM-DD-YYYY, time HH:MM), or None to hold it.
+
+    In order: a date/time in the filename; Gemini reading the image against
+    the upcoming services' dates, times and titles; and only when Gemini
+    couldn't be asked at all, the dashboard's suggestion (what its settings
+    panel showed). When Gemini looked and couldn't tell, it's held rather
+    than guessed: a thumbnail on the wrong one of Christmas Eve's streams
+    is worse than a text asking which it is. With no services generated at
+    all (nothing to choose from), the panel's date and time stand as sent."""
+    candidates = upcoming_services(today)
+    if not candidates:
+        return meta.get('date'), meta.get('time') or service_keys.DEFAULT_TIME
+    suggested = meta.get('suggested')
+    key = service_from_filename(filename, candidates)
+    how = "its filename"
+    # Gemini is asked even when only one service is generated: a thumbnail
+    # uploaded early may be for one whose OW isn't posted yet, and it mustn't
+    # replace the one service's thumbnail just for being the only option.
+    if not key and candidates:
+        answer = ask_gemini_for_service(image_path, candidates)
+        if answer is None:
+            key, how = (suggested if suggested in [c[0] for c in candidates] else None), "the dashboard's suggestion"
+        else:
+            key, how = answer or None, "the image"
+    if not key:
+        return None
+    date, time = service_keys.parse_service_key(key)
+    print(f"{filename} is for {key} ({service_label(key)}), from {how}.")
+    return date.strftime('%m-%d-%Y'), time or service_keys.DEFAULT_TIME
+
+
+def hold_unassigned(file_path, filename, meta_path, today):
+    """Keep a thumbnail whose service couldn't be worked out, and ask a human."""
+    os.makedirs(UNASSIGNED_DIR, exist_ok=True)
+    shutil.move(file_path, os.path.join(UNASSIGNED_DIR, filename))
+    if meta_path and os.path.exists(meta_path):
+        shutil.move(meta_path, os.path.join(UNASSIGNED_DIR, os.path.basename(meta_path)))
+    options = "; ".join(service_label(k) for k, _, _ in upcoming_services(today)) or "none generated yet"
+    print(f"Couldn't tell which service {filename} is for; holding it in {UNASSIGNED_DIR}.")
+    dispatch_event('worship_thumbnail_needs_service', {'filename': filename, 'services': options})
+
+
 def defer_stream_creation(file_path, date_str, stream_time, title=None, description=None):
     """Stash a worship-service thumbnail whose title/description aren't
     ready yet (its OW hasn't been posted) in its service's own slot so
@@ -538,6 +646,17 @@ def main():
                     except Exception as e:
                         print(f"Could not parse upload settings for {filename}: {e}")
                         stream_meta = None
+
+                if folder_id == THUMBNAILS_DEST_PARENT_FOLDER_ID and stream_meta and stream_meta.get('auto'):
+                    # Uploaded without the livestream settings touched: work out
+                    # which service it is (see detect_service) rather than taking
+                    # the panel's default on trust.
+                    today = datetime.datetime.now(service_keys.TZ).date()
+                    found = detect_service(file_path, original_filename, stream_meta, today)
+                    if not found:
+                        hold_unassigned(file_path, filename, worship_meta_path, today)
+                        continue
+                    stream_meta['date'], stream_meta['time'] = found
 
                 if folder_id == SERMON_DEST_PARENT_FOLDER_ID:
                     # Sermon series thumbnails always target the upcoming Sunday folder

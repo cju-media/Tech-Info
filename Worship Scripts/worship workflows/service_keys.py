@@ -43,6 +43,7 @@ LOOKAHEAD_DAYS = 30
 STATE_FILE = "state.json"              # written by update_service_titles.py
 DESCRIPTION_STATE_FILE = "description.json"  # written by generate_youtube_description.py
 TITLES_SUBDIR = "service-titles"
+STREAM_FILE = "stream.json"            # written by create_youtube_stream.py
 
 _DATE_RE = re.compile(r"^(\d{1,2})[-.](\d{1,2})[-.](\d{2,4})")
 # "5pm", "5:30pm", "530pm", "5:30 PM" -- the same rule as cju-media/OW's index.
@@ -193,6 +194,18 @@ def read_description_state(key):
 
 def write_description_state(key, data):
     _write_json(os.path.join(service_dir(key), DESCRIPTION_STATE_FILE), data)
+
+
+def read_stream(key):
+    return _read_json(os.path.join(service_dir(key), STREAM_FILE))
+
+
+def write_stream(key, video_id):
+    """Record the YouTube broadcast made for this service (create_youtube_stream.py),
+    so the upload dashboard can tell which services still need a thumbnail."""
+    data = {"video_id": video_id, "url": f"https://www.youtube.com/watch?v={video_id}"}
+    if read_stream(key) != data:
+        _write_json(os.path.join(service_dir(key), STREAM_FILE), data)
 
 
 def list_services():

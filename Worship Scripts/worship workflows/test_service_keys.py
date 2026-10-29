@@ -170,6 +170,12 @@ class WhichService(ServicesDir):
         self.assertEqual(sk.content_ready("2026-12-24_2300"), (True, ""))
         self.assertFalse(sk.content_ready("2027-01-03")[0])
 
+    def test_stream_is_recorded_per_service(self):
+        self.add("2026-12-24_2000")
+        sk.write_stream("2026-12-24_2000", "abc123")
+        self.assertEqual(sk.read_stream("2026-12-24_2000")["url"], "https://www.youtube.com/watch?v=abc123")
+        self.assertIsNone(sk.read_stream("2026-12-24_1730"))
+
     def test_description_carries_its_own_timings(self):
         self.add("2026-12-24_1730", description="Program link")
         self.assertEqual(sk.description_for("2026-12-24_1730"), "Program link")
