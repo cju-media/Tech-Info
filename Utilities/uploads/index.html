@@ -121,6 +121,7 @@
         .form-row input[type="date"],
         .form-row input[type="time"],
         .form-row input[type="text"],
+        .form-row select,
         .form-row textarea {
             width: 100%;
             padding: 8px;
@@ -158,6 +159,11 @@
             background-color: #e1f0fa;
             border-color: #2980b9;
             transform: scale(1.02);
+        }
+        .zone-service {
+            font-size: 12px;
+            color: #555;
+            margin: 4px 0 0;
         }
         .last-upload {
             font-size: 12px;
@@ -285,6 +291,7 @@
             <button type="button" class="zone-settings-btn" id="worship-settings-btn" title="Livestream settings" aria-label="Livestream settings">&#9881;</button>
             <h3 class="folder-name">Loading folder name...</h3>
             <p>Drop file here or click to browse</p>
+            <p class="zone-service" id="worship-zone-service"></p>
             <input type="file" class="file-input">
             <p class="last-upload" data-folder="1KI_KifGRzRnafb5Z0IuXmdrgIEyB5_3f">Last upload: checking&hellip;</p>
         </div>
@@ -360,9 +367,14 @@
 <div class="modal-overlay" id="worship-settings-modal">
     <div class="modal-box">
         <h2>Livestream Settings</h2>
-        <p class="hint">Controls the date, time, title, and description used when this thumbnail creates the YouTube livestream. Defaults to this coming Sunday at 10:30 AM. Title/Description show the most recently generated text for reference &mdash; leave them as-is and the pipeline fills in this week's once the OW is posted; only what you actually edit is sent as an override.</p>
+        <p class="hint">Which service this thumbnail is for, and its livestream's title and description. The next upcoming service without a thumbnail is picked for you. Leave everything as it is and the uploader reads the image (its filename, then the date, time and name on it) to find the service, falling back to this choice only if it can't check; pick a service or edit a field and exactly that is used. Only the title or description you actually edit is sent as an override.</p>
 
-        <div class="form-row-pair">
+        <div class="form-row">
+            <label for="stream-service">Service</label>
+            <select id="stream-service"><option value="custom">Other date/time&hellip;</option></select>
+        </div>
+
+        <div class="form-row-pair" id="stream-custom-row">
             <div class="form-row">
                 <label for="stream-date">Date</label>
                 <input type="date" id="stream-date">
@@ -409,8 +421,21 @@
     const streamTitleInput = document.getElementById('stream-title');
     const streamDescriptionInput = document.getElementById('stream-description');
 
+    const streamServiceInput = document.getElementById('stream-service');
+    const streamCustomRow = document.getElementById('stream-custom-row');
+    const zoneServiceLine = document.getElementById('worship-zone-service');
+
     let fetchedDefaultTitle = '';
     let fetchedDefaultDescription = '';
+
+    // Upcoming services whose OW has been processed (Worship Scripts/services/<key>/,
+    // see service_keys.py): [{key, date: 'YYYY-MM-DD', time: 'HH:MM' or null, title, hasThumbnail}].
+    let services = [];
+    // Set once the uploader picks a service or changes a field in the panel: from then on
+    // exactly what's in the panel is used. Untouched, the backend checks the image itself
+    // ({"auto": true}) and only falls back to the suggested service.
+    let serviceTouched = false;
+    const SERVICES_PATH = 'Worship%20Scripts/services';
 
     function pad2(n) { return String(n).padStart(2, '0'); }
 
@@ -437,9 +462,75 @@
         return `${m}-${d}-${y}`;
     }
 
+    // "2026-12-24_1730" -> {date: '2026-12-24', time: '17:30'}; "2026-12-27" -> time null.
+    function parseServiceKey(key) {
+        const m = /^(\d{4}-\d{2}-\d{2})(?:_(\d{2})(\d{2}))?$/.exec(key);
+        return m ? { date: m[1], time: m[2] ? `${m[2]}:${m[3]}` : null } : null;
+    }
+
+    function displayTime(time) {
+        const [h, m] = time.split(':').map(Number);
+        return `${h % 12 || 12}${m ? ':' + pad2(m) : ''}${h >= 12 ? 'pm' : 'am'}`;
+    }
+
+    function serviceLabel(s) {
+        const d = new Date(`${s.date}T12:00:00`);
+        const when = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+        return `${when} · ${displayTime(s.time || '10:30')}${s.title ? ' — ' + s.title : ''}${s.hasThumbnail ? ' (has a thumbnail)' : ''}`;
+    }
+
+    function selectedService() {
+        return services.find(s => s.key === streamServiceInput.value) || null;
+    }
+
+    // The next service still without a stream or a waiting thumbnail, else the next one.
+    function suggestedService() {
+        return services.find(s => !s.hasThumbnail) || services[0] || null;
+    }
+
+    function updateZoneServiceLine() {
+        const s = selectedService();
+        if (!s) {
+            zoneServiceLine.textContent = streamDateInput.value
+                ? `For ${streamDateInput.value} at ${displayTime(streamTimeInput.value || '10:30')}` : '';
+        } else {
+            zoneServiceLine.textContent = `For ${serviceLabel(s)}` + (serviceTouched ? '' : ' (checked against the image)');
+        }
+    }
+
+    function renderServiceOptions() {
+        streamServiceInput.innerHTML = '';
+        for (const s of services) {
+            const opt = document.createElement('option');
+            opt.value = s.key;
+            opt.textContent = serviceLabel(s);
+            streamServiceInput.appendChild(opt);
+        }
+        const other = document.createElement('option');
+        other.value = 'custom';
+        other.innerHTML = 'Other date/time&hellip;';
+        streamServiceInput.appendChild(other);
+    }
+
+    // Show the chosen service's date/time (or the free date/time boxes for "Other"),
+    // and its generated title/description.
+    function applySelectedService() {
+        const s = selectedService();
+        streamCustomRow.style.display = s ? 'none' : '';
+        if (s) {
+            streamDateInput.value = s.date;
+            streamTimeInput.value = s.time || '10:30';
+        }
+        loadGeneratedDefaults(s ? s.key : null);
+        updateZoneServiceLine();
+    }
+
     function applyDefaultDateTime() {
+        const s = suggestedService();
+        streamServiceInput.value = s ? s.key : 'custom';
         streamDateInput.value = toDateInputValue(getUpcomingSunday());
         streamTimeInput.value = '10:30';
+        applySelectedService();
     }
 
     function applyDefaultTitleDescription() {
@@ -448,35 +539,110 @@
     }
 
     function resetStreamSettings() {
+        serviceTouched = false;
         applyDefaultDateTime();
         applyDefaultTitleDescription();
     }
 
-    // Best-effort pre-fill with whatever title/description the pipeline has
-    // most recently generated. If this fails (offline, nothing generated
-    // yet, etc.) the fields just stay blank, and the backend falls back to
-    // its normal auto-generation for the date when nothing is provided.
-    async function loadGeneratedDefaults() {
+    async function fetchText(url) {
         try {
-            const [titleRes, descRes] = await Promise.all([
-                fetch(`https://raw.githubusercontent.com/${REPO}/main/Worship%20Scripts/service-titles/title.txt?t=${Date.now()}`),
-                fetch(`https://raw.githubusercontent.com/${REPO}/main/Youtube%20Processing/Description.txt?t=${Date.now()}`)
-            ]);
-            if (titleRes.ok) fetchedDefaultTitle = (await titleRes.text()).trim();
-            if (descRes.ok) fetchedDefaultDescription = (await descRes.text()).trim();
+            const res = await fetch(`${url}?t=${Date.now()}`);
+            return res.ok ? (await res.text()).trim() : null;
         } catch (e) {
-            console.warn('Could not load generated title/description defaults:', e);
+            return null;
         }
+    }
+
+    // Every upcoming service with a processed OW, and whether it already has a stream
+    // (stream.json, written by create_youtube_stream.py) or a thumbnail waiting for one
+    // (Youtube Processing/pending_stream/<key>/). Best-effort: if it fails, the panel
+    // just offers the date/time boxes, as before.
+    async function loadServices() {
+        try {
+            const api = `https://api.github.com/repos/${REPO}/contents`;
+            const [dirRes, pendingRes] = await Promise.all([
+                fetch(`${api}/${SERVICES_PATH}?ref=main`),
+                fetch(`${api}/Youtube%20Processing/pending_stream?ref=main`)
+            ]);
+            const keys = dirRes.ok ? (await dirRes.json()).filter(e => e.type === 'dir').map(e => e.name) : [];
+            const pending = new Set(pendingRes.ok ? (await pendingRes.json()).filter(e => e.type === 'dir').map(e => e.name) : []);
+            const now = Date.now();
+            const upcoming = keys.map(key => ({ key, ...parseServiceKey(key) }))
+                .filter(s => s.date && new Date(`${s.date}T${s.time || '10:30'}:00`).getTime() + 3 * 3600 * 1000 > now)
+                .sort((a, b) => `${a.date}${a.time || '10:30'}`.localeCompare(`${b.date}${b.time || '10:30'}`));
+            const raw = `https://raw.githubusercontent.com/${REPO}/main/${SERVICES_PATH}`;
+            await Promise.all(upcoming.map(async s => {
+                s.title = await fetchText(`${raw}/${s.key}/service-titles/title.txt`) || '';
+                s.hasThumbnail = pending.has(s.key) || (await fetchText(`${raw}/${s.key}/stream.json`)) !== null;
+            }));
+            setServices(upcoming);
+        } catch (e) {
+            console.warn('Could not load the upcoming services:', e);
+            setServices([]);
+        }
+    }
+
+    function setServices(list) {
+        const chosen = serviceTouched ? streamServiceInput.value : null;
+        services = list;
+        renderServiceOptions();
+        if (chosen && (chosen === 'custom' || services.some(s => s.key === chosen))) {
+            streamServiceInput.value = chosen;
+            applySelectedService();
+        } else {
+            applyDefaultDateTime();
+        }
+    }
+
+    // Pre-fill with the generated title/description: the chosen service's own, or
+    // (for "Other date/time") whatever the pipeline generated most recently. If this
+    // fails (offline, nothing generated yet, etc.) the fields just stay blank, and the
+    // backend falls back to its normal auto-generation when nothing is provided.
+    let defaultsFor = undefined;
+    async function loadGeneratedDefaults(key) {
+        if (defaultsFor === key) return;
+        defaultsFor = key;
+        const base = `https://raw.githubusercontent.com/${REPO}/main`;
+        const [title, desc] = await Promise.all(key
+            ? [fetchText(`${base}/${SERVICES_PATH}/${key}/service-titles/title.txt`),
+               fetchText(`${base}/${SERVICES_PATH}/${key}/Description.txt`)]
+            : [fetchText(`${base}/Worship%20Scripts/service-titles/title.txt`),
+               fetchText(`${base}/Youtube%20Processing/Description.txt`)]);
+        if (defaultsFor !== key) return;            // the choice changed while this loaded
+        const oldTitle = fetchedDefaultTitle, oldDesc = fetchedDefaultDescription;
+        fetchedDefaultTitle = title || '';
+        fetchedDefaultDescription = desc || '';
         streamTitleInput.placeholder = fetchedDefaultTitle ? '' : 'Will be auto-generated';
         streamDescriptionInput.placeholder = fetchedDefaultDescription ? '' : 'Will be auto-generated';
-        // Only fill in fields the user hasn't already typed into -- this load
-        // is async and the modal may already be open by the time it resolves.
-        if (!streamTitleInput.value) streamTitleInput.value = fetchedDefaultTitle;
-        if (!streamDescriptionInput.value) streamDescriptionInput.value = fetchedDefaultDescription;
+        // Only replace what the user hasn't typed over -- this load is async and the
+        // modal may already be open by the time it resolves.
+        if (!streamTitleInput.value || streamTitleInput.value === oldTitle) streamTitleInput.value = fetchedDefaultTitle;
+        if (!streamDescriptionInput.value || streamDescriptionInput.value === oldDesc) streamDescriptionInput.value = fetchedDefaultDescription;
+    }
+
+    function markTouched() {
+        serviceTouched = true;
+        updateZoneServiceLine();
+    }
+    streamServiceInput.addEventListener('change', () => { markTouched(); applySelectedService(); });
+    for (const el of [streamDateInput, streamTimeInput, streamTitleInput, streamDescriptionInput]) {
+        el.addEventListener('input', markTouched);
+    }
+
+    // After a thumbnail is queued: that service has one now, so the next drop defaults to
+    // the next service (5:30, then 8pm, then 11pm on Christmas Eve).
+    function afterWorshipUpload(key) {
+        const s = services.find(x => x.key === key);
+        if (s) s.hasThumbnail = true;
+        serviceTouched = false;
+        defaultsFor = undefined;
+        renderServiceOptions();
+        applyDefaultDateTime();
+        applyDefaultTitleDescription();
     }
 
     applyDefaultDateTime();
-    loadGeneratedDefaults();
+    loadServices();
 
     // The OW box's "Rebuild title graphics" checkbox: a click there mustn't open the file picker.
     document.getElementById('ow-force-label').addEventListener('click', (e) => e.stopPropagation());
@@ -510,6 +676,7 @@
         // title/description. See upload_queue_to_drive.py.
         const titleVal = streamTitleInput.value.trim();
         const descVal = streamDescriptionInput.value.trim();
+        const service = selectedService();
         const meta = {
             date: toBackendDate(streamDateInput.value || toDateInputValue(getUpcomingSunday())),
             time: streamTimeInput.value || '10:30',
@@ -517,8 +684,16 @@
             description: descVal && descVal !== fetchedDefaultDescription.trim() ? descVal : '',
             replace: true
         };
+        // Nothing in the panel touched and a service suggested: let the backend check the
+        // image itself, with this service as the fallback (detect_service in
+        // upload_queue_to_drive.py).
+        if (service && !serviceTouched) {
+            meta.auto = true;
+            meta.suggested = service.key;
+        }
         await putQueueSidecar(timestamp, WORSHIP_FOLDER_ID, safeFilename, meta, pat,
                               `Upload livestream settings for ${safeFilename} via web UI`);
+        return service ? service.key : null;
     }
 
     // A thumbnail dropped here is that Sunday's thumbnail: {"replace": true}
@@ -1097,6 +1272,7 @@
         const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
 
         let targetRepo, path;
+        let worshipServiceKey = null;
         const payload = {
             content: base64Content
         };
@@ -1169,7 +1345,7 @@
             if (targetFolder === WORSHIP_FOLDER_ID) {
                 try {
                     setStatus(`Saving livestream settings for ${filename}...`, 'info');
-                    await uploadStreamMetadataSidecar(timestamp, safeFilename, pat);
+                    worshipServiceKey = await uploadStreamMetadataSidecar(timestamp, safeFilename, pat);
                 } catch (e) {
                     console.error('Could not save livestream settings, continuing with upload:', e);
                     setStatus(`Warning: could not save livestream settings (${e.message}). Continuing with upload...`, 'info');
@@ -1219,6 +1395,7 @@
                 setStatus('timings.txt updated in the repo! The YouTube description update will run shortly.', 'success');
             } else {
                 setStatus('File queued successfully! It will appear in Google Drive shortly.', 'success');
+                if (targetFolder === WORSHIP_FOLDER_ID) afterWorshipUpload(worshipServiceKey);
             }
             inputElement.value = ''; // Reset input
         } catch (error) {

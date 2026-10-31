@@ -37,7 +37,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client python-dateutil pytz requests
+          # pypdf/google-genai: a thumbnail that lands right after its OW runs
+          # update_service_titles.py to catch up instead of waiting for the hourly run.
+          pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client python-dateutil pytz requests pypdf google-genai
 
       - name: Process Queue
         env:
@@ -71,6 +73,14 @@ jobs:
           # Breadcrumb create_youtube_stream.py writes when upload_queue_to_drive.py
           # creates the broadcast directly (dashboard's pipeline section reads it).
           git add "Youtube Processing/last_stream.json" 2>/dev/null || true
+          # When a thumbnail made the uploader run the title/description
+          # generators (see upload_queue_to_drive.py), keep what they wrote so
+          # the hourly run doesn't pay for the same Gemini call again.
+          if [ -d "Worship Scripts/services" ]; then
+            git add -A "Worship Scripts/services/" "Worship Scripts/service-titles/" \
+              "Worship Scripts/service_titles_state.json" "Youtube Processing/Description.txt" \
+              "Youtube Processing/chapters.txt" "Youtube Processing/description_state.json" || true
+          fi
           # Only commit if there are changes (files deleted)
           git diff --quiet && git diff --staged --quiet || git commit -m "Cleanup processed uploads"
           # Retry the rebase+push: other workflows (youtube description,

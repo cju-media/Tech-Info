@@ -12,6 +12,9 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Worship Scripts", "worship workflows"))
+import service_keys  # noqa: E402
+
 PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs"
 
 # Distinct exit code for "the title/description pipeline hasn't confirmed
@@ -42,91 +45,29 @@ def get_youtube_service():
         print(f"Error authenticating with YouTube: {e}")
         return None
 
-def get_combined_description():
-    desc_path = os.path.join("Youtube Processing", "Description.txt")
-    if not os.path.exists(desc_path):
-        print(f"Generated description boilerplate not found at {desc_path}")
-        return "Join us for our Sunday Service!"
+def verify_content_ready(key, target_date, today):
+    """Return (ok, reason). ok is True only when:
 
-    with open(desc_path, 'r') as f:
-        desc = f.read().strip()
-
-    return desc
-
-def get_title():
-    title_path = os.path.join("Worship Scripts", "service-titles", "title.txt")
-    if os.path.exists(title_path):
-        with open(title_path, 'r') as f:
-            title = f.read().strip()
-            if title:
-                return title
-
-    return "Sunday Service"
-
-def _state_target_date(path):
-    """The target_date recorded in a *_state.json file, or None. These are
-    written by update_service_titles.py (service_titles_state.json) and
-    generate_youtube_description.py (description_state.json) and record which
-    service date the current title.txt / Description.txt were generated for.
-    title.txt and Description.txt are never cleared between weeks, so the
-    state file is the only reliable signal that what's on disk is actually
-    this week's content and not a stale carry-over."""
-    try:
-        with open(path) as f:
-            return json.load(f).get("target_date")
-    except Exception:
-        return None
-
-def verify_content_ready(target_date, today):
-    """Return (ok, reason). ok is True only when ALL of the following hold:
-
-      1. target_date is the current service week -- not already in the past,
-         and not more than ~8 days out (the pipeline only ever generates for
-         the *coming* Sunday, so anything outside that window means we'd be
-         about to reuse a stale carry-over that happens to match).
-      2. BOTH service_titles_state.json and description_state.json record
-         target_date -- i.e. title.txt AND Description.txt were regenerated
-         for THIS service, this week, not carried over from a prior week.
-      3. title.txt / Description.txt are actually non-empty and not the
-         generic placeholders.
+      1. the service isn't already in the past, and
+      2. an OW for this exact service (date AND time -- Christmas Eve has
+         several) has been processed, and its title and description were
+         both generated from that same OW and aren't empty
+         (service_keys.content_ready).
 
     This is the hard gate that keeps a wrong/stale title or description off a
     real YouTube stream: if it can't be confirmed, no stream is created and
-    the caller retries on a later run once the pipeline has caught up.
+    the caller retries on a later run once the pipeline has caught up. There
+    is no "too far out" limit any more: OWs uploaded weeks ahead are
+    generated into their own folders, so early content is real content.
     `today` is the current date in the service's timezone.
     """
-    want = target_date.isoformat()
-
-    # 1. target_date must be this coming Sunday's service, give or take.
     days_out = (target_date - today).days
     if days_out < -1:
-        return False, f"service date {want} is in the past ({-days_out} days ago) -- not creating a stream for it"
-    if days_out > 8:
-        return False, (f"service date {want} is {days_out} days out; the title/description "
-                       f"pipeline only generates for the coming Sunday, so this can't be "
-                       f"confirmed as this week's content yet")
-
-    # 2. Both halves of the content confirmed generated for this service.
-    title_state = _state_target_date(os.path.join("Worship Scripts", "service_titles_state.json"))
-    if title_state != want:
-        return False, (f"title.txt is not confirmed for {want} "
-                       f"(service_titles_state.json target_date={title_state!r})")
-
-    desc_state = _state_target_date(os.path.join("Youtube Processing", "description_state.json"))
-    if desc_state != want:
-        return False, (f"Description.txt is not confirmed for {want} "
-                       f"(description_state.json target_date={desc_state!r})")
-
-    # 3. The files themselves are real.
-    title = get_title()
-    if not title or title.strip() == "Sunday Service":
-        return False, "title.txt is missing or empty despite the state file matching"
-
-    description = get_combined_description()
-    if not description or description.strip() == "Join us for our Sunday Service!":
-        return False, "Description.txt is missing or empty despite the state file matching"
-
-    return True, ""
+        return False, f"service date {target_date} is in the past ({-days_out} days ago) -- not creating a stream for it"
+    if not key:
+        return False, (f"no OW for this service on {target_date} has been processed yet "
+                       f"(or the date has several services and none is at this time)")
+    return service_keys.content_ready(key)
 
 # A 403 from the YouTube API is a mixed bag. A broadcast that was just
 # inserted isn't always addressable as a video yet, which surfaces as a
@@ -207,8 +148,20 @@ def attempt(what, done, call, max_retries=4, backoff_seconds=3):
     return None, False
 
 
-def find_stream_for_date(service, target_date, la_tz):
-    """(video_id, in_playlist) for the broadcast scheduled on target_date.
+# How far a broadcast's scheduled start may be from the requested time and
+# still count as this service's stream.
+START_TOLERANCE_MINUTES = 30
+
+
+def find_stream_for_service(service, target_date, start_time, la_tz, date_only=False):
+    """(video_id, in_playlist) for the broadcast of the service on target_date
+    starting at start_time ("HH:MM").
+
+    A broadcast counts when it's scheduled on that date within
+    START_TOLERANCE_MINUTES of start_time. date_only (the date has just the
+    one service) accepts any broadcast that day, as before, so a Sunday
+    stream someone rescheduled by hand is still found rather than doubled.
+    Christmas Eve's 5:30, 8pm and 11pm are each found only by their own time.
 
     Returns (None, False) when there isn't one. Checks the playlist first,
     then falls back to our own broadcasts. That fallback matters: adding a
@@ -218,6 +171,14 @@ def find_stream_for_date(service, target_date, la_tz):
     no stream exists and create a duplicate. in_playlist tells the caller
     which of those two cases it is, so reconcile_stream() can repair the
     missing playlist entry without a second lookup."""
+    wanted = la_tz.localize(datetime.combine(target_date, datetime.strptime(start_time, "%H:%M").time()))
+
+    def matches(scheduled_start_time):
+        start_la = dateutil.parser.parse(scheduled_start_time).astimezone(la_tz)
+        if start_la.date() != target_date:
+            return False
+        return date_only or abs((start_la - wanted).total_seconds()) <= START_TOLERANCE_MINUTES * 60
+
     def scheduled_on_target(video_ids):
         for start in range(0, len(video_ids), 50):
             video_response = service.videos().list(
@@ -226,10 +187,7 @@ def find_stream_for_date(service, target_date, la_tz):
             ).execute()
             for video in video_response.get('items', []):
                 scheduled_start_time = (video.get('liveStreamingDetails') or {}).get('scheduledStartTime')
-                if not scheduled_start_time:
-                    continue
-                start_time_la = dateutil.parser.parse(scheduled_start_time).astimezone(la_tz)
-                if start_time_la.date() == target_date:
+                if scheduled_start_time and matches(scheduled_start_time):
                     return video['id']
         return None
 
@@ -252,11 +210,8 @@ def find_stream_for_date(service, target_date, la_tz):
         ).execute()
         for broadcast in broadcast_response.get('items', []):
             scheduled_start_time = broadcast.get('snippet', {}).get('scheduledStartTime')
-            if not scheduled_start_time:
-                continue
-            start_time_la = dateutil.parser.parse(scheduled_start_time).astimezone(la_tz)
-            if start_time_la.date() == target_date:
-                print(f"Found broadcast {broadcast['id']} for {target_date} outside the playlist.")
+            if scheduled_start_time and matches(scheduled_start_time):
+                print(f"Found broadcast {broadcast['id']} for {target_date} {start_time} outside the playlist.")
                 return broadcast['id'], False
         return None, False
     except HttpError as e:
@@ -425,17 +380,21 @@ def reconcile_stream(service, video_id, in_playlist, thumbnail_path=None):
 
 
 def last_stream_recorded(video_id):
-    """True when last_stream.json already points at this broadcast.
+    """True when last_stream.json says this broadcast was announced.
 
     The announcement below re-fires for any existing stream we never got
     around to announcing; this keeps that from meaning "announce the same
-    stream again on every hourly run"."""
+    stream again on every hourly run". It keeps a short list rather than just
+    the latest: with Christmas Eve's three streams created back to back, a
+    retry on the 5:30 one must not re-announce it because 8pm came after."""
     path = os.path.join("Youtube Processing", "last_stream.json")
     try:
         with open(path) as f:
-            return json.load(f).get("stream_url", "").endswith(f"v={video_id}")
+            last = json.load(f)
     except Exception:
         return False
+    return (last.get("stream_url", "").endswith(f"v={video_id}")
+            or video_id in last.get("announced", []))
 
 def record_last_stream(video_id, service_date):
     """Write a small breadcrumb the tech-info dashboard reads to show when the
@@ -445,11 +404,18 @@ def record_last_stream(video_id, service_date):
     upload_queue_to_drive.py)."""
     path = os.path.join("Youtube Processing", "last_stream.json")
     try:
+        with open(path) as f:
+            announced = json.load(f).get("announced", [])
+    except Exception:
+        announced = []
+    announced = ([v for v in announced if v != video_id] + [video_id])[-20:]
+    try:
         with open(path, "w") as f:
             json.dump({
                 "created_at": datetime.now(pytz.utc).isoformat(),
                 "service_date": service_date.strftime("%m-%d-%Y"),
                 "stream_url": f"https://www.youtube.com/watch?v={video_id}",
+                "announced": announced,
             }, f, indent=2)
         print(f"Recorded last-stream breadcrumb to {path}")
     except Exception as e:
@@ -506,13 +472,28 @@ def main():
         print(f"Error parsing date {date_str}: {e}")
         return
 
+    try:
+        scheduled_time = datetime.strptime(time_str, "%H:%M").time()
+    except ValueError:
+        print(f"Could not parse time '{time_str}', falling back to 10:30.")
+        scheduled_time = datetime.strptime("10:30", "%H:%M").time()
+    start_time = scheduled_time.strftime("%H:%M")
+
+    # Which service's generated title/description this stream gets: the OW for
+    # this date at this time (or the date's only OW). None until it's processed.
+    key = service_keys.resolve_key(target_date, start_time)
+    print(f"Service for {target_date} {start_time}: {key or 'not generated yet'}")
+    date_only = len(service_keys.services_on(target_date)) <= 1
+
     service = get_youtube_service()
     if not service:
         return
 
-    existing_id, in_playlist = find_stream_for_date(service, target_date, la_tz)
+    existing_id, in_playlist = find_stream_for_service(service, target_date, start_time, la_tz, date_only)
     if existing_id:
-        print(f"A stream already exists for {target_date} (video {existing_id}). Skipping creation.")
+        print(f"A stream already exists for {target_date} {start_time} (video {existing_id}). Skipping creation.")
+        if key:
+            service_keys.write_stream(key, existing_id)
         repaired = reconcile_stream(service, existing_id, in_playlist,
                                     thumbnail_path if args.reconcile else None)
         if not last_stream_recorded(existing_id):
@@ -552,21 +533,15 @@ def main():
         print("Using explicitly provided title/description; skipping the freshness gate.")
     else:
         today_la = datetime.now(la_tz).date()
-        ok, reason = verify_content_ready(target_date, today_la)
+        ok, reason = verify_content_ready(key, target_date, today_la)
         if not ok:
-            print(f"NOT creating a stream for {target_date}: {reason}.")
+            print(f"NOT creating a stream for {target_date} {start_time}: {reason}.")
             print("The stream will be created on a later run, once the title/description "
-                  "pipeline has processed this week's OW.")
+                  "pipeline has processed this service's OW.")
             sys.exit(EXIT_NOT_READY)
-        title = get_title()
-        description = get_combined_description()
+        title = service_keys.title_for(key)
+        description = service_keys.description_for(key)
     # ------------------------------------------------------------------
-
-    try:
-        scheduled_time = datetime.strptime(time_str, "%H:%M").time()
-    except ValueError:
-        print(f"Could not parse time '{time_str}', falling back to 10:30.")
-        scheduled_time = datetime.strptime("10:30", "%H:%M").time()
 
     # Target date at the requested (default 10:30 AM) LA time
     scheduled_start = la_tz.localize(datetime.combine(target_date, scheduled_time))
@@ -608,6 +583,8 @@ def main():
 
     broadcast_id = broadcast_insert_response["id"]
     print(f"Successfully created broadcast with ID: {broadcast_id}")
+    if key:
+        service_keys.write_stream(key, broadcast_id)
 
     # Past this point the stream exists and the service can go live on it, so
     # every remaining call gets its own guard instead of sharing one try

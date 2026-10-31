@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '0 * * * *'  # Runs every hour, relies on python script to filter
   repository_dispatch:
-    types: [drive_upload_complete, youtube_stream_created, youtube_stream_thumbnail_retrying, youtube_stream_thumbnail_failed, sermon_series_video_uploaded, sermon_series_title_description_uploaded, worship_title_description_uploaded, video_migration_upload_skipped, video_migration_placeholder_link, events_folder_manual_deletion_needed, events_folder_cleanup_failed, calendar_event_added, rtmp_watchdog_restart, rtmp_watchdog_restart_failed, montage_folder_reminder, newsletter_card_stale]
+    types: [drive_upload_complete, youtube_stream_created, youtube_stream_thumbnail_retrying, youtube_stream_thumbnail_failed, sermon_series_video_uploaded, sermon_series_title_description_uploaded, worship_title_description_uploaded, worship_thumbnail_needs_service, video_migration_upload_skipped, video_migration_placeholder_link, events_folder_manual_deletion_needed, events_folder_cleanup_failed, calendar_event_added, rtmp_watchdog_restart, rtmp_watchdog_restart_failed, montage_folder_reminder, newsletter_card_stale]
   workflow_dispatch:
     inputs:
       run_mode:
@@ -157,6 +157,14 @@ jobs:
           WS_TITLE: ${{ github.event.client_payload.title }}
         run: |
           python3 "Utilities/Scheduling/Event Data/send_imessage.py" "Worship Service title and description for ${WS_DATE:-Unknown Date} have been generated and uploaded to Drive - '${WS_TITLE:-Unknown Title}'"
+
+      - name: Send Thumbnail Needs Service Notification
+        if: github.event_name == 'repository_dispatch' && github.event.action == 'worship_thumbnail_needs_service'
+        env:
+          THUMB_NAME: ${{ github.event.client_payload.filename }}
+          THUMB_SERVICES: ${{ github.event.client_payload.services }}
+        run: |
+          python3 "Utilities/Scheduling/Event Data/send_imessage.py" "⚠️ Couldn't tell which service the Worship Service thumbnail ${THUMB_NAME:-} is for, so it wasn't used. Upload it again with the service picked in the dashboard's livestream settings. Upcoming: ${THUMB_SERVICES:-none}"
 
       - name: Send New Calendar Event Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'calendar_event_added'

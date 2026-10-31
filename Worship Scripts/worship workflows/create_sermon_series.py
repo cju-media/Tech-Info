@@ -6,6 +6,8 @@ import time
 import datetime
 import zoneinfo
 
+import service_keys
+
 # The third-party stack is only needed for the Drive/YouTube API calls. Guard
 # the imports so the pure date/skip helpers (get_acceptable_service_sundays,
 # resolve_service_sunday) stay importable for unit tests without the full
@@ -283,10 +285,25 @@ def upload_to_drive(service, file_path, filename, parent_folder_id):
         ).execute()
         print(f"Created new file {filename} in Drive.")
 
+def sunday_titles_source(now=None):
+    """(service-titles folder, Sunday it's for) to build the sermon series from.
+
+    Each OW now has its own generated folder (Worship Scripts/services/<key>/,
+    see service_keys.py), so read the Sunday's own: during Christmas week the
+    live service-titles/ holds Christmas Eve's services until the last one has
+    aired, and the 12/27 entry shouldn't wait for that. Falls back to the live
+    folder and its stamped target_date when the Sunday has no folder."""
+    for sunday in sorted(get_acceptable_service_sundays(now), reverse=True):
+        key = service_keys.resolve_key(sunday, None)
+        if key and os.path.exists(os.path.join(service_keys.titles_dir(key), "sermon-title.txt")):
+            return service_keys.titles_dir(key), sunday
+    return "service-titles", get_sermon_title_target_date()
+
 def main():
     # 1. Read input files
-    title_path = "service-titles/sermon-title.txt"
-    minister_path = "service-titles/sermon-minister.txt"
+    titles_dir, target_date = sunday_titles_source()
+    title_path = os.path.join(titles_dir, "sermon-title.txt")
+    minister_path = os.path.join(titles_dir, "sermon-minister.txt")
 
     try:
         with open(title_path, "r") as f:
@@ -316,7 +333,7 @@ def main():
     # it as the label date, and guard only against it being genuinely stale
     # (content left over from a week or more ago because no new OW was
     # processed), so we never re-publish old content as a different week's.
-    sunday, skip_reason = resolve_service_sunday(get_sermon_title_target_date())
+    sunday, skip_reason = resolve_service_sunday(target_date)
     if skip_reason:
         print(skip_reason)
         return
