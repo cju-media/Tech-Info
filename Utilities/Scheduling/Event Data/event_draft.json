@@ -1,8 +1,8 @@
 {
-  "generated": "2026-10-30T16:16:44+00:00",
+  "generated": "2026-10-31T15:31:06+00:00",
   "window": {
-    "start": "2026-10-30",
-    "end": "2027-01-30"
+    "start": "2026-10-31",
+    "end": "2027-01-31"
   },
   "columns": [
     "Date",
@@ -34,6 +34,23 @@
         ""
       ],
       "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 1/31/2027",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
     },
     {
       "kind": "event",
@@ -73,14 +90,14 @@
       "kind": "event",
       "cells": [
         "SA 1/16/2027",
-        "Wedding Ceremony",
-        "Sanctuary/Forecourt",
+        "Wei-Chuan Wang & Yanting Li Wedding",
+        "Forecourt/Sanctuary",
         "11:00am-2:00pm",
         "Wedding",
         "1",
         "",
         "",
-        "11:00am Vendors Access / Wedding Party Arrival\n11:45am Invite Time / Guests Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
@@ -141,14 +158,14 @@
       "kind": "event",
       "cells": [
         "MO 12/21/2026",
-        "Wedding Ceremony",
+        "Kenneth & Maggie Hsu Wedding",
         "Sanctuary",
         "11:00am-2:00pm",
         "Wedding",
         "1",
         "",
         "",
-        "11:00am Vendors Access / Prep & Photos\n11:45am Invite Time / Guests Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
@@ -175,14 +192,14 @@
       "kind": "event",
       "cells": [
         "SA 11/21/2026",
-        "Wedding Ceremony",
+        "Sofia Uribe & Robin Aimaq Wedding",
         "Sanctuary/Forecourt/Stuart Hall",
         "2:00pm-11:00pm",
         "Wedding",
         "1",
         "",
         "",
-        "2:00pm Security\n3:45pm Invite Time\n4:00pm Prelude\n4:15pm Actual\n11:00pm Security Ends",
+        "3:45pm Invite Time\n4:00pm Prelude\n4:15pm Actual",
         "",
         "Weddings"
       ],
@@ -190,8 +207,8 @@
     }
   ],
   "counts": {
-    "events": 7,
-    "worship": 4,
+    "events": 8,
+    "worship": 5,
     "from_calendar": 3
   }
 }

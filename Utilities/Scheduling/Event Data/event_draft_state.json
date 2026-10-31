@@ -3,28 +3,28 @@
     "040000008200E00074C5B7101A82E00800000000309747959B61DD01000000000000000010000000DC5F82F45BF1B3488246EE4EE539F1F2::2026-12-21": {
       "call_times": "11:00am-2:00pm",
       "count": 1,
-      "name": "Wedding Ceremony",
-      "schedule": "11:00am Vendors Access / Prep & Photos\n11:45am Invite Time / Guests Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+      "name": "Kenneth & Maggie Hsu Wedding",
+      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
       "type": "Wedding",
       "venue": "Sanctuary"
     },
     "040000008200E00074C5B7101A82E008000000004CA20C4BDC51DD01000000000000000010000000A4686F0BA551F3408F4979122E83171C::2027-01-16": {
       "call_times": "11:00am-2:00pm",
       "count": 1,
-      "name": "Wedding Ceremony",
-      "schedule": "11:00am Vendors Access / Wedding Party Arrival\n11:45am Invite Time / Guests Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+      "name": "Wei-Chuan Wang & Yanting Li Wedding",
+      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
       "type": "Wedding",
-      "venue": "Sanctuary/Forecourt"
+      "venue": "Forecourt/Sanctuary"
     },
     "040000008200E00074C5B7101A82E00800000000640A4C5486B1DC01000000000000000010000000BEA81B405584644EBB935795740D09E9::2026-11-21": {
       "call_times": "2:00pm-11:00pm",
       "count": 1,
-      "name": "Wedding Ceremony",
-      "schedule": "2:00pm Security\n3:45pm Invite Time\n4:00pm Prelude\n4:15pm Actual\n11:00pm Security Ends",
+      "name": "Sofia Uribe & Robin Aimaq Wedding",
+      "schedule": "3:45pm Invite Time\n4:00pm Prelude\n4:15pm Actual",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt/Stuart Hall"
     }
   },
-  "fingerprint": "fe7ad739d8505321df041a0887625fa31bfe4128f060dd9f598472ae2806ab16",
-  "gemini_at": "2026-10-30T16:16:44+00:00"
+  "fingerprint": "ebebe7b4486a22163b3b6b8894128c45b6b58692715c08daac2a46ca6e8ac974",
+  "gemini_at": "2026-10-31T15:31:06+00:00"
 }
