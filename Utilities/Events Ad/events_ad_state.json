@@ -15,10 +15,6 @@
   ],
   "card_events": [
     {
-      "name": "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience",
-      "start": "2026-10-30T19:30:00-07:00"
-    },
-    {
       "name": "All Saints Day - Becoming Earth",
       "start": "2026-11-01T10:30:00-08:00"
     },
@@ -39,7 +35,7 @@
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "5c2a861f6b02b62a99bf71363c65c9fbc58924a44e088379907945cec00ca68f",
+  "card_fingerprint": "1f07310c77d859d51f51bbaee9a258ee7f02146197f913d4722f7d5274f79f2b",
   "classified": {
     "All Saints Day - Becoming Earth|2026-11-01T10:30:00-08:00": {
       "category": "HOLIDAY",
@@ -286,6 +282,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "db26b390e518773041fbb446500b84cdf5c066f3044b4ee2bd41652fab997dc4",
-  "updated_at": "2026-10-26T19:47:22-07:00"
+  "page_fingerprint": "035d410a3d8c4c4096f0ea960070769c26b2fe80144fb5c584d58a8548cf0a1b",
+  "updated_at": "2026-10-30T19:47:20-07:00"
 }
