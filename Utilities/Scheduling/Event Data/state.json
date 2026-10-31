@@ -1,8 +1,7 @@
 {
     "assignments": {
         "Cameron": [
-            "we-11-11-2026-vox-dress-rehearsal",
-            "su-12-6-2026-worship-service"
+            "we-11-11-2026-vox-dress-rehearsal"
         ],
         "Danny": [
             "sa-10-31-2026-wedding-ceremony",
@@ -23,13 +22,11 @@
             "su-11-29-2026-worship-service"
         ],
         "Saad": [
-            "fr-10-30-2026-candlelight-concert-the-magic-of-ennio-morricone",
             "su-11-01-2026-worship-service",
             "sa-11-14-2026-vox-femina-concert",
             "su-11-15-2026-worship-service",
             "su-11-29-2026-worship-service",
-            "fr-12-4-2026-yamandu-costa-concert",
-            "su-12-6-2026-worship-service"
+            "fr-12-4-2026-yamandu-costa-concert"
         ]
     },
     "event_details": {
@@ -142,11 +139,6 @@
             "date": "2026-10-31",
             "name": "Wedding Ceremony",
             "call_time": "2:30pm-5:30pm"
-        },
-        "fr-10-30-2026-candlelight-concert-the-magic-of-ennio-morricone": {
-            "date": "2026-10-30",
-            "name": "Candlelight Concert: The Magic of Ennio Morricone",
-            "call_time": "5:00pm-10:00pm"
         }
     }
 }
