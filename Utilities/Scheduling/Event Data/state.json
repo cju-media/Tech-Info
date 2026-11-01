@@ -4,7 +4,6 @@
             "we-11-11-2026-vox-dress-rehearsal"
         ],
         "Danny": [
-            "sa-10-31-2026-wedding-ceremony",
             "su-11-01-2026-worship-service",
             "su-11-22-2026-worship-service"
         ],
@@ -134,11 +133,6 @@
             "date": "2026-11-01",
             "name": "Worship Service",
             "call_time": "8:20am-12:30pm"
-        },
-        "sa-10-31-2026-wedding-ceremony": {
-            "date": "2026-10-31",
-            "name": "Wedding Ceremony",
-            "call_time": "2:30pm-5:30pm"
         }
     }
 }
