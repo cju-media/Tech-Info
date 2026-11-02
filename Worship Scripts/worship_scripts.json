@@ -1,14 +1,7 @@
 {
-  "2026-11-01": {
-    "path": "service-scripts/2026-11-01.pdf",
-    "modifiedTime": "2026-11-01T18:38:37.496Z",
-    "isCommunion": false,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
-  },
   "2026-11-08": {
     "path": "service-scripts/2026-11-08.pdf",
-    "modifiedTime": "2026-10-26T17:01:11.548Z",
+    "modifiedTime": "2026-11-02T05:29:30.682Z",
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
