@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-03T17:21:43+00:00",
+  "generated": "2026-11-04T17:34:23+00:00",
   "window": {
-    "start": "2026-11-03",
-    "end": "2027-02-03"
+    "start": "2026-11-04",
+    "end": "2027-02-04"
   },
   "columns": [
     "Date",
@@ -97,7 +97,7 @@
         "1",
         "",
         "",
-        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
         "",
         "Weddings"
       ],
@@ -165,11 +165,28 @@
         "1",
         "",
         "",
-        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
         "",
         "Weddings"
       ],
       "note": "from calendar: Ceremony Kenneth & Maggie Hsu"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SA 12/19/2026",
+        "Shuai Zhang & Xuan Wu Wedding",
+        "Forecourt/Sanctuary",
+        "2:00pm-10:00pm",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "3:30pm Doors open for Guests\n3:45pm Prelude\n4:00pm Actual",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Shuai Zhang & Xuan Wu"
     },
     {
       "kind": "divider",
@@ -199,7 +216,7 @@
         "1",
         "",
         "",
-        "3:45pm Invite Time\n4:00pm Prelude\n4:15pm Actual",
+        "Invite Time: 3:45pm\nPrelude: 4:00pm\nActual: 4:15pm",
         "",
         "Weddings"
       ],
@@ -207,8 +224,8 @@
     }
   ],
   "counts": {
-    "events": 8,
+    "events": 9,
     "worship": 5,
-    "from_calendar": 3
+    "from_calendar": 4
   }
 }
