@@ -1,42 +1,42 @@
 {
-  "issue_fingerprint": "8b868071960c5f563851340e11d782780e598e4e2c7f9a80d65781ffbaae4598",
-  "issue_title": "The Meetinghouse This Week - October 8th, 2026",
-  "issue_url": "https://conta.cc/4zks6Kg",
+  "issue_fingerprint": "66d195786c612493b9d974bdc11188bcd889ffea1148a6bdfb3b143634b7a49b",
+  "issue_title": "The Meetinghouse This Week - October 29th, 2026",
+  "issue_url": "https://conta.cc/4kzWY5r",
   "items": [
     {
-      "blurb": "Help maintain the campus urban farm during a monthly workday.",
-      "date": "2026-10-17",
-      "title": "Garden Saturday Workday",
-      "when": "Saturday, Oct 17"
+      "blurb": "Join young adults for a fun evening of bowling at Shatto 39 Lanes.",
+      "date": "2026-11-13",
+      "title": "NextGen Bowling Night",
+      "when": "Friday, Nov 13 | 7pm"
     },
     {
-      "blurb": "Join the garden team to gather fresh produce for neighbors.",
-      "date": "2026-10-18",
+      "blurb": "Help maintain and care for the urban farm and community gardens.",
+      "date": "2026-11-14",
+      "title": "Saturday Garden Workday",
+      "when": "Saturday, Nov 14"
+    },
+    {
+      "blurb": "Gather with the garden team to harvest herbs, greens, and produce.",
+      "date": "2026-11-15",
       "title": "Harvesting Sundays",
-      "when": "Sunday, Oct 18 | 8:30am"
+      "when": "1st & 3rd Sundays | 8:30am"
     },
     {
-      "blurb": "Discover the magic of campus food growing on a guided sensory walk.",
-      "date": "2026-10-18",
-      "title": "Gardens and Farm Tour",
-      "when": "Sunday, Oct 18 | 12:30pm"
+      "blurb": "Take a guided walk through our urban farm and community garden spaces.",
+      "date": "2026-11-15",
+      "title": "Tour the Gardens & Farm",
+      "when": "Every 3rd Sunday | 12:30pm"
     },
     {
-      "blurb": "Join the community for crafts, games, a costume contest, and pie raffle.",
-      "date": "2026-10-25",
-      "title": "Fall Festival and Chili Cook-Off",
-      "when": "Sunday, Oct 25 | 12:30pm"
-    },
-    {
-      "blurb": "Water crops weekly or host the produce table during coffee hour.",
+      "blurb": "Water plants once a week or host the Garden Table during Coffee Hour.",
       "date": "",
-      "title": "Garden and Farm Volunteer Call",
+      "title": "Garden & Farm Volunteers",
       "when": ""
     },
     {
-      "blurb": "Help provide urgent financial support to community members in need.",
+      "blurb": "Donate to help church community members facing urgent financial needs.",
       "date": "",
-      "title": "Emergency Assistance Fund Drive",
+      "title": "Emergency Assistance Fund",
       "when": ""
     }
   ],
@@ -44,16 +44,26 @@
     "at": "2026-11-04",
     "items": [
       {
-        "date": "",
-        "title": "Garden and Farm Volunteer Call",
-        "when": ""
+        "date": "2026-11-13",
+        "title": "NextGen Bowling Night",
+        "when": "Friday, Nov 13 | 7pm"
       },
       {
-        "date": "",
-        "title": "Emergency Assistance Fund Drive",
-        "when": ""
+        "date": "2026-11-14",
+        "title": "Saturday Garden Workday",
+        "when": "Saturday, Nov 14"
+      },
+      {
+        "date": "2026-11-15",
+        "title": "Harvesting Sundays",
+        "when": "1st & 3rd Sundays | 8:30am"
+      },
+      {
+        "date": "2026-11-15",
+        "title": "Tour the Gardens & Farm",
+        "when": "Every 3rd Sunday | 12:30pm"
       }
     ],
-    "md5": "3da16c42f387d82ea04bf1ce494dce23"
+    "md5": "7292b638be5b0b9f95d9e32abf8d9040"
   }
 }
