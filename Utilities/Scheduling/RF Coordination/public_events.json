@@ -1,19 +1,28 @@
 [
   {
+    "name": "CARNIVAL",
+    "date": "2026-11-08",
+    "location": "625 S. ST ANDREW PLACE, LOS ANGELES 9005",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.5,
+    "permit": "264109000001714",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "WESTLAKE XMAS FEST23",
+    "date": "2026-12-01",
+    "location": "Lafayette Park, 625 S Lafayette Park Pl, Los Angeles 90057",
+    "type": "Expected - recurs yearly (2023), no permit yet; verify",
+    "distance_mi": 0.23,
+    "permit": "",
+    "source": "Projected from prior-year LA City permits"
+  },
+  {
     "name": "THE STREAMER AWARDS",
     "date": "2026-12-05",
     "location": "Inside main room 3790 W WILSHIRE BLVD 90010",
     "type": "Expected - recurs yearly (2025), no permit yet; verify",
     "distance_mi": 1.35,
-    "permit": "",
-    "source": "Projected from prior-year LA City permits"
-  },
-  {
-    "name": "HOLA Building Dedication",
-    "date": "2026-12-07",
-    "location": "Lafayette Park, 625 S Lafayette Park Pl, Los Angeles 90057",
-    "type": "Expected - recurs yearly (2019), no permit yet; verify",
-    "distance_mi": 0.23,
     "permit": "",
     "source": "Projected from prior-year LA City permits"
   },
