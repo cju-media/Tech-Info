@@ -1,79 +1,64 @@
 {
   "build": {
-    "id": "11-1-26_1028-1056",
-    "week": "11-1-26",
-    "dateText": "November 1, 2026",
+    "id": "11-8-26_1105-1548",
+    "week": "11-8-26",
+    "dateText": "November 8, 2026",
     "fields": {
       "heading": [
-        "All Saints Day",
+        "Fall Series 10",
         "Sacred Earth, Sacred Soul",
-        "Sacred Remembrance"
+        "Sacred Flow"
       ],
-      "dateText": "November 1, 2026",
-      "preacher": "Rev. Lehman",
-      "title": "Sacred Remembrance"
+      "dateText": "November 8, 2026",
+      "preacher": "Rev. Laura Vail Fregin",
+      "title": "Sacred Flow"
     },
     "ow": {
-      "name": "11.1.26_OW_Draft.pdf",
-      "sha": "b779c09a5f8ec0e4392025b38a5eb9e560941036"
+      "name": "11.8.26_OW_Draft.pdf",
+      "sha": "90ec4085633a1d4fbacdd099927e37e4fc319839"
     },
-    "built_at": "2026-10-28T10:56:50-07:00",
+    "built_at": "2026-11-05T15:48:36-08:00",
     "notes": [],
     "options": [
       {
         "n": 1,
-        "hex": "#EC6F02",
-        "label": "orange, 57% of the photo's color",
-        "problems": [
-          "photo shift limited to 0,0 so the photo still fills its frame",
-          "photo shift limited to 0,0 so the photo still fills its frame"
-        ],
-        "service": "fccla/status/11-1-26_1028-1056/1-service.jpg",
-        "sermon": "fccla/status/11-1-26_1028-1056/1-sermon.jpg"
+        "hex": "#0867A2",
+        "label": "blue, 73% of the photo's color",
+        "problems": [],
+        "service": "fccla/status/11-8-26_1105-1548/1-service.jpg",
+        "sermon": "fccla/status/11-8-26_1105-1548/1-sermon.jpg"
       },
       {
         "n": 2,
-        "hex": "#0D5F98",
-        "label": "blue, 10% of the photo's color",
-        "problems": [
-          "photo shift limited to 0,0 so the photo still fills its frame",
-          "photo shift limited to 0,0 so the photo still fills its frame"
-        ],
-        "service": "fccla/status/11-1-26_1028-1056/2-service.jpg",
-        "sermon": "fccla/status/11-1-26_1028-1056/2-sermon.jpg"
+        "hex": "#9A743A",
+        "label": "orange, 26% of the photo's color",
+        "problems": [],
+        "service": "fccla/status/11-8-26_1105-1548/2-service.jpg",
+        "sermon": "fccla/status/11-8-26_1105-1548/2-sermon.jpg"
       },
       {
         "n": 3,
-        "hex": "#AD1F59",
-        "label": "pink, 6% of the photo's color",
-        "problems": [
-          "photo shift limited to 0,0 so the photo still fills its frame",
-          "photo shift limited to 0,0 so the photo still fills its frame"
-        ],
-        "service": "fccla/status/11-1-26_1028-1056/3-service.jpg",
-        "sermon": "fccla/status/11-1-26_1028-1056/3-sermon.jpg"
+        "hex": "#064871",
+        "label": "deeper blue",
+        "problems": [],
+        "service": "fccla/status/11-8-26_1105-1548/3-service.jpg",
+        "sermon": "fccla/status/11-8-26_1105-1548/3-sermon.jpg"
       }
     ],
-    "pick": {
-      "n": 1,
-      "hex": "#EC6F02",
-      "label": "orange, 57% of the photo's color",
-      "at": "2026-10-28T11:02:15-07:00",
-      "drive": "sent"
-    },
+    "pick": null,
     "heading": [
-      "All Saints Day",
+      "Fall Series 10",
       "Sacred Earth, Sacred Soul",
-      "Sacred Remembrance"
+      "Sacred Flow"
     ],
-    "title": "Sacred Remembrance",
-    "preacher": "Rev. Lehman",
-    "cover": "fccla/status/11-1-26_1028-1056/cover.jpg"
+    "title": "Sacred Flow",
+    "preacher": "Rev. Laura Vail Fregin",
+    "cover": "fccla/status/11-8-26_1105-1548/cover.jpg"
   },
   "last_run": {
-    "at": "2026-10-29T14:01:01-07:00",
+    "at": "2026-11-05T15:48:36-08:00",
     "trigger": "upload",
-    "status": "unchanged",
-    "message": "The new OW for Sunday, November 1 reads the same as the graphics in use (#EC6F02), with the same photo, so the thumbnails weren't rebuilt. To rebuild them anyway, upload the OW again with \"Rebuild title graphics\" ticked."
+    "status": "built",
+    "message": "Title graphics for Sunday, November 8 are ready to pick (link below).\n1 blue #0867A2 \u00b7 2 orange #9A743A \u00b7 3 deeper blue #064871"
   }
 }
