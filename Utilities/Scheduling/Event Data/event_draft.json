@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-04T17:34:23+00:00",
+  "generated": "2026-11-05T17:40:53+00:00",
   "window": {
-    "start": "2026-11-04",
-    "end": "2027-02-04"
+    "start": "2026-11-05",
+    "end": "2027-02-05"
   },
   "columns": [
     "Date",
@@ -97,7 +97,7 @@
         "1",
         "",
         "",
-        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
@@ -165,7 +165,7 @@
         "1",
         "",
         "",
-        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
@@ -216,7 +216,7 @@
         "1",
         "",
         "",
-        "Invite Time: 3:45pm\nPrelude: 4:00pm\nActual: 4:15pm",
+        "3:45pm Invite Time\n4:00pm Prelude\n4:15pm Actual",
         "",
         "Weddings"
       ],

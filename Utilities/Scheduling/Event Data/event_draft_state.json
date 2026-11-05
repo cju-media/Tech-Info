@@ -4,7 +4,7 @@
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Kenneth & Maggie Hsu Wedding",
-      "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
       "type": "Wedding",
       "venue": "Sanctuary"
     },
@@ -12,7 +12,7 @@
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
-      "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
@@ -20,7 +20,7 @@
       "call_times": "2:00pm-11:00pm",
       "count": 1,
       "name": "Sofia Uribe & Robin Aimaq Wedding",
-      "schedule": "Invite Time: 3:45pm\nPrelude: 4:00pm\nActual: 4:15pm",
+      "schedule": "3:45pm Invite Time\n4:00pm Prelude\n4:15pm Actual",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt/Stuart Hall"
     },
@@ -33,6 +33,6 @@
       "venue": "Forecourt/Sanctuary"
     }
   },
-  "fingerprint": "92d3d07a83b6c5575f3c0c63701ae22ea5e1c643dc4d0272b52c017ab46a1661",
-  "gemini_at": "2026-11-04T17:34:23+00:00"
+  "fingerprint": "134571b15e76dc015fa8ce27664f4589ead33dc5bdb78ca833d219bc776dc6e3",
+  "gemini_at": "2026-11-05T17:40:53+00:00"
 }
