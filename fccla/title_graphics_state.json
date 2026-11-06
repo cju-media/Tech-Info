@@ -62,9 +62,9 @@
     "cover": "fccla/status/11-8-26_1105-1548/cover.jpg"
   },
   "last_run": {
-    "at": "2026-11-05T15:51:01-08:00",
-    "trigger": "pick",
-    "status": "picked",
-    "message": "Using #064871 (deeper blue) for Sunday, November 8. Saved to iCloud (11-8-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
+    "at": "2026-11-06T09:36:18-08:00",
+    "trigger": "upload",
+    "status": "skipped",
+    "message": "Title graphics for 11-8-26 are already built from 11.8.26_OW_Draft.pdf (link below)."
   }
 }
