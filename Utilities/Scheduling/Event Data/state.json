@@ -1,15 +1,25 @@
 {
     "assignments": {
         "Cameron": [
-            "we-11-11-2026-vox-dress-rehearsal"
+            "we-11-11-2026-vox-dress-rehearsal",
+            "su-12-6-2026-holadays-synesthesia-sinfonietta-concert",
+            "su-12-6-2026-worship-service",
+            "th-12-24-2026-christmas-eve-8pm-service"
         ],
         "Danny": [
-            "su-11-22-2026-worship-service"
+            "su-11-22-2026-worship-service",
+            "th-12-24-2026-christmas-eve-11pm-service"
         ],
         "Jaffe": [
             "su-11-8-2026-worship-service",
             "mo-11-16-2026-boy-meets-world-podcast",
-            "su-11-22-2026-worship-service"
+            "su-11-22-2026-worship-service",
+            "sa-12-5-2026-elizabeth-bernal-izett-barnett-wedding",
+            "su-12-13-2026-worship-service",
+            "su-12-20-2026-worship-service",
+            "th-12-24-2026-christmas-eve-11pm-service",
+            "th-12-24-2026-christmas-eve-8pm-service",
+            "th-12-24-2026-christmas-eve-fkf-service"
         ],
         "Kaspar": [],
         "Marc": [
@@ -17,13 +27,22 @@
             "sa-11-14-2026-vox-femina-concert",
             "su-11-15-2026-worship-service",
             "fr-11-27-2026-emma-johnson-jarrett-cox-wedding",
-            "su-11-29-2026-worship-service"
+            "su-11-29-2026-worship-service",
+            "fr-12-4-2026-yamandu-costa-concert",
+            "su-12-13-2026-resonance-collective-concert",
+            "su-12-13-2026-worship-service",
+            "su-12-20-2026-worship-service",
+            "su-12-27-2026-worship-service"
         ],
         "Saad": [
             "sa-11-14-2026-vox-femina-concert",
             "su-11-15-2026-worship-service",
             "su-11-29-2026-worship-service",
-            "fr-12-4-2026-yamandu-costa-concert"
+            "su-12-6-2026-worship-service",
+            "su-12-13-2026-resonance-collective-concert",
+            "su-12-20-2026-pageant-dress-rehearsal",
+            "th-12-24-2026-christmas-eve-fkf-service",
+            "su-12-27-2026-worship-service"
         ]
     },
     "event_details": {
@@ -47,6 +66,11 @@
             "name": "Christmas Eve FKF Service",
             "call_time": "2:00pm-6:00pm"
         },
+        "mo-12-21-2026-kenneth-maggie-hsu-wedding": {
+            "date": "2026-12-21",
+            "name": "Kenneth & Maggie Hsu Wedding",
+            "call_time": "11:00am-2:00pm"
+        },
         "su-12-20-2026-pageant-dress-rehearsal": {
             "date": "2026-12-20",
             "name": "Pageant Dress Rehearsal",
@@ -56,6 +80,11 @@
             "date": "2026-12-20",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
+        },
+        "sa-12-19-2026-shuai-zhang-xuan-wu-wedding": {
+            "date": "2026-12-19",
+            "name": "Shuai Zhang & Xuan Wu Wedding",
+            "call_time": "2:00pm-5:00pm"
         },
         "su-12-13-2026-resonance-collective-concert": {
             "date": "2026-12-13",
@@ -101,6 +130,11 @@
             "date": "2026-11-22",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
+        },
+        "sa-11-21-2026-sofia-uribe-robin-aimaq-wedding": {
+            "date": "2026-11-21",
+            "name": "Sofia Uribe & Robin Aimaq Wedding",
+            "call_time": "2:00pm-5:00pm"
         },
         "mo-11-16-2026-boy-meets-world-podcast": {
             "date": "2026-11-16",
