@@ -68,8 +68,17 @@ To ensure a clean slate every week and prevent accidental testing pushes from ov
 - Every **Sunday at 12:00 AM Pacific Time**, the server will automatically drop any sample mode data or manual stream overrides.
 - It will then automatically fetch the fresh `chapters.txt` for the upcoming Sunday service from GitHub.
 
-Additionally, the server constantly queries the YouTube API. When it detects that the live stream has ended, it will automatically stop the timer and use your configured GitHub PAT to push the `timings.txt` file back to the repository. Note that pushes to GitHub are strictly permitted **only on Sundays** to safeguard the system from testing during the week.
+Additionally, the server constantly queries the YouTube API. When it detects that the live stream has ended, it will automatically stop the timer and use your configured GitHub PAT to push the `timings.txt` file back to the repository. Note that pushes to GitHub are only permitted for a stream **scheduled within the last day** (a real service: a Sunday, or Christmas Eve on a weekday) to safeguard the system from testing during the week.
 
 ## Description Updates Are Applied Exactly Once
 
 `update_youtube_stream.py` also runs on an hourly chain (via "Generate YouTube Description"), not just when `timings.txt` is pushed. To keep that hourly poll from clobbering a manual fix made directly on YouTube (e.g. correcting a mistimed chapter in the description), the script records the hash of each generated description it actually applies to a stream in `description_push_state.json`. Once a given piece of generated content has been applied, later runs leave the live description alone -- even if it now differs from the generated version -- until the underlying content changes again (a fresh `timings.txt` push, an updated `Description.txt`, etc.), at which point it's cleared to update once more.
+
+## Several Services on One Day (Christmas Eve)
+
+Every OW gets its own generated folder, `Worship Scripts/services/<key>/` (title files, `Description.txt`, `chapters.txt`, and the `timings.txt` pushed after its stream), keyed by date, plus time when the OW's name has one: `2026-12-27` for a Sunday, `2026-12-24_1730` for `12.24.26 5:30pm OW.pdf`. OWs are processed as soon as they're uploaded, up to 30 days ahead, so all of Christmas Eve's and the Sunday after's can go up early. See `Worship Scripts/worship workflows/service_keys.py`.
+
+- **Naming:** `12.24.26 5:30pm OW.pdf`, `12.24.26 8pm OW.pdf`, `12.24.26 11pm OW.pdf` (`530pm`, `_` separators, Draft/Final all work). The program link becomes `fccla.org/ows/12-24-26-530pm`.
+- **Thumbnails:** drop each one on the dashboard. The livestream settings list the upcoming services and pre-select the next one without a thumbnail; left untouched, the uploader works out the service itself from the filename (`..._12-24-26_530pm.jpg`), else by having Gemini read the date, time and name on the image, and holds the thumbnail and sends a text if it can't tell. Pick a service in the settings to skip the check. Each service gets its own Drive folder (`12-24-2026 5:30pm`) and its own stream, created as soon as its OW has been processed.
+- **Live set:** `service-titles/`, `Description.txt` and `chapters.txt` hold the next service, switching an hour before the next one starts (or 3 hours after the last one started), never mid-stream. On Christmas Eve that's 5:30 → 8pm at 7pm → 11pm at 10pm → the Sunday at 2am.
+- **Timings:** each push is filed under the stream that ended most recently, so the server works the same on any day a service streams; it follows the soonest upcoming stream and stays on one that just ended until its timings are pushed.

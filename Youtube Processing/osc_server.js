@@ -267,6 +267,7 @@ async function getLiveStream(service) {
 
         let foundLiveOrUpcoming = null;
         let lastLiveEnded = null;
+        let trackedEnded = null;
 
         for (const video of (videoResponse.data.items || [])) {
             const snippet = video.snippet || {};
@@ -276,14 +277,32 @@ async function getLiveStream(service) {
                 if (video.liveStreamingDetails.actualStartTime) {
                     return video;
                 }
-            } else if (snippet.liveBroadcastContent === 'upcoming' && !foundLiveOrUpcoming) {
-                foundLiveOrUpcoming = video;
+            } else if (snippet.liveBroadcastContent === 'upcoming') {
+                // Streams are created as soon as their thumbnail and OW are in,
+                // often weeks ahead, so several can be upcoming at once (and
+                // Christmas Eve has three in one evening): follow the soonest,
+                // not whichever the playlist happens to list first.
+                const start = video.liveStreamingDetails?.scheduledStartTime;
+                const best = foundLiveOrUpcoming?.liveStreamingDetails?.scheduledStartTime;
+                if (!foundLiveOrUpcoming || (start && (!best || new Date(start) < new Date(best)))) {
+                    foundLiveOrUpcoming = video;
+                }
             } else if (snippet.liveBroadcastContent === 'none' && video.liveStreamingDetails && video.liveStreamingDetails.actualEndTime) {
                 // Keep track of the most recently ended stream in case we just transitioned from live -> none
                 if (!lastLiveEnded || new Date(video.liveStreamingDetails.actualEndTime) > new Date(lastLiveEnded.liveStreamingDetails.actualEndTime)) {
                     lastLiveEnded = video;
                 }
+                if (video.id === currentStreamId) {
+                    trackedEnded = video;
+                }
             }
+        }
+
+        // The stream we followed live has just ended and its timings aren't
+        // pushed yet: stay on it so the end is seen and the push happens,
+        // even though the next service's stream is already upcoming.
+        if (trackedEnded && hasGoneLive && !hasPushedThisStream) {
+            return trackedEnded;
         }
 
         // If we didn't find live or upcoming, return the recently ended stream so we can detect the transition
@@ -382,6 +401,11 @@ async function fetchAndBroadcastState() {
                 // Keep track of the specific stream so we can reset cleanly when testing different ones
                 if (currentStreamId !== currentVideo.id) {
                     console.log(`Tracking new stream: ${currentVideo.id}`);
+                    if (hasPushedThisStream) {
+                        // Moving on from a service we streamed and pushed (8pm after
+                        // 5:30 on Christmas Eve): load the next service's chapters.
+                        isStateInitialized = false;
+                    }
                     currentStreamId = currentVideo.id;
                     hasGoneLive = false;
                     hasPushedThisStream = false;
@@ -478,13 +502,13 @@ async function pushTimingsToGithub() {
         return;
     }
 
-    const laTime = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
-    const currentDay = new Date(laTime).getDay();
-
-    // 0 is Sunday
-    if (currentDay !== 0) {
-        console.log("Not Sunday. Skipping push to GitHub.");
-        io.emit('pushStatus', { status: 'info', message: 'Test Mode: Push skipped because today is not Sunday.' });
+    // Only push for a real scheduled service that started within the last
+    // day (Sunday, or Christmas Eve on a weekday), not a test stream.
+    const scheduled = currentVideo?.liveStreamingDetails?.scheduledStartTime;
+    const sinceScheduledMs = scheduled ? Date.now() - new Date(scheduled).getTime() : null;
+    if (sinceScheduledMs === null || sinceScheduledMs < -60 * 60 * 1000 || sinceScheduledMs > 24 * 60 * 60 * 1000) {
+        console.log("Not a scheduled service from the last day. Skipping push to GitHub.");
+        io.emit('pushStatus', { status: 'info', message: 'Test Mode: Push skipped because this stream is not a service scheduled in the last day.' });
         return;
     }
 

@@ -8,6 +8,8 @@ name: Test Worship Workflow Logic
 #    "delete this flyer" alerts (fired four times on 2026-08-31).
 #  - upload_queue_to_drive.py: the {"replace": true} sidecar a changed title-graphics
 #    pick sends (overwrite in Drive, re-upload the stream thumbnail).
+#  - service_keys.py and the per-service pipeline: several services on one date
+#    (Christmas Eve), each with its own OW, stream, titles and timings.
 
 on:
   push:
@@ -20,6 +22,10 @@ on:
       - 'Worship Scripts/worship workflows/test_cleanup_events_folder.py'
       - 'Worship Scripts/worship workflows/upload_queue_to_drive.py'
       - 'Worship Scripts/worship workflows/test_upload_queue_replace.py'
+      - 'Worship Scripts/worship workflows/service_keys.py'
+      - 'Worship Scripts/worship workflows/test_service_keys.py'
+      - 'Worship Scripts/worship workflows/update_service_titles.py'
+      - 'Youtube Processing/*.py'
       - '.github/workflows/test_sermon_series_logic.yml'
   pull_request:
     paths:
@@ -29,6 +35,10 @@ on:
       - 'Worship Scripts/worship workflows/test_cleanup_events_folder.py'
       - 'Worship Scripts/worship workflows/upload_queue_to_drive.py'
       - 'Worship Scripts/worship workflows/test_upload_queue_replace.py'
+      - 'Worship Scripts/worship workflows/service_keys.py'
+      - 'Worship Scripts/worship workflows/test_service_keys.py'
+      - 'Worship Scripts/worship workflows/update_service_titles.py'
+      - 'Youtube Processing/*.py'
   workflow_dispatch:
 
 jobs:
@@ -43,5 +53,11 @@ jobs:
         with:
           python-version: '3.10'
 
+      # test_service_keys walks Christmas Eve's three services through the
+      # per-service pipeline (create/update stream, description); those scripts
+      # need these two.
+      - name: Install dependencies
+        run: pip install python-dateutil pytz
+
       - name: Run unit tests
-        run: cd "Worship Scripts/worship workflows" && python -m unittest test_create_sermon_series test_cleanup_events_folder test_upload_queue_replace -v
+        run: cd "Worship Scripts/worship workflows" && python -m unittest test_create_sermon_series test_cleanup_events_folder test_upload_queue_replace test_service_keys -v
