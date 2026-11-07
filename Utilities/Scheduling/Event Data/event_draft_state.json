@@ -1,38 +1,30 @@
 {
   "drafted": {
-    "040000008200E00074C5B7101A82E00800000000309747959B61DD01000000000000000010000000DC5F82F45BF1B3488246EE4EE539F1F2::2026-12-21": {
-      "call_times": "11:00am-2:00pm",
-      "count": 1,
-      "name": "Kenneth & Maggie Hsu Wedding",
-      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
-      "type": "Wedding",
-      "venue": "Sanctuary"
-    },
     "040000008200E00074C5B7101A82E008000000004CA20C4BDC51DD01000000000000000010000000A4686F0BA551F3408F4979122E83171C::2027-01-16": {
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
-      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+      "schedule": "11am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1pm Post-Ceremony Photos\n2pm Departure",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
-    "040000008200E00074C5B7101A82E00800000000640A4C5486B1DC01000000000000000010000000BEA81B405584644EBB935795740D09E9::2026-11-21": {
-      "call_times": "2:00pm-11:00pm",
+    "040000008200E00074C5B7101A82E00800000000B8724E9D9893DC0100000000000000001000000001F5C7B20EF9C549BB619796E18EBEBE::2026-12-13": {
+      "call_times": "",
       "count": 1,
-      "name": "Sofia Uribe & Robin Aimaq Wedding",
-      "schedule": "3:45pm Invite Time\n4:00pm Prelude\n4:15pm Actual",
+      "name": "Sarah Smith & Elijah Rawlings Wedding",
+      "schedule": "",
       "type": "Wedding",
-      "venue": "Sanctuary/Forecourt/Stuart Hall"
+      "venue": "Forecourt/Sanctuary"
     },
-    "040000008200E00074C5B7101A82E00800000000C1BE3C539B61DD01000000000000000010000000AB8774A534B49E41B68ECAE1BCD34ABC::2026-12-19": {
-      "call_times": "2:00pm-10:00pm",
+    "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
+      "call_times": "",
       "count": 1,
-      "name": "Shuai Zhang & Xuan Wu Wedding",
-      "schedule": "3:30pm Doors open for Guests\n3:45pm Prelude\n4:00pm Actual",
+      "name": "Gloria Kang & Daniel Kim Wedding",
+      "schedule": "",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     }
   },
-  "fingerprint": "134571b15e76dc015fa8ce27664f4589ead33dc5bdb78ca833d219bc776dc6e3",
-  "gemini_at": "2026-11-05T17:40:53+00:00"
+  "fingerprint": "f83ebca32f1cabfa8332806b12ca516601ca1f5be445d291daaf5e21409949c3",
+  "gemini_at": "2026-11-07T15:56:18+00:00"
 }
