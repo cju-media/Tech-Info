@@ -5,6 +5,7 @@
     "Book Soup: Devon Rodriguez presents \"Work in Progress: A Memoir\"|2026-09-30T19:00:00-07:00",
     "Min Jin Lee discusses \"American Hagwon\"|2026-10-13T19:00:00-07:00",
     "Music in the Gardens|2026-09-26T16:00:00-07:00",
+    "Soundscapes|2026-12-06T17:00:00-08:00",
     "Susan Orlean discusses and signs \"Joyride: A Memoir\"|2026-10-26T19:00:00-07:00",
     "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience|2026-10-30T19:30:00-07:00",
     "The Resonance Collective presents Lithic Breathing with Julia Edith Rigby|2026-09-27T19:00:00-07:00",
@@ -27,11 +28,15 @@
       "start": "2026-12-04T19:30:00-08:00"
     },
     {
+      "name": "Soundscapes",
+      "start": "2026-12-06T17:00:00-08:00"
+    },
+    {
       "name": "The Resonance Collective presents Rumi\u2019s Wedding Night with Yuval Ron Ensemble",
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "3a5438825d74ac77090b1568a5c881bd292ba3a5a14b6149d96caca4059501aa",
+  "card_fingerprint": "356a4b8d9815a4e9ea1ab8ccf15332671cbb8b993701500c5692ca9e594cdbf7",
   "classified": {
     "All Saints Day - Becoming Earth|2026-11-01T10:30:00-08:00": {
       "category": "HOLIDAY",
@@ -62,6 +67,10 @@
       "recurring": false
     },
     "Music in the Gardens|2026-09-26T16:00:00-07:00": {
+      "category": "CONCERT",
+      "recurring": false
+    },
+    "Soundscapes|2026-12-06T17:00:00-08:00": {
       "category": "CONCERT",
       "recurring": false
     },
@@ -286,6 +295,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "7a121e1031f4e9d78d63af0ef73722dbacc6e7e0046863aa0c840c9eb6042ad4",
-  "updated_at": "2026-11-01T10:47:24-08:00"
+  "page_fingerprint": "b26e0cd9f7a81344a3acafc473377a7c410ec93bf1c73305ec1bb9413c0db28f",
+  "updated_at": "2026-11-08T17:47:22-08:00"
 }
