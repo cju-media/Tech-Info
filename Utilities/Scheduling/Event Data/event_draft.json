@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-08T16:21:50+00:00",
+  "generated": "2026-11-09T20:10:26+00:00",
   "window": {
-    "start": "2026-11-08",
-    "end": "2027-02-08"
+    "start": "2026-11-09",
+    "end": "2027-02-09"
   },
   "columns": [
     "Date",
@@ -125,7 +125,7 @@
       "cells": [
         "SA 1/16/2027",
         "Wei-Chuan Wang & Yanting Li Wedding",
-        "Forecourt/Sanctuary",
+        "Sanctuary/Forecourt",
         "11:00am-2:00pm",
         "Wedding",
         "1",
@@ -191,41 +191,24 @@
     {
       "kind": "event",
       "cells": [
-        "SU 12/13/2026",
-        "Sarah Smith & Elijah Rawlings Wedding",
-        "Forecourt/Sanctuary",
-        "",
-        "Wedding",
-        "1",
-        "",
-        "",
+        "SU 12/27/2026",
+        "Good Neighborhood Church",
+        "Barnum",
+        "10:30am-12:00pm",
+        "Worship Service",
+        "2",
         "",
         "",
-        "Weddings"
+        "",
+        "",
+        ""
       ],
-      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 12/12/2026",
-        "Gloria Kang & Daniel Kim Wedding",
-        "Forecourt/Sanctuary",
-        "",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
+      "note": "from calendar: Good Neighborhood Church"
     }
   ],
   "counts": {
-    "events": 9,
+    "events": 8,
     "worship": 6,
-    "from_calendar": 3
+    "from_calendar": 2
   }
 }

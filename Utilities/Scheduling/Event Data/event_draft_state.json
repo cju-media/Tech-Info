@@ -6,25 +6,17 @@
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
       "schedule": "11am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1pm Post-Ceremony Photos\n2pm Departure",
       "type": "Wedding",
-      "venue": "Forecourt/Sanctuary"
+      "venue": "Sanctuary/Forecourt"
     },
-    "040000008200E00074C5B7101A82E00800000000B8724E9D9893DC0100000000000000001000000001F5C7B20EF9C549BB619796E18EBEBE::2026-12-13": {
-      "call_times": "",
-      "count": 1,
-      "name": "Sarah Smith & Elijah Rawlings Wedding",
+    "040000008200E00074C5B7101A82E00800000000F9E579BB2905DD01000000000000000010000000B9F067A43FF19040AB62D5B33C6CC988::2026-12-27": {
+      "call_times": "10:30am-12:00pm",
+      "count": 2,
+      "name": "Good Neighborhood Church",
       "schedule": "",
-      "type": "Wedding",
-      "venue": "Forecourt/Sanctuary"
-    },
-    "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
-      "call_times": "",
-      "count": 1,
-      "name": "Gloria Kang & Daniel Kim Wedding",
-      "schedule": "",
-      "type": "Wedding",
-      "venue": "Forecourt/Sanctuary"
+      "type": "Worship Service",
+      "venue": "Barnum"
     }
   },
-  "fingerprint": "f83ebca32f1cabfa8332806b12ca516601ca1f5be445d291daaf5e21409949c3",
-  "gemini_at": "2026-11-07T15:56:18+00:00"
+  "fingerprint": "9bea766617e94ac1ccf5e7bd97305bde4fd278f88dc2952d9a86005fafb7146c",
+  "gemini_at": "2026-11-09T20:10:26+00:00"
 }
