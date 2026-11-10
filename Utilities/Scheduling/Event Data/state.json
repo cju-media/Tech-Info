@@ -11,7 +11,6 @@
             "th-12-24-2026-christmas-eve-11pm-service"
         ],
         "Jaffe": [
-            "su-11-8-2026-worship-service",
             "mo-11-16-2026-boy-meets-world-podcast",
             "su-11-22-2026-worship-service",
             "sa-12-5-2026-elizabeth-bernal-izett-barnett-wedding",
@@ -23,7 +22,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "su-11-8-2026-worship-service",
             "sa-11-14-2026-vox-femina-concert",
             "su-11-15-2026-worship-service",
             "fr-11-27-2026-emma-johnson-jarrett-cox-wedding",
@@ -155,11 +153,6 @@
             "date": "2026-11-11",
             "name": "VOX Dress Rehearsal",
             "call_time": "5:00pm-10:00pm"
-        },
-        "su-11-8-2026-worship-service": {
-            "date": "2026-11-08",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
