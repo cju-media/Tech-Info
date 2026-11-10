@@ -72,7 +72,7 @@ Open the PDF and compare. The helper is usually right, but you are the check.
 | Field | Where in the PDF | Example | Rule |
 | --- | --- | --- | --- |
 | `heading` | page 1, **every line above the date**, in order | `Fall Series 4 \| Painting the Stars \| An Anticipatory Universe` | Lines joined with ` \| `. A line written `Name ~ Title` is two lines (split on the `~`). Copy each line exactly: capitalization, punctuation, curly apostrophes. |
-| `dateText` | page 1, e.g. `27 September 2026` or `September 28th, 2025` | `September 27, 2026` | Rewrite as `Month D, YYYY`: full month name, no leading zero, no "th", comma. It must be a Sunday. |
+| `dateText` | page 1, e.g. `27 September 2026` or `September 28th, 2025` | `September 27, 2026` | Rewrite as `Month D, YYYY`: full month name, no leading zero, no "th", comma. It must be a Sunday, except for a timed service (below). |
 | `preacher` | the **Sermon** row of the order of service: `Sermon   <title>   Rev. Laura Vail Fregin` | `Rev. Laura Vail Fregin` | The name at the end of that row, with its title (Rev., Dr., ...). No Sermon row? Use the Reflection or Homily row, never a *musical* reflection. Only the sermon graphic uses it, but it is always required. |
 
 The heading changes shape through the church year. All of these are right:
@@ -111,6 +111,13 @@ The other fields are computed; don't change them unless the user asks:
   `Service Title_M-D-YY`, `Sermon Series M-D-YY`, `Sermon Title_M-D-YY` (new files always use
   `Sermon Title_`, whatever last week's was called).
 - `photoShiftX` / `photoShiftY`: `0` unless the user asks to nudge the photo (points; +Y is up).
+
+**Christmas Eve and other timed services.** An OW with a time in its name
+(`12.24.26 5:30pm OW.pdf`) gets only the Service Title. Run the helper with `--time 5:30pm`; it
+writes the folder as `12-24-26 530pm`, leaves out `preacher` and the three `sermon` keys, and adds
+`dayName = Thursday` (the header that says "Sunday"), `serviceTime = 5:30 PM` (the Virtual Service
+time; the prelude keeps its half hour before) and `graphics = service`. The templates are still the
+last **Sunday's** files, never another Christmas Eve folder.
 
 ### 3. Ask the user to pick the panel color
 

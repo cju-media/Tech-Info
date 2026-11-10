@@ -347,6 +347,11 @@ starts `title_graphics.yml` on Studio Mini (`fccla/auto_build.py`), which:
 - builds one version per suggested panel color;
 - texts Cameron a link to `Utilities/title-graphics/`.
 
+Each OW is a service with its own options and pick: Christmas Eve's timed OWs
+(`12.24.26 5:30pm OW.pdf`) get their own folders (`12-24-26 530pm`) and only the Worship Service
+graphic, its header and times set to that service, sent to Drive with its time as soon as it's
+picked (see `fccla/README.md`).
+
 Picking one there (`title_graphics_pick`) copies it into the iCloud week folder and queues both
 JPGs through `Utilities/uploads_queue/` like a dashboard thumbnail upload, so the Worship
 Service one creates the livestream. "Use, don't send to Drive" copies it into iCloud only, to be

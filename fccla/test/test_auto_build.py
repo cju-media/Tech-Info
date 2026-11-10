@@ -199,7 +199,7 @@ class DriveTiming(unittest.TestCase):
                            "pick": {"hex": "#385261", "drive": "waiting", "at": "2026-09-29T15:30:00-07:00"}}}
         self.assertIsNone(ab.send_waiting(self.ctx(datetime.date(2026, 10, 2), root), state))    # Friday before
         self.assertIn("Sent to Drive", ab.send_waiting(self.ctx(datetime.date(2026, 10, 5), root), state))
-        self.assertEqual(state["build"]["pick"]["drive"], "sent")
+        self.assertEqual(state["builds"]["10-11-26"]["pick"]["drive"], "sent")       # an older state's build moved in
         # a dashboard upload made after the pick (and before this) must win, so the time is the pick's
         self.assertEqual({m["chosen_at"] for m in self.sidecars(root)}, {"2026-09-29T22:30:00+00:00"})
 
@@ -209,7 +209,7 @@ class DriveTiming(unittest.TestCase):
                            "pick": {"hex": "#385261", "drive": "held", "at": "2026-09-29T15:30:00-07:00"}}}
         self.assertIsNone(ab.send_waiting(self.ctx(datetime.date(2026, 10, 5), root), state))
         self.assertFalse(os.path.exists(os.path.join(root, "queue")))
-        self.assertEqual(state["build"]["pick"]["drive"], "held")
+        self.assertEqual(state["builds"]["10-11-26"]["pick"]["drive"], "held")
 
 
 class UsePick(unittest.TestCase):
@@ -241,7 +241,7 @@ class UsePick(unittest.TestCase):
                              {"n": 2, "hex": "#6E6127", "label": "gold, 79%", "problems": []}]}
         if earlier:
             build["pick"] = earlier
-        return {"build": build}
+        return {"builds": {self.WEEK: build}}
 
     def pick(self, state, send):
         with mock.patch.object(ab.pw, "prepare", return_value={"data_path": self.data}):
@@ -250,7 +250,7 @@ class UsePick(unittest.TestCase):
     def test_use_this_one_sends_to_drive(self):
         state = self.state()
         msg, link = self.pick(state, True)
-        self.assertEqual(state["build"]["pick"]["drive"], "sent")
+        self.assertEqual(state["builds"][self.WEEK]["pick"]["drive"], "sent")
         self.assertEqual(len(os.listdir(self.ctx.queue_dir)), 4)         # two JPGs and their sidecars
         self.assertIsNone(link)
         self.assertIn("Sent to Drive", msg)
@@ -258,7 +258,7 @@ class UsePick(unittest.TestCase):
     def test_dont_send_keeps_it_in_icloud_only(self):
         state = self.state()
         msg, link = self.pick(state, False)
-        self.assertEqual(state["build"]["pick"]["drive"], "held")
+        self.assertEqual(state["builds"][self.WEEK]["pick"]["drive"], "held")
         self.assertFalse(os.path.exists(self.ctx.queue_dir))
         self.assertTrue(os.path.exists(os.path.join(self.ctx.root, self.WEEK, "Worship Service 10-4-26",
                                                     "Service Title_10-4-26.jpg")))
@@ -337,8 +337,8 @@ class NewOwThatChangesNothing(unittest.TestCase):
 
     def run_upload(self, force):
         self.in_use()
-        state = {"build": {"week": self.WEEK, "ow": {"name": "10.4.26_OW_Draft.pdf", "sha": "old"},
-                           "pick": {"hex": "#1C304B", "drive": "sent"}}}
+        state = {"builds": {self.WEEK: {"week": self.WEEK, "ow": {"name": "10.4.26_OW_Draft.pdf", "sha": "old"},
+                                        "pick": {"hex": "#1C304B", "drive": "sent"}}}}
         a = type("A", (), {"pick": None, "trigger": "upload", "ow": "10.4.26_OW.pdf", "force_rebuild": force})()
         new_ow = {"name": "10.4.26_OW.pdf", "sha": "new", "download_url": "https://example.invalid/ow.pdf"}
         built = []
@@ -347,7 +347,7 @@ class NewOwThatChangesNothing(unittest.TestCase):
              mock.patch.object(ab.requests, "get", return_value=mock.Mock(content=b"%PDF")), \
              mock.patch.object(ab, "read_fields", return_value=(dict(self.FIELDS), [])), \
              mock.patch.object(ab, "cover_of", return_value=self.photo), \
-             mock.patch.object(ab, "build_options", side_effect=lambda *x: built.append(1) or {"id": "b"}), \
+             mock.patch.object(ab, "build_options", side_effect=lambda *x: built.append(1) or {"id": "b", "week": self.WEEK}), \
              mock.patch.object(ab, "build_message", return_value="ready"), \
              mock.patch.object(ab, "clean_up"):
             try:
@@ -361,26 +361,13 @@ class NewOwThatChangesNothing(unittest.TestCase):
         self.assertEqual(stop.status, "unchanged")
         self.assertTrue(stop.notify)                                # you're told
         self.assertEqual(built, [])
-        self.assertEqual(state["build"]["ow"]["sha"], "new")        # the schedule won't read it again
-        self.assertEqual(state["build"]["pick"]["hex"], "#1C304B")  # still in use
+        self.assertEqual(state["builds"][self.WEEK]["ow"]["sha"], "new")        # the schedule won't read it again
+        self.assertEqual(state["builds"][self.WEEK]["pick"]["hex"], "#1C304B")  # still in use
 
     def test_rebuild_box_forces_it(self):
         result, built, state = self.run_upload(force=True)
         self.assertEqual(result[0], "built")
         self.assertEqual(built, [1])
-
-
-class NotASundayService(unittest.TestCase):
-    """Christmas Eve's timed OWs get no title graphics (they're Sunday ones, one build at a time)."""
-
-    def test_timed_and_weekday_ows_are_skipped(self):
-        for name in ("12.24.26 5:30pm OW.pdf", "12.24.26_11pm.pdf", "12.24.26 OW.pdf"):
-            self.assertIn("only built for Sunday services", ab.not_a_sunday_service(name) or "", name)
-        self.assertIn("December 24 5:30pm", ab.not_a_sunday_service("12.24.26 5:30pm OW.pdf"))
-
-    def test_sunday_ows_build_as_before(self):
-        for name in ("12.27.26 OW.pdf", "10.4.26_OW_Draft.pdf", "no date.pdf"):
-            self.assertIsNone(ab.not_a_sunday_service(name), name)
 
 
 if __name__ == "__main__":
