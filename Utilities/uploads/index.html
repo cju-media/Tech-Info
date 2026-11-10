@@ -1155,7 +1155,8 @@
 
     // OW filenames start with a "M.D.YY" date (e.g. "3.1.26 OW.pdf"),
     // optionally followed by a time for multi-service days like Christmas
-    // ("12.24.25_5pm.pdf", "12.24.26 5pm OW.pdf"). The trailing "OW" label
+    // ("12.24.25_5pm.pdf", "12.24.26 5:30pm OW.pdf", "12.24.26_530pm.pdf" --
+    // the same forms cju-media/OW's index and service_keys.py read). The trailing "OW" label
     // itself is often omitted on those multi-service files, and uploaders
     // are inconsistent about using a space or underscore as the separator
     // ("8.16.26_OW_Draft.pdf"). Extract a normalized "date|time" key so we
@@ -1163,10 +1164,11 @@
     // same time if a time is present) even when the rest of the filename
     // differs (e.g. "Draft" vs "Final").
     function parseOWKey(name) {
-        const m = name.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2})(?:[ _]+(\d{1,2}(?::\d{2})?\s?(?:am|pm)))?(?:[ _]+ow)?/i);
+        const m = name.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
         if (!m) return null;
-        const dateKey = `${parseInt(m[1], 10)}.${parseInt(m[2], 10)}.${parseInt(m[3], 10)}`;
-        const timeKey = m[4] ? m[4].replace(/\s+/g, '').toLowerCase() : '';
+        const dateKey = `${parseInt(m[1], 10)}.${parseInt(m[2], 10)}.${parseInt(m[3], 10) % 100}`;
+        const t = name.slice(m[0].length).match(/(\d{1,2})(?::?(\d{2}))?\s*(am|pm)/i);
+        const timeKey = t ? `${parseInt(t[1], 10)}${t[2] && t[2] !== '00' ? t[2] : ''}${t[3].toLowerCase()}` : '';
         return `${dateKey}|${timeKey}`;
     }
 

@@ -270,12 +270,17 @@ def dispatch(event_type, client_payload, max_retries=4, backoff_seconds=3):
         return
 
 
-def dispatch_event(video_id, date_str):
-    """Announce a newly created (or newly discovered) worship broadcast."""
-    dispatch("youtube_stream_created", {
+def dispatch_event(video_id, date_str, start_time=None):
+    """Announce a newly created (or newly discovered) worship broadcast.
+    start_time ("HH:MM") is named in the text for any service but 10:30, so
+    Christmas Eve's three announcements can be told apart."""
+    payload = {
         "stream_url": f"https://www.youtube.com/watch?v={video_id}",
         "date": date_str,
-    })
+    }
+    if start_time and start_time != service_keys.DEFAULT_TIME:
+        payload["time"] = service_keys.display_time(start_time)
+    dispatch("youtube_stream_created", payload)
 
 
 def dispatch_thumbnail_retrying(stream_url, date_str):
@@ -503,7 +508,7 @@ def main():
             # ever backfills the real link into the sermon-series
             # description and it ships with the placeholder.
             print("It was never announced, so dispatching the stream-created event now.")
-            dispatch_event(existing_id, target_date.strftime("%m-%d-%Y"))
+            dispatch_event(existing_id, target_date.strftime("%m-%d-%Y"), start_time)
             record_last_stream(existing_id, target_date)
         # --reconcile means the caller is here *because* the thumbnail is
         # still outstanding, so a run that didn't manage to set it hasn't
@@ -664,7 +669,7 @@ def main():
     # Dispatch event. This happens whatever became of the thumbnail: the
     # stream is real and the service can go live on it, so it needs to be
     # announced and the sermon-series link backfilled either way.
-    dispatch_event(broadcast_id, target_date.strftime("%m-%d-%Y"))
+    dispatch_event(broadcast_id, target_date.strftime("%m-%d-%Y"), start_time)
     record_last_stream(broadcast_id, target_date)
 
     if not thumbnail_ok:

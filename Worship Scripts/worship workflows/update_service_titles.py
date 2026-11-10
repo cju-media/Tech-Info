@@ -359,8 +359,11 @@ def promote_live_set(now_pt, force_update):
         print("Skipping Google Drive upload due to missing credentials.")
 
     print("Update complete.")
+    # Read by service_titles_checker.yml for the "uploaded to Drive" text.
+    date, time = service_keys.parse_service_key(key)
     with open(".sync_success", "w") as f:
-        f.write("true")
+        f.write(date.strftime("%A %B ") + str(date.day)
+                + (" " + service_keys.display_time(time) if time else ""))
 
 
 def main():

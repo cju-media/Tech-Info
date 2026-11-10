@@ -28,8 +28,9 @@ in Los Angeles year round. The cron entries had to list both `17:xx` and
 | `org.fccla.rotation` | `renumber_rotation.yml` | every 15 min |
 | `org.fccla.events-card` | `generate_events_ad.yml` | hourly `:47` |
 | `org.fccla.server-health` | `server_health.yml` | every 10 min (`:04 :14 :24 :34 :44 :54`) |
+| `org.fccla.service-titles` | `service_titles_checker.yml` | every 30 min (`:02 :32`) — moves the live titles/chapters/streams on to the next service; Christmas Eve switches at 7pm and 10pm |
 
-All five call the same `dispatch_workflow.py`; they differ only in label,
+All six call the same `dispatch_workflow.py`; they differ only in label,
 workflow name, log path and schedule.
 
 ## Install (on the self-hosted Mac)

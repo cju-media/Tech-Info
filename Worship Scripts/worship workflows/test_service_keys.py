@@ -343,6 +343,16 @@ class SermonSeries(ServicesDir):
             self.assertEqual(css.sunday_titles_source(D(2026, 10, 29)), ("service-titles", D(2026, 11, 1)))
 
 
+class WorshipScriptKeys(unittest.TestCase):
+    def test_timed_scripts_get_their_own_entries(self):
+        import update_worship_scripts as uws
+        self.assertEqual(uws.script_key("12-27-26 Worship Script"), "2026-12-27")
+        self.assertEqual(uws.script_key("Christmas Eve 12-24-26 5:30pm Script"), "2026-12-24 5:30pm")
+        self.assertEqual(uws.script_key("12.24.26 8PM Script"), "2026-12-24 8pm")
+        self.assertEqual(uws.script_key("12/24/26 11pm Christmas Eve"), "2026-12-24 11pm")
+        self.assertIsNone(uws.script_key("Script with no date"))
+
+
 class DescriptionRendering(unittest.TestCase):
     def test_timed_service_links_to_its_own_program(self):
         titles = tempfile.mkdtemp()

@@ -93,14 +93,17 @@ jobs:
 
       - name: Send Drive Upload Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'drive_upload_complete'
-        run: python3 "Utilities/Scheduling/Event Data/send_imessage.py" "New worship scripts and script titles have been uploaded to Google Drive."
+        env:
+          LIVE_SERVICE: ${{ github.event.client_payload.service }}
+        run: python3 "Utilities/Scheduling/Event Data/send_imessage.py" "New worship scripts and script titles have been uploaded to Google Drive${LIVE_SERVICE:+ for $LIVE_SERVICE}."
 
       - name: Send YouTube Stream Created Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'youtube_stream_created'
         env:
           STREAM_URL: ${{ github.event.client_payload.stream_url }}
           STREAM_DATE: ${{ github.event.client_payload.date }}
-        run: python3 "Utilities/Scheduling/Event Data/send_imessage.py" "The YouTube live stream for ${STREAM_DATE:-Unknown Date} has been scheduled and is available to view online at ${STREAM_URL:-Unknown URL}"
+          STREAM_TIME: ${{ github.event.client_payload.time }}
+        run: python3 "Utilities/Scheduling/Event Data/send_imessage.py" "The YouTube live stream for ${STREAM_DATE:-Unknown Date}${STREAM_TIME:+ at $STREAM_TIME} has been scheduled and is available to view online at ${STREAM_URL:-Unknown URL}"
 
       - name: Send YouTube Stream Thumbnail Retrying Notification
         if: github.event_name == 'repository_dispatch' && github.event.action == 'youtube_stream_thumbnail_retrying'

@@ -859,7 +859,13 @@
             {
                 name: 'Order of Worship',
                 desc: 'Latest OW ingested from the OW repo and sent to Gemini (Service Titles Checker)',
-                when: async () => ({ date: await latestCommitDate('Worship Scripts/service_titles_state.json') }),
+                // Each OW is generated into Worship Scripts/services/<service>/ as soon as it's
+                // posted (weeks ahead is fine); the state file only changes when a service goes live.
+                when: async () => {
+                    const dates = await Promise.all(['Worship Scripts/services', 'Worship Scripts/service_titles_state.json']
+                                                    .map(latestCommitDate));
+                    return { date: dates.filter(Boolean).sort().pop() || null };
+                },
                 links: [
                     { label: 'OW PDFs (cju-media/OW)', href: 'https://github.com/cju-media/OW/tree/main/OWs' },
                     { label: 'Processing state', href: 'https://github.com/cju-media/Tech-Info/blob/main/Worship%20Scripts/service_titles_state.json' },

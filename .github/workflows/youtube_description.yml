@@ -1,8 +1,12 @@
 name: Generate YouTube Description
 
 on:
+  # Also chained off "Service Titles Checker": the live Description.txt and
+  # chapters.txt follow whichever service it just made live, so they must be
+  # re-rendered right after it (Christmas Eve switches services at 7pm and
+  # 10pm; the booth's OSC server loads chapters.txt when the stream starts).
   workflow_run:
-    workflows: ["Check Worship Scripts"]
+    workflows: ["Check Worship Scripts", "Service Titles Checker"]
     types:
       - completed
   workflow_dispatch:

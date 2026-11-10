@@ -23,9 +23,13 @@ on:
   repository_dispatch:
     types: [ow_uploaded]
 
+# Not cancel-in-progress: a run may be part way through generating several
+# OWs (Christmas Eve's three plus the Sunday after), and the launchd timer on
+# Studio Mini (Utilities/Scheduling/launchd/org.fccla.service-titles.plist)
+# dispatches this every half hour. A dispatch that arrives mid-run waits.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   check-service-titles:
@@ -70,10 +74,12 @@ jobs:
         run: |
           if [ -f "Worship Scripts/.sync_success" ]; then
             echo "Triggering macOS notification workflow..."
+            # The file names the service now in the live set (update_service_titles.py).
+            SERVICE=$(python3 -c 'import json,sys; print(json.dumps(open(sys.argv[1]).read().strip()))' "Worship Scripts/.sync_success")
             curl -X POST https://api.github.com/repos/${{ github.repository }}/dispatches \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.PAT }}" \
-            -d '{"event_type": "drive_upload_complete"}'
+            -d "{\"event_type\": \"drive_upload_complete\", \"client_payload\": {\"service\": $SERVICE}}"
             rm "Worship Scripts/.sync_success"
           fi
 
