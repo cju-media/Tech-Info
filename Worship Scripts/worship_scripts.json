@@ -1,16 +1,16 @@
 {
-  "2026-11-15": {
-    "path": "service-scripts/2026-11-15.pdf",
-    "modifiedTime": "2026-11-09T15:42:44.469Z",
-    "isCommunion": false,
-    "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 3 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Youth"
-  },
   "2026-11-22": {
     "path": "service-scripts/2026-11-22.pdf",
-    "modifiedTime": "2026-10-14T18:10:14.926Z",
+    "modifiedTime": "2026-11-09T22:22:42.469Z",
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
+  },
+  "2026-11-15": {
+    "path": "service-scripts/2026-11-15.pdf",
+    "modifiedTime": "2026-11-09T22:21:17.858Z",
+    "isCommunion": false,
+    "coffeeHourRoom": null,
+    "speakerInfo": "<strong>Speakers - 4 Lavs total</strong>\nLAV1: Rev. Laura Vance Fregin\nLAV2: Rev. Michael Livingston\nLAV3: Juniper Fayazova\nLAV4: Garfield Morris"
   }
 }
