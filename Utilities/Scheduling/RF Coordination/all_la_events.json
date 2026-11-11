@@ -1,38 +1,92 @@
 [
   {
-    "name": "LA AUTO SHOW 2026",
-    "date": "2026-11-27",
-    "location": "1301 S FIGUEROA ST 90015",
+    "name": "LA AUTO SHOW",
+    "date": "2026-11-18",
+    "location": "1201 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001313",
+    "distance_mi": 1.89,
+    "permit": "264109000001544",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "LA AUTO SHOW STELLANTIS BOOTH",
-    "date": "2026-11-19",
-    "location": "Stellantis booth S-360 1301 S FIGUEROA ST 90015",
+    "name": "USC SUITES",
+    "date": "2026-11-09",
+    "location": "Gate 19 & Field 3911 S FIGUEROA ST 90037",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001610",
+    "distance_mi": 3.52,
+    "permit": "264109000001746",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "CARNIVAL",
-    "date": "2026-11-08",
-    "location": "625 S. ST ANDREW PLACE, LOS ANGELES 9005",
+    "name": "CAMP GNAW",
+    "date": "2026-11-14",
+    "location": "1000 vin scully avenue, los angeles 90012",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.5,
-    "permit": "264109000001714",
+    "distance_mi": 2.22,
+    "permit": "264109000001664",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "NISSAN BOOTH S-260 LOS ANGELES AUTO SHOW",
+    "name": "NIGHT TALES",
+    "date": "2026-11-12",
+    "location": "Rotunda 900 W EXPOSITION BLVD 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.22,
+    "permit": "264109000001703",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "SRLA 15K",
+    "date": "2026-11-15",
+    "location": "Woodley Park - see attached map",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001779",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "PLL STREET LACROSSE",
+    "date": "2026-11-14",
+    "location": "1800 Ocean Front Walk 90291",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": null,
+    "permit": "264109000001782",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CHEVY WALLS",
     "date": "2026-11-25",
-    "location": "South Hall - Booth S-260 connected to permit app 2180730 1301 S FIGUEROA ST 90015",
+    "location": "LACC South Hall 1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 1.92,
-    "permit": "264109000001682",
+    "permit": "264109000001706",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CIRCUS CABALLERO",
+    "date": "2026-11-12",
+    "location": "Panorama Mall 8401 N VAN NUYS BLVD 91402",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 14.4,
+    "permit": "264109000001298",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "2026 LOS ANGELES AUTO SHOW - CAMP JEEP",
+    "date": "2026-11-19",
+    "location": "Camp Jeep booth S-140 at the Los Angeles Convention Center for the LA Auto Show 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001612",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "FRANK MAZA MUSICAL SHOWCASE",
+    "date": "2026-11-20",
+    "location": "The event will be held in our own parking lot which will have no cars that day. 3375 N BARHAM BLVD 90068",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 5.78,
+    "permit": "264109000001069",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -45,138 +99,12 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "LA AUTO SHOW 26",
-    "date": "2026-11-20",
-    "location": "Booth S120 1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001502",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "FIDF LA GALA 2026",
-    "date": "2026-11-05",
-    "location": "2025 Avenue of the Stars, Los Angeles, CA 90067",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 7.45,
-    "permit": "264109000001718",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CIRCUS CABALLERO",
-    "date": "2026-11-11",
-    "location": "Panorama Mall 8401 N VAN NUYS BLVD 91402",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 14.4,
-    "permit": "264109000001298",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CIRCUS VARGAS -WEEK 2",
-    "date": "2026-10-30",
-    "location": "6100 N Topanga Canyon 91367",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001541",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CIRCUS VARGAS - WEEK 3",
-    "date": "2026-11-06",
-    "location": "6100 N Topanga Canyon 91367",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": null,
-    "permit": "264109000001542",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "WESTWOOD VILLAGE FARMERS' MARKET",
     "date": "2026-07-02",
     "location": "Broxton Plaza 1036 S BROXTON AVE 90024",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 9.21,
     "permit": "264109000000967",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CAMERA TENT",
-    "date": "2026-10-31",
-    "location": "West end of Stadium 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001692",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "LAIAS 2026",
-    "date": "2026-11-19",
-    "location": "South Hall LACC Booth S270 and S271 1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001671",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "COMIC CREATORS BLOCK PARTY",
-    "date": "2026-11-07",
-    "location": "3420 N EAGLE ROCK BLVD 90065",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 4.47,
-    "permit": "264109000001719",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "STELLANTIS 2026 LOS ANGELES AUTO SHOW",
-    "date": "2026-11-25",
-    "location": "Stellantis booth S360 LA Convention Center 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001611",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "LAIAS 2026",
-    "date": "2026-11-26",
-    "location": "South Hall Booth S270/S271 1201 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001709",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "ZULAN",
-    "date": "2026-11-06",
-    "location": "Stage in expo hall 649 W JEFFERSON BLVD 90007",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 2.9,
-    "permit": "264109000001697",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CAT IN THE HAT INSTALLATION",
-    "date": "2026-11-05",
-    "location": "Parking lot on corner of Hollywood and vine 6301 W HOLLYWOOD BLVD 90028",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.5,
-    "permit": "264109000001732",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "VW/GPJ BOOTH",
-    "date": "2026-11-26",
-    "location": "1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001675",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "NISSAN BOOTH S-260 LA AUTO SHOW",
-    "date": "2026-11-19",
-    "location": "We are in South Hall space S-260 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001683",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
