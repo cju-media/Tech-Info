@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-10T17:18:57+00:00",
+  "generated": "2026-11-11T17:29:10+00:00",
   "window": {
-    "start": "2026-11-10",
-    "end": "2027-02-10"
+    "start": "2026-11-11",
+    "end": "2027-02-11"
   },
   "columns": [
     "Date",
@@ -131,7 +131,7 @@
         "1",
         "",
         "",
-        "11am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1pm Post-Ceremony Photos\n2pm Departure",
+        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
         "",
         "Weddings"
       ],
@@ -204,11 +204,62 @@
         ""
       ],
       "note": "from calendar: Good Neighborhood Church"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/13/2026",
+        "Sarah Smith & Elijah Rawlings Wedding",
+        "Sanctuary/Forecourt",
+        "",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SA 12/12/2026",
+        "Gloria Kang & Daniel Kim Wedding",
+        "Sanctuary/Forecourt",
+        "",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 12/6/2026",
+        "\"Veronica Bell\" Concert",
+        "Shatto",
+        "2:00pm-7:30pm",
+        "Concert",
+        "1",
+        "",
+        "",
+        "2:00pm load in\nTBD sound check\n5:00pm concert start\n6:30pm concert end\n7:30pm off campus",
+        "",
+        ""
+      ],
+      "note": "from calendar: Soundscapes (Veronica Bell concert)"
     }
   ],
   "counts": {
-    "events": 8,
+    "events": 11,
     "worship": 6,
-    "from_calendar": 2
+    "from_calendar": 5
   }
 }
