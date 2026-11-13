@@ -1,7 +1,6 @@
 {
     "assignments": {
         "Cameron": [
-            "we-11-11-2026-vox-dress-rehearsal",
             "su-12-6-2026-worship-service",
             "th-12-24-2026-christmas-eve-8pm-service"
         ],
@@ -150,12 +149,7 @@
         "sa-11-14-2026-vox-femina-concert": {
             "date": "2026-11-14",
             "name": "VOX Femina Concert",
-            "call_time": "4:00pm-10:00pm"
-        },
-        "we-11-11-2026-vox-dress-rehearsal": {
-            "date": "2026-11-11",
-            "name": "VOX Dress Rehearsal",
-            "call_time": "5:00pm-10:00pm"
+            "call_time": "4:30pm-10:00pm"
         }
     }
 }
