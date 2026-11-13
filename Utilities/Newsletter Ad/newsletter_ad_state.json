@@ -1,43 +1,43 @@
 {
-  "issue_fingerprint": "66d195786c612493b9d974bdc11188bcd889ffea1148a6bdfb3b143634b7a49b",
-  "issue_title": "The Meetinghouse This Week - October 29th, 2026",
-  "issue_url": "https://conta.cc/4kzWY5r",
+  "issue_fingerprint": "0f8c87df659fbf12722dd77cc5b0cc38422c26ef67f15991e1fca4bffaa4bba7",
+  "issue_title": "The Meetinghouse This Week - November 12th, 2026",
+  "issue_url": "https://conta.cc/4CeTn3k",
   "items": [
     {
-      "blurb": "Join young adults for a fun evening of bowling at Shatto 39 Lanes.",
+      "blurb": "Young adults are invited to make new friends at Shatto 39 Lanes.",
       "date": "2026-11-13",
       "title": "NextGen Bowling Night",
       "when": "Friday, Nov 13 | 7pm"
     },
     {
-      "blurb": "Help maintain and care for the urban farm and community gardens.",
-      "date": "2026-11-14",
-      "title": "Saturday Garden Workday",
-      "when": "Saturday, Nov 14"
-    },
-    {
-      "blurb": "Gather with the garden team to harvest herbs, greens, and produce.",
+      "blurb": "Learn more about the community and what membership means at First Church.",
       "date": "2026-11-15",
-      "title": "Harvesting Sundays",
-      "when": "1st & 3rd Sundays | 8:30am"
+      "title": "Discovering Belonging",
+      "when": "Sunday, Nov 15 | 8:45am"
     },
     {
-      "blurb": "Take a guided walk through our urban farm and community garden spaces.",
+      "blurb": "Explore the community gardens and urban farm on campus.",
       "date": "2026-11-15",
       "title": "Tour the Gardens & Farm",
-      "when": "Every 3rd Sunday | 12:30pm"
+      "when": "Sunday, Nov 15 | 12:30pm"
     },
     {
-      "blurb": "Water plants once a week or host the Garden Table during Coffee Hour.",
-      "date": "",
-      "title": "Garden & Farm Volunteers",
-      "when": ""
+      "blurb": "Explore Celtic spirituality and earth-based faith in a weekly Zoom group.",
+      "date": "2026-11-17",
+      "title": "Book Conversations with Rev. Michael",
+      "when": "Tuesdays, Nov 17 | 7pm"
     },
     {
-      "blurb": "Donate to help church community members facing urgent financial needs.",
-      "date": "",
-      "title": "Emergency Assistance Fund",
-      "when": ""
+      "blurb": "Join an online deep dive into the Lord's Prayer via Zoom.",
+      "date": "2026-11-19",
+      "title": "Not Your Grandma's Bible Study",
+      "when": "Thursday, Nov 19 | 6pm"
+    },
+    {
+      "blurb": "Enjoy crafts, hot cocoa, carols, cookies, and local vendors for all ages.",
+      "date": "2026-11-29",
+      "title": "Advent Festival & Fair-Trade Market",
+      "when": "Sunday, Nov 29 | 12pm"
     }
   ],
   "published": {
@@ -49,21 +49,21 @@
         "when": "Friday, Nov 13 | 7pm"
       },
       {
-        "date": "2026-11-14",
-        "title": "Saturday Garden Workday",
-        "when": "Saturday, Nov 14"
-      },
-      {
         "date": "2026-11-15",
-        "title": "Harvesting Sundays",
-        "when": "1st & 3rd Sundays | 8:30am"
+        "title": "Discovering Belonging",
+        "when": "Sunday, Nov 15 | 8:45am"
       },
       {
         "date": "2026-11-15",
         "title": "Tour the Gardens & Farm",
-        "when": "Every 3rd Sunday | 12:30pm"
+        "when": "Sunday, Nov 15 | 12:30pm"
+      },
+      {
+        "date": "2026-11-17",
+        "title": "Book Conversations with Rev. Michael",
+        "when": "Tuesdays, Nov 17 | 7pm"
       }
     ],
-    "md5": "7292b638be5b0b9f95d9e32abf8d9040"
+    "md5": "4e490e5c66b87526cbf00d53e2892fb5"
   }
 }
