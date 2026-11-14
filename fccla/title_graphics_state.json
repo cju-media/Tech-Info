@@ -53,7 +53,13 @@
         "sermon": "fccla/status/11-15-26_1114-0856/4-sermon.jpg"
       }
     ],
-    "pick": null,
+    "pick": {
+      "n": 2,
+      "hex": "#6D6A36",
+      "label": "gold, 17% of the photo's color",
+      "at": "2026-11-14T09:07:26-08:00",
+      "drive": "sent"
+    },
     "heading": [
       "Fall Series 11",
       "Sacred Earth, Sacred Soul",
@@ -71,9 +77,9 @@
     "cover": "fccla/status/11-15-26_1114-0856/cover.jpg"
   },
   "last_run": {
-    "at": "2026-11-14T08:56:33-08:00",
-    "trigger": "upload",
-    "status": "built",
-    "message": "Title graphics for Sunday, November 15 are ready to pick (link below).\n1 blue #0780E9 \u00b7 2 gold #6D6A36 \u00b7 3 deeper blue #055AA3 \u00b7 4 your earlier pick #6E6B37\nThe OW changed after you picked #6E6B37, so pick again to update iCloud and Drive."
+    "at": "2026-11-14T09:07:26-08:00",
+    "trigger": "pick",
+    "status": "picked",
+    "message": "Using #6D6A36 (gold) for Sunday, November 15. Saved to iCloud (11-15-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
   }
 }
