@@ -41,13 +41,8 @@
     }
   ],
   "published": {
-    "at": "2026-11-13",
+    "at": "2026-11-14",
     "items": [
-      {
-        "date": "2026-11-13",
-        "title": "NextGen Bowling Night",
-        "when": "Friday, Nov 13 | 7pm"
-      },
       {
         "date": "2026-11-15",
         "title": "Discovering Belonging",
@@ -62,8 +57,13 @@
         "date": "2026-11-17",
         "title": "Book Conversations with Rev. Michael",
         "when": "Tuesdays, Nov 17 | 7pm"
+      },
+      {
+        "date": "2026-11-19",
+        "title": "Not Your Grandma's Bible Study",
+        "when": "Thursday, Nov 19 | 6pm"
       }
     ],
-    "md5": "4e490e5c66b87526cbf00d53e2892fb5"
+    "md5": "d7c08965cd9d50be7382d93b94c58a70"
   }
 }
