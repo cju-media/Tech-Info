@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-13T17:23:52+00:00",
+  "generated": "2026-11-14T16:08:56+00:00",
   "window": {
-    "start": "2026-11-13",
-    "end": "2027-02-13"
+    "start": "2026-11-14",
+    "end": "2027-02-14"
   },
   "columns": [
     "Date",
@@ -34,6 +34,23 @@
         ""
       ],
       "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 2/14/2027",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
     },
     {
       "kind": "event",
@@ -131,7 +148,7 @@
         "1",
         "",
         "",
-        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
@@ -194,7 +211,7 @@
         "SU 12/27/2026",
         "Good Neighborhood Church",
         "Barnum",
-        "10:30am-12:00pm",
+        "10:30am-11:30am",
         "Worship Service",
         "2",
         "",
@@ -204,40 +221,6 @@
         ""
       ],
       "note": "from calendar: Good Neighborhood Church"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SU 12/13/2026",
-        "Sarah Smith & Elijah Rawlings Wedding",
-        "Sanctuary/Forecourt",
-        "",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Wedding Ceremony: Sarah Smith & Elijah Rawlings"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 12/12/2026",
-        "Gloria Kang & Daniel Kim Wedding",
-        "Sanctuary/Forecourt",
-        "",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
     },
     {
       "kind": "event",
@@ -258,8 +241,8 @@
     }
   ],
   "counts": {
-    "events": 11,
-    "worship": 6,
-    "from_calendar": 5
+    "events": 10,
+    "worship": 7,
+    "from_calendar": 3
   }
 }

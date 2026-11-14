@@ -4,23 +4,7 @@
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
-      "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
-      "type": "Wedding",
-      "venue": "Sanctuary/Forecourt"
-    },
-    "040000008200E00074C5B7101A82E00800000000B8724E9D9893DC0100000000000000001000000001F5C7B20EF9C549BB619796E18EBEBE::2026-12-13": {
-      "call_times": "",
-      "count": 1,
-      "name": "Sarah Smith & Elijah Rawlings Wedding",
-      "schedule": "",
-      "type": "Wedding",
-      "venue": "Sanctuary/Forecourt"
-    },
-    "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
-      "call_times": "",
-      "count": 1,
-      "name": "Gloria Kang & Daniel Kim Wedding",
-      "schedule": "",
+      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
       "type": "Wedding",
       "venue": "Sanctuary/Forecourt"
     },
@@ -33,7 +17,7 @@
       "venue": "Shatto"
     },
     "040000008200E00074C5B7101A82E00800000000F9E579BB2905DD01000000000000000010000000B9F067A43FF19040AB62D5B33C6CC988::2026-12-27": {
-      "call_times": "10:30am-12:00pm",
+      "call_times": "10:30am-11:30am",
       "count": 2,
       "name": "Good Neighborhood Church",
       "schedule": "",
@@ -41,6 +25,6 @@
       "venue": "Barnum"
     }
   },
-  "fingerprint": "d3f8e564f95e1156715ac79593e464860db86bfdb10529b5cef81b6ab92df209",
-  "gemini_at": "2026-11-11T17:29:10+00:00"
+  "fingerprint": "0bce24eda1d261ca0740edcbd37f5ed9ad323ea83137d6f0db9631511535a483",
+  "gemini_at": "2026-11-14T16:08:56+00:00"
 }
