@@ -90,6 +90,21 @@ def extract_date(text):
     return None
 
 
+def script_key(name):
+    """The worship_scripts.json key for a script doc: its date ("2026-12-27"),
+    plus the time when the name has one ("2026-12-24 8pm", "2026-12-24 5:30pm"),
+    so Christmas Eve's three scripts don't overwrite each other. The time is
+    read the same way service_keys.py reads an OW's."""
+    date_str = extract_date(name)
+    if not date_str:
+        return None
+    m = re.search(r'(\d{1,2})(?::?(\d{2}))?\s*(am|pm)\b', name, re.IGNORECASE)
+    if not m or not (1 <= int(m.group(1)) <= 12):
+        return date_str
+    minutes = m.group(2) if m.group(2) and m.group(2) != '00' else ''
+    return f"{date_str} {int(m.group(1))}{':' + minutes if minutes else ''}{m.group(3).lower()}"
+
+
 def get_speaker_info(text, date_str):
     """Returns (is_communion, coffee_hour_room, speaker_info_html). is_communion is
     None if Gemini couldn't be reached, so the caller can fall back to the keyword
@@ -389,11 +404,11 @@ def main():
             if doc['mimeType'] != 'application/vnd.google-apps.document':
                 print(f"  [Skip] '{doc['name']}': not a Google Doc ({doc['mimeType']})")
                 continue
-            date_str = extract_date(doc['name'])
+            date_str = script_key(doc['name'])
             if not date_str:
                 print(f"  [Skip] '{doc['name']}': no parseable date in name")
                 continue
-            if dateutil.parser.parse(date_str).date() < now.date():
+            if dateutil.parser.parse(date_str.split(' ')[0]).date() < now.date():
                 print(f"  [Skip] '{doc['name']}': date {date_str} is in the past")
                 continue
 

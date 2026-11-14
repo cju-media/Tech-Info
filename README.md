@@ -368,7 +368,7 @@ All under `.github/workflows/`. Most also expose `workflow_dispatch` with a
 | `youtube_description.yml` | after *Check Worship Scripts* | ubuntu |
 | `update_youtube_stream.yml` | after *Generate YouTube Description* / *Service Titles Checker*; push to `timings.txt` | ubuntu |
 | `create_pending_youtube_stream.yml` | after *Generate YouTube Description* / *Service Titles Checker* | ubuntu |
-| `service_titles_checker.yml` | hourly; `ow_uploaded` dispatch | ubuntu |
+| `service_titles_checker.yml` | hourly (plus every 30 min from Studio Mini's launchd timer, `org.fccla.service-titles`); `ow_uploaded` dispatch | ubuntu |
 | `sync_service_titles.yml` | push to `service-titles/**` | ubuntu |
 | `sermon_series.yml` | push to `sermon-title.txt` / `sermon-minister.txt` | ubuntu |
 | `backfill_sermon_series_link.yml` | `youtube_stream_created` dispatch | ubuntu |

@@ -15,7 +15,7 @@ YouTube Stream`, …) "succeed" every run whether or not they did anything, so
 | Stage | Time source | Signal |
 | ----- | ----------- | ------ |
 | Worship script | GitHub commits API — last commit touching `Worship Scripts/worship_scripts.json` | run-of-show PDF pulled from Drive and parsed by `update_worship_scripts.py` |
-| Order of Worship | GitHub commits API — last commit touching `Worship Scripts/service_titles_state.json` | a new OW ingested from the `cju-media/OW` repo (`OWs/`) and sent to Gemini by `update_service_titles.py` |
+| Order of Worship | GitHub commits API — newer of the last commits touching `Worship Scripts/services/` and `Worship Scripts/service_titles_state.json` | a new OW ingested from the `cju-media/OW` repo (`OWs/`) and sent to Gemini by `update_service_titles.py` into its service's folder (`services/<date>[_HHMM]/`); the state file changes when that service becomes the live set |
 | Service titles | GitHub commits API — last commit touching `Worship Scripts/service-titles/` | the individual title `.txt` files regenerated from the OW and synced to Drive |
 | YouTube livestream | `Youtube Processing/last_stream.json` (`created_at`) | the Sunday-service live broadcast created by `create_youtube_stream.py`. Fallback if the file is missing: last commit touching `Youtube Processing/description_push_state.json` |
 | Sermon video | `Utilities/Video Migration/last_upload.json` (`uploaded_at`) | the sermon cut from the livestream's audio (span from `Archives/<date>/timings.txt`, `sermon_audio.py`), rendered over the Drive thumbnail and uploaded to YouTube by `migrate_videos.py` |

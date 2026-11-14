@@ -7,6 +7,10 @@ on:
     paths:
       - 'Worship Scripts/service-titles/sermon-title.txt'
       - 'Worship Scripts/service-titles/sermon-minister.txt'
+      # The Sunday's own generated folder (see create_sermon_series.py's
+      # sunday_titles_source), which can land before it's the live set.
+      - 'Worship Scripts/services/*/service-titles/sermon-title.txt'
+      - 'Worship Scripts/services/*/service-titles/sermon-minister.txt'
   workflow_dispatch:
 
 concurrency:
