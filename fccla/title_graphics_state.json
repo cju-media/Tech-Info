@@ -62,9 +62,9 @@
     "cover": "fccla/status/11-15-26_1112-2116/cover.jpg"
   },
   "last_run": {
-    "at": "2026-11-12T21:22:05-08:00",
-    "trigger": "pick",
-    "status": "picked",
-    "message": "Using #6E6B37 (gold) for Sunday, November 15. Saved to iCloud (11-15-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
+    "at": "2026-11-14T08:53:36-08:00",
+    "trigger": "upload",
+    "status": "failed",
+    "message": "Title graphics: couldn't read heading, dateText from the OW. Make this week by hand (see fccla/GEMINI.md)."
   }
 }
