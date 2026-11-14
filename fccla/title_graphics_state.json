@@ -1,6 +1,6 @@
 {
   "build": {
-    "id": "11-15-26_1112-2116",
+    "id": "11-15-26_1114-0856",
     "week": "11-15-26",
     "dateText": "November 15, 2026",
     "fields": {
@@ -14,44 +14,46 @@
       "title": "Sacred Compassion"
     },
     "ow": {
-      "name": "11.15.26_OW_Draft.pdf",
-      "sha": "1879f056ae088f8eb5c361e3e02cc433190843a0"
+      "name": "11.15.26_OW_FINAL3.pdf",
+      "sha": "fc7317f19568f751336df05d0925b32074b17168"
     },
-    "built_at": "2026-11-12T21:16:56-08:00",
+    "built_at": "2026-11-14T08:56:33-08:00",
     "notes": [],
     "options": [
       {
         "n": 1,
-        "hex": "#0680E9",
-        "label": "blue, 82% of the photo's color",
+        "hex": "#0780E9",
+        "label": "blue, 81% of the photo's color",
         "problems": [],
-        "service": "fccla/status/11-15-26_1112-2116/1-service.jpg",
-        "sermon": "fccla/status/11-15-26_1112-2116/1-sermon.jpg"
+        "service": "fccla/status/11-15-26_1114-0856/1-service.jpg",
+        "sermon": "fccla/status/11-15-26_1114-0856/1-sermon.jpg"
       },
       {
         "n": 2,
-        "hex": "#6E6B37",
+        "hex": "#6D6A36",
         "label": "gold, 17% of the photo's color",
         "problems": [],
-        "service": "fccla/status/11-15-26_1112-2116/2-service.jpg",
-        "sermon": "fccla/status/11-15-26_1112-2116/2-sermon.jpg"
+        "service": "fccla/status/11-15-26_1114-0856/2-service.jpg",
+        "sermon": "fccla/status/11-15-26_1114-0856/2-sermon.jpg"
       },
       {
         "n": 3,
         "hex": "#055AA3",
         "label": "deeper blue",
         "problems": [],
-        "service": "fccla/status/11-15-26_1112-2116/3-service.jpg",
-        "sermon": "fccla/status/11-15-26_1112-2116/3-sermon.jpg"
+        "service": "fccla/status/11-15-26_1114-0856/3-service.jpg",
+        "sermon": "fccla/status/11-15-26_1114-0856/3-sermon.jpg"
+      },
+      {
+        "n": 4,
+        "hex": "#6E6B37",
+        "label": "your earlier pick",
+        "problems": [],
+        "service": "fccla/status/11-15-26_1114-0856/4-service.jpg",
+        "sermon": "fccla/status/11-15-26_1114-0856/4-sermon.jpg"
       }
     ],
-    "pick": {
-      "n": 2,
-      "hex": "#6E6B37",
-      "label": "gold, 17% of the photo's color",
-      "at": "2026-11-12T21:22:05-08:00",
-      "drive": "sent"
-    },
+    "pick": null,
     "heading": [
       "Fall Series 11",
       "Sacred Earth, Sacred Soul",
@@ -59,12 +61,19 @@
     ],
     "title": "Sacred Compassion",
     "preacher": "Rev. Laura Vail Fregin",
-    "cover": "fccla/status/11-15-26_1112-2116/cover.jpg"
+    "previous_pick": {
+      "n": 2,
+      "hex": "#6E6B37",
+      "label": "gold, 17% of the photo's color",
+      "at": "2026-11-12T21:22:05-08:00",
+      "drive": "sent"
+    },
+    "cover": "fccla/status/11-15-26_1114-0856/cover.jpg"
   },
   "last_run": {
-    "at": "2026-11-14T08:53:36-08:00",
+    "at": "2026-11-14T08:56:33-08:00",
     "trigger": "upload",
-    "status": "failed",
-    "message": "Title graphics: couldn't read heading, dateText from the OW. Make this week by hand (see fccla/GEMINI.md)."
+    "status": "built",
+    "message": "Title graphics for Sunday, November 15 are ready to pick (link below).\n1 blue #0780E9 \u00b7 2 gold #6D6A36 \u00b7 3 deeper blue #055AA3 \u00b7 4 your earlier pick #6E6B37\nThe OW changed after you picked #6E6B37, so pick again to update iCloud and Drive."
   }
 }
