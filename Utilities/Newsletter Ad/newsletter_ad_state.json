@@ -42,7 +42,28 @@
   ],
   "published": {
     "at": "2026-11-15",
-    "items": [],
-    "md5": "108d47c979c0296a2bb5049d5d597e25"
+    "items": [
+      {
+        "date": "2026-11-15",
+        "title": "Discovering Belonging",
+        "when": "Sunday, Nov 15 | 8:45am"
+      },
+      {
+        "date": "2026-11-15",
+        "title": "Tour the Gardens & Farm",
+        "when": "Sunday, Nov 15 | 12:30pm"
+      },
+      {
+        "date": "2026-11-17",
+        "title": "Book Conversations with Rev. Michael",
+        "when": "Tuesdays, Nov 17 | 7pm"
+      },
+      {
+        "date": "2026-11-19",
+        "title": "Not Your Grandma's Bible Study",
+        "when": "Thursday, Nov 19 | 6pm"
+      }
+    ],
+    "md5": "d7c08965cd9d50be7382d93b94c58a70"
   }
 }
