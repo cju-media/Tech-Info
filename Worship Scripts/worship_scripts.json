@@ -1,14 +1,14 @@
 {
   "2026-11-15": {
     "path": "service-scripts/2026-11-15.pdf",
-    "modifiedTime": "2026-11-14T19:32:15.910Z",
+    "modifiedTime": "2026-11-15T00:55:59.626Z",
     "isCommunion": false,
     "coffeeHourRoom": null,
-    "speakerInfo": "<strong>Speakers - 5 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael\nLAV3: Claire Kelly\nLAV4: Juniper Fayazova\nLAV5: Garfield Morris"
+    "speakerInfo": "<strong>Speakers - 5 Lavs total</strong>\nLAV1: Rev. Dr. Laura Vance Fregin\nLAV2: Rev. Michael Livingston\nLAV3: Claire Kelly\nLAV4: Juniper Fayazova\nLAV5: Garfield Morris"
   },
   "2026-11-22": {
     "path": "service-scripts/2026-11-22.pdf",
-    "modifiedTime": "2026-11-09T22:22:42.469Z",
+    "modifiedTime": "2026-11-15T00:11:01.440Z",
     "isCommunion": true,
     "coffeeHourRoom": null,
     "speakerInfo": "<strong>Speakers - 2 Lavs total</strong>\nLAV1: Laura\nLAV2: Michael"
