@@ -21,7 +21,6 @@
         ],
         "Kaspar": [],
         "Marc": [
-            "sa-11-14-2026-vox-femina-concert",
             "su-11-15-2026-worship-service",
             "fr-11-27-2026-emma-johnson-jarrett-cox-wedding",
             "su-11-29-2026-worship-service",
@@ -32,7 +31,6 @@
             "su-12-27-2026-worship-service"
         ],
         "Saad": [
-            "sa-11-14-2026-vox-femina-concert",
             "su-11-15-2026-worship-service",
             "sa-11-21-2026-sofia-uribe-robin-aimaq-wedding",
             "su-11-29-2026-worship-service",
@@ -91,6 +89,11 @@
             "name": "Resonance Collective Concert",
             "call_time": "4:00pm-10:00pm"
         },
+        "su-12-13-2026-wedding-ceremony": {
+            "date": "2026-12-13",
+            "name": "Wedding Ceremony",
+            "call_time": "3:00pm-7:00pm"
+        },
         "su-12-13-2026-worship-service": {
             "date": "2026-12-13",
             "name": "Worship Service",
@@ -100,6 +103,11 @@
             "date": "2026-12-06",
             "name": "HoLAdays Synesthesia Sinfonietta Concert",
             "call_time": "2:00pm-10:00pm"
+        },
+        "su-12-6-2026-veronica-bell-concert": {
+            "date": "2026-12-06",
+            "name": "\"Veronica Bell\" Concert",
+            "call_time": "2:00pm-7:30pm"
         },
         "su-12-6-2026-worship-service": {
             "date": "2026-12-06",
@@ -145,11 +153,6 @@
             "date": "2026-11-15",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "sa-11-14-2026-vox-femina-concert": {
-            "date": "2026-11-14",
-            "name": "VOX Femina Concert",
-            "call_time": "4:30pm-10:00pm"
         }
     }
 }
