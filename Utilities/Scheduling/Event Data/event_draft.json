@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-14T16:08:56+00:00",
+  "generated": "2026-11-15T16:38:16+00:00",
   "window": {
-    "start": "2026-11-14",
-    "end": "2027-02-14"
+    "start": "2026-11-15",
+    "end": "2027-02-15"
   },
   "columns": [
     "Date",
@@ -142,7 +142,7 @@
       "cells": [
         "SA 1/16/2027",
         "Wei-Chuan Wang & Yanting Li Wedding",
-        "Sanctuary/Forecourt",
+        "Forecourt/Sanctuary",
         "11:00am-2:00pm",
         "Wedding",
         "1",
@@ -224,8 +224,8 @@
     }
   ],
   "counts": {
-    "events": 10,
+    "events": 9,
     "worship": 7,
-    "from_calendar": 3
+    "from_calendar": 2
   }
 }
