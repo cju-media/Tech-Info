@@ -16,10 +16,6 @@
   ],
   "card_events": [
     {
-      "name": "Vox Femina - IN HER ELEMENT: A Story of Mother Earth",
-      "start": "2026-11-14T19:00:00-08:00"
-    },
-    {
       "name": "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"",
       "start": "2026-11-16T19:00:00-08:00"
     },
@@ -36,7 +32,7 @@
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "356a4b8d9815a4e9ea1ab8ccf15332671cbb8b993701500c5692ca9e594cdbf7",
+  "card_fingerprint": "a5dc439e4d4dda64a36e09edca37aeb73a806316075ac5b9b134757158dcf50c",
   "classified": {
     "All Saints Day - Becoming Earth|2026-11-01T10:30:00-08:00": {
       "category": "HOLIDAY",
@@ -300,5 +296,5 @@
     }
   },
   "page_fingerprint": "b26e0cd9f7a81344a3acafc473377a7c410ec93bf1c73305ec1bb9413c0db28f",
-  "updated_at": "2026-11-08T17:47:22-08:00"
+  "updated_at": "2026-11-14T19:08:26-08:00"
 }
