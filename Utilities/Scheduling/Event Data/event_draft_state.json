@@ -4,19 +4,27 @@
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
-      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+      "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
     "040000008200E00074C5B7101A82E00800000000F9E579BB2905DD01000000000000000010000000B9F067A43FF19040AB62D5B33C6CC988::2026-12-27": {
-      "call_times": "10:30am-11:30am",
+      "call_times": "10:30am-12:00pm",
       "count": 2,
       "name": "Good Neighborhood Church",
-      "schedule": "",
+      "schedule": "10:30AM-11:30AM",
       "type": "Worship Service",
       "venue": "Barnum"
+    },
+    "040000008200E00074C5B7101A82E00800000000FC5DD2F81776DD01000000000000000010000000819BB5A16C37CB46AB7B060B76B0C28D::2026-12-07": {
+      "call_times": "11:30am-12:30pm",
+      "count": 1,
+      "name": "Idonna Jean Olsen Memorial Service",
+      "schedule": "11:30am Service Begins",
+      "type": "Memorial",
+      "venue": "Sanctuary"
     }
   },
-  "fingerprint": "f8b4e7a315f93ed800e11058f072493b929adf9672d513959fca7a36a826de0a",
-  "gemini_at": "2026-11-15T16:38:16+00:00"
+  "fingerprint": "38f1c4be5b7a4098b6f2255939bdff88f4a1fe86f9051e30ade1da8687263422",
+  "gemini_at": "2026-11-17T18:47:25+00:00"
 }

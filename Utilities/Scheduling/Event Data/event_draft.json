@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-16T19:52:43+00:00",
+  "generated": "2026-11-17T18:47:25+00:00",
   "window": {
-    "start": "2026-11-16",
-    "end": "2027-02-16"
+    "start": "2026-11-17",
+    "end": "2027-02-17"
   },
   "columns": [
     "Date",
@@ -148,7 +148,7 @@
         "1",
         "",
         "",
-        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
         "",
         "Weddings"
       ],
@@ -211,21 +211,38 @@
         "SU 12/27/2026",
         "Good Neighborhood Church",
         "Barnum",
-        "10:30am-11:30am",
+        "10:30am-12:00pm",
         "Worship Service",
         "2",
         "",
         "",
-        "",
+        "10:30AM-11:30AM",
         "",
         ""
       ],
       "note": "from calendar: Good Neighborhood Church"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "MO 12/7/2026",
+        "Idonna Jean Olsen Memorial Service",
+        "Sanctuary",
+        "11:30am-12:30pm",
+        "Memorial",
+        "1",
+        "",
+        "",
+        "11:30am Service Begins",
+        "",
+        ""
+      ],
+      "note": "from calendar: Idonna Jean Olsen Memorial Service"
     }
   ],
   "counts": {
-    "events": 9,
+    "events": 10,
     "worship": 7,
-    "from_calendar": 2
+    "from_calendar": 3
   }
 }
