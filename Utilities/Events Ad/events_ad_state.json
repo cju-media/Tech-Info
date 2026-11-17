@@ -16,10 +16,6 @@
   ],
   "card_events": [
     {
-      "name": "Book Soup: \"Book Meets World: The Definitive Inside Story of the Hit Sitcom Boy Meets World\"",
-      "start": "2026-11-16T19:00:00-08:00"
-    },
-    {
       "name": "Yamandu Costa: The Brazilian Guitar",
       "start": "2026-12-04T19:30:00-08:00"
     },
@@ -32,7 +28,7 @@
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "a5dc439e4d4dda64a36e09edca37aeb73a806316075ac5b9b134757158dcf50c",
+  "card_fingerprint": "1285113c06c1ae52a1d43006a60d7086d93ad5974aeb26dd24499b96534aa4f9",
   "classified": {
     "All Saints Day - Becoming Earth|2026-11-01T10:30:00-08:00": {
       "category": "HOLIDAY",
@@ -295,6 +291,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "f886567fc4aa61ed7fb9e1b7e261f13e9126b4b9c3b2d13720109768c232a721",
-  "updated_at": "2026-11-14T19:08:26-08:00"
+  "page_fingerprint": "782cc836a8743bd1f058f3eb0c7bd447fa0ef9bae96a518de406880d902efce6",
+  "updated_at": "2026-11-16T19:47:28-08:00"
 }
