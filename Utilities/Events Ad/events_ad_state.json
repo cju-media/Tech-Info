@@ -7,6 +7,7 @@
     "Music in the Gardens|2026-09-26T16:00:00-07:00",
     "Soundscapes|2026-12-06T17:00:00-08:00",
     "Susan Orlean discusses and signs \"Joyride: A Memoir\"|2026-10-26T19:00:00-07:00",
+    "Synesthesia Sinfonietta presents \"Memories of Christmas\"|2026-12-06T19:00:00-08:00",
     "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience|2026-10-30T19:30:00-07:00",
     "The Resonance Collective presents Lithic Breathing with Julia Edith Rigby|2026-09-27T19:00:00-07:00",
     "The Resonance Collective presents Mayab\u2019: Live Folktr\u00f3nica with Aurora Nohemi|2026-10-25T19:00:00-07:00",
@@ -24,11 +25,15 @@
       "start": "2026-12-06T17:00:00-08:00"
     },
     {
+      "name": "Synesthesia Sinfonietta presents \"Memories of Christmas\"",
+      "start": "2026-12-06T19:00:00-08:00"
+    },
+    {
       "name": "The Resonance Collective presents Rumi\u2019s Wedding Night with Yuval Ron Ensemble",
       "start": "2026-12-13T19:00:00-08:00"
     }
   ],
-  "card_fingerprint": "1285113c06c1ae52a1d43006a60d7086d93ad5974aeb26dd24499b96534aa4f9",
+  "card_fingerprint": "a763c719f32e2f0573df1daad2c2d656b1c9fd242f5e46e04a80dcdd4ed8b024",
   "classified": {
     "All Saints Day - Becoming Earth|2026-11-01T10:30:00-08:00": {
       "category": "HOLIDAY",
@@ -246,6 +251,10 @@
       "category": "AUTHOR TALK",
       "recurring": false
     },
+    "Synesthesia Sinfonietta presents \"Memories of Christmas\"|2026-12-06T19:00:00-08:00": {
+      "category": "CONCERT",
+      "recurring": false
+    },
     "The Music of Ennio Morricone: A Candlelit Piano and Strings Experience|2026-10-30T19:30:00-07:00": {
       "category": "CONCERT",
       "recurring": false
@@ -291,6 +300,6 @@
       "recurring": false
     }
   },
-  "page_fingerprint": "782cc836a8743bd1f058f3eb0c7bd447fa0ef9bae96a518de406880d902efce6",
-  "updated_at": "2026-11-16T19:47:28-08:00"
+  "page_fingerprint": "2b2ae1a54bea27f243da4884fb66794004a1f00d03fcb229203f144d39d50508",
+  "updated_at": "2026-11-18T12:47:27-08:00"
 }
