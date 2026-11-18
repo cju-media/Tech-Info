@@ -4,15 +4,23 @@
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
-      "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+      "schedule": "11:00am Vendors Access to Ceremony Area / Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+      "type": "Wedding",
+      "venue": "Forecourt/Sanctuary"
+    },
+    "040000008200E00074C5B7101A82E008000000009803D5F9C676DD0100000000000000001000000033190C29E1D91D4D82D08D09E69CFEEB::2027-02-06": {
+      "call_times": "3:00pm-6:00pm",
+      "count": 1,
+      "name": "Jianqiang Li & Meiru Qu Wedding",
+      "schedule": "3:00pm Vendors Access to Ceremony Area / Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm Invite Time / Guests Begin to Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Actual Ceremony\n5:00pm Post-Ceremony Photos",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
     "040000008200E00074C5B7101A82E00800000000F9E579BB2905DD01000000000000000010000000B9F067A43FF19040AB62D5B33C6CC988::2026-12-27": {
       "call_times": "10:30am-12:00pm",
       "count": 2,
-      "name": "Good Neighborhood Church",
-      "schedule": "10:30AM-11:30AM",
+      "name": "Good Neighborhood Church Worship Service",
+      "schedule": "10:30AM-11:30AM Korean Worship Service",
       "type": "Worship Service",
       "venue": "Barnum"
     },
@@ -25,6 +33,6 @@
       "venue": "Sanctuary"
     }
   },
-  "fingerprint": "38f1c4be5b7a4098b6f2255939bdff88f4a1fe86f9051e30ade1da8687263422",
-  "gemini_at": "2026-11-17T18:47:25+00:00"
+  "fingerprint": "feec4b98109e95e1002f0773b36b226af2b486cb4a3bf64fc42405b265440fe0",
+  "gemini_at": "2026-11-18T18:26:20+00:00"
 }
