@@ -41,13 +41,8 @@
     }
   ],
   "published": {
-    "at": "2026-11-17",
+    "at": "2026-11-18",
     "items": [
-      {
-        "date": "2026-11-17",
-        "title": "Book Conversations with Rev. Michael",
-        "when": "Tuesdays, Nov 17 | 7pm"
-      },
       {
         "date": "2026-11-19",
         "title": "Not Your Grandma's Bible Study",
@@ -59,6 +54,6 @@
         "when": "Sunday, Nov 29 | 12pm"
       }
     ],
-    "md5": "d3771bf20e750f0a5bc5060ae96eafec"
+    "md5": "f4aa72b3421c00b017b1ccf031b15786"
   }
 }
