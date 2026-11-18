@@ -9,7 +9,6 @@
             "th-12-24-2026-christmas-eve-11pm-service"
         ],
         "Jaffe": [
-            "mo-11-16-2026-boy-meets-world-podcast",
             "su-11-22-2026-worship-service",
             "sa-12-5-2026-elizabeth-bernal-izett-barnett-wedding",
             "su-12-13-2026-worship-service",
@@ -141,11 +140,6 @@
             "date": "2026-11-21",
             "name": "Sofia Uribe & Robin Aimaq Wedding",
             "call_time": "2:00pm-5:00pm"
-        },
-        "mo-11-16-2026-boy-meets-world-podcast": {
-            "date": "2026-11-16",
-            "name": "Boy Meets World Podcast",
-            "call_time": "5:00pm-9:00pm"
         }
     }
 }
