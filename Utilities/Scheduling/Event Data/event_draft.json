@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-18T18:26:20+00:00",
+  "generated": "2026-11-19T18:42:11+00:00",
   "window": {
-    "start": "2026-11-18",
-    "end": "2027-02-18"
+    "start": "2026-11-19",
+    "end": "2027-02-19"
   },
   "columns": [
     "Date",
@@ -80,7 +80,7 @@
         "1",
         "",
         "",
-        "3:00pm Vendors Access to Ceremony Area / Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm Invite Time / Guests Begin to Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Actual Ceremony\n5:00pm Post-Ceremony Photos",
+        "3:00pm Vendors Access / Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm Invite Time / Guests Begin to Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Actual Ceremony\n5:00pm Post-Ceremony Photos",
         "",
         "Weddings"
       ],
@@ -165,7 +165,7 @@
         "1",
         "",
         "",
-        "11:00am Vendors Access to Ceremony Area / Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+        "11:00am Vendors Access / Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
@@ -226,14 +226,14 @@
       "kind": "event",
       "cells": [
         "SU 12/27/2026",
-        "Good Neighborhood Church Worship Service",
+        "Good Neighborhood Church",
         "Barnum",
         "10:30am-12:00pm",
         "Worship Service",
         "2",
         "",
         "",
-        "10:30AM-11:30AM Korean Worship Service",
+        "10:30am Service\n12:00pm Vacate",
         "",
         ""
       ],
