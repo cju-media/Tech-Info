@@ -1,85 +1,64 @@
 {
   "build": {
-    "id": "11-15-26_1114-0856",
-    "week": "11-15-26",
-    "dateText": "November 15, 2026",
+    "id": "11-22-26_1119-1512",
+    "week": "11-22-26",
+    "dateText": "November 22, 2026",
     "fields": {
       "heading": [
-        "Fall Series 11",
+        "Fall Series 12",
         "Sacred Earth, Sacred Soul",
-        "Sacred Compassion"
+        "Sacred Gratitude"
       ],
-      "dateText": "November 15, 2026",
+      "dateText": "November 22, 2026",
       "preacher": "Rev. Laura Vail Fregin",
-      "title": "Sacred Compassion"
+      "title": "Sacred Gratitude"
     },
     "ow": {
-      "name": "11.15.26_OW_FINAL3.pdf",
-      "sha": "fc7317f19568f751336df05d0925b32074b17168"
+      "name": "11.22.26_OW_Draft.pdf",
+      "sha": "9601da2470e42e7ee514531469aefd4c71b387e1"
     },
-    "built_at": "2026-11-14T08:56:33-08:00",
+    "built_at": "2026-11-19T15:12:27-08:00",
     "notes": [],
     "options": [
       {
         "n": 1,
-        "hex": "#0780E9",
-        "label": "blue, 81% of the photo's color",
+        "hex": "#946545",
+        "label": "orange, 97% of the photo's color",
         "problems": [],
-        "service": "fccla/status/11-15-26_1114-0856/1-service.jpg",
-        "sermon": "fccla/status/11-15-26_1114-0856/1-sermon.jpg"
+        "service": "fccla/status/11-22-26_1119-1512/1-service.jpg",
+        "sermon": "fccla/status/11-22-26_1119-1512/1-sermon.jpg"
       },
       {
         "n": 2,
-        "hex": "#6D6A36",
-        "label": "gold, 17% of the photo's color",
+        "hex": "#684730",
+        "label": "deeper orange",
         "problems": [],
-        "service": "fccla/status/11-15-26_1114-0856/2-service.jpg",
-        "sermon": "fccla/status/11-15-26_1114-0856/2-sermon.jpg"
+        "service": "fccla/status/11-22-26_1119-1512/2-service.jpg",
+        "sermon": "fccla/status/11-22-26_1119-1512/2-sermon.jpg"
       },
       {
         "n": 3,
-        "hex": "#055AA3",
-        "label": "deeper blue",
+        "hex": "#B78564",
+        "label": "lighter orange",
         "problems": [],
-        "service": "fccla/status/11-15-26_1114-0856/3-service.jpg",
-        "sermon": "fccla/status/11-15-26_1114-0856/3-sermon.jpg"
-      },
-      {
-        "n": 4,
-        "hex": "#6E6B37",
-        "label": "your earlier pick",
-        "problems": [],
-        "service": "fccla/status/11-15-26_1114-0856/4-service.jpg",
-        "sermon": "fccla/status/11-15-26_1114-0856/4-sermon.jpg"
+        "service": "fccla/status/11-22-26_1119-1512/3-service.jpg",
+        "sermon": "fccla/status/11-22-26_1119-1512/3-sermon.jpg"
       }
     ],
-    "pick": {
-      "n": 2,
-      "hex": "#6D6A36",
-      "label": "gold, 17% of the photo's color",
-      "at": "2026-11-14T09:07:26-08:00",
-      "drive": "sent"
-    },
+    "pick": null,
     "heading": [
-      "Fall Series 11",
+      "Fall Series 12",
       "Sacred Earth, Sacred Soul",
-      "Sacred Compassion"
+      "Sacred Gratitude"
     ],
-    "title": "Sacred Compassion",
+    "title": "Sacred Gratitude",
     "preacher": "Rev. Laura Vail Fregin",
-    "previous_pick": {
-      "n": 2,
-      "hex": "#6E6B37",
-      "label": "gold, 17% of the photo's color",
-      "at": "2026-11-12T21:22:05-08:00",
-      "drive": "sent"
-    },
-    "cover": "fccla/status/11-15-26_1114-0856/cover.jpg"
+    "cover": "fccla/status/11-22-26_1119-1512/cover.jpg"
   },
   "last_run": {
-    "at": "2026-11-14T09:07:26-08:00",
-    "trigger": "pick",
-    "status": "picked",
-    "message": "Using #6D6A36 (gold) for Sunday, November 15. Saved to iCloud (11-15-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
+    "at": "2026-11-19T15:12:27-08:00",
+    "trigger": "upload",
+    "status": "built",
+    "message": "Title graphics for Sunday, November 22 are ready to pick (link below).\n1 orange #946545 \u00b7 2 deeper orange #684730 \u00b7 3 lighter orange #B78564"
   }
 }
