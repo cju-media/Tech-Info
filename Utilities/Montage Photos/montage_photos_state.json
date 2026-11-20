@@ -390,6 +390,11 @@
       "keep": false,
       "source": "https://files.constantcontact.com/fc7c4b5b001/3f649715-46e3-4c78-8ad3-b6d4e33717ae.png?rdr=true"
     },
+    "263b225f9281782f9bb328011643ad66618fc1361c2c61f60d92143fe0fa10d4": {
+      "issue": "https://conta.cc/4AIdODY",
+      "keep": false,
+      "source": "https://files.constantcontact.com/fc7c4b5b001/76676eed-46dc-4543-8e6a-ec39534dbe72.png?rdr=true"
+    },
     "27783ac84173b845db0c14681aac71fc6f2a01c676f87c91d3a939bce4ffd8f5": {
       "category": "First Kids Firsts",
       "drive_id": "11ZLchLAbFCZxYt9rDx8DrpqtlzFjIu1K",
@@ -1485,6 +1490,11 @@
       "source": "https://files.constantcontact.com/fc7c4b5b001/78d1555f-31b4-4deb-85c1-7ca8b05540db.png?rdr=true",
       "subcategory": "Youth Service"
     },
+    "a872eccf0c02fc29333f9360942fc881160a317edcfb999abe9d564360f0c962": {
+      "issue": "https://conta.cc/4AIdODY",
+      "keep": false,
+      "source": "https://files.constantcontact.com/fc7c4b5b001/419fc002-64fc-4127-9ae4-c7078244fbbf.png?rdr=true"
+    },
     "a8a797ec974b3cfe7022f54e0d5acd74ccf3f2d61ae9e242f5b7ae330dbb2f76": {
       "category": "First Kids Firsts",
       "drive_id": "1p82idNwGHEqKgEQvZo2I_vxGHBpXlEyE",
@@ -1511,6 +1521,15 @@
       "name": "2026-05-28 Children holding dove balloons at doorway.jpg",
       "source": "https://files.constantcontact.com/fc7c4b5b001/32bdbb1b-510e-4355-aca4-7fc9d03cbdbe.jpg?rdr=true",
       "subcategory": "Pentecost"
+    },
+    "ae43dbabdfd12ff46a612c3dd1a61c47879ff610a0f960b610363f66409cfcd7": {
+      "category": "Food at First",
+      "drive_id": "1mCXPXoGDTb_n_UE0z8ldNuAsn6eTWeOc",
+      "issue": "https://conta.cc/4AIdODY",
+      "keep": true,
+      "name": "2026-11-19 Food at First volunteers behind food tables.jpg",
+      "source": "https://files.constantcontact.com/fc7c4b5b001/4cfc5dfa-0ec6-4148-a38b-7d4a1b390054.jpg?rdr=true",
+      "subcategory": ""
     },
     "af0ebce42e3fafb108fef32350dd5ffb5668d0655f5e023509f86cc9193b9fdf": {
       "issue": "https://conta.cc/4CeTn3k",
@@ -1715,6 +1734,15 @@
       "keep": false,
       "source": "https://files.constantcontact.com/fc7c4b5b001/84ea273c-1e6d-4f3b-9550-dd73862808a9.jpg?rdr=true"
     },
+    "c1e36d054cc1f59858be00f373ded848cd4edcc95e784a57fc8cd37f9a2c836e": {
+      "category": "Events",
+      "drive_id": "1_U8l7Ff739h5FzhEq8aDwF-IbNc7NpDV",
+      "issue": "https://conta.cc/4AIdODY",
+      "keep": true,
+      "name": "2026-11-19 Group walking along dirt trail outdoors.jpg",
+      "source": "https://files.constantcontact.com/fc7c4b5b001/130da751-5be1-4fd5-8975-9d0b431c6e90.jpg?rdr=true",
+      "subcategory": "Advent Creation Walk"
+    },
     "c1fe97aab9ddc31fe37d080a63928f19ab1e22ebc72d32b1fbad2b89d2438773": {
       "category": "First Kids Firsts",
       "drive_id": "14_nRvPvuRVjSJ-T142VPdybOYhFat7-5",
@@ -1828,6 +1856,15 @@
       "name": "2026-07-16 Girl coloring a chalk sun on pavement.jpg",
       "source": "https://files.constantcontact.com/fc7c4b5b001/eb5c8413-710f-4b6a-9b4e-cf9ea7058230.jpg?rdr=true",
       "subcategory": "Chalk Art"
+    },
+    "cac950d3e15ab6d7d647d8fd18846af60a0d5fa2a20c6cf597f9662556404ac1": {
+      "category": "Gardens",
+      "drive_id": "1St_LgMRXKtyKxUbO9_Y9e4Jtsv841eBE",
+      "issue": "https://conta.cc/4AIdODY",
+      "keep": true,
+      "name": "2026-11-19 Volunteers displaying harvested greens outdoors.jpg",
+      "source": "https://files.constantcontact.com/fc7c4b5b001/14b01254-28e5-4930-92aa-e4f990eeab33.jpg?rdr=true",
+      "subcategory": "Popup Harvest"
     },
     "cac986f167db07a259f715a2ce12e68d4a864ac39649de51f0228ab98e620d55": {
       "category": "Gardens",
@@ -2416,6 +2453,11 @@
       "date": "2026-09-03",
       "kept": 11,
       "title": "The Meetinghouse This Week - September 3rd, 2026"
+    },
+    "https://conta.cc/4AIdODY": {
+      "date": "2026-11-19",
+      "kept": 3,
+      "title": "The Meetinghouse This Week - November 19th, 2026"
     },
     "https://conta.cc/4CeTn3k": {
       "date": "2026-11-12",
