@@ -1,48 +1,69 @@
 {
-  "issue_fingerprint": "0f8c87df659fbf12722dd77cc5b0cc38422c26ef67f15991e1fca4bffaa4bba7",
-  "issue_title": "The Meetinghouse This Week - November 12th, 2026",
-  "issue_url": "https://conta.cc/4CeTn3k",
+  "issue_fingerprint": "000410565d748102dbd7c0effe7d4d57c30732088447369256cd94c1359ae92e",
+  "issue_title": "The Meetinghouse This Week - November 19th, 2026",
+  "issue_url": "https://conta.cc/4AIdODY",
   "items": [
     {
-      "blurb": "Young adults are invited to make new friends at Shatto 39 Lanes.",
-      "date": "2026-11-13",
-      "title": "NextGen Bowling Night",
-      "when": "Friday, Nov 13 | 7pm"
+      "blurb": "Children decorate Advent candles and prepare for the upcoming holiday season.",
+      "date": "2026-11-22",
+      "title": "Kids Advent Candle Crafting",
+      "when": "Sunday, Nov 22 | 11am"
     },
     {
-      "blurb": "Learn more about the community and what membership means at First Church.",
-      "date": "2026-11-15",
-      "title": "Discovering Belonging",
-      "when": "Sunday, Nov 15 | 8:45am"
+      "blurb": "Join us for a fried chicken and macaroni salad lunch in the Barnum Room.",
+      "date": "2026-11-22",
+      "title": "Collaboratives Friendsgiving Lunch",
+      "when": "Sunday, Nov 22 | 12:30pm"
     },
     {
-      "blurb": "Explore the community gardens and urban farm on campus.",
-      "date": "2026-11-15",
-      "title": "Tour the Gardens & Farm",
-      "when": "Sunday, Nov 15 | 12:30pm"
+      "blurb": "Explore Celtic spirituality and natural rhythms in a weekly Zoom group.",
+      "date": "2026-11-24",
+      "title": "Book Conversations With Rev. Michael",
+      "when": "Tuesdays | 7pm"
     },
     {
-      "blurb": "Explore Celtic spirituality and earth-based faith in a weekly Zoom group.",
-      "date": "2026-11-17",
-      "title": "Book Conversations with Rev. Michael",
-      "when": "Tuesdays, Nov 17 | 7pm"
-    },
-    {
-      "blurb": "Join an online deep dive into the Lord's Prayer via Zoom.",
-      "date": "2026-11-19",
-      "title": "Not Your Grandma's Bible Study",
-      "when": "Thursday, Nov 19 | 6pm"
-    },
-    {
-      "blurb": "Enjoy crafts, hot cocoa, carols, cookies, and local vendors for all ages.",
+      "blurb": "Enjoy craft stations, hot cocoa, carols, and cookies for all ages.",
       "date": "2026-11-29",
-      "title": "Advent Festival & Fair-Trade Market",
+      "title": "Advent Festival & Fair Trade Market",
       "when": "Sunday, Nov 29 | 12pm"
+    },
+    {
+      "blurb": "Join a guided walk at Ascot Hills Park with silence, prayer, and reflection.",
+      "date": "2026-12-12",
+      "title": "Advent Creation Walk",
+      "when": "Saturday, Dec 12 | 9am"
+    },
+    {
+      "blurb": "Children and youth are invited to sign up for roles in the holiday pageant.",
+      "date": "2026-12-24",
+      "title": "Christmas Eve Pageant Signups",
+      "when": "Thursday, Dec 24"
     }
   ],
   "published": {
     "at": "2026-11-20",
-    "items": [],
-    "md5": "108d47c979c0296a2bb5049d5d597e25"
+    "items": [
+      {
+        "date": "2026-11-22",
+        "title": "Kids Advent Candle Crafting",
+        "when": "Sunday, Nov 22 | 11am"
+      },
+      {
+        "date": "2026-11-22",
+        "title": "Collaboratives Friendsgiving Lunch",
+        "when": "Sunday, Nov 22 | 12:30pm"
+      },
+      {
+        "date": "2026-11-24",
+        "title": "Book Conversations With Rev. Michael",
+        "when": "Tuesdays | 7pm"
+      },
+      {
+        "date": "2026-11-29",
+        "title": "Advent Festival & Fair Trade Market",
+        "when": "Sunday, Nov 29 | 12pm"
+      }
+    ],
+    "md5": "15b320b691fe5a3993286afd2ec25cdf"
   }
 }
