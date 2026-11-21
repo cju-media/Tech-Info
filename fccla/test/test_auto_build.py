@@ -370,5 +370,18 @@ class NewOwThatChangesNothing(unittest.TestCase):
         self.assertEqual(built, [1])
 
 
+class NotASundayService(unittest.TestCase):
+    """Christmas Eve's timed OWs get no title graphics (they're Sunday ones, one build at a time)."""
+
+    def test_timed_and_weekday_ows_are_skipped(self):
+        for name in ("12.24.26 5:30pm OW.pdf", "12.24.26_11pm.pdf", "12.24.26 OW.pdf"):
+            self.assertIn("only built for Sunday services", ab.not_a_sunday_service(name) or "", name)
+        self.assertIn("December 24 5:30pm", ab.not_a_sunday_service("12.24.26 5:30pm OW.pdf"))
+
+    def test_sunday_ows_build_as_before(self):
+        for name in ("12.27.26 OW.pdf", "10.4.26_OW_Draft.pdf", "no date.pdf"):
+            self.assertIsNone(ab.not_a_sunday_service(name), name)
+
+
 if __name__ == "__main__":
     unittest.main()

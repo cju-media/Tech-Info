@@ -8,6 +8,12 @@ church name -- so this deliberately frames the thumbnail rather than
 restating it. The header carries the scheduled day and time because that
 comes from the API and is authoritative even if a thumbnail is stale.
 
+A day with several services (Christmas Eve: 5:30, 8pm, 11pm) gets one card
+for all of them: the next one's thumbnail, a strip of that day's remaining
+service times with the next marked, and a code straight to the next one's
+stream. A service is listed as soon as its broadcast is public on the
+playlist, so the card advertises what people can actually open.
+
 Between a service ending and the next being created there is nothing
 scheduled, so the card keeps showing the most recent past service, labelled
 "Past Service" -- a real service with a real thumbnail says more than a
@@ -124,16 +130,32 @@ def best_thumbnail(thumbnails):
     return None
 
 
-def pick_next_broadcast(videos, now):
-    """The broadcast to put on the card, or None if the playlist has none.
+def is_public(video):
+    """A broadcast people can open. The playlist is the church's own and its
+    broadcasts are created public, so a missing status (older API responses,
+    tests) counts as public; an explicit private/unlisted one is never
+    advertised."""
+    status = (video.get('status') or {}).get('privacyStatus')
+    return status in (None, '', 'public')
 
-    The soonest one still to come or under way, and failing that the most
-    recent past one. That last case is the placeholder between a service
-    ending and the next being created: a real service with a real thumbnail
-    says more than a generic channel card, and the labels make clear it has
-    already happened."""
+
+def as_service(video, start):
+    snippet = video.get('snippet') or {}
+    return {
+        'id': video.get('id'),
+        'title': (snippet.get('title') or '').strip(),
+        'start': start,
+        'thumbnail': best_thumbnail(snippet.get('thumbnails')),
+    }
+
+
+def split_broadcasts(videos, now):
+    """([(start, video)] still to come or under way, [(start, video)] over),
+    public broadcasts only."""
     upcoming, past = [], []
     for video in videos or []:
+        if not is_public(video):
+            continue
         details = video.get('liveStreamingDetails') or {}
         start = parse_api_time(details.get('scheduledStartTime'))
         if start is None:
@@ -143,20 +165,47 @@ def pick_next_broadcast(videos, now):
             past.append((start, video))
         else:
             upcoming.append((start, video))
+    return upcoming, past
 
+
+def pick_next_broadcast(videos, now):
+    """The broadcast to put on the card, or None if the playlist has none.
+
+    The soonest one still to come or under way, and failing that the most
+    recent past one. That last case is the placeholder between a service
+    ending and the next being created: a real service with a real thumbnail
+    says more than a generic channel card, and the labels make clear it has
+    already happened.
+
+    'others': the rest of that day's broadcasts still to come (Christmas
+    Eve's 8pm and 11pm while the card leads with 5:30), in start order --
+    empty on an ordinary Sunday. A service that has ended drops off, so the
+    strip only ever lists what can still be joined."""
+    upcoming, past = split_broadcasts(videos, now)
     if upcoming:
         start, video = min(upcoming, key=lambda pair: pair[0])
     elif past:
         start, video = max(past, key=lambda pair: pair[0])
     else:
         return None
-    snippet = video.get('snippet') or {}
-    return {
-        'id': video.get('id'),
-        'title': (snippet.get('title') or '').strip(),
-        'start': start,
-        'thumbnail': best_thumbnail(snippet.get('thumbnails')),
-    }
+    service = as_service(video, start)
+    service['others'] = [as_service(v, s) for s, v in sorted(upcoming, key=lambda pair: pair[0])
+                         if s.date() == start.date() and v is not video]
+    return service
+
+
+def day_services(service):
+    """Every service the card advertises, next first: just the one on an
+    ordinary Sunday, the whole evening on Christmas Eve."""
+    return [service] + list((service or {}).get('others') or [])
+
+
+def service_name(title):
+    """The service's own name off a stream title: "Christmas Eve || A Children's
+    Christmas Eve" -> "A Children's Christmas Eve". A title without the
+    "series || name" form is used whole."""
+    title = (title or '').strip()
+    return title.split('||', 1)[1].strip() if '||' in title else title
 
 
 def format_when(start, now):
@@ -224,6 +273,23 @@ def stream_is_current(start, now):
     Both the heading/line and the QR target key off this, so the card can't
     end up saying "Watch on YouTube" beside a code that subscribes."""
     return start is not None and now >= start - LEAD
+
+
+def multi_labels(service, now):
+    """(heading, when-line) for a day with several services. The strip under
+    the thumbnail carries the times, so the header carries only the day --
+    and once the next service is under way, where to watch it."""
+    start = service.get('start')
+    if stream_is_current(start, now):
+        return "Today's Services", 'Watch on YouTube'
+    day = start.date()
+    if day == now.date():
+        when = 'Today'
+    elif day == now.date() + datetime.timedelta(days=1):
+        when = 'Tomorrow'
+    else:
+        when = start.strftime('%A, %B %-d')
+    return 'Upcoming Services', when
 
 
 def service_labels(start, now):
@@ -313,8 +379,9 @@ def fetch_next_service(service, now):
     ]
     if not video_ids:
         return None
+    # status: only a public broadcast is advertised (see is_public).
     videos = service.videos().list(
-        part='snippet,liveStreamingDetails', id=','.join(video_ids),
+        part='snippet,liveStreamingDetails,status', id=','.join(video_ids),
     ).execute().get('items', [])
     return pick_next_broadcast(videos, now)
 
@@ -385,20 +452,34 @@ def build_html(service=None, channel=None, now=None):
         # The stream card's right column carries a compact version of the
         # channel above the code -- the thumbnail says what the service is,
         # but nothing on it says whose channel to subscribe to.
-        heading, when = service_labels(service.get('start'), now)
-        # Same predicate as the heading, so the code and the line beside it
-        # can never disagree: whenever the card says "Watch on YouTube" the
-        # code goes to the broadcast, not a subscribe dialog.
-        current = stream_is_current(service.get('start'), now)
-        qr_block = (code(watch_url(service),
-                         'QR code linking to the service broadcast', 'Scan to Watch')
-                    if current and watch_url(service) else subscribe)
+        services = day_services(service)
+        if len(services) > 1:
+            # Several services that day: the next one's thumbnail, the day's
+            # times under it, and the code to the next one's stream from the
+            # moment it's public -- there is a stream to open, and "which
+            # one is next" is the whole question this card answers.
+            heading, when = multi_labels(service, now)
+            qr_block = (code(watch_url(service),
+                             'QR code linking to the next service broadcast', 'Scan to Watch')
+                        if watch_url(service) else subscribe)
+            body = MULTI_BODY.format(thumb=service['thumb_uri'],
+                                     strip=services_strip(services, now))
+        else:
+            heading, when = service_labels(service.get('start'), now)
+            # Same predicate as the heading, so the code and the line beside it
+            # can never disagree: whenever the card says "Watch on YouTube" the
+            # code goes to the broadcast, not a subscribe dialog.
+            current = stream_is_current(service.get('start'), now)
+            qr_block = (code(watch_url(service),
+                             'QR code linking to the service broadcast', 'Scan to Watch')
+                        if current and watch_url(service) else subscribe)
+            body = STREAM_BODY.format(thumb=service['thumb_uri'])
         side = SIDE_TEMPLATE.format(mini=mini_channel(channel), qr=qr_block)
         return HTML_SHELL.format(
             eyebrow='Join Us for Worship',
             heading=heading,
             when=when,
-            body=STREAM_BODY.format(thumb=service['thumb_uri']),
+            body=body,
             footer='Watch live at fccla.org/live',
             side=side if (qr_block or mini_channel(channel)) else '',
         )
@@ -459,6 +540,42 @@ def mini_channel(channel):
 
 STREAM_BODY = """    <img class="thumb" src="{thumb}" alt="Upcoming service">"""
 
+MULTI_BODY = """    <div class="day">
+      <img class="thumb" src="{thumb}" alt="Next service">
+      <div class="strip">
+{strip}
+      </div>
+    </div>"""
+
+SERVICE_TILE = """        <div class="svc{cls}">
+          <div class="svc-tag">{tag}</div>
+          <div class="svc-time">{time}</div>
+          <div class="svc-name">{name}</div>
+        </div>"""
+
+
+def html_escape(text):
+    return (str(text or '').replace('&', '&amp;').replace('<', '&lt;')
+            .replace('>', '&gt;').replace('"', '&quot;'))
+
+
+def services_strip(services, now):
+    """One tile per service that day, next first. The next one is marked --
+    "Next", or "Now" once it's under way -- and carries the code."""
+    tiles = []
+    for i, svc in enumerate(services):
+        start = svc.get('start')
+        if i == 0:
+            tag = 'Now' if stream_is_current(start, now) else 'Next'
+            cls = ' svc-next'
+        else:
+            tag, cls = '&nbsp;', ''
+        tiles.append(SERVICE_TILE.format(
+            cls=cls, tag=tag,
+            time=start.strftime('%-I:%M %p') if start else '',
+            name=html_escape(service_name(svc.get('title')))))
+    return '\n'.join(tiles)
+
 CHANNEL_BODY = """    <div class="channel">
       {avatar}
       <div class="cname">{name}</div>
@@ -508,6 +625,24 @@ HTML_SHELL = """<!DOCTYPE html>
   .thumb{{height:100%;max-width:100%;aspect-ratio:16/9;object-fit:cover;
     border-radius:6px;border:1px solid rgba(26,26,26,.15);
     box-shadow:0 6px 26px rgba(110,0,19,.18);}}
+
+  /* several services in one day: the next one's thumbnail over the day's times */
+  .day{{height:100%;display:flex;flex-direction:column;align-items:center;
+    gap:22px;min-height:0;max-width:100%}}
+  .day .thumb{{flex:1 1 auto;min-height:0;height:auto;width:auto}}
+  .strip{{flex:0 0 auto;display:flex;gap:18px;justify-content:center;
+    width:100%}}
+  .svc{{flex:1 1 0;max-width:420px;background:#fff;border:1px solid rgba(26,26,26,.15);
+    border-radius:8px;padding:12px 24px 14px;text-align:center;
+    box-shadow:0 3px 14px rgba(26,26,26,.08)}}
+  .svc-next{{border:2px solid var(--crimson);box-shadow:0 6px 22px rgba(110,0,19,.22)}}
+  .svc-tag{{font-size:15px;letter-spacing:.3em;text-transform:uppercase;
+    font-weight:700;color:var(--gold);min-height:18px}}
+  .svc-next .svc-tag{{color:var(--crimson)}}
+  .svc-time{{font-family:Cinzel,Georgia,serif;font-size:40px;font-weight:700;
+    line-height:1.1;color:var(--ink);margin-top:4px}}
+  .svc-name{{font-size:20px;color:var(--muted);margin-top:4px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}}
 
   /* fallback: the channel */
   /* Extra separation from the QR column, applied here rather than to main's
@@ -630,6 +765,8 @@ def main():
 
     if upcoming:
         print(f"  {upcoming['title']!r} at {upcoming['start']:%a %b %-d %-I:%M %p}")
+        for other in upcoming.get('others') or []:
+            print(f"  then {other['title']!r} at {other['start']:%-I:%M %p}")
         upcoming['thumb_uri'] = data_uri(upcoming.get('thumbnail'))
         if not upcoming['thumb_uri']:
             # Falling through to the channel card is better than publishing a

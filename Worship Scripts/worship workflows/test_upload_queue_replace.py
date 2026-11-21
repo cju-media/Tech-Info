@@ -27,7 +27,34 @@ sys.modules["googleapiclient.http"].MediaIoBaseUpload = lambda *a, **k: object()
 sys.modules["google.oauth2"].service_account = sys.modules["google.oauth2.service_account"]
 sys.modules["google.oauth2.credentials"].Credentials = None
 
+import service_keys  # noqa: E402
 import upload_queue_to_drive as uq  # noqa: E402
+
+
+def make_service(root, key, title="Fall Series 5 || Painting the Stars",
+                 description="Download this service's program: https://www.fccla.org/ows/10-04-26", sha="sha1"):
+    """A generated service folder (what update_service_titles.py and
+    generate_youtube_description.py leave behind) under root."""
+    date, time = service_keys.parse_service_key(key)
+    folder = os.path.join(root, key)
+    os.makedirs(os.path.join(folder, "service-titles"), exist_ok=True)
+    with open(os.path.join(folder, "service-titles", "title.txt"), "w") as fh:
+        fh.write(title)
+    with open(os.path.join(folder, "Description.txt"), "w") as fh:
+        fh.write(description)
+    with open(os.path.join(folder, "state.json"), "w") as fh:
+        json.dump({"key": key, "date": date.isoformat(), "time": time, "ow_sha": sha}, fh)
+    with open(os.path.join(folder, "description.json"), "w") as fh:
+        json.dump({"ow_sha": sha}, fh)
+
+
+def services_root(*keys):
+    """A temporary Worship Scripts/services/ holding these generated services,
+    patched in for the duration of a test."""
+    root = tempfile.mkdtemp()
+    for key in keys:
+        make_service(root, key)
+    return mock.patch.object(service_keys, "SERVICES_DIR", root)
 
 
 class FakeDrive:
@@ -95,20 +122,8 @@ class UploadToDrive(unittest.TestCase):
     def test_title_and_description_overwrite_their_earlier_copies(self):
         # a second thumbnail for the same Sunday mustn't leave two title.txt / Description.txt
         drive = FakeDrive(images=[("txt", "title.txt", OLD)])
-        work = tempfile.mkdtemp()
-        cwd = os.getcwd()
-        os.chdir(work)
-        try:
-            os.makedirs(os.path.join("Worship Scripts", "service-titles"))
-            os.makedirs("Youtube Processing")
-            for p in (os.path.join("Worship Scripts", "service-titles", "title.txt"),
-                      os.path.join("Youtube Processing", "Description.txt")):
-                with open(p, "w") as fh:
-                    fh.write("text")
-            with mock.patch.object(uq, "dispatch_event"):
-                self.assertTrue(uq.upload_title_and_description(drive, "folder", "10-04-2026"))
-        finally:
-            os.chdir(cwd)
+        with services_root("2026-10-04"), mock.patch.object(uq, "dispatch_event"):
+            self.assertTrue(uq.upload_title_and_description(drive, "folder", "10-04-2026", key="2026-10-04"))
         self.assertNotIn("create", drive.calls)
         self.assertEqual(drive.calls.count("update:txt"), 2)    # FakeDrive finds "txt" for any name
 
@@ -122,18 +137,15 @@ class QueueWithSidecar(unittest.TestCase):
     """main() on a queued worship-service thumbnail, with and without {"replace": true}."""
 
     def run_queue(self, sidecar, images=(("abc", "Service_Title_10-4-26.jpg", OLD),),
-                  name="Service_Title_10-4-26.jpg", folder=None):
+                  name="Service_Title_10-4-26.jpg", folder=None, services=("2026-10-04",),
+                  today=None, gemini=None):
         work = tempfile.mkdtemp()
         cwd = os.getcwd()
         os.chdir(work)
         try:
             os.makedirs(uq.QUEUE_DIR)
-            os.makedirs(os.path.join("Worship Scripts", "service-titles"))
             os.makedirs("Youtube Processing")
-            for p in (os.path.join("Worship Scripts", "service-titles", "title.txt"),
-                      os.path.join("Youtube Processing", "Description.txt"),
-                      os.path.join("Youtube Processing", "create_youtube_stream.py")):
-                open(p, "w").close()
+            open(os.path.join("Youtube Processing", "create_youtube_stream.py"), "w").close()
             queued = os.path.join(uq.QUEUE_DIR, "1790000000000---%s---%s"
                                   % (folder or uq.THUMBNAILS_DEST_PARENT_FOLDER_ID, name))
             with open(queued, "wb") as fh:
@@ -143,17 +155,30 @@ class QueueWithSidecar(unittest.TestCase):
                     json.dump(sidecar, fh)
             drive = FakeDrive(images=images)
             runs, dated = [], []
+            self.events, self.asked = [], []
+
+            class Today(uq.datetime.datetime):
+                @classmethod
+                def now(cls, tz=None):
+                    return uq.datetime.datetime.combine(today or uq.datetime.date(2026, 10, 1),
+                                                        uq.datetime.time(12), tz)
+            clock = types.SimpleNamespace(datetime=Today, date=uq.datetime.date, timedelta=uq.datetime.timedelta,
+                                          time=uq.datetime.time)
             with mock.patch.object(uq, "get_drive_service", return_value=drive), \
+                 mock.patch.object(uq, "datetime", clock), \
+                 mock.patch.object(uq, "ask_gemini_for_service",
+                                   side_effect=lambda path, cands: self.asked.append([c[0] for c in cands]) or gemini), \
                  mock.patch.object(uq, "get_or_create_date_folder",
                                    side_effect=lambda s, parent, d: dated.append(d) or "datefolder"), \
-                 mock.patch.object(uq, "content_matches_target_week", return_value=True), \
-                 mock.patch.object(uq, "description_matches_target_week", return_value=True), \
-                 mock.patch.object(uq, "dispatch_event"), \
+                 services_root(*services), \
+                 mock.patch.object(uq, "dispatch_event", side_effect=lambda kind, payload: self.events.append((kind, payload))), \
                  mock.patch("subprocess.run", side_effect=lambda cmd, **k: runs.append(cmd) or
                             types.SimpleNamespace(returncode=0)):
                 uq.main()
             left = sorted(os.listdir(uq.QUEUE_DIR))
             self.dated = dated
+            self.pending = sorted(os.listdir(uq.PENDING_STREAM_DIR)) if os.path.isdir(uq.PENDING_STREAM_DIR) else []
+            self.held = sorted(os.listdir(uq.UNASSIGNED_DIR)) if os.path.isdir(uq.UNASSIGNED_DIR) else []
             return drive, runs, left
         finally:
             os.chdir(cwd)
@@ -208,6 +233,83 @@ class QueueWithSidecar(unittest.TestCase):
         self.assertEqual(self.stream_runs(runs), [])     # sermon thumbnails don't touch the stream
         self.assertEqual(left, [])
 
+    def test_christmas_eve_thumbnail_gets_its_own_folder_and_stream(self):
+        drive, runs, left = self.run_queue({"date": "12-24-2026", "time": "17:30", "replace": True},
+                                           name="Service_Title_12-24-26.jpg",
+                                           services=("2026-12-24_1730", "2026-12-24_2000", "2026-12-24_2300"))
+        self.assertEqual(self.dated, ["12-24-2026 5:30pm"])
+        stream = self.stream_runs(runs)
+        self.assertEqual(len(stream), 1)
+        self.assertEqual((stream[0][2], stream[0][4]), ("12-24-2026", "17:30"))
+        self.assertNotIn("--title", stream[0])          # generated text, not an override
+
+    def test_a_service_without_its_ow_waits_in_its_own_slot(self):
+        drive, runs, left = self.run_queue({"date": "12-24-2026", "time": "20:00", "replace": True},
+                                           name="Service_Title_12-24-26.jpg",
+                                           services=("2026-12-24_1730", "2026-12-24_2300"))
+        self.assertEqual(self.stream_runs(runs), [])
+        self.assertEqual(self.pending, ["2026-12-24_2000"])
+
+    def test_typed_title_alone_is_kept_with_the_generated_description(self):
+        drive, runs, left = self.run_queue({"date": "10-04-2026", "time": "10:30", "title": "My Title"})
+        stream = self.stream_runs(runs)[0]
+        self.assertEqual(stream[stream.index("--title") + 1], "My Title")
+        self.assertIn("ows/10-04-26", stream[stream.index("--description") + 1])
+
+    # Auto-detection: a dashboard upload with the livestream settings untouched.
+    XMAS = ("2026-12-24_1730", "2026-12-24_2000", "2026-12-24_2300", "2026-12-27")
+    AUTO = {"date": "12-24-2026", "time": "17:30", "replace": True, "auto": True, "suggested": "2026-12-24_1730"}
+
+    def run_auto(self, name="thumb.jpg", gemini=None, services=XMAS):
+        return self.run_queue(dict(self.AUTO), name=name, services=services,
+                              today=uq.datetime.date(2026, 12, 20), gemini=gemini)
+
+    def stream_time(self, runs):
+        stream = self.stream_runs(runs)
+        self.assertEqual(len(stream), 1)
+        return stream[0][2], stream[0][4]
+
+    def test_auto_reads_the_service_from_the_filename(self):
+        drive, runs, left = self.run_auto(name="Service_Title_12-24-26_11pm.jpg")
+        self.assertEqual(self.stream_time(runs), ("12-24-2026", "23:00"))
+        self.assertEqual(self.dated, ["12-24-2026 11pm"])
+        self.assertEqual(self.asked, [])                       # no need to look at the image
+
+    def test_auto_reads_the_service_off_the_image(self):
+        drive, runs, left = self.run_auto(gemini="2026-12-24_2000")
+        self.assertEqual(self.stream_time(runs), ("12-24-2026", "20:00"))
+        self.assertEqual(self.asked, [list(self.XMAS)])
+
+    def test_auto_holds_and_asks_when_the_image_doesnt_say(self):
+        drive, runs, left = self.run_auto(gemini="")
+        self.assertEqual(self.stream_runs(runs), [])
+        self.assertEqual(drive.calls, [])                      # nothing went to Drive
+        self.assertEqual(len(self.held), 2)                    # the image and its settings
+        self.assertEqual([k for k, _ in self.events], ["worship_thumbnail_needs_service"])
+        self.assertIn("5:30pm", self.events[0][1]["services"])
+
+    def test_auto_falls_back_to_the_suggestion_without_gemini(self):
+        drive, runs, left = self.run_auto(gemini=None)
+        self.assertEqual(self.stream_time(runs), ("12-24-2026", "17:30"))
+
+    def test_one_generated_service_is_still_checked_against_the_image(self):
+        # a thumbnail uploaded early may be for a service whose OW isn't posted yet
+        drive, runs, left = self.run_auto(gemini="", services=("2026-12-24_1730",))
+        self.assertEqual(self.stream_runs(runs), [])
+        self.assertEqual(len(self.held), 2)
+
+    def test_auto_with_nothing_generated_uses_the_panel(self):
+        drive, runs, left = self.run_auto(services=())
+        self.assertEqual(self.asked, [])
+        self.assertEqual(self.dated, ["12-24-2026 5:30pm"])
+
+    def test_a_chosen_service_is_used_as_is(self):
+        drive, runs, left = self.run_queue({"date": "12-24-2026", "time": "23:00", "replace": True},
+                                           name="thumb.jpg", services=self.XMAS,
+                                           today=uq.datetime.date(2026, 12, 20), gemini="2026-12-24_1730")
+        self.assertEqual(self.asked, [])
+        self.assertEqual(self.stream_time(runs), ("12-24-2026", "23:00"))
+
     def test_replace_never_touches_an_undated_parent_folder(self):
         # no date in the sidecar or the name, so the image stays in the parent folder: nothing
         # there may be overwritten or trashed
@@ -221,39 +323,36 @@ class DelayedStream(unittest.TestCase):
     """A stream that waited for its title/description (create_pending_stream.py) must still get
     title.txt and Description.txt next to its thumbnail in the week's Drive folder."""
 
-    def run_pending(self, returncode, meta=None):
+    def run_pending(self, returncode, meta=None, slots=(("10-04-2026", "10:30"),), services=("2026-10-04",)):
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "Youtube Processing"))
         import create_pending_stream as cps
         work = tempfile.mkdtemp()
         cwd = os.getcwd()
         os.chdir(work)
         try:
-            os.makedirs(cps.PENDING_STREAM_DIR)
-            os.makedirs(os.path.join("Worship Scripts", "service-titles"))
-            with open(os.path.join("Worship Scripts", "service-titles", "title.txt"), "w") as fh:
-                fh.write("Fall Series 5 || Painting the Stars")
-            with open(os.path.join("Youtube Processing", "Description.txt"), "w") as fh:
-                fh.write("Download this service's program: https://www.fccla.org/ows/10-04-26")
-            for name, date in (("service_titles_state.json", "2026-10-04"),):
-                with open(os.path.join("Worship Scripts", name), "w") as fh:
-                    json.dump({"target_date": date}, fh)
-            with open(os.path.join("Youtube Processing", "description_state.json"), "w") as fh:
-                json.dump({"target_date": "2026-10-04"}, fh)
-            thumb = os.path.join(cps.PENDING_STREAM_DIR, "thumbnail.jpg")
-            with open(thumb, "wb") as fh:
-                fh.write(b"jpeg")
-            pending = dict({"date": "10-04-2026", "time": "10:30", "thumbnail_path": thumb}, **(meta or {}))
-            with open(cps.PENDING_STREAM_META, "w") as fh:
-                json.dump(pending, fh)
+            self.metas = []
+            for date, time in slots:
+                slot = uq.pending_slot(date, time)
+                os.makedirs(slot)
+                thumb = os.path.join(slot, "thumbnail.jpg")
+                with open(thumb, "wb") as fh:
+                    fh.write(b"jpeg")
+                pending = dict({"date": date, "time": time, "thumbnail_path": thumb}, **(meta or {}))
+                self.metas.append(os.path.join(work, slot, "meta.json"))
+                with open(self.metas[-1], "w") as fh:
+                    json.dump(pending, fh)
             drive, events, dated = FakeDrive(), [], []
-            with mock.patch.object(uq, "get_drive_service", return_value=drive), \
+            self.runs = []
+            with services_root(*services), \
+                 mock.patch.object(uq, "get_drive_service", return_value=drive), \
                  mock.patch.object(uq, "get_or_create_date_folder",
                                    side_effect=lambda s, parent, d: dated.append((parent, d)) or "datefolder"), \
                  mock.patch.object(uq, "dispatch_event", side_effect=lambda kind, payload: events.append(kind)), \
                  mock.patch.object(cps, "note_thumbnail_attempt"), \
-                 mock.patch("subprocess.run", return_value=types.SimpleNamespace(returncode=returncode)):
+                 mock.patch("subprocess.run", side_effect=lambda cmd, **k: self.runs.append(cmd) or
+                            types.SimpleNamespace(returncode=returncode)):
                 cps.main()
-            left = os.path.exists(cps.PENDING_STREAM_META)
+            left = any(os.path.exists(m) for m in self.metas)
             return drive, events, dated, left
         finally:
             os.chdir(cwd)
@@ -273,6 +372,22 @@ class DelayedStream(unittest.TestCase):
     def test_a_thumbnail_retry_doesnt_upload_the_text_again(self):
         drive, events, dated, left = self.run_pending(0, {"thumbnail_attempts": 1, "text_in_drive": True})
         self.assertEqual(drive.calls, [])
+
+    def test_no_ow_yet_waits_without_running_anything(self):
+        drive, events, dated, left = self.run_pending(0, services=())
+        self.assertEqual(self.runs, [])
+        self.assertTrue(left)
+
+    def test_christmas_eve_services_wait_and_go_independently(self):
+        # 5:30 and 11pm have OWs, 8pm doesn't yet: two streams, each with its own time and Drive
+        # folder; 8pm keeps waiting in its own slot.
+        drive, events, dated, left = self.run_pending(
+            0, slots=(("12-24-2026", "17:30"), ("12-24-2026", "20:00"), ("12-24-2026", "23:00")),
+            services=("2026-12-24_1730", "2026-12-24_2300"))
+        made = [(c[2], c[4]) for c in self.runs if "create_youtube_stream.py" in c[1]]
+        self.assertEqual(sorted(made), [("12-24-2026", "17:30"), ("12-24-2026", "23:00")])
+        self.assertEqual(sorted(d for _, d in dated), ["12-24-2026 11pm", "12-24-2026 5:30pm"])
+        self.assertEqual([os.path.exists(m) for m in self.metas], [False, True, False])
 
 
 if __name__ == "__main__":

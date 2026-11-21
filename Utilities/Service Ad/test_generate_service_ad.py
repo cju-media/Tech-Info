@@ -29,6 +29,10 @@ from generate_service_ad import (
     parse_api_time,
     pick_next_broadcast,
     subscriber_text,
+    day_services,
+    multi_labels,
+    service_name,
+    services_strip,
 )
 
 NOW = datetime.datetime(2026, 9, 18, 9, 0, tzinfo=TZ)
@@ -493,6 +497,77 @@ class LeadIn(unittest.TestCase):
                     says_watch = 'Watch on YouTube' in out
                     code_watches = 'Scan to Watch' in out
                     self.assertEqual(says_watch, code_watches)
+
+
+class SeveralServicesInOneDay(unittest.TestCase):
+    """Christmas Eve: 5:30, 8pm and 11pm, each with its own public broadcast."""
+
+    EVE = datetime.date(2026, 12, 24)
+
+    def at(self, hour, minute=0, day=None):
+        return datetime.datetime.combine(day or self.EVE, datetime.time(hour, minute), tzinfo=TZ)
+
+    def stamp(self, hour, minute=0, day=None):
+        return self.at(hour, minute, day).astimezone(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+
+    def playlist(self, ended_530=False, private_800=False):
+        kids = video('k530', self.stamp(17, 30), title='Christmas Eve || A Children\'s Christmas Eve',
+                     ended=self.stamp(18, 40) if ended_530 else None)
+        candles = video('c800', self.stamp(20), title='Christmas Eve || Candlelight Service')
+        if private_800:
+            candles['status'] = {'privacyStatus': 'private'}
+        late = video('m1100', self.stamp(23), title='Christmas Eve || Midnight Mass')
+        sunday = video('sun', self.stamp(10, 30, datetime.date(2026, 12, 27)), title='ChristmasTide 1 || Light')
+        return [sunday, late, kids, candles]
+
+    def test_the_whole_evening_is_listed_days_ahead(self):
+        s = pick_next_broadcast(self.playlist(), self.at(15, day=datetime.date(2026, 12, 20)))
+        self.assertEqual([x['id'] for x in day_services(s)], ['k530', 'c800', 'm1100'])
+        self.assertEqual(multi_labels(s, self.at(15, day=datetime.date(2026, 12, 20))),
+                         ('Upcoming Services', 'Thursday, December 24'))
+
+    def test_a_finished_service_drops_off_and_the_next_leads(self):
+        now = self.at(18, 50)
+        s = pick_next_broadcast(self.playlist(ended_530=True), now)
+        self.assertEqual([x['id'] for x in day_services(s)], ['c800', 'm1100'])
+        self.assertEqual(multi_labels(s, now), ('Upcoming Services', 'Today'))
+
+    def test_once_under_way_the_header_points_at_the_stream(self):
+        now = self.at(20, 10)
+        s = pick_next_broadcast(self.playlist(ended_530=True), now)
+        self.assertEqual(multi_labels(s, now), ("Today's Services", 'Watch on YouTube'))
+        strip = services_strip(day_services(s), now)
+        self.assertIn('>Now<', strip)
+        self.assertIn('8:00 PM', strip)
+        self.assertIn('11:00 PM', strip)
+
+    def test_a_private_broadcast_is_not_advertised(self):
+        s = pick_next_broadcast(self.playlist(private_800=True), self.at(12))
+        self.assertEqual([x['id'] for x in day_services(s)], ['k530', 'm1100'])
+
+    def test_the_sunday_after_is_not_part_of_the_evening(self):
+        s = pick_next_broadcast(self.playlist(), self.at(12))
+        self.assertNotIn('sun', [x['id'] for x in day_services(s)])
+        sunday = pick_next_broadcast(self.playlist(), self.at(9, day=datetime.date(2026, 12, 27)))
+        self.assertEqual(day_services(sunday), [sunday])        # an ordinary Sunday: one service
+
+    def test_the_code_goes_to_the_next_service_before_it_starts(self):
+        now = self.at(12)
+        s = pick_next_broadcast(self.playlist(), now)
+        s['thumb_uri'] = 'data:image/png;base64,AA=='
+        with mock.patch('generate_service_ad.build_qr_data_uri', side_effect=lambda url, scale=4: 'qr:' + url):
+            html = build_html(s, {'title': 'FCCLA', 'handle': '@fccla', 'id': 'UC1'}, now)
+        self.assertIn('qr:https://www.youtube.com/watch?v=k530', html)
+        self.assertNotIn('sub_confirmation', html)
+        self.assertIn('Scan to Watch', html)
+        self.assertIn('Upcoming Services', html)
+        self.assertIn('5:30 PM', html)
+        self.assertIn("A Children's Christmas Eve", html)
+
+    def test_service_name_strips_the_series(self):
+        self.assertEqual(service_name('Christmas Eve || Candlelight Service'), 'Candlelight Service')
+        self.assertEqual(service_name('Sunday Worship'), 'Sunday Worship')
+        self.assertEqual(service_name(None), '')
 
 
 if __name__ == '__main__':

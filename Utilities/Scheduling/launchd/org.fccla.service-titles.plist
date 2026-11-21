@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Fires the Service Titles Checker on a clock that doesn't drop timers.
+
+  The checker (update_service_titles.py) is what moves the live service-title
+  files on to the next service -- and, through the workflows chained off it,
+  the live chapters.txt and the YouTube streams. Between Sundays an hour late
+  doesn't matter. On Christmas Eve it does: the 8pm titles have to be in
+  ProPresenter by 7pm and the 11pm ones by 10pm, and GitHub's own hourly
+  schedule delivers about one run in four (see README.md here).
+
+  Every half hour, at :02 and :32, so a switch that falls on the hour or the
+  half hour is picked up within a few minutes. A run with nothing to do costs
+  a few API calls and no commit.
+
+  Install: see README.md in this directory.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>org.fccla.service-titles</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/soundteam/Documents/Tech-Info/Utilities/Scheduling/launchd/dispatch_workflow.py</string>
+        <string>service_titles_checker.yml</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Minute</key><integer>2</integer>
+        </dict>
+        <dict>
+            <key>Minute</key><integer>32</integer>
+        </dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/soundteam/Library/Logs/fccla-service-titles.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/soundteam/Library/Logs/fccla-service-titles.log</string>
+</dict>
+</plist>
