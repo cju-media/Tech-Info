@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-20T18:01:50+00:00",
+  "generated": "2026-11-21T16:59:07+00:00",
   "window": {
-    "start": "2026-11-20",
-    "end": "2027-02-20"
+    "start": "2026-11-21",
+    "end": "2027-02-21"
   },
   "columns": [
     "Date",
@@ -34,6 +34,23 @@
         ""
       ],
       "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 2/21/2027",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
     },
     {
       "kind": "event",
@@ -80,7 +97,7 @@
         "1",
         "",
         "",
-        "3:00pm Vendors Access / Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm Invite Time / Guests Begin to Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Actual Ceremony\n5:00pm Post-Ceremony Photos",
+        "3:00pm Vendors Access / Wedding Party Arrival\n3:45pm Guests Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Ceremony\n5:00pm Post-Ceremony Photos\n6:00pm Departure",
         "",
         "Weddings"
       ],
@@ -165,7 +182,7 @@
         "1",
         "",
         "",
-        "11:00am Vendors Access / Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+        "11:00am Vendors Access / Wedding Party Arrival\n11:45am Guests Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
@@ -226,14 +243,14 @@
       "kind": "event",
       "cells": [
         "SU 12/27/2026",
-        "Good Neighborhood Church",
+        "Good Neighborhood Church Worship Service",
         "Barnum",
         "10:30am-12:00pm",
         "Worship Service",
         "2",
         "",
         "",
-        "10:30am Service\n12:00pm Vacate",
+        "10:30am Korean Worship Service\n12:00pm Vacate",
         "",
         ""
       ],
@@ -258,8 +275,8 @@
     }
   ],
   "counts": {
-    "events": 11,
-    "worship": 7,
+    "events": 12,
+    "worship": 8,
     "from_calendar": 4
   }
 }

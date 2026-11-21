@@ -4,7 +4,7 @@
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
-      "schedule": "11:00am Vendors Access / Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
+      "schedule": "11:00am Vendors Access / Wedding Party Arrival\n11:45am Guests Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
@@ -12,15 +12,15 @@
       "call_times": "3:00pm-6:00pm",
       "count": 1,
       "name": "Jianqiang Li & Meiru Qu Wedding",
-      "schedule": "3:00pm Vendors Access / Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm Invite Time / Guests Begin to Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Actual Ceremony\n5:00pm Post-Ceremony Photos",
+      "schedule": "3:00pm Vendors Access / Wedding Party Arrival\n3:45pm Guests Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Ceremony\n5:00pm Post-Ceremony Photos\n6:00pm Departure",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
     "040000008200E00074C5B7101A82E00800000000F9E579BB2905DD01000000000000000010000000B9F067A43FF19040AB62D5B33C6CC988::2026-12-27": {
       "call_times": "10:30am-12:00pm",
       "count": 2,
-      "name": "Good Neighborhood Church",
-      "schedule": "10:30am Service\n12:00pm Vacate",
+      "name": "Good Neighborhood Church Worship Service",
+      "schedule": "10:30am Korean Worship Service\n12:00pm Vacate",
       "type": "Worship Service",
       "venue": "Barnum"
     },
@@ -33,6 +33,6 @@
       "venue": "Sanctuary"
     }
   },
-  "fingerprint": "346c3647ed9abdc6cce95733cdabc30f0bb8e0c9c9bdd4edfcc5b57685882ca4",
-  "gemini_at": "2026-11-19T18:42:11+00:00"
+  "fingerprint": "0caee0912f125c82187909e34e29f770caeee2df6109c9b90fdc9a828efbc874",
+  "gemini_at": "2026-11-21T16:59:07+00:00"
 }
