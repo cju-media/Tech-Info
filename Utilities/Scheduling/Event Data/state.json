@@ -29,7 +29,6 @@
             "su-12-27-2026-worship-service"
         ],
         "Saad": [
-            "sa-11-21-2026-sofia-uribe-robin-aimaq-wedding",
             "su-11-29-2026-worship-service",
             "su-12-6-2026-holadays-synesthesia-sinfonietta-concert",
             "su-12-6-2026-worship-service",
@@ -135,11 +134,6 @@
             "date": "2026-11-22",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
-        },
-        "sa-11-21-2026-sofia-uribe-robin-aimaq-wedding": {
-            "date": "2026-11-21",
-            "name": "Sofia Uribe & Robin Aimaq Wedding",
-            "call_time": "2:00pm-5:00pm"
         }
     }
 }
