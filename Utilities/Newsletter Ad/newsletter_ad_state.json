@@ -41,18 +41,8 @@
     }
   ],
   "published": {
-    "at": "2026-11-22",
+    "at": "2026-11-23",
     "items": [
-      {
-        "date": "2026-11-22",
-        "title": "Kids Advent Candle Crafting",
-        "when": "Sunday, Nov 22 | 11am"
-      },
-      {
-        "date": "2026-11-22",
-        "title": "Collaboratives Friendsgiving Lunch",
-        "when": "Sunday, Nov 22 | 12:30pm"
-      },
       {
         "date": "2026-11-24",
         "title": "Book Conversations With Rev. Michael",
@@ -62,8 +52,18 @@
         "date": "2026-11-29",
         "title": "Advent Festival & Fair Trade Market",
         "when": "Sunday, Nov 29 | 12pm"
+      },
+      {
+        "date": "2026-12-12",
+        "title": "Advent Creation Walk",
+        "when": "Saturday, Dec 12 | 9am"
+      },
+      {
+        "date": "2026-12-24",
+        "title": "Christmas Eve Pageant Signups",
+        "when": "Thursday, Dec 24"
       }
     ],
-    "md5": "15b320b691fe5a3993286afd2ec25cdf"
+    "md5": "faf001a19f0d20789e33b882ac4ee99f"
   }
 }
