@@ -9,7 +9,6 @@
             "th-12-24-2026-christmas-eve-11pm-service"
         ],
         "Jaffe": [
-            "su-11-22-2026-worship-service",
             "sa-12-5-2026-elizabeth-bernal-izett-barnett-wedding",
             "su-12-13-2026-worship-service",
             "su-12-20-2026-worship-service",
@@ -129,11 +128,6 @@
             "date": "2026-11-27",
             "name": "Emma Johnson & Jarrett Cox Wedding",
             "call_time": "3:30pm-6:30pm"
-        },
-        "su-11-22-2026-worship-service": {
-            "date": "2026-11-22",
-            "name": "Worship Service",
-            "call_time": "8:45am-12:30pm"
         }
     }
 }
