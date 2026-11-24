@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-23T21:42:53+00:00",
+  "generated": "2026-11-24T20:22:10+00:00",
   "window": {
-    "start": "2026-11-23",
-    "end": "2027-02-23"
+    "start": "2026-11-24",
+    "end": "2027-02-24"
   },
   "columns": [
     "Date",
@@ -91,13 +91,13 @@
       "cells": [
         "SA 2/6/2027",
         "Jianqiang Li & Meiru Qu Wedding",
-        "Sanctuary/Forecourt",
+        "Forecourt/Sanctuary",
         "3:00pm-6:00pm",
         "Wedding",
         "1",
         "",
         "",
-        "3:00pm — Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm — Invite Time / Guests Begin to Arrive\n4:00pm — Organ Prelude\n4:15pm — Processional and Actual Ceremony\n5:00pm — Post-Ceremony Photos",
+        "3:00pm \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm \u2014 Invite Time / Guests Begin to Arrive\n4:00pm \u2014 Organ Prelude\n4:15pm \u2014 Processional and Actual Ceremony\n5:00pm \u2014 Post-Ceremony Photos",
         "",
         "Weddings"
       ],
@@ -176,13 +176,13 @@
       "cells": [
         "SA 1/16/2027",
         "Wei-Chuan Wang & Yanting Li Wedding",
-        "Sanctuary/Forecourt",
+        "Forecourt/Sanctuary",
         "11:00am-2:00pm",
         "Wedding",
         "1",
         "",
         "",
-        "11:00am — Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am — Invite Time / Guests Begin to Arrive\n12:00pm — Organ Prelude\n12:15pm — Processional and Actual Ceremony\n1:00pm — Post-Ceremony Photos\n2:00pm — Departure",
+        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
         "",
         "Weddings"
       ],
@@ -250,11 +250,45 @@
         "2",
         "",
         "",
-        "10:30AM-11:30AM Korean Worship Service",
+        "",
         "",
         ""
       ],
       "note": "from calendar: Good Neighborhood Church"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "FR 12/18/2026",
+        "Winter Sing",
+        "Sanctuary",
+        "",
+        "Concert",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "note": "from calendar: Winter Sing"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SA 12/12/2026",
+        "Gloria Kang & Daniel Kim Wedding",
+        "Forecourt/Sanctuary",
+        "",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
     }
   ],
   "counts": {

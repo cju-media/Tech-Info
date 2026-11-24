@@ -1,20 +1,12 @@
 {
   "drafted": {
-    "040000008200E00074C5B7101A82E0080000000021CB0173907BDD01000000000000000010000000DFB1CF565809D34D8018744045E57BAD::2026-12-22": {
-      "call_times": "6:30pm-9:30pm",
-      "count": 1,
-      "name": "Christmas Eve Rehearsal",
-      "schedule": "6:30-8:00: singers and CB\n8-9:30: add Michael and Danny",
-      "type": "Rehearsal",
-      "venue": "Sanctuary"
-    },
     "040000008200E00074C5B7101A82E008000000004CA20C4BDC51DD01000000000000000010000000A4686F0BA551F3408F4979122E83171C::2027-01-16": {
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
       "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
       "type": "Wedding",
-      "venue": "Sanctuary/Forecourt"
+      "venue": "Forecourt/Sanctuary"
     },
     "040000008200E00074C5B7101A82E008000000009803D5F9C676DD0100000000000000001000000033190C29E1D91D4D82D08D09E69CFEEB::2027-02-06": {
       "call_times": "3:00pm-6:00pm",
@@ -22,25 +14,33 @@
       "name": "Jianqiang Li & Meiru Qu Wedding",
       "schedule": "3:00pm \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm \u2014 Invite Time / Guests Begin to Arrive\n4:00pm \u2014 Organ Prelude\n4:15pm \u2014 Processional and Actual Ceremony\n5:00pm \u2014 Post-Ceremony Photos",
       "type": "Wedding",
-      "venue": "Sanctuary/Forecourt"
+      "venue": "Forecourt/Sanctuary"
+    },
+    "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
+      "call_times": "",
+      "count": 1,
+      "name": "Gloria Kang & Daniel Kim Wedding",
+      "schedule": "",
+      "type": "Wedding",
+      "venue": "Forecourt/Sanctuary"
+    },
+    "040000008200E00074C5B7101A82E00800000000F901D9879F7BDD01000000000000000010000000E42100505B88014D95CD883B177FCCCF::2026-12-18": {
+      "call_times": "",
+      "count": 1,
+      "name": "Winter Sing",
+      "schedule": "",
+      "type": "Concert",
+      "venue": "Sanctuary"
     },
     "040000008200E00074C5B7101A82E00800000000F9E579BB2905DD01000000000000000010000000B9F067A43FF19040AB62D5B33C6CC988::2026-12-27": {
       "call_times": "10:30am-12:00pm",
       "count": 2,
       "name": "Good Neighborhood Church",
-      "schedule": "10:30AM-11:30AM Korean Worship Service",
+      "schedule": "",
       "type": "Worship Service",
       "venue": "Barnum"
-    },
-    "040000008200E00074C5B7101A82E00800000000FC5DD2F81776DD01000000000000000010000000819BB5A16C37CB46AB7B060B76B0C28D::2026-12-07": {
-      "call_times": "11:30am-12:30pm",
-      "count": 1,
-      "name": "Idonna Jean Olsen Memorial Service",
-      "schedule": "11:30am Service Begins",
-      "type": "Memorial",
-      "venue": "Sanctuary"
     }
   },
-  "fingerprint": "13b43c924b85a18a49c3abcbce5793eca15bfd39f5a71e8132dff8629591f375",
-  "gemini_at": "2026-11-23T21:42:53+00:00"
+  "fingerprint": "e6b22c62dbc8d7a46f178b6b918dba0d166ff7eda0b7495012b6b5c6939e20ba",
+  "gemini_at": "2026-11-24T20:22:10+00:00"
 }
