@@ -97,7 +97,7 @@
         "1",
         "",
         "",
-        "3:00pm \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm \u2014 Invite Time / Guests Begin to Arrive\n4:00pm \u2014 Organ Prelude\n4:15pm \u2014 Processional and Actual Ceremony\n5:00pm \u2014 Post-Ceremony Photos",
+        "3:00pm — Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm — Invite Time / Guests Begin to Arrive\n4:00pm — Organ Prelude\n4:15pm — Processional and Actual Ceremony\n5:00pm — Post-Ceremony Photos",
         "",
         "Weddings"
       ],
@@ -182,7 +182,7 @@
         "1",
         "",
         "",
-        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+        "11:00am — Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am — Invite Time / Guests Begin to Arrive\n12:00pm — Organ Prelude\n12:15pm — Processional and Actual Ceremony\n1:00pm — Post-Ceremony Photos\n2:00pm — Departure",
         "",
         "Weddings"
       ],
@@ -255,40 +255,6 @@
         ""
       ],
       "note": "from calendar: Good Neighborhood Church"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "TU 12/22/2026",
-        "Christmas Eve Rehearsal",
-        "Sanctuary",
-        "6:30pm-9:30pm",
-        "Rehearsal",
-        "1",
-        "",
-        "",
-        "6:30-8:00: singers and CB\n8-9:30: add Michael and Danny",
-        "",
-        ""
-      ],
-      "note": "from calendar: Christmas Eve Rehearsal"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "MO 12/7/2026",
-        "Idonna Jean Olsen Memorial Service",
-        "Sanctuary",
-        "11:30am-12:30pm",
-        "Memorial",
-        "1",
-        "",
-        "",
-        "11:30am Service Begins",
-        "",
-        ""
-      ],
-      "note": "from calendar: Idonna Jean Olsen Memorial Service"
     }
   ],
   "counts": {
