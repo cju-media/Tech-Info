@@ -45,7 +45,13 @@
         "sermon": "fccla/status/11-29-26_1125-1346/3-sermon.jpg"
       }
     ],
-    "pick": null,
+    "pick": {
+      "n": 1,
+      "hex": "#D5811C",
+      "label": "orange, 50% of the photo's color",
+      "at": "2026-11-25T13:48:50-08:00",
+      "drive": "sent"
+    },
     "heading": [
       "Advent 1",
       "Through the Advent Door",
@@ -56,9 +62,9 @@
     "cover": "fccla/status/11-29-26_1125-1346/cover.jpg"
   },
   "last_run": {
-    "at": "2026-11-25T13:46:03-08:00",
-    "trigger": "upload",
-    "status": "built",
-    "message": "Title graphics for Sunday, November 29 are ready to pick (link below).\n1 orange #D5811C \u00b7 2 blue #051D4F \u00b7 3 deeper orange #955A14"
+    "at": "2026-11-25T13:48:50-08:00",
+    "trigger": "pick",
+    "status": "picked",
+    "message": "Using #D5811C (orange) for Sunday, November 29. Saved to iCloud (11-29-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
   }
 }
