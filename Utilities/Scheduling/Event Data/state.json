@@ -6,6 +6,7 @@
         ],
         "Danny": [
             "su-12-6-2026-veronica-bell-concert",
+            "tu-12-22-2026-christmas-eve-rehearsal",
             "th-12-24-2026-christmas-eve-11pm-service"
         ],
         "Jaffe": [
@@ -32,6 +33,7 @@
             "su-12-6-2026-holadays-synesthesia-sinfonietta-concert",
             "su-12-6-2026-worship-service",
             "su-12-13-2026-resonance-collective-concert",
+            "su-12-13-2026-wedding-ceremony",
             "sa-12-19-2026-shuai-zhang-xuan-wu-wedding",
             "su-12-20-2026-pageant-dress-rehearsal",
             "th-12-24-2026-christmas-eve-fkf-service",
@@ -58,6 +60,11 @@
             "date": "2026-12-24",
             "name": "Christmas Eve FKF Service",
             "call_time": "2:00pm-6:00pm"
+        },
+        "tu-12-22-2026-christmas-eve-rehearsal": {
+            "date": "2026-12-22",
+            "name": "Christmas Eve Rehearsal",
+            "call_time": "7:30pm-9:30pm"
         },
         "mo-12-21-2026-kenneth-maggie-hsu-wedding": {
             "date": "2026-12-21",
@@ -93,6 +100,11 @@
             "date": "2026-12-13",
             "name": "Worship Service",
             "call_time": "8:45am-12:30pm"
+        },
+        "mo-12-7-2026-idonna-jean-olsen-memorial-service": {
+            "date": "2026-12-07",
+            "name": "Idonna Jean Olsen Memorial Service",
+            "call_time": "10:00am-12:30pm"
         },
         "su-12-6-2026-holadays-synesthesia-sinfonietta-concert": {
             "date": "2026-12-06",
