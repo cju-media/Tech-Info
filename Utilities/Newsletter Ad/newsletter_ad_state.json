@@ -41,13 +41,8 @@
     }
   ],
   "published": {
-    "at": "2026-11-24",
+    "at": "2026-11-25",
     "items": [
-      {
-        "date": "2026-11-24",
-        "title": "Book Conversations With Rev. Michael",
-        "when": "Tuesdays | 7pm"
-      },
       {
         "date": "2026-11-29",
         "title": "Advent Festival & Fair Trade Market",
@@ -64,6 +59,6 @@
         "when": "Thursday, Dec 24"
       }
     ],
-    "md5": "faf001a19f0d20789e33b882ac4ee99f"
+    "md5": "11a83981efa0e220433b871e88438e76"
   }
 }
