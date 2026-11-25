@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-24T20:22:10+00:00",
+  "generated": "2026-11-25T19:37:25+00:00",
   "window": {
-    "start": "2026-11-24",
-    "end": "2027-02-24"
+    "start": "2026-11-25",
+    "end": "2027-02-25"
   },
   "columns": [
     "Date",
@@ -34,6 +34,23 @@
         ""
       ],
       "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "TH 2/25/2027",
+        "VOX Femina Youth Choir Festival",
+        "Sanctuary/Forecourt/Shatto",
+        "8:00am-2:30pm",
+        "Festival",
+        "1",
+        "",
+        "",
+        "8 am Load-in/VOX arrival\n8:30-9:00 Arrival of TBD buses\n2:30 Off campus",
+        "",
+        ""
+      ],
+      "note": "from calendar: VOX Femina Youth Choir Festival"
     },
     {
       "kind": "event",
@@ -97,7 +114,7 @@
         "1",
         "",
         "",
-        "3:00pm \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm \u2014 Invite Time / Guests Begin to Arrive\n4:00pm \u2014 Organ Prelude\n4:15pm \u2014 Processional and Actual Ceremony\n5:00pm \u2014 Post-Ceremony Photos",
+        "3:00pm Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm Invite Time / Guests Begin to Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Actual Ceremony\n5:00pm Post-Ceremony Photos",
         "",
         "Weddings"
       ],
@@ -182,7 +199,7 @@
         "1",
         "",
         "",
-        "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+        "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
         "",
         "Weddings"
       ],
@@ -255,45 +272,11 @@
         ""
       ],
       "note": "from calendar: Good Neighborhood Church"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "FR 12/18/2026",
-        "Winter Sing",
-        "Sanctuary",
-        "",
-        "Concert",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        ""
-      ],
-      "note": "from calendar: Winter Sing"
-    },
-    {
-      "kind": "event",
-      "cells": [
-        "SA 12/12/2026",
-        "Gloria Kang & Daniel Kim Wedding",
-        "Forecourt/Sanctuary",
-        "",
-        "Wedding",
-        "1",
-        "",
-        "",
-        "",
-        "",
-        "Weddings"
-      ],
-      "note": "from calendar: Ceremony: Gloria Kang & Daniel Kim"
     }
   ],
   "counts": {
-    "events": 13,
+    "events": 12,
     "worship": 8,
-    "from_calendar": 5
+    "from_calendar": 4
   }
 }

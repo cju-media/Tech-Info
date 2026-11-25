@@ -4,7 +4,7 @@
       "call_times": "11:00am-2:00pm",
       "count": 1,
       "name": "Wei-Chuan Wang & Yanting Li Wedding",
-      "schedule": "11:00am \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am \u2014 Invite Time / Guests Begin to Arrive\n12:00pm \u2014 Organ Prelude\n12:15pm \u2014 Processional and Actual Ceremony\n1:00pm \u2014 Post-Ceremony Photos\n2:00pm \u2014 Departure",
+      "schedule": "11:00am Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival\n11:45am Invite Time / Guests Begin to Arrive\n12:00pm Organ Prelude\n12:15pm Processional and Actual Ceremony\n1:00pm Post-Ceremony Photos\n2:00pm Departure",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
@@ -12,25 +12,17 @@
       "call_times": "3:00pm-6:00pm",
       "count": 1,
       "name": "Jianqiang Li & Meiru Qu Wedding",
-      "schedule": "3:00pm \u2014 Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm \u2014 Invite Time / Guests Begin to Arrive\n4:00pm \u2014 Organ Prelude\n4:15pm \u2014 Processional and Actual Ceremony\n5:00pm \u2014 Post-Ceremony Photos",
+      "schedule": "3:00pm Vendors Access to Ceremony Area (Main Sanctuary)/ Wedding Party Arrival / Pre-Ceremony Prep & Photos\n3:45pm Invite Time / Guests Begin to Arrive\n4:00pm Organ Prelude\n4:15pm Processional and Actual Ceremony\n5:00pm Post-Ceremony Photos",
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
-    "040000008200E00074C5B7101A82E00800000000D2E60BC94945DD01000000000000000010000000F0E20051567D2B48B46C00EC00302D71::2026-12-12": {
-      "call_times": "",
+    "040000008200E00074C5B7101A82E00800000000A8E0BE91625FDD010000000000000000100000003C5A47E27589344A8041A59928E932DE::2027-02-25": {
+      "call_times": "8:00am-2:30pm",
       "count": 1,
-      "name": "Gloria Kang & Daniel Kim Wedding",
-      "schedule": "",
-      "type": "Wedding",
-      "venue": "Forecourt/Sanctuary"
-    },
-    "040000008200E00074C5B7101A82E00800000000F901D9879F7BDD01000000000000000010000000E42100505B88014D95CD883B177FCCCF::2026-12-18": {
-      "call_times": "",
-      "count": 1,
-      "name": "Winter Sing",
-      "schedule": "",
-      "type": "Concert",
-      "venue": "Sanctuary"
+      "name": "VOX Femina Youth Choir Festival",
+      "schedule": "8 am Load-in/VOX arrival\n8:30-9:00 Arrival of TBD buses\n2:30 Off campus",
+      "type": "Festival",
+      "venue": "Sanctuary/Forecourt/Shatto"
     },
     "040000008200E00074C5B7101A82E00800000000F9E579BB2905DD01000000000000000010000000B9F067A43FF19040AB62D5B33C6CC988::2026-12-27": {
       "call_times": "10:30am-12:00pm",
@@ -41,6 +33,6 @@
       "venue": "Barnum"
     }
   },
-  "fingerprint": "e6b22c62dbc8d7a46f178b6b918dba0d166ff7eda0b7495012b6b5c6939e20ba",
-  "gemini_at": "2026-11-24T20:22:10+00:00"
+  "fingerprint": "0d7a146da147681d39670b2fccc1fdd20701a2ada3cf62fd981c16f11a7b51b4",
+  "gemini_at": "2026-11-25T19:37:25+00:00"
 }
