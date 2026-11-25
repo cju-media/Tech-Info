@@ -1,70 +1,64 @@
 {
   "build": {
-    "id": "11-22-26_1119-1512",
-    "week": "11-22-26",
-    "dateText": "November 22, 2026",
+    "id": "11-29-26_1125-1346",
+    "week": "11-29-26",
+    "dateText": "November 29, 2026",
     "fields": {
       "heading": [
-        "Fall Series 12",
-        "Sacred Earth, Sacred Soul",
-        "Sacred Gratitude"
+        "Advent 1",
+        "Through the Advent Door",
+        "The Door of Hope"
       ],
-      "dateText": "November 22, 2026",
-      "preacher": "Rev. Laura Vail Fregin",
-      "title": "Sacred Gratitude"
+      "dateText": "November 29, 2026",
+      "preacher": "Rev. Lehman",
+      "title": "The Door of Hope"
     },
     "ow": {
-      "name": "11.22.26_OW_Draft.pdf",
-      "sha": "9601da2470e42e7ee514531469aefd4c71b387e1"
+      "name": "11.29.26_OW_Draft.pdf",
+      "sha": "0168b478954cbce2f4ca4bcc6b6385c8ab3227b3"
     },
-    "built_at": "2026-11-19T15:12:27-08:00",
+    "built_at": "2026-11-25T13:46:03-08:00",
     "notes": [],
     "options": [
       {
         "n": 1,
-        "hex": "#946545",
-        "label": "orange, 97% of the photo's color",
+        "hex": "#D5811C",
+        "label": "orange, 50% of the photo's color",
         "problems": [],
-        "service": "fccla/status/11-22-26_1119-1512/1-service.jpg",
-        "sermon": "fccla/status/11-22-26_1119-1512/1-sermon.jpg"
+        "service": "fccla/status/11-29-26_1125-1346/1-service.jpg",
+        "sermon": "fccla/status/11-29-26_1125-1346/1-sermon.jpg"
       },
       {
         "n": 2,
-        "hex": "#684730",
-        "label": "deeper orange",
+        "hex": "#051D4F",
+        "label": "blue, 25% of the photo's color",
         "problems": [],
-        "service": "fccla/status/11-22-26_1119-1512/2-service.jpg",
-        "sermon": "fccla/status/11-22-26_1119-1512/2-sermon.jpg"
+        "service": "fccla/status/11-29-26_1125-1346/2-service.jpg",
+        "sermon": "fccla/status/11-29-26_1125-1346/2-sermon.jpg"
       },
       {
         "n": 3,
-        "hex": "#B78564",
-        "label": "lighter orange",
+        "hex": "#955A14",
+        "label": "deeper orange",
         "problems": [],
-        "service": "fccla/status/11-22-26_1119-1512/3-service.jpg",
-        "sermon": "fccla/status/11-22-26_1119-1512/3-sermon.jpg"
+        "service": "fccla/status/11-29-26_1125-1346/3-service.jpg",
+        "sermon": "fccla/status/11-29-26_1125-1346/3-sermon.jpg"
       }
     ],
-    "pick": {
-      "n": 3,
-      "hex": "#B78564",
-      "label": "lighter orange",
-      "at": "2026-11-19T15:15:19-08:00",
-      "drive": "sent"
-    },
+    "pick": null,
     "heading": [
-      "Fall Series 12",
-      "Sacred Earth, Sacred Soul",
-      "Sacred Gratitude"
+      "Advent 1",
+      "Through the Advent Door",
+      "The Door of Hope"
     ],
-    "title": "Sacred Gratitude",
-    "preacher": "Rev. Laura Vail Fregin",
-    "cover": "fccla/status/11-22-26_1119-1512/cover.jpg"
+    "title": "The Door of Hope",
+    "preacher": "Rev. Lehman",
+    "cover": "fccla/status/11-29-26_1125-1346/cover.jpg"
   },
   "last_run": {
-    "at": "2026-11-19T15:15:19-08:00",
-    "trigger": "pick",
-    "status": "picked",
-    "message": "Using #B78564 (lighter orange) for Sunday, November 22. Saved to iCloud (11-22-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
+    "at": "2026-11-25T13:46:03-08:00",
+    "trigger": "upload",
+    "status": "built",
+    "message": "Title graphics for Sunday, November 29 are ready to pick (link below).\n1 orange #D5811C \u00b7 2 blue #051D4F \u00b7 3 deeper orange #955A14"
   }
 }
