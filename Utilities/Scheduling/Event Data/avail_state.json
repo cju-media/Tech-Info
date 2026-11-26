@@ -1,52 +1,60 @@
 {
     "su-12-27-2026-worship-service": [
-        "Saad",
         "Jaffe",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "th-12-24-2026-christmas-eve-11pm-service": [
-        "Danny",
-        "Jaffe"
+        "Jaffe",
+        "Danny"
     ],
     "th-12-24-2026-christmas-eve-8pm-service": [
         "Jaffe"
     ],
     "th-12-24-2026-christmas-eve-fkf-service": [
-        "Saad",
-        "Jaffe"
+        "Jaffe",
+        "Saad"
     ],
-    "tu-12-22-2026-christmas-eve-rehearsal": [
+    "tu-12-22-2026-christmas-eve-8pm-rehearsal": [
         "Danny"
     ],
     "mo-12-21-2026-kenneth-maggie-hsu-wedding": [
         "Jaffe"
     ],
     "su-12-20-2026-pageant-dress-rehearsal": [
-        "Saad",
-        "Jaffe"
+        "Jaffe",
+        "Saad"
     ],
     "su-12-20-2026-worship-service": [
-        "Saad",
         "Jaffe",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "sa-12-19-2026-shuai-zhang-xuan-wu-wedding": [
         "Saad"
     ],
+    "fr-12-18-2026-winter-sing": [
+        "Kaspar"
+    ],
     "su-12-13-2026-resonance-collective-concert": [
-        "Saad",
         "Jaffe",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "su-12-13-2026-wedding-ceremony": [
         "Saad"
     ],
     "su-12-13-2026-worship-service": [
-        "Saad",
         "Jaffe",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
-    "mo-12-7-2026-idonna-jean-olsen-memorial-service": [],
+    "sa-12-12-2026-gloria-kang-daniel-kim-wedding": [],
+    "mo-12-7-2026-idonna-jean-olsen-memorial-service": [
+        "Kaspar",
+        "Marc",
+        "Jaffe"
+    ],
     "su-12-6-2026-holadays-synesthesia-sinfonietta-concert": [
         "Saad"
     ],
@@ -57,18 +65,19 @@
         "Saad"
     ],
     "sa-12-5-2026-elizabeth-bernal-izett-barnett-wedding": [
-        "Saad",
-        "Jaffe"
+        "Jaffe",
+        "Saad"
     ],
     "fr-12-4-2026-yamandu-costa-concert": [
-        "Saad",
         "Jaffe",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
+    "su-11-29-2026-advent-fest": [],
     "su-11-29-2026-worship-service": [
-        "Saad",
         "Jaffe",
-        "Marc"
+        "Marc",
+        "Saad"
     ],
     "fr-11-27-2026-emma-johnson-jarrett-cox-wedding": [
         "Marc"
