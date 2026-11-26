@@ -1,20 +1,65 @@
 [
   {
-    "name": "2026 LOS ANGELES AUTO SHOW - CAMP JEEP",
-    "date": "2026-11-19",
-    "location": "Camp Jeep booth S-140 at the Los Angeles Convention Center for the LA Auto Show 1301 S FIGUEROA ST 90015",
+    "name": "TIME WARP 2026",
+    "date": "2026-11-27",
+    "location": "516 S Mission Rd, Los Angeles, CA 90033",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001612",
+    "distance_mi": 3.78,
+    "permit": "264109000001856",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "FRANK MAZA MUSICAL SHOWCASE",
+    "name": "HARBOR GLOW NIGHTS",
     "date": "2026-11-20",
-    "location": "The event will be held in our own parking lot which will have no cars that day. 3375 N BARHAM BLVD 90068",
+    "location": "1332 S Harbor Blvd, San Pedro CA 90731",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 5.78,
-    "permit": "264109000001069",
+    "distance_mi": 22.7,
+    "permit": "264109000001861",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LA AUTO SHOW",
+    "date": "2026-11-20",
+    "location": "SouthHall & Gilbert lindsey 1201 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.89,
+    "permit": "264109000001826",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CAMERA TENTS",
+    "date": "2026-11-21",
+    "location": "West end of stadium 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001831",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "LAIAS 2026",
+    "date": "2026-11-26",
+    "location": "South Hall Booth S270/S271 1201 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.89,
+    "permit": "264109000001709",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "TUNNEL TENT",
+    "date": "2026-11-20",
+    "location": "Players tunnel 3911 S FIGUEROA ST 90037",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 3.52,
+    "permit": "264109000001830",
+    "source": "https://data.lacity.org/resource/8spw-3fhx"
+  },
+  {
+    "name": "CHEVY WALLS",
+    "date": "2026-11-25",
+    "location": "LACC South Hall 1301 S FIGUEROA ST 90015",
+    "type": "Street Closure / Festival (LA City Permit)",
+    "distance_mi": 1.92,
+    "permit": "264109000001706",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -27,21 +72,21 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "L.A. ZOO LIGHTS 26-27",
-    "date": "2026-11-19",
-    "location": "Los Angeles Zoo 5333 W ZOO DR 90027",
+    "name": "LA AUTO SHOW",
+    "date": "2026-11-27",
+    "location": "1201 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 5.81,
-    "permit": "264109000001636",
+    "distance_mi": 1.89,
+    "permit": "264109000001865",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "CAMP JEEP 26 LAIAS",
-    "date": "2026-11-25",
-    "location": "Camp Jeep space S140 at the Los Angeles Convention Center for the 26 LAIAS 1301 S FIGUEROA ST 90015",
+    "name": "FORD - EWI LA AUTO SHOW",
+    "date": "2026-11-26",
+    "location": "1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 1.92,
-    "permit": "264109000001613",
+    "permit": "264109000001810",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -54,30 +99,21 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "VW/GPJ BOOTH",
-    "date": "2026-11-19",
-    "location": "1301 S FIGUEROA ST 90015",
+    "name": "HOLLYWOOD CHRISTMAS PARADE",
+    "date": "2026-11-29",
+    "location": "Hollywood Christmas Parade Structures. 6925 W HOLLYWOOD BLVD 90028",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001674",
+    "distance_mi": 4.09,
+    "permit": "264109000001784",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "FORD EWI- LA AUTO SHOW",
-    "date": "2026-11-20",
+    "name": "LA AUTO SHOW 2026",
+    "date": "2026-11-27",
     "location": "1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 1.92,
-    "permit": "264109000001809",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "USC SUITES",
-    "date": "2026-11-16",
-    "location": "Field & Gate 19 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001804",
+    "permit": "264109000001313",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -90,30 +126,12 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "CAMERA TENTS",
-    "date": "2026-11-14",
-    "location": "West end of Stadium 3911 S FIGUEROA ST 90037",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 3.52,
-    "permit": "264109000001798",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
     "name": "LA AUTO SHOW 2026",
     "date": "2026-11-20",
     "location": "For questions, please call Rebecca 619-453-7573 1301 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 1.92,
     "permit": "264109000001314",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "SUBARU TEMPORARY STRUCTURES, STAGE",
-    "date": "2026-11-26",
-    "location": "South Hall, LACC 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001802",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
@@ -126,48 +144,30 @@
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "NISSAN BOOTH S-260 LA AUTO SHOW",
-    "date": "2026-11-19",
-    "location": "We are in South Hall space S-260 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001683",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "CHEVY WALLS",
-    "date": "2026-11-19",
-    "location": "LACC South Hall 1301 S FIGUEROA ST 90015",
-    "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001707",
-    "source": "https://data.lacity.org/resource/8spw-3fhx"
-  },
-  {
-    "name": "LA AUTO SHOW 26",
+    "name": "LA AUTO SHOW",
     "date": "2026-11-20",
-    "location": "Booth S240 1201 S FIGUEROA ST 90015",
+    "location": "1201 S FIGUEROA ST 90015",
     "type": "Street Closure / Festival (LA City Permit)",
     "distance_mi": 1.89,
-    "permit": "264109000001504",
+    "permit": "264109000001866",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "SUBARU STAGE, TEMPORARY STRUCTURES",
-    "date": "2026-11-19",
-    "location": "South Hall, LACC 1301 S FIGUEROA ST 90015",
+    "name": "HOLIDAY ICE",
+    "date": "2026-11-27",
+    "location": "Peacock plaza 777 W CHICK HEARN CT 90015",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.92,
-    "permit": "264109000001801",
+    "distance_mi": 1.77,
+    "permit": "264109000001840",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   },
   {
-    "name": "LAIAS 2026",
-    "date": "2026-11-19",
-    "location": "South Hall LACC Booth S270 and S271 1201 S FIGUEROA ST 90015",
+    "name": "WESTWOOD VILLAGE FARMERS' MARKET",
+    "date": "2026-07-02",
+    "location": "Broxton Plaza 1036 S BROXTON AVE 90024",
     "type": "Street Closure / Festival (LA City Permit)",
-    "distance_mi": 1.89,
-    "permit": "264109000001671",
+    "distance_mi": 9.21,
+    "permit": "264109000000967",
     "source": "https://data.lacity.org/resource/8spw-3fhx"
   }
 ]
