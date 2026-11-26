@@ -1,6 +1,6 @@
 {
   "build": {
-    "id": "11-29-26_1125-1346",
+    "id": "11-29-26_1125-1723",
     "week": "11-29-26",
     "dateText": "November 29, 2026",
     "fields": {
@@ -14,44 +14,46 @@
       "title": "The Door of Hope"
     },
     "ow": {
-      "name": "11.29.26_OW_Draft.pdf",
-      "sha": "0168b478954cbce2f4ca4bcc6b6385c8ab3227b3"
+      "name": "11.29.26_OW_FINAL.pdf",
+      "sha": "4831df20ca190507a5886f0fa0a30ae42d8d62d0"
     },
-    "built_at": "2026-11-25T13:46:03-08:00",
+    "built_at": "2026-11-25T17:23:38-08:00",
     "notes": [],
     "options": [
       {
         "n": 1,
-        "hex": "#D5811C",
-        "label": "orange, 50% of the photo's color",
+        "hex": "#AF4712",
+        "label": "orange, 62% of the photo's color",
         "problems": [],
-        "service": "fccla/status/11-29-26_1125-1346/1-service.jpg",
-        "sermon": "fccla/status/11-29-26_1125-1346/1-sermon.jpg"
+        "service": "fccla/status/11-29-26_1125-1723/1-service.jpg",
+        "sermon": "fccla/status/11-29-26_1125-1723/1-sermon.jpg"
       },
       {
         "n": 2,
-        "hex": "#051D4F",
-        "label": "blue, 25% of the photo's color",
+        "hex": "#0A234C",
+        "label": "blue, 9% of the photo's color",
         "problems": [],
-        "service": "fccla/status/11-29-26_1125-1346/2-service.jpg",
-        "sermon": "fccla/status/11-29-26_1125-1346/2-sermon.jpg"
+        "service": "fccla/status/11-29-26_1125-1723/2-service.jpg",
+        "sermon": "fccla/status/11-29-26_1125-1723/2-sermon.jpg"
       },
       {
         "n": 3,
-        "hex": "#955A14",
-        "label": "deeper orange",
+        "hex": "#2C5A13",
+        "label": "green, 6% of the photo's color",
         "problems": [],
-        "service": "fccla/status/11-29-26_1125-1346/3-service.jpg",
-        "sermon": "fccla/status/11-29-26_1125-1346/3-sermon.jpg"
+        "service": "fccla/status/11-29-26_1125-1723/3-service.jpg",
+        "sermon": "fccla/status/11-29-26_1125-1723/3-sermon.jpg"
+      },
+      {
+        "n": 4,
+        "hex": "#D5811C",
+        "label": "your earlier pick",
+        "problems": [],
+        "service": "fccla/status/11-29-26_1125-1723/4-service.jpg",
+        "sermon": "fccla/status/11-29-26_1125-1723/4-sermon.jpg"
       }
     ],
-    "pick": {
-      "n": 1,
-      "hex": "#D5811C",
-      "label": "orange, 50% of the photo's color",
-      "at": "2026-11-25T13:48:50-08:00",
-      "drive": "sent"
-    },
+    "pick": null,
     "heading": [
       "Advent 1",
       "Through the Advent Door",
@@ -59,12 +61,19 @@
     ],
     "title": "The Door of Hope",
     "preacher": "Rev. Lehman",
-    "cover": "fccla/status/11-29-26_1125-1346/cover.jpg"
+    "previous_pick": {
+      "n": 1,
+      "hex": "#D5811C",
+      "label": "orange, 50% of the photo's color",
+      "at": "2026-11-25T13:48:50-08:00",
+      "drive": "sent"
+    },
+    "cover": "fccla/status/11-29-26_1125-1723/cover.jpg"
   },
   "last_run": {
-    "at": "2026-11-25T13:48:50-08:00",
-    "trigger": "pick",
-    "status": "picked",
-    "message": "Using #D5811C (orange) for Sunday, November 29. Saved to iCloud (11-29-26). Sent to Drive (Worship Service + Sermon Series). The livestream gets it as soon as this week's title and description are ready (the description needs the worship script)."
+    "at": "2026-11-25T17:23:38-08:00",
+    "trigger": "upload",
+    "status": "built",
+    "message": "Title graphics for Sunday, November 29 are ready to pick (link below).\n1 orange #AF4712 \u00b7 2 blue #0A234C \u00b7 3 green #2C5A13 \u00b7 4 your earlier pick #D5811C\nThe OW changed after you picked #D5811C, so pick again to update iCloud and Drive."
   }
 }
