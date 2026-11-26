@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-25T19:37:25+00:00",
+  "generated": "2026-11-26T19:18:41+00:00",
   "window": {
-    "start": "2026-11-25",
-    "end": "2027-02-25"
+    "start": "2026-11-26",
+    "end": "2027-02-26"
   },
   "columns": [
     "Date",
@@ -46,11 +46,28 @@
         "1",
         "",
         "",
-        "8 am Load-in/VOX arrival\n8:30-9:00 Arrival of TBD buses\n2:30 Off campus",
+        "8 am: Load-in/VOX arrival\n8:30-9:00: Arrival of TBD buses (TBD there will be a 7th group arriving on foot from the metro)\n2:30: Off campus",
         "",
         ""
       ],
       "note": "from calendar: VOX Femina Youth Choir Festival"
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 2/21/2027",
+        "\"Resonance Collective\" Concert",
+        "Shatto",
+        "4:00pm-10:00pm",
+        "Concert",
+        "2",
+        "",
+        "",
+        "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
+        "",
+        ""
+      ],
+      "note": "from calendar: Resonance Collective Concert"
     },
     {
       "kind": "event",
@@ -262,7 +279,7 @@
         "SU 12/27/2026",
         "Good Neighborhood Church",
         "Barnum",
-        "10:30am-12:00pm",
+        "10:30am-11:30am",
         "Worship Service",
         "2",
         "",
@@ -275,8 +292,8 @@
     }
   ],
   "counts": {
-    "events": 12,
+    "events": 13,
     "worship": 8,
-    "from_calendar": 4
+    "from_calendar": 5
   }
 }

@@ -20,12 +20,20 @@
       "call_times": "8:00am-2:30pm",
       "count": 1,
       "name": "VOX Femina Youth Choir Festival",
-      "schedule": "8 am Load-in/VOX arrival\n8:30-9:00 Arrival of TBD buses\n2:30 Off campus",
+      "schedule": "8 am: Load-in/VOX arrival\n8:30-9:00: Arrival of TBD buses (TBD there will be a 7th group arriving on foot from the metro)\n2:30: Off campus",
       "type": "Festival",
       "venue": "Sanctuary/Forecourt/Shatto"
     },
+    "040000008200E00074C5B7101A82E00800000000D7145D46D817DD0100000000000000001000000081AC3D05E487EE42A6F761DB4D79E822::2027-02-21": {
+      "call_times": "4:00pm-10:00pm",
+      "count": 2,
+      "name": "\"Resonance Collective\" Concert",
+      "schedule": "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
+      "type": "Concert",
+      "venue": "Shatto"
+    },
     "040000008200E00074C5B7101A82E00800000000F9E579BB2905DD01000000000000000010000000B9F067A43FF19040AB62D5B33C6CC988::2026-12-27": {
-      "call_times": "10:30am-12:00pm",
+      "call_times": "10:30am-11:30am",
       "count": 2,
       "name": "Good Neighborhood Church",
       "schedule": "",
@@ -33,6 +41,6 @@
       "venue": "Barnum"
     }
   },
-  "fingerprint": "0d7a146da147681d39670b2fccc1fdd20701a2ada3cf62fd981c16f11a7b51b4",
-  "gemini_at": "2026-11-25T19:37:25+00:00"
+  "fingerprint": "d117ba94f58752c746fe7fa6fb546b1cd0cd7ee0ccc6998c4a4bbdc47105ad2b",
+  "gemini_at": "2026-11-26T19:18:41+00:00"
 }
