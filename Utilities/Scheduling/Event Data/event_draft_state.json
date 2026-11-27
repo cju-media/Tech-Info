@@ -8,6 +8,14 @@
       "type": "Wedding",
       "venue": "Forecourt/Sanctuary"
     },
+    "040000008200E00074C5B7101A82E00800000000641D7F98A7B8DC0100000000000000001000000016C7AEA8BC8DE64BB7E76A69AD0021F2::2027-02-27": {
+      "call_times": "12:00pm-1:00pm",
+      "count": 1,
+      "name": "Nicholas Johnson & Brittany Barksdale Wedding",
+      "schedule": "12:00pm Sound Check\n12:30pm Invite Time\n12:45pm Prelude\n1:00pm Actual",
+      "type": "Wedding",
+      "venue": "Forecourt/Sanctuary"
+    },
     "040000008200E00074C5B7101A82E008000000009803D5F9C676DD0100000000000000001000000033190C29E1D91D4D82D08D09E69CFEEB::2027-02-06": {
       "call_times": "3:00pm-6:00pm",
       "count": 1,
@@ -20,14 +28,14 @@
       "call_times": "8:00am-2:30pm",
       "count": 1,
       "name": "VOX Femina Youth Choir Festival",
-      "schedule": "8 am: Load-in/VOX arrival\n8:30-9:00: Arrival of TBD buses (TBD there will be a 7th group arriving on foot from the metro)\n2:30: Off campus",
+      "schedule": "8 am: Load-in/VOX arrival\n8:30-9:00: Arrival of TBD buses (TBD there will be a 7th group arriving on foot from the metro)\nTBD: Performances/Clinics in Sanctuary\nTBD: Lunch Break (Forecourt)\nTBD: Performances/Clinics in Sanctuary\n2:30: Off campus",
       "type": "Festival",
       "venue": "Sanctuary/Forecourt/Shatto"
     },
     "040000008200E00074C5B7101A82E00800000000D7145D46D817DD0100000000000000001000000081AC3D05E487EE42A6F761DB4D79E822::2027-02-21": {
       "call_times": "4:00pm-10:00pm",
       "count": 2,
-      "name": "\"Resonance Collective\" Concert",
+      "name": "Resonance Collective Concert",
       "schedule": "4:00PM Load in\n7:00PM Concert\n8:30PM Reception\n10:00PM Off campus",
       "type": "Concert",
       "venue": "Shatto"
@@ -41,6 +49,6 @@
       "venue": "Barnum"
     }
   },
-  "fingerprint": "d117ba94f58752c746fe7fa6fb546b1cd0cd7ee0ccc6998c4a4bbdc47105ad2b",
-  "gemini_at": "2026-11-26T19:18:41+00:00"
+  "fingerprint": "cdbf549439f9dc0bc4db79bca0ad517406cba04cb694f2c9f059771d3c8e8025",
+  "gemini_at": "2026-11-27T19:12:16+00:00"
 }

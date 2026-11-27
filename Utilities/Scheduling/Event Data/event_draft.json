@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-26T19:18:41+00:00",
+  "generated": "2026-11-27T19:12:16+00:00",
   "window": {
-    "start": "2026-11-26",
-    "end": "2027-02-26"
+    "start": "2026-11-27",
+    "end": "2027-02-27"
   },
   "columns": [
     "Date",
@@ -38,6 +38,23 @@
     {
       "kind": "event",
       "cells": [
+        "SA 2/27/2027",
+        "Nicholas Johnson & Brittany Barksdale Wedding",
+        "Forecourt/Sanctuary",
+        "12:00pm-1:00pm",
+        "Wedding",
+        "1",
+        "",
+        "",
+        "12:00pm Sound Check\n12:30pm Invite Time\n12:45pm Prelude\n1:00pm Actual",
+        "",
+        "Weddings"
+      ],
+      "note": "from calendar: Ceremony: Nicholas Johnson & Brittany Barksdale Wedding"
+    },
+    {
+      "kind": "event",
+      "cells": [
         "TH 2/25/2027",
         "VOX Femina Youth Choir Festival",
         "Sanctuary/Forecourt/Shatto",
@@ -46,7 +63,7 @@
         "1",
         "",
         "",
-        "8 am: Load-in/VOX arrival\n8:30-9:00: Arrival of TBD buses (TBD there will be a 7th group arriving on foot from the metro)\n2:30: Off campus",
+        "8 am: Load-in/VOX arrival\n8:30-9:00: Arrival of TBD buses (TBD there will be a 7th group arriving on foot from the metro)\nTBD: Performances/Clinics in Sanctuary\nTBD: Lunch Break (Forecourt)\nTBD: Performances/Clinics in Sanctuary\n2:30: Off campus",
         "",
         ""
       ],
@@ -56,7 +73,7 @@
       "kind": "event",
       "cells": [
         "SU 2/21/2027",
-        "\"Resonance Collective\" Concert",
+        "Resonance Collective Concert",
         "Shatto",
         "4:00pm-10:00pm",
         "Concert",
@@ -292,8 +309,8 @@
     }
   ],
   "counts": {
-    "events": 13,
+    "events": 14,
     "worship": 8,
-    "from_calendar": 5
+    "from_calendar": 6
   }
 }
