@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-27T19:12:16+00:00",
+  "generated": "2026-11-28T17:49:34+00:00",
   "window": {
-    "start": "2026-11-27",
-    "end": "2027-02-27"
+    "start": "2026-11-28",
+    "end": "2027-02-28"
   },
   "columns": [
     "Date",
@@ -34,6 +34,23 @@
         ""
       ],
       "note": ""
+    },
+    {
+      "kind": "event",
+      "cells": [
+        "SU 2/28/2027",
+        "Worship Service",
+        "Sanctuary",
+        "8:45am-12:30pm",
+        "Worship Service",
+        "2",
+        "",
+        "(Live) \n(Stream)",
+        "",
+        "",
+        "Leave Blank"
+      ],
+      "note": "weekly worship service (not on the Outlook calendar)"
     },
     {
       "kind": "event",
@@ -309,8 +326,8 @@
     }
   ],
   "counts": {
-    "events": 14,
-    "worship": 8,
+    "events": 15,
+    "worship": 9,
     "from_calendar": 6
   }
 }
