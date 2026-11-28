@@ -271,7 +271,15 @@ def find_timings_path(service_date, service_date_str):
     if os.path.exists(archived):
         return archived
 
-    live = os.path.join('Youtube Processing', 'timings.txt')
+    # update_youtube_stream.py files each pushed timings.txt under the service
+    # whose stream ended (Worship Scripts/services/<date>/ for a Sunday). Since
+    # streams are now created weeks ahead, last_stream.json below usually
+    # names a later service, so this is the reliable place before the archive.
+    filed = os.path.join('Worship Scripts', 'services', service_date.isoformat(), 'timings.txt')
+    if os.path.exists(filed):
+        return filed
+
+    live =os.path.join('Youtube Processing', 'timings.txt')
     try:
         with open(os.path.join('Youtube Processing', 'last_stream.json')) as f:
             live_date = json.load(f).get('service_date')

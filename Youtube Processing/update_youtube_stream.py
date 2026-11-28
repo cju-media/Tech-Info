@@ -6,14 +6,18 @@ import subprocess
 import dateutil.parser
 from datetime import datetime, timedelta
 import pytz
-import re
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.auth.exceptions import RefreshError
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Worship Scripts", "worship workflows"))
+import service_keys  # noqa: E402
+
 PLAYLIST_ID = "PLGtiSp5WvUc_I0M_vvfSdGY9dJ43ZofXs"
 PUSH_STATE_FILE = "description_push_state.json"
+# Entries in the push state that aren't video IDs (never pruned).
+TIMINGS_HASH_KEY = "_attributed_timings"
 
 def get_youtube_service():
     creds_json = os.environ.get('YOUTUBE_CREDENTIALS_JSON')
@@ -61,6 +65,7 @@ def get_upcoming_streams(service):
                         'title': snippet['title'],
                         'description': snippet['description'],
                         'scheduledStartTime': scheduled_start_time,
+                        'actualEndTime': video['liveStreamingDetails'].get('actualEndTime'),
                         'categoryId': snippet.get('categoryId'),
                         'tags': snippet.get('tags', [])
                     })
@@ -76,25 +81,6 @@ def get_upcoming_streams(service):
         sys.exit(1)
 
     return upcoming_streams
-
-def get_combined_description():
-    desc_path = "Description.txt"
-    timings_path = "timings.txt"
-
-    if not os.path.exists(desc_path):
-        print(f"Generated description boilerplate not found at {desc_path}")
-        return None
-
-    with open(desc_path, 'r') as f:
-        desc = f.read().strip()
-
-    if os.path.exists(timings_path):
-        with open(timings_path, 'r') as f:
-            timings = f.read().strip()
-        if timings:
-            desc = desc + "\n\n" + timings
-
-    return desc
 
 def load_push_state():
     """Tracks, per video ID, the hash of the last combined description we
@@ -125,84 +111,56 @@ def save_push_state(state):
 def content_hash(text):
     return hashlib.sha256(text.strip().encode('utf-8')).hexdigest()
 
-def get_current_title():
-    title_path = os.path.join("..", "Worship Scripts", "service-titles", "title.txt")
-    if os.path.exists(title_path):
-        with open(title_path, 'r') as f:
-            title = f.read().strip()
-            if title:
-                return title
-    return None
+def stream_service(stream):
+    """(service key or None, service date, start "HH:MM", start as LA datetime) for a stream."""
+    start_la = dateutil.parser.parse(stream['scheduledStartTime']).astimezone(LA_TZ)
+    start_time = start_la.strftime("%H:%M")
+    return service_keys.resolve_key(start_la.date(), start_time), start_la.date(), start_time, start_la
 
-TITLE_STATE_PATH = os.path.join("..", "Worship Scripts", "service_titles_state.json")
-DESC_STATE_PATH = "description_state.json"
+def attribute_timings(streams, push_state):
+    """File the timings.txt the booth's OSC server (or the dashboard's
+    fallback upload) just pushed under the service of the stream that most
+    recently ended, once per push.
+
+    There's one timings.txt, but on Christmas Eve three streams end within
+    six hours of each other: each stream's chapter list has to land in its
+    own service's description, not whichever runs next. Returns the key it
+    filed them under, or None."""
+    timings = ""
+    if os.path.exists("timings.txt"):
+        with open("timings.txt") as f:
+            timings = f.read().strip()
+    if not timings:
+        return None
+    digest = content_hash(timings)
+    if push_state.get(TIMINGS_HASH_KEY) == digest:
+        return None
+
+    now = datetime.now(LA_TZ)
+    ended = [s for s in streams if s.get('actualEndTime')
+             and now - dateutil.parser.parse(s['actualEndTime']) <= timedelta(days=7)]
+    if not ended:
+        print("timings.txt changed, but no stream has ended in the last week to file it under.")
+        return None
+    stream = max(ended, key=lambda s: dateutil.parser.parse(s['actualEndTime']))
+    key = stream_service(stream)[0]
+    if not key:
+        print(f"timings.txt changed, but the stream that just ended ({stream['title']}) has no generated service to file it under.")
+        return None
+    with open(os.path.join(service_keys.service_dir(key), "timings.txt"), "w") as f:
+        f.write(timings + "\n")
+    push_state[TIMINGS_HASH_KEY] = digest
+    save_push_state(push_state)
+    print(f"Filed the pushed timings under {key} (the stream that ended last: {stream['title']}).")
+    return key
+
 LA_TZ = pytz.timezone('America/Los_Angeles')
 
-def _state_target_date(path):
-    try:
-        with open(path) as f:
-            return json.load(f).get("target_date")
-    except Exception:
-        return None
-
-def _generation_date(path):
-    """The local (LA) date a state file was last written -- i.e. when that
-    title.txt / Description.txt was generated. Prefers the git commit time
-    (reliable across runners); falls back to the filesystem mtime."""
-    directory = os.path.dirname(path) or "."
-    base = os.path.basename(path)
-    try:
-        out = subprocess.run(
-            ["git", "-C", directory, "log", "-1", "--format=%ct", "--", base],
-            capture_output=True, text=True,
-        ).stdout.strip()
-        if out:
-            return datetime.fromtimestamp(int(out), LA_TZ).date()
-    except Exception:
-        pass
-    try:
-        return datetime.fromtimestamp(os.path.getmtime(path), LA_TZ).date()
-    except Exception:
-        return None
-
-def content_ready_for(service_date):
-    """(ok, reason). ok is True only when BOTH title.txt and Description.txt:
-
-      * carry state target_date == service_date (a date object) -- i.e. they
-        were generated *for* this exact service, and
-      * were generated *during* that service's own week -- the preceding
-        Monday through the service Sunday itself.
-
-    title.txt / Description.txt are never cleared between weeks and the
-    playlist can hold more than one upcoming stream, so without this an
-    hourly run can merge last week's (or next week's) title/description --
-    and last week's chapter timings -- onto the wrong broadcast.
-    """
-    want = service_date.isoformat()
-    # The service week is the preceding Monday .. that Sunday. Allow one extra
-    # day on the early side purely for cron / timezone slop -- target_date ==
-    # want already pins generation to this week (update_service_titles.py only
-    # ever writes the *coming* Sunday, and never runs on a Sunday).
-    week_start = service_date - timedelta(days=7)
-
-    for label, state_path in (("title.txt", TITLE_STATE_PATH),
-                              ("Description.txt", DESC_STATE_PATH)):
-        got = _state_target_date(state_path)
-        if got != want:
-            return False, f"{label} was generated for {got!r}, not this service ({want})"
-        gen = _generation_date(state_path)
-        if gen is None:
-            return False, f"can't determine when {label} was generated"
-        if not (week_start <= gen <= service_date):
-            return False, (f"{label} was generated {gen.isoformat()}, outside this service's "
-                           f"week (need {(service_date - timedelta(days=6)).isoformat()}..{want})")
-    return True, ""
-
 def regenerate_worship_content():
-    """Best-effort: run the title + description generators for the coming
-    Sunday, the same way upload_queue_to_drive.py does when a thumbnail lands
-    before the OW. Lets an out-of-date stream be corrected in the same run
-    instead of waiting for the next hourly pass.
+    """Best-effort: run the title + description generators, the same way
+    upload_queue_to_drive.py does when a thumbnail lands before the OW. Lets
+    an out-of-date stream be corrected in the same run instead of waiting for
+    the next hourly pass.
 
     No FORCE_UPDATE: update_service_titles.py already no-ops (no Gemini call)
     when this OW's SHA is already processed, so if the dedicated Service
@@ -233,67 +191,74 @@ def main():
     # Prune entries for videos no longer in the playlist window so the file
     # doesn't grow forever.
     current_ids = {s['id'] for s in upcoming_streams}
-    pruned_state = {k: v for k, v in push_state.items() if k in current_ids}
+    pruned_state = {k: v for k, v in push_state.items() if k in current_ids or k.startswith("_")}
     if pruned_state != push_state:
         push_state = pruned_state
         save_push_state(push_state)
 
-    la_tz = pytz.timezone('America/Los_Angeles')
-    now_la = datetime.now(la_tz)
+    attribute_timings(upcoming_streams, push_state)
+
+    now_la = datetime.now(LA_TZ)
+    force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
 
     # regenerate_worship_content() is expensive (PDF + Gemini); run it at
     # most once per invocation no matter how many streams are stale.
     regenerated_this_run = False
 
+    # Every stream gets the text generated for its own service (date AND
+    # time), so it's safe to update all of them in one run -- Christmas Eve's
+    # three streams, and next Sunday's created weeks ahead, alike.
     for stream in upcoming_streams:
         print(f"Checking stream: {stream['title']} (ID: {stream['id']})")
 
-        start_time_utc = dateutil.parser.parse(stream['scheduledStartTime'])
-        start_time_la = start_time_utc.astimezone(la_tz)
+        key, service_date, start_time, start_la = stream_service(stream)
+        print(f"  Service: {service_date.isoformat()} {start_time} -> {key or 'no generated service'}")
 
-        service_date = start_time_la.date()
-        service_date_str = service_date.strftime('%Y-%m-%d')
-        print(f"  Service date: {service_date_str}")
+        # A finished service's description is history: leave it alone once
+        # the day after has started in earnest. (Measured from the start
+        # rather than by calendar date so the 11pm Christmas Eve stream still
+        # gets the timings pushed just after midnight.)
+        if now_la > start_la + timedelta(hours=18):
+            print("  This stream is from a past date. Skipping updates to prevent overwriting history.")
+            continue
 
-        force_update = str(os.environ.get('FORCE_UPDATE', 'false')).lower() == 'true'
+        if not key:
+            print("  No OW has been processed for this stream's service. Skipping.")
+            continue
+        folder = service_keys.service_dir(key)
 
-        # If a timings.txt was pushed, we usually want to update even if it's the service day
+        # If timings were pushed, we usually want to update even if it's the service day
         recently_modified = False
-        for p in ["Description.txt", "timings.txt", os.path.join("..", "Worship Scripts", "service-titles", "title.txt")]:
+        for p in (os.path.join(folder, "Description.txt"), os.path.join(folder, "timings.txt"),
+                  os.path.join(service_keys.titles_dir(key), "title.txt")):
             if os.path.exists(p):
                 mtime = os.path.getmtime(p)
                 if (datetime.now().timestamp() - mtime) < 3600:
                     recently_modified = True
 
-        # If it is past the service date, only allow updates if the service was literally today
-        # This prevents recently_modified from overwriting months of historical videos
-        if now_la.date() > service_date:
-            print("  This stream is from a past date. Skipping updates to prevent overwriting history.")
-            continue
-
-        if now_la.date() == service_date and not (force_update or recently_modified):
+        if now_la.date() >= service_date and not (force_update or recently_modified):
             print("  Today is the service day, but no manual force or recent modifications detected. Skipping updates.")
             continue
-        elif now_la.date() == service_date:
+        elif now_la.date() >= service_date:
             reason = "FORCE_UPDATE is enabled" if force_update else "files were modified recently"
             print(f"  Today is the service day, and {reason}. Proceeding...")
 
-        # Hard gate: only touch this stream if title.txt AND Description.txt
-        # were generated for -- and during -- THIS stream's service week. If
-        # they weren't, try regenerating them once, then re-check; if it
-        # still can't be confirmed, skip the stream entirely rather than risk
-        # pushing the wrong title/description (and last week's chapter timings).
-        ok, reason = content_ready_for(service_date)
+        # Hard gate: only touch this stream once its service's title and
+        # description were both generated from its current OW. If they
+        # weren't, try regenerating them once, then re-check; if it still
+        # can't be confirmed, skip the stream entirely rather than risk
+        # pushing the wrong title/description.
+        ok, reason = service_keys.content_ready(key)
         if not ok and not regenerated_this_run:
-            print(f"  Content not confirmed for {service_date_str}: {reason}. Regenerating title/description...")
+            print(f"  Content not confirmed for {key}: {reason}. Regenerating title/description...")
             regenerate_worship_content()
             regenerated_this_run = True
-            ok, reason = content_ready_for(service_date)
+            ok, reason = service_keys.content_ready(key)
         if not ok:
-            print(f"  Skipping {service_date_str}: {reason}. Not risking a wrong title/description.")
+            print(f"  Skipping {key}: {reason}. Not risking a wrong title/description.")
             continue
 
-        combined_desc = get_combined_description()
+        combined_desc = service_keys.description_for(key)
         if not combined_desc:
             print("  Could not read description. Skipping.")
             continue
@@ -312,10 +277,9 @@ def main():
             description_to_send = combined_desc
             desc_changed = stream['description'].strip() != combined_desc.strip()
 
-        # Fall back to the existing YouTube title if title.txt is missing/empty
-        # (e.g. before the Service Titles Checker has processed this week's
-        # PDF) so we never blank out or overwrite a good title with nothing.
-        new_title = get_current_title() or stream['title']
+        # Fall back to the existing YouTube title if title.txt is empty so we
+        # never blank out or overwrite a good title with nothing.
+        new_title = service_keys.title_for(key) or stream['title']
         title_changed = stream['title'].strip() != new_title.strip()
 
         if not desc_changed and not title_changed:
@@ -350,8 +314,6 @@ def main():
                 if not already_pushed:
                     push_state[stream['id']] = desc_hash
                     save_push_state(push_state)
-                print("  Stopping further updates to prevent modifying multiple streams.")
-                break
             except HttpError as e:
                 print(f"  Failed to update title/description: {e}")
 

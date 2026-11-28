@@ -45,6 +45,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import prepare_week as pw  # noqa: E402
+sys.path.insert(0, os.path.join(REPO, "Worship Scripts", "worship workflows"))
+import service_keys  # noqa: E402
 from illustrator import IllustratorError, do_javascript, run_updateweek  # noqa: E402
 
 OW_API = "https://api.github.com/repos/cju-media/OW/contents/OWs"
@@ -115,6 +117,26 @@ def choose_ow(ows, name=None, today=None):
     hits = [o for o in pdfs if ow_date(o["name"]) == sunday]
     hits.sort(key=lambda o: ("draft" in o["name"].lower(), o["name"]))
     return hits[0] if hits else None
+
+
+def not_a_sunday_service(name):
+    """Why an OW gets no title graphics, or None. The graphics are Sunday ones
+    (prepare_week.py checks the date is a Sunday, and each week is built from
+    the last Sunday's .ai files), and there's one build in the picker at a
+    time. A Christmas Eve OW ("12.24.26 5:30pm OW.pdf") would fail that check,
+    and its Sermon Series JPG would land in the coming Sunday's Drive folder
+    -- so those thumbnails are uploaded on the dashboard, one per service
+    with its time set."""
+    parsed = service_keys.parse_ow_filename(name)
+    if not parsed:
+        return None
+    date, time = parsed
+    if time or date.weekday() != 6:
+        when = date.strftime("%B ") + str(date.day) + (" " + service_keys.display_time(time) if time else "")
+        return ("Title graphics are only built for Sunday services, so none were made for %s (%s). Upload "
+                "its Worship Service thumbnail on the upload dashboard with the date and time set; the "
+                "livestream is created from it." % (when, name))
+    return None
 
 
 def list_ows():
@@ -639,6 +661,11 @@ def run(a, ctx, state):
             return "sent", waiting, True, None
         msg = "Title graphics: no OW %s in cju-media/OW." % ("named %s" % a.ow if a.ow else "for the coming Sunday")
         raise Stop("idle" if a.trigger == "schedule" else "skipped", msg, notify=a.trigger != "schedule")
+    skip = not_a_sunday_service(ow["name"])
+    if skip:
+        if waiting:
+            return "sent", waiting, True, None
+        raise Stop("skipped", skip, notify=a.trigger != "schedule")
     ow = {"name": ow["name"], "sha": ow["sha"], "download_url": ow["download_url"]}
     if build.get("ow", {}).get("sha") == ow["sha"] and a.trigger in ("upload", "schedule") and not a.force_rebuild:
         if waiting:
